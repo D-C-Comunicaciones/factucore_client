@@ -1,0 +1,62 @@
+/src
+  /app
+    layout.tsx                  <- Root layout (envolviendo Providers, header global)
+    page.tsx                    <- Landing o redirect inicial
+    /dashboard
+      layout.tsx                <- Layout específico del dashboard (sidebar, header)
+      page.tsx                  <- Dashboard principal (cards, KPIs)
+      /tenants
+        page.tsx                <- Lista de tenants
+        /[tenantId]
+          page.tsx              <- Detalle de un tenant
+      /clients
+        page.tsx                <- Lista de clientes
+        /[clientId]
+          page.tsx              <- Detalle de cliente
+      /products
+        page.tsx                <- Lista de productos
+        /[productId]
+          page.tsx              <- Detalle de producto
+      /invoices
+        page.tsx                <- Lista de facturas
+        /[invoiceId]
+          page.tsx              <- Detalle de factura
+
+  /components
+    /ui                         <- Componentes genéricos shadcn (Button, Card, Modal, Table)
+    /layout                     <- Layouts reutilizables (DashboardLayout, Header, Footer)
+    /sidebar                    <- Sidebar y navegación lateral
+    /tables                     <- Tablas específicas para tenants, clientes, productos, facturas
+    /forms                      <- Formularios reutilizables con validación
+    /cards                      <- Cards reutilizables para dashboard
+    /modals                     <- Modales reutilizables
+
+  /hooks
+    useTenants.ts               <- Hook para manejar datos de tenants
+    useClients.ts               <- Hook para manejar datos de clientes
+    useProducts.ts              <- Hook para productos
+    useInvoices.ts              <- Hook para facturas
+
+  /lib
+    api.ts                      <- Funciones genéricas de fetch/axios
+    tenantService.ts            <- Servicios específicos para tenants
+    clientService.ts            <- Servicios específicos para clientes
+    productService.ts           <- Servicios específicos para productos
+    invoiceService.ts           <- Servicios específicos para facturas
+    queryClient.ts              <- Configuración de React Query
+
+  /types
+    tenant.ts                   <- Interfaces y tipos de Tenant
+    client.ts                   <- Interfaces y tipos de Cliente
+    product.ts                  <- Interfaces y tipos de Producto
+    invoice.ts                  <- Interfaces y tipos de Factura
+
+  /utils
+    formatDate.ts               <- Funciones utilitarias (fechas, currency, etc.)
+    validators.ts               <- Validaciones de formularios
+    constants.ts                <- Constantes globales
+
+  /styles
+    globals.css                 <- Tailwind y estilos globales
+
+  providers.tsx                 <- Providers (React Query, Toast, etc.)
