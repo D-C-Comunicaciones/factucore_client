@@ -33,6 +33,7 @@ import {
   IconLoader,
   IconPlus,
   IconTrendingUp,
+  IconRefresh,
 } from "@tabler/icons-react"
 import {
   flexRender,
@@ -338,8 +339,10 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
 
 export function DataTable({
   data: initialData,
+  onRefresh, // <-- nuevo prop opcional
 }: {
   data: z.infer<typeof schema>[]
+  onRefresh?: () => void // <-- nuevo prop opcional
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [rowSelection, setRowSelection] = React.useState({})
@@ -436,6 +439,16 @@ export function DataTable({
           <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+            style={{ marginRight: 4 }}
+            onClick={onRefresh}
+          >
+            <IconRefresh className="mr-2" />
+            Refresh
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -497,9 +510,9 @@ export function DataTable({
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </TableHead>
                       )
                     })}

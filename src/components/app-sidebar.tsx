@@ -30,12 +30,18 @@ import {
 } from "@/components/ui/sidebar"
 import { NavMain } from "./nav-main"
 
+function getUserFromLocalStorage() {
+  if (typeof window === "undefined") return null
+  try {
+    const userStr = localStorage.getItem("auth_user")
+    if (!userStr) return null
+    return JSON.parse(userStr)
+  } catch {
+    return null
+  }
+}
+
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Escritorio",
@@ -67,6 +73,32 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  // Obtener usuario de localStorage
+  const user = React.useMemo(() => {
+    if (typeof window === "undefined") {
+      return {
+        name: "",
+        email: "",
+        avatar: "",
+        role: "",
+      }
+    }
+    const data = getUserFromLocalStorage()
+    return data
+      ? {
+        name: data.name,
+        email: data.email,
+        avatar: "/img/avatars/afleones.jpeg", // Puedes personalizar esto si tienes avatar en el backend
+        role: data.level || "", // Usa el campo level como rol
+      }
+      : {
+        name: "Usuario",
+        email: "",
+        avatar: "/img/avatars/afleones.jpeg",
+        role: "",
+      }
+  }, [])
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader className="p-4 pb-2">
@@ -98,7 +130,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

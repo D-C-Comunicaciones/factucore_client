@@ -1,10 +1,12 @@
 export class AuthService {
-    private static TOKEN_KEY = 'auth_token'
+    private static TOKEN_KEY = 'access_token'
     private static USER_KEY = 'auth_user'
 
     static setToken(token: string): void {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && token) {
             localStorage.setItem(this.TOKEN_KEY, token)
+            // Guarda la cookie solo si el token existe y nunca como "undefined"
+            document.cookie = `access_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`
         }
     }
 
@@ -34,8 +36,8 @@ export class AuthService {
             localStorage.removeItem(this.TOKEN_KEY)
             localStorage.removeItem(this.USER_KEY)
 
-            // Clear cookies
-            document.cookie = `${this.TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`
+            // Borra solo la cookie access_token
+            document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`
             document.cookie = `auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`
 
             // Clear session storage as well

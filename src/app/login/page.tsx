@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,18 +17,22 @@ import Image from "next/image"
 
 export default function LoginPage() {
   const { login } = useAuth()
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
+    setError(null)
     try {
       await login(email, password)
-    } catch (error) {
-      console.error("Login error:", error)
+      // Redirige solo después de login exitoso
+      router.replace("/dashboard")
+    } catch (error: any) {
+      setError(error?.message || "Login error")
     } finally {
       setIsLoading(false)
     }
@@ -112,6 +117,9 @@ export default function LoginPage() {
                     Iniciar sesión
                   </Button>
                 </Field>
+                {error && (
+                  <div className="text-red-600 text-sm text-center mt-2">{error}</div>
+                )}
               </FieldGroup>
             </form>
 

@@ -15,10 +15,7 @@ class ApiClient {
         this.baseURL = baseURL
     }
 
-    private async request<T>(
-        endpoint: string,
-        options: RequestInit = {}
-    ): Promise<ApiResponse<T>> {
+    private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
         const token = this.getToken()
 
         const config: RequestInit = {
@@ -31,51 +28,23 @@ class ApiClient {
             credentials: "include",
         }
 
-        try {
-            const response = await fetch(`${this.baseURL}${endpoint}`, config)
+        const fullUrl = `${this.baseURL}${endpoint}`
 
-            // Check if response is ok before trying to parse JSON
-            if (!response.ok) {
-                let errorMessage = `Error ${response.status}: ${response.statusText}`
+        console.log("API Request:", fullUrl, config) // Solo se muestra en dev
 
-                try {
-                    const errorData = await response.json()
-                    errorMessage = errorData.message || errorMessage
-                } catch {
-                    // If JSON parsing fails, use the status text
-                }
+        const response = await fetch(fullUrl, config)
 
-                throw new Error(errorMessage)
-            }
+        console.log("API Response:", response) // Solo se muestra en dev
 
-            const data = await response.json()
+        const data = await response.json()
 
-            // Check if the API response indicates an error
-            if (data.status === "error") {
-                throw new Error(data.message || "Error en la petición")
-            }
-
-            return data
-        } catch (error) {
-            // Handle network errors
-            if (error instanceof TypeError && error.message === 'Failed to fetch') {
-                throw new Error(
-                    `No se pudo conectar con el servidor en ${this.baseURL}. ` +
-                    `Verifica que la API esté corriendo y la URL sea correcta.`
-                )
-            }
-
-            if (error instanceof Error) {
-                throw error
-            }
-
-            throw new Error("Error desconocido en la petición")
-        }
+        return data
     }
+
 
     private getToken(): string | null {
         if (typeof window === "undefined") return null
-        return localStorage.getItem("auth_token")
+        return localStorage.getItem("access_token")
     }
 
     async get<T>(endpoint: string, options?: RequestInit) {

@@ -34,14 +34,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (email: string, password: string) => {
         try {
-            const response = await apiClient.post<{
-                token: string
-                user: unknown
-            }>("/auth/login", { email, password })
+            // Llama a la API y espera la estructura correcta de respuesta
+            const response = await apiClient.post<any>("/auth/login", { email, password })
 
-            AuthService.setToken(response.data.token)
-            AuthService.setUser(response.data.user)
-            setUser(response.data.user)
+            // SOPORTA RESPUESTA: { data: { access_token, user, roles, permissions } }
+            const data = response.data?.data || response.data
+
+            const access_token = data.access_token
+            const user = data.user
+            const roles = data.roles
+            const permissions = data.permissions
+
+            if (!access_token || !user) {
+                throw new Error("Credenciales inválidas o respuesta inesperada del backend")
+            }
+
+            // Guarda el token y el usuario correctamente
+            AuthService.setToken(access_token)
+            AuthService.setUser({ ...user, roles, permissions })
+            setUser({ ...user, roles, permissions })
 
             toast.success("Inicio de sesión exitoso")
             router.push("/dashboard")
@@ -53,13 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const logout = () => {
-        // Clear all auth data
         AuthService.removeToken()
         setUser(null)
-
-        // Clear any other app state if needed
-        // Reset any global state here
-
         toast.success("Sesión cerrada exitosamente")
         router.push("/login")
     }

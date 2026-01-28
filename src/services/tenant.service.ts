@@ -5,11 +5,19 @@ export class TenantService {
     private readonly basePath = "/tenants"
 
     async getAll(): Promise<Tenant[]> {
-        const response = await apiClient.get<{ tenants: Tenant[] }>(this.basePath)
-        return response.data.tenants
+        // El backend retorna { data: { tenants: { data: Tenant[] } } }
+        const response = await apiClient.get<any>(this.basePath)
+        // Soporta ambos formatos: paginado y array plano
+        if (response.data?.tenants?.data) {
+            return response.data.tenants.data
+        }
+        if (Array.isArray(response.data?.tenants)) {
+            return response.data.tenants
+        }
+        return []
     }
 
-    async getById(id: number): Promise<Tenant> {
+    async getById(id: string): Promise<Tenant> {
         const response = await apiClient.get<{ tenant: Tenant }>(`${this.basePath}/${id}`)
         return response.data.tenant
     }
@@ -19,7 +27,7 @@ export class TenantService {
         return response.data.tenant
     }
 
-    async update(id: number, data: UpdateTenantInput): Promise<Tenant> {
+    async update(id: string, data: UpdateTenantInput): Promise<Tenant> {
         const response = await apiClient.patch<{ tenant: Tenant }>(
             `${this.basePath}/${id}`,
             data
@@ -27,14 +35,14 @@ export class TenantService {
         return response.data.tenant
     }
 
-    async toggleStatus(id: number): Promise<Tenant> {
+    async toggleStatus(id: string): Promise<Tenant> {
         const response = await apiClient.post<{ tenant: Tenant }>(
             `${this.basePath}/${id}/toggle-status`
         )
         return response.data.tenant
     }
 
-    async delete(id: number): Promise<void> {
+    async delete(id: string): Promise<void> {
         await apiClient.delete(`${this.basePath}/${id}`)
     }
 }
