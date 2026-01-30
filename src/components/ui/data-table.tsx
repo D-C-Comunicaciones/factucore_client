@@ -50,20 +50,26 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 
+interface SearchFilter {
+    key: string
+    label: string
+    placeholder: string
+}
+
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
-    searchKey?: string
-    searchPlaceholder?: string
     isLoading?: boolean
+    columnLabels?: Record<string, string>
+    searchFilters?: SearchFilter[]
 }
 
 export function DataTable<TData, TValue>({
     columns,
     data,
-    searchKey,
-    searchPlaceholder = "Buscar...",
     isLoading = false,
+    columnLabels,
+    searchFilters,
 }: DataTableProps<TData, TValue>) {
     const [rowSelection, setRowSelection] = React.useState({})
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -73,6 +79,11 @@ export function DataTable<TData, TValue>({
         pageIndex: 0,
         pageSize: 10,
     })
+
+    // Filtro único con select
+    const [activeFilter, setActiveFilter] = React.useState(
+        searchFilters && searchFilters.length > 0 ? searchFilters[0].key : ""
+    )
 
     const table = useReactTable({
         data,
@@ -100,48 +111,114 @@ export function DataTable<TData, TValue>({
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                {searchKey && (
-                    <Input
-                        placeholder={searchPlaceholder}
-                        value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-                        onChange={(event) =>
-                            table.getColumn(searchKey)?.setFilterValue(event.target.value)
-                        }
-                        className="max-w-sm"
-                        disabled={isLoading}
-                    />
-                )}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="ml-auto" disabled={isLoading}>
-                            <IconLayoutColumns />
-                            Columnas
-                            <IconChevronDown />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                        {table
-                            .getAllColumns()
-                            .filter(
-                                (column) =>
-                                    typeof column.accessorFn !== "undefined" && column.getCanHide()
-                            )
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
+            {(searchFilters && searchFilters.length > 0) && (
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div className="flex gap-2 flex-1">
+                        <Select
+                            value={activeFilter}
+                            onValueChange={setActiveFilter}
+                            disabled={isLoading}
+                        >
+                            <SelectTrigger className="w-[220px]">
+                                <SelectValue>
+                                    {searchFilters.find(f => f.key === activeFilter)?.label || "Buscar por..."}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {searchFilters.map((filter) => (
+                                    <SelectItem key={filter.key} value={filter.key}>
+                                        {filter.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Input
+                            placeholder={
+                                searchFilters.find(f => f.key === activeFilter)?.placeholder || ""
+                            }
+                            value={(table.getColumn(activeFilter)?.getFilterValue() as string) ?? ""}
+                            onChange={(event) =>
+                                table.getColumn(activeFilter)?.setFilterValue(event.target.value)
+                            }
+                            className="max-w-xs"
+                            disabled={isLoading}
+                        />
+                    </div>
+                    {columnLabels && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="ml-auto" disabled={isLoading}>
+                                    <IconLayoutColumns />
+                                    Columnas
+                                    <IconChevronDown />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                {table
+                                    .getAllColumns()
+                                    .filter(
+                                        (column) =>
+                                            typeof column.accessorFn !== "undefined" && column.getCanHide()
+                                    )
+                                    .map((column) => {
+                                        const label = columnLabels?.[column.id] ||
+                                            (typeof column.columnDef.header === "string"
+                                                ? column.columnDef.header
+                                                : column.id)
+                                        return (
+                                            <DropdownMenuCheckboxItem
+                                                key={column.id}
+                                                className="capitalize"
+                                                checked={column.getIsVisible()}
+                                                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                                            >
+                                                {label}
+                                            </DropdownMenuCheckboxItem>
+                                        )
+                                    })}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </div>
+            )}
+
+            {(!searchFilters || searchFilters.length === 0) && columnLabels && (
+                <div className="flex items-center justify-end">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="ml-auto" disabled={isLoading}>
+                                <IconLayoutColumns />
+                                Columnas
+                                <IconChevronDown />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            {table
+                                .getAllColumns()
+                                .filter(
+                                    (column) =>
+                                        typeof column.accessorFn !== "undefined" && column.getCanHide()
                                 )
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+                                .map((column) => {
+                                    const label = columnLabels?.[column.id] ||
+                                        (typeof column.columnDef.header === "string"
+                                            ? column.columnDef.header
+                                            : column.id)
+                                    return (
+                                        <DropdownMenuCheckboxItem
+                                            key={column.id}
+                                            className="capitalize"
+                                            checked={column.getIsVisible()}
+                                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                                        >
+                                            {label}
+                                        </DropdownMenuCheckboxItem>
+                                    )
+                                })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            )}
 
             <div className="rounded-md border">
                 <Table>
@@ -149,14 +226,13 @@ export function DataTable<TData, TValue>({
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
+                                    const label = columnLabels?.[header.column.id] ||
+                                        flexRender(header.column.columnDef.header, header.getContext())
                                     return (
                                         <TableHead key={header.id} colSpan={header.colSpan}>
                                             {header.isPlaceholder
                                                 ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
+                                                : label}
                                         </TableHead>
                                     )
                                 })}
@@ -225,7 +301,7 @@ export function DataTable<TData, TValue>({
                                 <SelectValue placeholder={table.getState().pagination.pageSize} />
                             </SelectTrigger>
                             <SelectContent side="top">
-                                {[10, 20, 30, 40, 50].map((pageSize) => (
+                                {[1, 5, 10, 20, 30, 40, 50].map((pageSize) => (
                                     <SelectItem key={pageSize} value={`${pageSize}`}>
                                         {pageSize}
                                     </SelectItem>

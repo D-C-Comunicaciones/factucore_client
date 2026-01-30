@@ -3,9 +3,7 @@
 import * as React from "react"
 import {
   IconDashboard,
-  IconFolder,
   IconHelp,
-  IconSearch,
   IconSettings,
   IconUsers,
   IconShield,
@@ -14,21 +12,16 @@ import {
   IconCreditCard,
 } from "@tabler/icons-react"
 import Image from "next/image"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
-import { NavDispatch } from "@/components/nav-dispatch"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavSection } from "@/components/nav-section"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { NavMain } from "./nav-main"
+import { NavUser } from "./nav-user"
 
 function getUserFromLocalStorage() {
   if (typeof window === "undefined") return null
@@ -99,10 +92,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
   }, [])
 
+  const router = useRouter()
+
+  // Helper para navegación SPA
+  function handleNavClick(e: React.MouseEvent, url: string) {
+    e.preventDefault()
+    router.push(url)
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader className="p-4 pb-2">
-        <Link href="/dashboard" className="flex items-center justify-center w-full mb-2">
+        <a
+          href="/dashboard"
+          className="flex items-center justify-center w-full mb-2"
+          onClick={e => handleNavClick(e, "/dashboard")}
+        >
           <div className="relative w-full h-16">
             <Image
               src="/img/logo-horizontal.png"
@@ -112,21 +117,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               priority
             />
           </div>
-        </Link>
+        </a>
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Sección principal */}
-        <NavMain items={data.navMain} />
-
-        {/* Sección Despacho */}
-        <NavDispatch title="Despacho" items={data.navDespacho} />
-
-        {/* Sección Configuración */}
-        <NavDispatch title="Configuración" items={data.navConfiguration} />
-
-        {/* Sección secundaria */}
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavSection
+          items={data.navMain}
+          onItemClick={handleNavClick}
+        />
+        <NavSection
+          title="Despacho"
+          items={data.navDespacho}
+          onItemClick={handleNavClick}
+        />
+        <NavSection
+          title="Configuración"
+          items={data.navConfiguration}
+          onItemClick={handleNavClick}
+        />
+        <NavSection
+          items={data.navSecondary}
+          className="mt-auto"
+          onItemClick={handleNavClick}
+        />
       </SidebarContent>
 
       <SidebarFooter>

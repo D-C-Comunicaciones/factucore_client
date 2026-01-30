@@ -10,24 +10,97 @@ import { Button } from "@/components/ui/button"
 import type { Tenant } from "@/types/tenant"
 import type { CreateTenantInput } from "@/types/tenant"
 import { Switch } from "@/components/ui/switch"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { TenantDetailsDialog, TenantWithCompanyName } from "@/components/tenants/tenant-details-dialog"
+import { apiClient } from "@/lib/api-client"
+import { useRouter } from "next/navigation"
+
+// Nuevos tipos para la respuesta del detalle
+interface TenantDetail {
+    id: string
+    created_at: string
+    updated_at: string
+    data: any
+    company_name: string
+    nit: string
+    email: string
+    is_active: boolean
+    plan_id: number
+    database: string | null
+    documents_count: number
+    invoices_total: string
+    users_count: number
+    phone: string
+    address: string
+    city: string
+    country: string
+    tenancy_db_name: string
+}
+
+interface UsageDetail {
+    documents_count: number
+    invoices_total: string
+    users_count: number
+    plan_max_documents: number
+    plan_max_users: number
+    plan_max_amount: string
+    documents_percent: number
+    amount_percent: number
+    users_percent: number
+    is_unlimited_documents: boolean
+    is_unlimited_users: boolean
+    is_unlimited_amount: boolean
+    invoices_count: number
+    customers_count: number
+}
+
+interface PlanDetail {
+    id: number
+    name: string
+    description: string
+    is_unlimited: boolean
+    has_unlimited_documents: boolean
+    has_unlimited_users: boolean
+    has_unlimited_amount: boolean
+    max_documents: number
+    max_users: number
+    max_amount: string
+    price: string
+    is_active: boolean
+    sort_order: number
+    created_at: string
+    updated_at: string
+    deleted_at: string | null
+}
+
+interface TenantDetailApiResponse {
+    tenant: TenantDetail
+    usage: UsageDetail
+    plan: PlanDetail
+}
 
 export default function CompaniesPage() {
     const { tenants, isLoading, createTenant, toggleStatus, updateTenant, deleteTenant, fetchTenants } = useTenants()
-    const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null)
+    const [selectedTenant, setSelectedTenant] = useState<TenantDetail | null>(null)
+    const [selectedUsage, setSelectedUsage] = useState<UsageDetail | null>(null)
+    const [selectedPlan, setSelectedPlan] = useState<PlanDetail | null>(null)
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
     const [tableData, setTableData] = useState<Tenant[]>([])
 
-    // Inicializa tableData correctamente cuando cambian los tenants
+    const router = useRouter()
+
     useEffect(() => {
-        if (tenants && tenants.length > 0) {
+        // Si la respuesta viene como { data: { tenants: [...] } }
+        if ((tenants as any)?.data?.tenants && Array.isArray((tenants as any).data.tenants)) {
+            setTableData((tenants as any).data.tenants)
+        } else if (Array.isArray(tenants)) {
             setTableData(tenants)
+        } else {
+            setTableData([])
         }
     }, [tenants])
 
-    // Actualiza solo el registro cambiado tras toggleStatus
     const handleToggleStatus = async (id: string) => {
         const updatedTenant = await toggleStatus(id) as Tenant | undefined
         if (updatedTenant) {
@@ -39,17 +112,47 @@ export default function CompaniesPage() {
                 )
             )
         }
-        // NO LLAMES fetchTenants NI MODIFIQUES NADA MÁS AQUÍ
     }
 
+    const mapTenant = (tenant: Tenant): TenantDetail => ({
+        id: String(tenant.id),
+        created_at: tenant.created_at ?? "",
+        updated_at: tenant.updated_at ?? "",
+        data: null,
+        company_name: (tenant as any).company_name ?? tenant.name ?? "",
+        nit: (tenant as any).nit ?? "",
+        email: tenant.email ?? "",
+        is_active: (tenant as any).is_active ?? (tenant.status === "active"),
+        plan_id: (tenant as any).plan_id ?? 0,
+        database: (tenant as any).database ?? "",
+        documents_count: (tenant as any).documents_count ?? 0,
+        invoices_total: (tenant as any).invoices_total ?? "0.00",
+        users_count: (tenant as any).users_count ?? 0,
+        phone: (tenant as any).phone ?? "",
+        address: (tenant as any).address ?? "",
+        city: (tenant as any).city ?? "",
+        country: (tenant as any).country ?? "",
+        tenancy_db_name: (tenant as any).tenancy_db_name ?? "",
+    })
+
     const handleEdit = (tenant: Tenant) => {
-        setSelectedTenant(tenant)
+        setSelectedTenant(mapTenant(tenant))
         setIsEditDialogOpen(true)
     }
 
-    const handleView = (tenant: Tenant) => {
-        setSelectedTenant(tenant)
-        setIsViewDialogOpen(true)
+    const handleView = async (tenant: Tenant) => {
+        try {
+            const { data } = await apiClient.get<{ tenant: TenantDetail; usage: UsageDetail; plan: PlanDetail }>(`/tenants/${tenant.id}`)
+            setSelectedTenant(data.tenant)
+            setSelectedUsage(data.usage)
+            setSelectedPlan(data.plan)
+            setIsViewDialogOpen(true)
+        } catch (error) {
+            alert("No se pudo cargar el detalle de la empresa.")
+            setSelectedTenant(null)
+            setSelectedUsage(null)
+            setSelectedPlan(null)
+        }
     }
 
     const handleDelete = async (id: string) => {
@@ -77,35 +180,58 @@ export default function CompaniesPage() {
         }
     }
 
+    const [search, setSearch] = useState("")
+
+    // Etiquetas amigables para las columnas
+    const columnLabels = {
+        company_name: "Nombre",
+        nit: "Número de documento",
+        email: "Email",
+        phone: "Teléfono",
+        address: "Dirección",
+        is_active: "Estado",
+        actions: "Acciones",
+    }
+
+    // Filtros de búsqueda configurables
+    const searchFilters = [
+        {
+            key: "company_name",
+            label: "Nombre",
+            placeholder: "Digite el nombre",
+        },
+        {
+            key: "nit",
+            label: "Número de documento",
+            placeholder: "Digite el número de documento",
+        },
+    ]
+
+    // Columnas solo con datos entendibles para el usuario final
     const columns = [
         {
             accessorKey: "company_name",
-            header: "Empresa",
+            header: columnLabels.company_name,
         },
         {
             accessorKey: "nit",
-            header: "NIT",
+            header: columnLabels.nit,
         },
         {
             accessorKey: "email",
-            header: "Email",
+            header: columnLabels.email,
         },
         {
             accessorKey: "phone",
-            header: "Teléfono",
+            header: columnLabels.phone,
         },
         {
-            accessorKey: "city",
-            header: "Ciudad",
-        },
-        {
-            accessorKey: "plan",
-            header: "Plan",
-            cell: ({ row }: any) => row.original.plan?.name || "",
+            accessorKey: "address",
+            header: columnLabels.address,
         },
         {
             accessorKey: "is_active",
-            header: "Estado",
+            header: columnLabels.is_active,
             cell: ({ row }: any) => (
                 <div className="flex items-center justify-center w-full">
                     <Switch
@@ -123,10 +249,9 @@ export default function CompaniesPage() {
         },
         {
             id: "actions",
-            header: "Acciones",
+            header: columnLabels.actions,
             cell: ({ row }: any) => (
                 <div className="flex gap-2 items-center">
-                    {/* Ver detalles */}
                     <Button
                         variant="outline"
                         size="icon"
@@ -135,7 +260,6 @@ export default function CompaniesPage() {
                     >
                         <IconEye />
                     </Button>
-                    {/* Editar */}
                     <Button
                         variant="outline"
                         size="icon"
@@ -188,6 +312,8 @@ export default function CompaniesPage() {
                     data={tableData && tableData.length > 0 ? tableData : []}
                     columns={columns}
                     isLoading={isLoading}
+                    columnLabels={columnLabels}
+                    searchFilters={searchFilters}
                 />
             </div>
 
@@ -203,34 +329,33 @@ export default function CompaniesPage() {
                 open={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}
                 onSubmit={handleUpdate}
-                initialData={selectedTenant}
+                initialData={
+                    selectedTenant
+                        ? {
+                            id: selectedTenant.id,
+                            company_name: selectedTenant.company_name,
+                            nit: selectedTenant.nit ?? "",
+                            type_document_identification_id: (selectedTenant as any).type_document_identification_id ?? 0,
+                            plan_id: selectedTenant.plan_id ?? 0,
+                            address: selectedTenant.address ?? "",
+                            phone: selectedTenant.phone ?? "",
+                            email: selectedTenant.email ?? "",
+                            country: selectedTenant.country ?? "",
+                            department_id: (selectedTenant as any).department_id ?? 0,
+                            municipality_id: (selectedTenant as any).municipality_id ?? 0,
+                        }
+                        : null
+                }
             />
 
             {/* Modal para ver detalles */}
-            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Detalles de la empresa</DialogTitle>
-                        <DialogDescription>
-                            {selectedTenant && (
-                                <div className="text-sm space-y-2 mt-2">
-                                    <div><b>Empresa:</b> {selectedTenant.name}</div>
-                                    <div><b>NIT:</b> {"nit" in selectedTenant ? (selectedTenant as any).nit ?? "N/A" : "N/A"}</div>
-                                    <div><b>Email:</b> {selectedTenant.email}</div>
-                                    <div><b>Teléfono:</b> {"phone" in selectedTenant ? (selectedTenant as any).phone ?? "N/A" : "N/A"}</div>
-                                    <div><b>Ciudad:</b> {"city" in selectedTenant ? (selectedTenant as any).city ?? "N/A" : "N/A"}</div>
-                                    <div><b>Dirección:</b> {"address" in selectedTenant ? (selectedTenant as any).address ?? "N/A" : "N/A"}</div>
-                                    <div><b>País:</b> {"country" in selectedTenant ? (selectedTenant as any).country ?? "N/A" : "N/A"}</div>
-                                    <div><b>Plan:</b> {"plan" in selectedTenant && (selectedTenant as any).plan?.name ? (selectedTenant as any).plan.name : "N/A"}</div>
-                                    <div><b>Estado:</b> {selectedTenant.status === "active" ? "Activo" : "Inactivo"}</div>
-                                    <div><b>Creado:</b> {selectedTenant.created_at}</div>
-                                    <div><b>Actualizado:</b> {selectedTenant.updated_at}</div>
-                                </div>
-                            )}
-                        </DialogDescription>
-                    </DialogHeader>
-                </DialogContent>
-            </Dialog>
+            <TenantDetailsDialog
+                open={isViewDialogOpen}
+                onOpenChange={setIsViewDialogOpen}
+                tenant={selectedTenant}
+                usage={selectedUsage ?? undefined}
+                plan={selectedPlan ?? undefined}
+            />
         </>
     )
 }

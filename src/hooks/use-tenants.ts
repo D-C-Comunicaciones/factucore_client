@@ -4,6 +4,12 @@ import { useCallback, useEffect, useState } from "react"
 import { tenantService } from "@/services/tenant.service"
 import type { Tenant, CreateTenantInput, UpdateTenantInput } from "@/types/tenant"
 
+export interface TenantShowApiResponse {
+    tenant: any // Puedes tipar mejor si tienes el tipo completo
+    usage?: any
+    plan?: any
+}
+
 export function useTenants() {
     const [tenants, setTenants] = useState<Tenant[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -42,6 +48,18 @@ export function useTenants() {
         await fetchTenants()
     }
 
+    // Nuevo método show para obtener un tenant por id y mapearlo
+    const show = async (id: string): Promise<TenantShowApiResponse | null> => {
+        try {
+            const response = await tenantService.getById(id)
+            // Si la respuesta ya es el objeto completo, retorna tal cual
+            // Si necesitas mapear, hazlo aquí
+            return response as TenantShowApiResponse
+        } catch (error) {
+            return null
+        }
+    }
+
     return {
         tenants,
         isLoading,
@@ -50,5 +68,6 @@ export function useTenants() {
         updateTenant,
         toggleStatus,
         deleteTenant,
+        show,
     }
 }
