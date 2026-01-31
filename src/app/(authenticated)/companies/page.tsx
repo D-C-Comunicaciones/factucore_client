@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { IconPlus, IconRefresh, IconEye } from "@tabler/icons-react"
+import { IconPlus, IconRefresh, IconEye, IconEdit } from "@tabler/icons-react"
 import { useTenants } from "@/hooks/use-tenants"
 import { CreateTenantDialog } from "@/components/tenants/create-tenant-dialog"
 import { UpdateTenantDialog } from "@/components/tenants/update-tenant-dialog"
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import type { Tenant } from "@/types/tenant"
 import type { CreateTenantInput } from "@/types/tenant"
 import { Switch } from "@/components/ui/switch"
-import { TenantDetailsDialog, TenantWithCompanyName } from "@/components/tenants/tenant-details-dialog"
+import { TenantDetailsDialog } from "@/components/tenants/tenant-details-dialog"
 import { apiClient } from "@/lib/api-client"
 import { useRouter } from "next/navigation"
 
@@ -266,7 +266,7 @@ export default function CompaniesPage() {
                         onClick={() => handleEdit(row.original)}
                         title="Editar"
                     >
-                        <IconRefresh />
+                        <IconEdit />
                     </Button>
                 </div>
             ),

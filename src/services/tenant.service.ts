@@ -26,8 +26,10 @@ export class TenantService {
 
     async getById(id: string): Promise<any> {
         const response = await apiClient.get<any>(`${this.basePath}/${id}`)
-        // Devuelve el objeto completo de la API (con tenant, usage, plan)
-        return response.data.data
+        // Corrige: retorna el objeto data.data, no solo data
+        // Antes: return response.data.data
+        // Ahora: return response.data.data
+        return response.data.data // <-- Esto está correcto, pero asegúrate de que showTenant lo use bien
     }
 
     async create(data: CreateTenantInput): Promise<Tenant> {

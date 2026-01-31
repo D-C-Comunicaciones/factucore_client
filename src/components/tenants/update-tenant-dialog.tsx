@@ -38,6 +38,7 @@ import {
 } from "@/hooks/use-catalogs"
 import type { Country, Department, Municipality, TypeDocumentIdentification, Plan } from "@/types/catalogs"
 import type { Tenant } from "@/types/tenant"
+import { toast } from "sonner"
 
 // Añade este tipo para los datos completos de empresa (usado en el modal de edición)
 export type TenantFullData = {
@@ -195,28 +196,28 @@ export function UpdateTenantDialog({
             const dataValue = data[key]
             const originalValue = originalValues.current![key]
             if (dataValue !== originalValue) {
-                (changedFields as any)[key] = dataValue // type assertion para evitar error TS7053
+                (changedFields as any)[key] = dataValue
             } else {
                 (errors as any)[key] = "No se detectaron cambios en este campo."
             }
         })
 
-        // Si no hay ningún campo cambiado, muestra errores en todos los campos
         if (Object.keys(changedFields).length === 0) {
             setFieldErrors(errors)
             return
         }
 
-        setFieldErrors({}) // Limpia errores si hay cambios
+        setFieldErrors({})
 
         try {
-            // Solo envía los campos que cambiaron
             await onSubmit(changedFields)
+            toast.success("Empresa actualizada exitosamente")
             form.reset()
             setSelectedCountry(0)
             setSelectedDepartment(0)
             onOpenChange(false)
         } catch (error) {
+            toast.error("Error actualizando empresa")
             console.error("Error updating tenant:", error)
         }
     }

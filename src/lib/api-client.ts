@@ -1,8 +1,7 @@
+import { envs } from "@/config/env"
 import type { ApiResponse } from "@/types/api"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
-
-console.log('API_BASE_URL:', API_BASE_URL) // 👈 Agrega esto temporalmente
+const API_BASE_URL = envs.apiUrl
 
 if (!API_BASE_URL) {
     throw new Error("NEXT_PUBLIC_API_URL is not defined in environment variables")

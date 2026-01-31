@@ -1,4 +1,4 @@
-export const env = {
+export const envs = {
     apiUrl: process.env.NEXT_PUBLIC_API_URL || '',
     appName: process.env.NEXT_PUBLIC_APP_NAME || 'Facturación Consola',
     appVersion: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
@@ -6,7 +6,7 @@ export const env = {
 
 // Validate required environment variables
 export function validateEnv() {
-    if (!env.apiUrl) {
+    if (!envs.apiUrl) {
         throw new Error('Missing required environment variable: NEXT_PUBLIC_API_URL')
     }
 }
