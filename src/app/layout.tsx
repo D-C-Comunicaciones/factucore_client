@@ -6,7 +6,7 @@ import { Toaster } from 'sonner'
 import { AuthProvider } from '@/contexts/auth-context'
 
 export const metadata: Metadata = {
-    title: 'Facturación Consola - D&C IDEM COMUNICACIONES S.A.S.',
+    title: 'Facturación Electrónica - D&C IDEM COMUNICACIONES S.A.S.',
     description: 'Created by D&C IDEM COMUNICACIONES S.A.S.',
     generator: 'D&C IDEM COMUNICACIONES S.A.S.',
     icons: {
