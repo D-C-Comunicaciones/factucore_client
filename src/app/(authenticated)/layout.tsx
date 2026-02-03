@@ -12,6 +12,7 @@ import {
     Inbox
 } from 'lucide-react';
 import type { SidebarMenuItem } from '@/components/Sidebar';
+import '../../styles/sidebar.css';
 
 export default function AuthenticatedLayout({
     children,
@@ -30,14 +31,20 @@ export default function AuthenticatedLayout({
 
     // Handlers
     const onToggleMenu = useCallback((menu: string) => {
-        setExpandedMenus((prev) => ({ ...prev, [menu]: !prev[menu] }));
+        setExpandedMenus((prev) => {
+            const isCurrentlyExpanded = prev[menu];
+            // Si el menú actual está expandido, lo cierra
+            if (isCurrentlyExpanded) {
+                return { ...prev, [menu]: false };
+            }
+            // Si no, cierra todos los demás y abre solo este
+            return { [menu]: true };
+        });
     }, []);
     const onNavigate = useCallback((view: string) => {
-        // Implement navigation logic here, e.g., router.push(`/authenticated/${view}`)
-        // For now, just close mobile menu if open
         setIsMobileMenuOpen(false);
-        // Example: router.push(`/authenticated/${view}`)
-    }, []);
+        router.push(view); // <-- Navega a la ruta recibida
+    }, [router]);
     const onHoverSubmenu = useCallback((key: string | null) => {
         setHoveredSubmenu(key);
     }, []);
@@ -74,7 +81,7 @@ export default function AuthenticatedLayout({
             path: '/ingresos',
             expandable: true,
             submenu: [
-                { icon: FileText, label: 'Factura de venta', path: '/ingresos/factura-venta' },
+                { icon: FileText, label: 'Factura de venta', path: '/invoices' },
                 { icon: FileText, label: 'Facturas de venta recurrentes', path: '/ingresos/facturas-recurrentes' },
                 { icon: FileText, label: 'Pagos recibidos', path: '/ingresos/pagos-recibidos' },
                 { icon: FileText, label: 'Devoluciones en ventas', path: '/ingresos/devoluciones' },
@@ -124,7 +131,7 @@ export default function AuthenticatedLayout({
     ];
 
     // Responsive sidebar width
-    const sidebarWidth = isCollapsed ? 64 : 256; // px
+    const sidebarWidth = isCollapsed ? 48 : 256; // px (12 * 4 = 48px)
 
     // Responsive margin for main content
     const mainStyle = {

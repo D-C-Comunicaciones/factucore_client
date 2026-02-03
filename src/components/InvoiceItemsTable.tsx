@@ -13,14 +13,14 @@ interface FacturaItem {
   total: number;
 }
 
-interface FacturaItemsTableProps {
+interface InvoiceItemsTableProps {
   items: FacturaItem[];
   onAddItem: () => void;
   onUpdateItem?: (id: number, field: string, value: any) => void;
   onRemoveItem?: (id: number) => void;
 }
 
-export function FacturaItemsTable({ items, onAddItem }: FacturaItemsTableProps) {
+export function InvoiceItemsTable({ items, onAddItem }: InvoiceItemsTableProps) {
   return (
     <div>
       <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">

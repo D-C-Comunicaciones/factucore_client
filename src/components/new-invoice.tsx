@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Settings, HelpCircle, X, Plus, Info, ChevronDown } from 'lucide-react';
-import { FacturaItemsTable } from './FacturaItemsTable';
+import { InvoiceItemsTable } from './InvoiceItemsTable';
 
-interface NuevaFacturaViewProps {
+interface NewInvoiceViewProps {
   onNavigate: (view: string) => void;
 }
 
-interface FacturaItem {
+interface InvoiceItem {
   id: number;
   item: string;
   referencia: string;
@@ -18,8 +18,8 @@ interface FacturaItem {
   total: number;
 }
 
-export function NuevaFacturaView({ onNavigate }: NuevaFacturaViewProps) {
-  const [facturaItems, setFacturaItems] = useState<FacturaItem[]>([
+export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
+  const [invoiceItems, setinvoiceItems] = useState<InvoiceItem[]>([
     { id: 1, item: '', referencia: '', precio: '', descuento: '', impuesto: '', descripcion: '', cantidad: 0, total: 0 },
     { id: 2, item: '', referencia: '', precio: '', descuento: '', impuesto: '', descripcion: '', cantidad: 0, total: 0 },
     { id: 3, item: '', referencia: '', precio: '', descuento: '', impuesto: '', descripcion: '', cantidad: 0, total: 0 }
@@ -27,8 +27,8 @@ export function NuevaFacturaView({ onNavigate }: NuevaFacturaViewProps) {
   const [showEmitirMenu, setShowEmitirMenu] = useState(false);
 
   const handleAddItem = () => {
-    const newItem: FacturaItem = {
-      id: facturaItems.length + 1,
+    const newItem: InvoiceItem = {
+      id: invoiceItems.length + 1,
       item: '',
       referencia: '',
       precio: '',
@@ -38,7 +38,7 @@ export function NuevaFacturaView({ onNavigate }: NuevaFacturaViewProps) {
       cantidad: 0,
       total: 0
     };
-    setFacturaItems([...facturaItems, newItem]);
+    setinvoiceItems([...invoiceItems, newItem]);
   };
 
   return (
@@ -240,7 +240,7 @@ export function NuevaFacturaView({ onNavigate }: NuevaFacturaViewProps) {
         </button>
 
         {/* Tabla de items */}
-        <FacturaItemsTable items={facturaItems} onAddItem={handleAddItem} />
+        <InvoiceItemsTable items={invoiceItems} onAddItem={handleAddItem} />
 
         {/* Sección inferior */}
         <div className="grid grid-cols-2 gap-8">

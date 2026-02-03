@@ -18,50 +18,50 @@ export function Header({
   onToggleSidebarCollapse
 }: HeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-1.5 flex items-center justify-between sticky top-0 z-30">
-      <div className="flex items-center gap-2 md:gap-4 flex-1">
+    <header className="bg-white border-b border-gray-200 px-2 md:px-3 py-1 flex items-center justify-between sticky top-0 z-30 h-12">
+      <div className="flex items-center gap-1 md:gap-2 flex-1">
         {/* Mobile menu button */}
         <button
           onClick={onToggleSidebar}
-          className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
+          className="p-1 hover:bg-gray-100 rounded-lg lg:hidden"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 md:w-5 md:h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search className="w-3 h-3 md:w-4 md:h-4 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Buscar"
-            className="w-full pl-9 md:pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full pl-7 md:pl-8 pr-3 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
-        <button className="p-2 hover:bg-gray-100 rounded-lg hidden md:block">
-          <Plus className="w-5 h-5" />
+        <button className="p-1 hover:bg-gray-100 rounded-lg hidden md:block">
+          <Plus className="w-4 h-4" />
         </button>
       </div>
-      <div className="flex items-center gap-1 md:gap-2">
-        <button className="p-2 hover:bg-gray-100 rounded-lg hidden md:block">
-          <HelpCircle className="w-5 h-5" />
+      <div className="flex items-center gap-1 md:gap-1">
+        <button className="p-1 hover:bg-gray-100 rounded-lg hidden md:block">
+          <HelpCircle className="w-4 h-4" />
         </button>
-        <button className="p-2 hover:bg-gray-100 rounded-lg">
-          <Bell className="w-5 h-5" />
+        <button className="p-1 hover:bg-gray-100 rounded-lg">
+          <Bell className="w-4 h-4" />
         </button>
-        <button className="p-2 hover:bg-gray-100 rounded-lg hidden sm:block">
-          <Grid3x3 className="w-5 h-5" />
+        <button className="p-1 hover:bg-gray-100 rounded-lg hidden sm:block">
+          <Grid3x3 className="w-4 h-4" />
         </button>
         <button
           onClick={onToggleUserMenu}
-          className="flex items-center gap-2 px-2 md:px-3 py-2 hover:bg-gray-100 rounded-lg relative"
+          className="flex items-center gap-1 px-1 md:px-2 py-1 hover:bg-gray-100 rounded-lg relative"
         >
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
             L
           </div>
-          <span className="text-sm font-medium hidden md:block">LEONES...</span>
-          <ChevronDown className="w-4 h-4 hidden md:block" />
+          <span className="text-xs font-medium hidden md:block">LEONES...</span>
+          <ChevronDown className="w-3 h-3 hidden md:block" />
 
           {showUserMenu && <UserMenu onClose={() => onToggleUserMenu()} />}
         </button>
-        <button className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs font-semibold hidden md:flex">
+        <button className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs font-semibold hidden md:flex">
           A
         </button>
       </div>
