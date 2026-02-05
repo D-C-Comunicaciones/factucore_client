@@ -2,17 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sidebar } from '@/components/Sidebar';
-import { Header } from '@/components/Header';
+import { Sidebar } from '@/components/sidebar/Sidebar';
+import { Header } from '@/components/header/Header';
 import { useAuth } from '@/contexts/auth-context';
-import {
-    Home, FileText, ShoppingBag, Users, Package,
-    Building2, BarChart3, CheckSquare, Settings,
-    ArrowDownLeft,
-    Inbox
-} from 'lucide-react';
-import type { SidebarMenuItem } from '@/components/Sidebar';
-import '../../styles/sidebar.css';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Home, FileText, ShoppingBag, Users, Package, Building2, BarChart3, CheckSquare, Settings, ArrowDownLeft, Inbox } from 'lucide-react';
+import type { SidebarMenuItem } from '@/components/sidebar/Sidebar';
 
 export default function AuthenticatedLayout({
     children,
@@ -28,36 +23,60 @@ export default function AuthenticatedLayout({
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(0);
 
     // Handlers
     const onToggleMenu = useCallback((menu: string) => {
         setExpandedMenus((prev) => {
             const isCurrentlyExpanded = prev[menu];
-            // Si el menú actual está expandido, lo cierra
             if (isCurrentlyExpanded) {
                 return { ...prev, [menu]: false };
             }
-            // Si no, cierra todos los demás y abre solo este
             return { [menu]: true };
         });
     }, []);
+
     const onNavigate = useCallback((view: string) => {
         setIsMobileMenuOpen(false);
-        router.push(view); // <-- Navega a la ruta recibida
+        router.push(view);
     }, [router]);
+
     const onHoverSubmenu = useCallback((key: string | null) => {
         setHoveredSubmenu(key);
     }, []);
+
     const onToggleCollapse = useCallback(() => {
         setIsCollapsed((prev) => !prev);
     }, []);
+
     const onToggleMobileMenu = useCallback(() => {
         setIsMobileMenuOpen((prev) => !prev);
     }, []);
+
     const onToggleUserMenu = useCallback(() => {
         setShowUserMenu((prev) => !prev);
     }, []);
 
+    const onHoverChange = useCallback((isHovered: boolean) => {
+        setIsSidebarHovered(isHovered);
+    }, []);
+
+    // Manejar resize del window - DEBE ESTAR ANTES del early return
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+            if (window.innerWidth >= 1024 && isMobileMenuOpen) {
+                setIsMobileMenuOpen(false);
+            }
+        };
+
+        setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [isMobileMenuOpen]);
+
+    // Auth check - DEBE ESTAR DESPUÉS de todos los otros hooks
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
             router.push('/login');
@@ -131,48 +150,48 @@ export default function AuthenticatedLayout({
     ];
 
     // Responsive sidebar width
-    const sidebarWidth = isCollapsed ? 48 : 256; // px (12 * 4 = 48px)
+    const sidebarWidth = (isCollapsed && !isSidebarHovered) ? 48 : 256;
 
     // Responsive margin for main content
     const mainStyle = {
-        marginLeft: isMobileMenuOpen
-            ? 0 // On mobile, sidebar overlays, no margin
-            : (typeof window !== "undefined" && window.innerWidth >= 1024)
-                ? sidebarWidth
-                : 0
+        marginLeft: windowWidth < 1024 ? 0 : sidebarWidth,
+        width: windowWidth < 1024 ? '100%' : `calc(100% - ${sidebarWidth}px)`,
     };
 
     return (
-        <div className="min-h-screen w-full bg-gray-100">
-            <Sidebar
-                menuItems={menuItems}
-                expandedMenus={expandedMenus}
-                onToggleMenu={onToggleMenu}
-                onNavigate={onNavigate}
-                hoveredSubmenu={hoveredSubmenu}
-                onHoverSubmenu={onHoverSubmenu}
-                isCollapsed={isCollapsed}
-                onToggleCollapse={onToggleCollapse}
-                isMobileMenuOpen={isMobileMenuOpen}
-                onToggleMobileMenu={onToggleMobileMenu}
-            />
-            <main
-                className="flex flex-col min-h-screen transition-all duration-300"
-                style={mainStyle}
-            >
-                <Header
-                    showUserMenu={showUserMenu}
-                    onToggleUserMenu={onToggleUserMenu}
-                    onToggleSidebar={onToggleMobileMenu}
-                    isSidebarCollapsed={isCollapsed}
-                    onToggleSidebarCollapse={onToggleCollapse}
+        <TooltipProvider delayDuration={0}>
+            <div className="min-h-screen w-full bg-gray-100">
+                <Sidebar
+                    menuItems={menuItems}
+                    expandedMenus={expandedMenus}
+                    onToggleMenu={onToggleMenu}
+                    onNavigate={onNavigate}
+                    hoveredSubmenu={hoveredSubmenu}
+                    onHoverSubmenu={onHoverSubmenu}
+                    isCollapsed={isCollapsed}
+                    onToggleCollapse={onToggleCollapse}
+                    isMobileMenuOpen={isMobileMenuOpen}
+                    onToggleMobileMenu={onToggleMobileMenu}
+                    onHoverChange={onHoverChange}
                 />
-                <div className="flex flex-1 flex-col items-center px-2 md:px-4">
-                    <div className="w-full max-w-10xl  rounded-xl p-4 md:p-8">
-                        {children}
+                <main
+                    className="flex flex-col min-h-screen transition-all duration-300"
+                    style={mainStyle}
+                >
+                    <Header
+                        showUserMenu={showUserMenu}
+                        onToggleUserMenu={onToggleUserMenu}
+                        onToggleSidebar={onToggleMobileMenu}
+                        isSidebarCollapsed={isCollapsed}
+                        onToggleSidebarCollapse={onToggleCollapse}
+                    />
+                    <div className="flex flex-1 flex-col items-center px-2 md:px-4">
+                        <div className="w-full max-w-10xl rounded-xl p-4 md:p-8">
+                            {children}
+                        </div>
                     </div>
-                </div>
-            </main>
-        </div>
+                </main>
+            </div>
+        </TooltipProvider>
     );
 }

@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
-import { Toaster } from 'sonner'
+import { CustomToaster } from '@/components/sonner/CustomToaster'
 import { AuthProvider } from '@/contexts/auth-context'
+import { ThemeProvider } from "@/components/ui/theme-provider"
 
 export const metadata: Metadata = {
     title: 'Facturación Electrónica - D&C IDEM COMUNICACIONES S.A.S.',
@@ -24,21 +25,23 @@ export default function RootLayout({
     children: React.ReactNode
 }>) {
     return (
-        <html lang="es">
+        <html lang="es" suppressHydrationWarning>
             <head>
                 <style>{`
-html {
-  font-family: ${GeistSans.style.fontFamily};
-  --font-sans: ${GeistSans.variable};
-  --font-mono: ${GeistMono.variable};
-}
+                    html {
+                    font-family: ${GeistSans.style.fontFamily};
+                    --font-sans: ${GeistSans.variable};
+                    --font-mono: ${GeistMono.variable};
+                    }
         `}</style>
             </head>
-            <body>
+            <body suppressHydrationWarning>
                 <AuthProvider>
+                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                     {children}
-                    <Toaster />
+                    </ThemeProvider>
                 </AuthProvider>
+                <CustomToaster />
             </body>
         </html>
     )

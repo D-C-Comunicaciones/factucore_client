@@ -1,6 +1,6 @@
-import React from 'react';
-import { Menu, Search, Plus, HelpCircle, Bell, Grid3x3, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { UserMenu } from './UserMenu';
+import { Menu, Search, Plus, HelpCircle, Bell, Grid3x3, ChevronDown } from 'lucide-react';
+import { UserMenu } from '../UserMenu';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface HeaderProps {
   showUserMenu: boolean;
@@ -14,8 +14,6 @@ export function Header({
   showUserMenu,
   onToggleUserMenu,
   onToggleSidebar,
-  isSidebarCollapsed,
-  onToggleSidebarCollapse
 }: HeaderProps) {
   return (
     <header className="bg-white border-b border-gray-200 px-2 md:px-3 py-1 flex items-center justify-between sticky top-0 z-30 h-12">
@@ -46,6 +44,7 @@ export function Header({
         <button className="p-1 hover:bg-gray-100 rounded-lg">
           <Bell className="w-4 h-4" />
         </button>
+        {/* <ThemeToggle /> */}
         <button className="p-1 hover:bg-gray-100 rounded-lg hidden sm:block">
           <Grid3x3 className="w-4 h-4" />
         </button>

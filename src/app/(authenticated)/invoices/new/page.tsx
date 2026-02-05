@@ -1,5 +1,5 @@
 "use client";
-import { NewInvoiceView } from "@/components/new-invoice";
+import { NewInvoiceView } from "@/components/invoice/NewInvoiceView";
 
 export default function NuevaFacturaPage() {
   return (

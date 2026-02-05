@@ -129,6 +129,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', 'Roboto', sans-serif;
   }
 
   /**
@@ -138,6 +139,11 @@
 
   html {
     font-size: var(--font-size);
+    font-family: 'Inter', 'Roboto', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', 'Roboto', sans-serif;
   }
 
   h1 {
@@ -168,18 +174,25 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    font-family: 'Inter', 'Roboto', sans-serif;
   }
 
   button {
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    font-family: 'Inter', 'Roboto', sans-serif;
   }
 
-  input {
+  input, textarea, select {
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+    font-family: 'Inter', 'Roboto', sans-serif;
+  }
+
+  p, span, div, a {
+    font-family: 'Inter', 'Roboto', sans-serif;
   }
 
   /* Hide scrollbar globally for navigation elements */
@@ -201,5 +214,40 @@
 
 html,
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Roboto', sans-serif;
+}
+
+/* Sonner toast close button fix */
+[data-sonner-toast] [data-close-button] {
+  position: relative !important;
+  z-index: 999 !important;
+}
+
+[data-sonner-toast] button[data-close-button] {
+  position: relative !important;
+  z-index: 999 !important;
+  background-color: #f3f4f6 !important;
+  opacity: 1 !important;
+}
+
+/* Custom Sonner toast styles */
+[data-sonner-toast] {
+  font-family: inherit !important;
+}
+
+[data-sonner-toast] [data-close-button] {
+  position: absolute !important;
+  top: 0.5rem !important;
+  right: 0.5rem !important;
+  z-index: 100 !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+}
+
+[data-sonner-toast] [data-description] {
+  font-size: 0.75rem !important;
+  margin-top: 0.25rem !important;
 }
