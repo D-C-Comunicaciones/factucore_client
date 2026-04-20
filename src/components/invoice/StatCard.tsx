@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import type { InvoiceStats } from "@/data/InvoiceMockData";
+import type { InvoiceStats } from "@/data/invoiceMockData";
 
 interface StatCardProps {
   stat: InvoiceStats;
@@ -9,11 +9,16 @@ export function StatCard({ stat }: StatCardProps) {
   const Icon = stat.icon;
 
   return (
-    <Card className="border-gray-200">
+    <Card
+      className="border border-gray-200 transition-all duration-150 hover:border-primary focus-within:border-primary outline-none"
+      tabIndex={0}
+    >
       <CardContent className="p-6">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 ${stat.iconBgColor} rounded-full flex items-center justify-center flex-shrink-0`}>
-            <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+          <div
+            className={`w-10 h-10 ${stat.iconBgColor || 'bg-gray-100'} flex items-center justify-center flex-shrink-0 rounded-full`}
+          >
+            <Icon className="w-5 h-5 text-gray-500" />
           </div>
           <div>
             <div className="text-xs text-gray-600 mb-0.5">{stat.label}</div>

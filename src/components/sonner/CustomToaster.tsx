@@ -9,7 +9,6 @@ export function CustomToaster(props: ToasterProps) {
       position="bottom-right"
       expand={false}
       richColors
-      closeButton
       toastOptions={{
         classNames: {
           toast:
@@ -19,8 +18,6 @@ export function CustomToaster(props: ToasterProps) {
             "bg-teal-500 text-white hover:bg-teal-600",
           cancelButton:
             "bg-gray-100 text-gray-600 hover:bg-gray-200",
-          closeButton:
-            "!bg-red-50 !text-red-600 !border-0 hover:!bg-red-100 hover:!text-red-700 !opacity-100 !w-5 !h-5 !absolute !top-2 !right-2 !rounded",
           success:
             "bg-green-50 text-green-800 border-green-300",
           error:

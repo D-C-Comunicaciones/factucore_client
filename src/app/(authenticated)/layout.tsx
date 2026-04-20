@@ -186,7 +186,7 @@ export default function AuthenticatedLayout({
                         onToggleSidebarCollapse={onToggleCollapse}
                     />
                     <div className="flex flex-1 flex-col items-center px-2 md:px-4">
-                        <div className="w-full max-w-10xl rounded-xl p-4 md:p-8">
+                        <div className="w-full max-w-10xl rounded-xl p-4 md:p-8 bg-gray">
                             {children}
                         </div>
                     </div>

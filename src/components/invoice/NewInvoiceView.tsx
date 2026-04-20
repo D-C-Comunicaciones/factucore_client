@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Settings, HelpCircle, X, Plus, Info, ChevronDown } from 'lucide-react';
-import { InvoiceItemsTable } from './InvoiceItemsTable';
+import { InvoiceItemsTable } from './new/InvoiceItemsTable';
 
 interface NewInvoiceViewProps {
   onNavigate: (view: string) => void;
@@ -18,7 +18,7 @@ interface InvoiceItem {
   total: number;
 }
 
-export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
+export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
   const [invoiceItems, setinvoiceItems] = useState<InvoiceItem[]>([
     { id: 1, item: '', referencia: '', precio: '', descuento: '', impuesto: '', descripcion: '', cantidad: 0, total: 0 },
     { id: 2, item: '', referencia: '', precio: '', descuento: '', impuesto: '', descripcion: '', cantidad: 0, total: 0 },
@@ -94,7 +94,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
               Vendedor
               <HelpCircle className="w-3 h-3 text-gray-400" />
             </label>
-            <input 
+            <input
               type="text"
               placeholder="Buscar..."
               className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -105,7 +105,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
               Orden de compra
               <HelpCircle className="w-3 h-3 text-gray-400" />
             </label>
-            <input 
+            <input
               type="text"
               className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
@@ -115,7 +115,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
               Orden de entrega
               <HelpCircle className="w-3 h-3 text-gray-400" />
             </label>
-            <input 
+            <input
               type="text"
               className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
@@ -131,7 +131,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
             <div className="text-gray-400 font-medium mb-1">Utilizar mi logo</div>
             <div className="text-xs text-gray-400">176 × 51 pixeles</div>
           </div>
-          
+
           <div className="text-center">
             <h2 className="text-xl font-bold text-gray-800 mb-1">
               LEONES PALACIO ANDRES FELIPE
@@ -139,7 +139,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
             <div className="text-sm text-gray-600">NIT: 1143263398</div>
             <div className="text-sm text-gray-600">leones1997@live.com</div>
           </div>
-          
+
           <div className="text-right">
             <div className="mb-2">
               <select className="text-sm border-0 text-gray-600 focus:outline-none focus:ring-0">
@@ -168,7 +168,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
                 <option>NIT</option>
                 <option>CE</option>
               </select>
-              <input 
+              <input
                 type="text"
                 placeholder="Buscar Nº de ID"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -180,7 +180,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
               Fecha <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <input 
+              <input
                 type="date"
                 defaultValue="2026-01-07"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -197,7 +197,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Nombre o razón social <span className="text-red-500">*</span>
             </label>
-            <input 
+            <input
               type="text"
               placeholder="Seleccionar cliente"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -216,7 +216,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Correo
             </label>
-            <input 
+            <input
               type="email"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
@@ -262,7 +262,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
                 Términos y condiciones
                 <HelpCircle className="w-3 h-3 text-gray-400" />
               </label>
-              <textarea 
+              <textarea
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 defaultValue="Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el Art. 774 del código de comercio. Autorizo que en caso de incumplimiento de esta obligación sea reportado a las centrales de riesgo, se cobrarán intereses por mora..."
@@ -274,7 +274,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
                 Notas
                 <HelpCircle className="w-3 h-3 text-gray-400" />
               </label>
-              <textarea 
+              <textarea
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
@@ -340,7 +340,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
           Los campos marcados con <span className="text-red-500">*</span> son obligatorios
         </div>
         <div className="flex items-center justify-center gap-3">
-          <button 
+          <button
             onClick={() => onNavigate('facturas-venta')}
             className="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium transition-colors"
           >
@@ -353,7 +353,7 @@ export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
             Emitir y crear nueva
           </button>
           <div className="relative">
-            <button 
+            <button
               onClick={() => setShowEmitirMenu(!showEmitirMenu)}
               className="px-6 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
             >

@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { IconLoader, IconUser } from "@tabler/icons-react"
 import Image from "next/image"
+import { envs } from "@/config/env"
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -39,8 +40,8 @@ export default function LoginPage() {
   }
 
   const fillTestUser = () => {
-    setEmail("admin@master.com")
-    setPassword("password")
+    setEmail(envs.testUserEmail || "")
+    setPassword(envs.testUserPassword || "")
   }
 
   return (

@@ -7,17 +7,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
 
 interface InvoicePageHeaderProps {
   onNavigate?: (view: string) => void;
 }
 
 export function InvoicePageHeader({ onNavigate }: InvoicePageHeaderProps) {
+  const router = useRouter();
+
   return (
     <div className="mb-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
         <h1 className="text-lg md:text-xl font-bold">Facturas de venta</h1>
-        
+
         <div className="flex items-center gap-2">
           {/* Botón Más acciones */}
           <DropdownMenu>
@@ -53,7 +56,12 @@ export function InvoicePageHeader({ onNavigate }: InvoicePageHeaderProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuItem onClick={() => onNavigate?.('crear-manualmente')}>
+              <DropdownMenuItem
+                onClick={() => {
+                  router.push("/invoices/new");
+                  onNavigate?.("crear-manualmente");
+                }}
+              >
                 <FileEdit className="w-4 h-4 mr-2" />
                 Crear manualmente
               </DropdownMenuItem>

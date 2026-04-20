@@ -1,4 +1,4 @@
-import { FileText, Bell, TrendingUp } from 'lucide-react';
+import { X, MessageCircle, Clock } from 'lucide-react';
 
 export interface InvoiceStats {
   icon: React.ElementType;
@@ -10,25 +10,25 @@ export interface InvoiceStats {
 
 export const invoiceStatsMock: InvoiceStats[] = [
   {
-    icon: FileText,
+    icon: X,
     label: 'Sin emisión',
     value: 12,
-    iconBgColor: 'bg-blue-100',
-    iconColor: 'text-blue-600'
+    iconBgColor: '',
+    iconColor: ''
   },
   {
-    icon: Bell,
+    icon: MessageCircle,
     label: 'Sin envío al cliente',
     value: 5,
-    iconBgColor: 'bg-amber-100',
-    iconColor: 'text-amber-600'
+    iconBgColor: '',
+    iconColor: ''
   },
   {
-    icon: TrendingUp,
+    icon: Clock,
     label: 'En proceso',
     value: 8,
-    iconBgColor: 'bg-teal-100',
-    iconColor: 'text-teal-600'
+    iconBgColor: '',
+    iconColor: ''
   }
 ];
 
