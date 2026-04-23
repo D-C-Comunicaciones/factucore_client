@@ -1,22 +1,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-    CalendarDays,
-    Clock,
-    MessageSquare,
-    BadgeCheck,
-    Funnel,
-    Hash,
-    CheckCircle,
-    Circle,
-    ListOrdered,
-} from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CalendarDays, Clock, BadgeCheck, Funnel, CheckCircle, ListOrdered } from "lucide-react";
 
 interface FilterOption {
     label: string;
@@ -33,32 +18,32 @@ interface InvoiceFilterProps {
 export const defaultFilterOptions: FilterOption[] = [
     {
         label: "Fecha de creación",
-        value: "fecha_creacion",
+        value: "created_at",
         icon: CalendarDays,
     },
     {
         label: "Fecha de vencimiento",
-        value: "fecha_vencimiento",
+        value: "payment_due_date",
         icon: CalendarDays,
     },
     {
         label: "Estado DIAN",
-        value: "estado_dian",
+        value: "status_dian",
         icon: CheckCircle,
     },
     {
         label: "Facturas vencidas",
-        value: "facturas_vencidas",
+        value: "overdue",
         icon: Clock,
     },
     {
         label: "Estado",
-        value: "estado",
+        value: "status",
         icon: BadgeCheck,
     },
     {
         label: "Número de factura",
-        value: "numero_factura",
+        value: "number",
         icon: ListOrdered,
     },
 ];

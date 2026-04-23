@@ -16,14 +16,18 @@ const INVOICES_KEY = ["invoices"] as const;
 const INVOICE_KEY = (id: number | string) => ["invoice", id] as const;
 
 // =========================
-// 📌 LIST (FIXED + CONSISTENT)
+// 📌 LIST
 // =========================
-export function useInvoicesList(options?: { filters?: Record<string, any> }) {
+export function useInvoicesList(options?: { params?: Record<string, any>; enabled?: boolean }) {
+
+    const paramsKey = JSON.stringify(options?.params ?? {});
+    const enabled = options?.enabled ?? true;
+
     return useQuery<ApiResponse<InvoiceFindAllSuccess>, Error, InvoiceFindAllSuccess>({
-        queryKey: ["invoices", options?.filters ? JSON.stringify(options.filters) : undefined],
+        queryKey: ["invoices", paramsKey],
 
         queryFn: async () => {
-            const res = await InvoicesService.list(options?.filters);
+            const res = await InvoicesService.list(options?.params);
 
             if (!res || res.status !== "success") {
                 throw new Error(res?.message || "Error al obtener facturas");
@@ -32,10 +36,13 @@ export function useInvoicesList(options?: { filters?: Record<string, any> }) {
             return res;
         },
 
-        // 👇 IMPORTANTE: aquí extraes SOLO data (no res completo)
         select: (res) => res.data,
 
-        placeholderData: (prev) => prev,
+        enabled: enabled,
+        staleTime: 0,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
     });
 }
 // =========================

@@ -1,0 +1,304 @@
+"use client";
+
+import * as React from "react";
+import { Table, ColumnFiltersState } from "@tanstack/react-table";
+import { Funnel, Search, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DateFilterPopoverInline } from "@/components/invoice/DateFilterPopoverInline";
+import { defaultFilterOptions } from "@/components/invoice/InvoiceFilter";
+import type { InvoiceSummary } from "@/types/invoice";
+
+/* -----------------------------------------------------------------------
+   Constantes de etiquetas e íconos por columna
+   ----------------------------------------------------------------------- */
+const filterLabels: Record<string, string> = {
+  customer: "Cliente",
+  number: "Número",
+  created_at: "Fecha de creación",
+  payment_due_date: "Fecha de vencimiento",
+  status: "Estado",
+  status_dian: "Estado DIAN",
+  total: "Total",
+  pending_amount: "Por cobrar",
+  overdue: "Facturas vencidas",
+};
+
+const filterIcons: Record<string, React.ReactNode> = {
+  customer: <Search className="w-4 h-4 mr-1 text-gray-400" />,
+  number: (
+    <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
+      <rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
+      <text x="10" y="14" textAnchor="middle" fontSize="8" fill="currentColor">#</text>
+    </svg>
+  ),
+  created_at: (
+    <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
+      <rect x="3" y="5" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path d="M7 2v3M13 2v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="10" cy="11" r="2" fill="currentColor" />
+    </svg>
+  ),
+  payment_due_date: (
+    <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
+      <rect x="3" y="5" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path d="M7 2v3M13 2v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="14" cy="11" r="2" fill="currentColor" />
+    </svg>
+  ),
+  status: (
+    <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
+      <rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path d="M7 10h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+  status_dian: (
+    <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path d="M7 10.5l2 2 4-4" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  overdue: (
+    <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path d="M10 6v4l2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+};
+
+/* -----------------------------------------------------------------------
+   Mapeo de opción de filtro → id de columna
+   ----------------------------------------------------------------------- */
+export const filterValueToColumnId: Record<string, string> = {
+  created_at: "created_at",
+  payment_due_date: "payment_due_date",
+  status_dian: "status_dian",
+  overdue: "overdue",
+  status: "status",
+  number: "number",
+};
+
+/* -----------------------------------------------------------------------
+   Props
+   ----------------------------------------------------------------------- */
+interface FilterChipsProps {
+  columnFilters: ColumnFiltersState;
+  setColumnFilters: (filters: ColumnFiltersState) => void;
+  table: Table<InvoiceSummary>;
+  onAddFilter: (filterValue: string) => void;
+}
+
+/* -----------------------------------------------------------------------
+   Componente
+   ----------------------------------------------------------------------- */
+export function FilterChips({
+  columnFilters,
+  setColumnFilters,
+  table,
+  onAddFilter,
+}: FilterChipsProps) {
+  const [showPlusFilter, setShowPlusFilter] = React.useState(false);
+
+  if (columnFilters.length === 0) return null;
+
+  function removeFilter(id: string) {
+    setColumnFilters(columnFilters.filter((f) => f.id !== id));
+  }
+
+  function removeAllFilters() {
+    columnFilters.forEach((f) => {
+      const col = table.getColumn(f.id);
+      if (col) {
+        col.setFilterValue("");
+      }
+    });
+    setColumnFilters([]);
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-t border-b border-gray-200 bg-white relative">
+      {columnFilters.map((filter) => {
+        const isDate = filter.id === "created_at" || filter.id === "payment_due_date";
+
+        return (
+          <DropdownMenu key={filter.id}>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={`inline-flex items-center px-3 py-1 rounded-full border ${isDate ? "border-teal-300 bg-[#f8ffff]" : "border-gray-300 bg-white"
+                  } text-xs text-gray-700 font-medium shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition`}
+                type="button"
+              >
+                {filterIcons[filter.id] ?? <Funnel className="w-4 h-4 mr-1 text-gray-400" />}
+                <span className="mr-1">{filterLabels[filter.id] ?? filter.id}</span>
+                <span className="font-normal text-gray-500">
+                  {isDate && typeof filter.value === "string" && filter.value
+                    ? (() => {
+                      const d = new Date(filter.value);
+                      return !isNaN(d.getTime()) ? d.toLocaleDateString() : "";
+                    })()
+                    : typeof filter.value === "string" && filter.value
+                      ? filter.value
+                      : ""}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="start" sideOffset={4} className="min-w-[220px]">
+              {/* Encabezado del dropdown con botón eliminar */}
+              <div className="flex items-center justify-between px-3 pt-2 pb-1 text-xs font-semibold text-gray-600">
+                {filterLabels[filter.id] ?? filter.id}
+                <button
+                  className="ml-2 flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition p-0 w-6 h-6 border border-gray-300"
+                  style={{ borderRadius: 6 }}
+                  onClick={() => removeFilter(filter.id)}
+                  title="Quitar filtro"
+                >
+                  <Trash2 className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              {/* Filtro de fecha */}
+              {isDate && (
+                <DateFilterPopoverInline
+                  filter={filter}
+                  setFilterValue={(val) => table.getColumn(filter.id)?.setFilterValue(val)}
+                />
+              )}
+
+              {/* Filtro de estado */}
+              {filter.id === "status" && (
+                <div className="flex flex-col gap-1 px-3 py-2">
+                  {["Por cobrar", "Cobrada", "Anulada", "Borrador", "Enviada", "Guardada"].map((opt) => (
+                    <label key={opt} className="flex items-center gap-2 text-xs cursor-pointer">
+                      <Checkbox
+                        checked={
+                          Array.isArray(filter.value)
+                            ? filter.value.includes(opt)
+                            : filter.value === opt
+                        }
+                        onCheckedChange={(checked) => {
+                          let newValue: string[] = Array.isArray(filter.value)
+                            ? [...filter.value]
+                            : filter.value
+                              ? [filter.value as string]
+                              : [];
+                          if (checked) {
+                            if (!newValue.includes(opt)) newValue.push(opt);
+                          } else {
+                            newValue = newValue.filter((v) => v !== opt);
+                          }
+                          table.getColumn(filter.id)?.setFilterValue(newValue);
+                        }}
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Filtro de estado DIAN */}
+              {filter.id === "status_dian" && (
+                <div className="flex flex-col gap-1 px-3 py-2">
+                  {["Aprobada", "No aprobada", "En proceso"].map((opt) => (
+                    <label key={opt} className="flex items-center gap-2 text-xs cursor-pointer">
+                      <Checkbox
+                        checked={
+                          Array.isArray(filter.value)
+                            ? filter.value.includes(opt)
+                            : filter.value === opt
+                        }
+                        onCheckedChange={(checked) => {
+                          let newValue: string[] = Array.isArray(filter.value)
+                            ? [...filter.value]
+                            : filter.value
+                              ? [filter.value as string]
+                              : [];
+                          if (checked) {
+                            if (!newValue.includes(opt)) newValue.push(opt);
+                          } else {
+                            newValue = newValue.filter((v) => v !== opt);
+                          }
+                          table.getColumn(filter.id)?.setFilterValue(newValue);
+                        }}
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Filtro de número de factura */}
+              {filter.id === "number" && (
+                <div className="px-3 py-2">
+                  <input
+                    className="w-full border rounded px-2 py-1 text-xs"
+                    placeholder="Número de factura"
+                    value={filter.value as string}
+                    onChange={(e) => table.getColumn(filter.id)?.setFilterValue(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Facturas vencidas */}
+              {filter.id === "overdue" && (
+                <div className="px-3 py-2 text-xs">Facturas vencidas</div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      })}
+
+      {/* Botón + para agregar más filtros */}
+      {columnFilters.length < defaultFilterOptions.length && (
+        <DropdownMenu open={showPlusFilter} onOpenChange={setShowPlusFilter}>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-gray-200 bg-[#f5f7fa] text-gray-500 hover:bg-gray-100 focus:outline-none ml-1"
+              title="Agregar filtro"
+              type="button"
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="9" fill="none" />
+                <path d="M10 6v8M6 10h8" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" sideOffset={4} className="min-w-[180px]">
+            <div className="px-3 py-2 text-xs text-muted-foreground font-semibold">Filtrar Por</div>
+            {defaultFilterOptions.map((opt) => {
+              const columnId = filterValueToColumnId[opt.value];
+              if (columnFilters.some((f) => f.id === columnId)) return null;
+              const Icon = opt.icon;
+              return (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onClick={() => {
+                    onAddFilter(opt.value);
+                    setShowPlusFilter(false);
+                  }}
+                >
+                  <Icon className="w-4 h-4 mr-2" />
+                  {opt.label}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {/* Remover todos los filtros */}
+      <button
+        className="ml-auto text-xs text-black font-medium px-2 py-1 rounded focus:outline-none hover:no-underline"
+        style={{ textDecoration: "none" }}
+        onClick={removeAllFilters}
+      >
+        Remover filtros
+      </button>
+    </div>
+  );
+}
