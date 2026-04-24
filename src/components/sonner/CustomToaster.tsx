@@ -15,7 +15,7 @@ export function CustomToaster(props: ToasterProps) {
             "group toast bg-white text-gray-950 border-gray-200 shadow-lg",
           description: "text-gray-600",
           actionButton:
-            "bg-teal-500 text-white hover:bg-teal-600",
+            "bg-primary text-primary-foreground hover:bg-primary/90",
           cancelButton:
             "bg-gray-100 text-gray-600 hover:bg-gray-200",
           success:
@@ -25,7 +25,7 @@ export function CustomToaster(props: ToasterProps) {
           warning:
             "bg-amber-50 text-amber-800 border-amber-300",
           info:
-            "bg-blue-50 text-blue-800 border-blue-300",
+            "bg-primary/10 text-primary border-primary/30",
         },
       }}
       {...props}

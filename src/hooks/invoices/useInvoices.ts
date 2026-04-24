@@ -18,13 +18,16 @@ const INVOICE_KEY = (id: number | string) => ["invoice", id] as const;
 // =========================
 // 📌 LIST
 // =========================
-export function useInvoicesList(options?: { params?: Record<string, any>; enabled?: boolean }) {
+export function useInvoicesList(options?: { params?: Record<string, any>; enabled?: boolean; fetchKey?: number }) {
 
     const paramsKey = JSON.stringify(options?.params ?? {});
+    const page = options?.params?.current_page ?? 1;
+    const perPage = options?.params?.per_page ?? 10;
+    const fetchKey = options?.fetchKey ?? 0;
     const enabled = options?.enabled ?? true;
 
     return useQuery<ApiResponse<InvoiceFindAllSuccess>, Error, InvoiceFindAllSuccess>({
-        queryKey: ["invoices", paramsKey],
+        queryKey: ["invoices", paramsKey, page, perPage, fetchKey],
 
         queryFn: async () => {
             const res = await InvoicesService.list(options?.params);

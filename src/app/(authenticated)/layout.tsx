@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar/Sidebar';
 import { Header } from '@/components/header/Header';
+import { DocumentTitleUpdater } from '@/components/DocumentTitleUpdater';
 import { useAuth } from '@/contexts/auth-context';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Home, FileText, ShoppingBag, Users, Package, Building2, BarChart3, CheckSquare, Settings, ArrowDownLeft, Inbox } from 'lucide-react';
@@ -125,7 +126,7 @@ export default function AuthenticatedLayout({
                 { icon: FileText, label: 'Recepción de comprobantes', path: '/gastos/recepcion-comprobantes' }
             ]
         },
-        { icon: Users, label: 'Contactos', path: '/contactos', expandable: true, submenu: [] },
+        { icon: Users, label: 'Contactos', path: '/contacts' },
         {
             icon: Package,
             label: 'Inventario',
@@ -150,7 +151,7 @@ export default function AuthenticatedLayout({
     ];
 
     // Responsive sidebar width
-    const sidebarWidth = (isCollapsed && !isSidebarHovered) ? 48 : 256;
+    const sidebarWidth = (isCollapsed && !isSidebarHovered) ? 64 : 288;
 
     // Responsive margin for main content
     const mainStyle = {
@@ -160,7 +161,9 @@ export default function AuthenticatedLayout({
 
     return (
         <TooltipProvider delayDuration={0}>
-            <div className="min-h-screen w-full bg-gray-100">
+            <div className="flex min-h-screen w-full bg-gray">
+
+                {/* SIDEBAR */}
                 <Sidebar
                     menuItems={menuItems}
                     expandedMenus={expandedMenus}
@@ -174,10 +177,10 @@ export default function AuthenticatedLayout({
                     onToggleMobileMenu={onToggleMobileMenu}
                     onHoverChange={onHoverChange}
                 />
-                <main
-                    className="flex flex-col min-h-screen transition-all duration-300"
-                    style={mainStyle}
-                >
+
+                {/* CONTENIDO */}
+                <div className="flex flex-col flex-1 min-w-0">
+
                     <Header
                         showUserMenu={showUserMenu}
                         onToggleUserMenu={onToggleUserMenu}
@@ -185,12 +188,14 @@ export default function AuthenticatedLayout({
                         isSidebarCollapsed={isCollapsed}
                         onToggleSidebarCollapse={onToggleCollapse}
                     />
-                    <div className="flex flex-1 flex-col items-center px-2 md:px-4">
+
+                    <main className="flex flex-1 flex-col items-center px-2 md:px-4">
                         <div className="w-full max-w-10xl rounded-xl p-4 md:p-8 bg-gray">
                             {children}
                         </div>
-                    </div>
-                </main>
+                    </main>
+
+                </div>
             </div>
         </TooltipProvider>
     );

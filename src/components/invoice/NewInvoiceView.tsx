@@ -64,7 +64,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
               Tipo de documento
             </label>
             <div className="flex gap-2">
-              <button className="flex-1 h-[42px] px-3 py-2 bg-teal-500 text-white rounded-lg text-sm font-medium">
+              <button className="flex-1 h-[42px] px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
                 Factura de venta
               </button>
               <button className="flex-1 h-[42px] px-3 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-sm">
@@ -76,7 +76,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Bodega
             </label>
-            <select className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <select className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60">
               <option>Principal</option>
             </select>
           </div>
@@ -85,7 +85,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
               Lista de precios
               <HelpCircle className="w-3 h-3 text-gray-400" />
             </label>
-            <select className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <select className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60">
               <option>General</option>
             </select>
           </div>
@@ -97,7 +97,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
             <input
               type="text"
               placeholder="Buscar..."
-              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
             />
           </div>
           <div>
@@ -107,7 +107,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
             </label>
             <input
               type="text"
-              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
             />
           </div>
           <div>
@@ -117,7 +117,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
             </label>
             <input
               type="text"
-              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
             />
           </div>
         </div>
@@ -163,7 +163,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
               Documento <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-2">
-              <select className="w-20 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <select className="w-20 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60">
                 <option>CC</option>
                 <option>NIT</option>
                 <option>CE</option>
@@ -171,7 +171,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
               <input
                 type="text"
                 placeholder="Buscar Nº de ID"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
               />
             </div>
           </div>
@@ -183,7 +183,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
               <input
                 type="date"
                 defaultValue="2026-01-07"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
               />
               <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded">
                 <X className="w-4 h-4 text-gray-400" />
@@ -200,14 +200,14 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
             <input
               type="text"
               placeholder="Seleccionar cliente"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Forma de pago <span className="text-red-500">*</span>
             </label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60">
               <option>Contado</option>
               <option>Crédito</option>
             </select>
@@ -218,14 +218,14 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
             </label>
             <input
               type="email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Medio de pago <span className="text-red-500">*</span>
             </label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60">
               <option>Seleccionar</option>
               <option>Efectivo</option>
               <option>Transferencia</option>
@@ -234,7 +234,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
           </div>
         </div>
 
-        <button className="text-teal-600 hover:text-teal-700 text-sm font-medium flex items-center gap-1 mb-6">
+        <button className="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 mb-6">
           <Plus className="w-4 h-4" />
           Nuevo contacto
         </button>
@@ -246,7 +246,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
         <div className="grid grid-cols-2 gap-8">
           {/* Izquierda - Firma y términos */}
           <div className="space-y-6">
-            <button className="text-teal-600 hover:text-teal-700 text-sm font-medium flex items-center gap-1">
+            <button className="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1">
               <Plus className="w-4 h-4" />
               Agregar remisión
               <HelpCircle className="w-3 h-3 text-gray-400" />
@@ -264,7 +264,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
               </label>
               <textarea
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
                 defaultValue="Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el Art. 774 del código de comercio. Autorizo que en caso de incumplimiento de esta obligación sea reportado a las centrales de riesgo, se cobrarán intereses por mora..."
               />
             </div>
@@ -276,7 +276,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
               </label>
               <textarea
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
               />
             </div>
 
@@ -317,7 +317,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
               Si te hicieron un pago asociado a esta venta puedes hacer aquí su registro.
             </p>
           </div>
-          <button className="text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1">
+          <button className="text-primary hover:text-primary/80 font-medium flex items-center gap-1">
             <Plus className="w-4 h-4" />
             Agregar pago
           </button>
@@ -325,8 +325,8 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
       </div>
 
       {/* Mensaje informativo */}
-      <div className="bg-blue-50 rounded-lg border border-blue-200 p-6 flex items-start gap-4">
-        <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
+      <div className="bg-primary/10 rounded-lg border border-primary/20 p-6 flex items-start gap-4">
+        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
           <Info className="w-5 h-5 text-white" />
         </div>
         <p className="text-sm text-gray-700">
@@ -355,7 +355,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
           <div className="relative">
             <button
               onClick={() => setShowEmitirMenu(!showEmitirMenu)}
-              className="px-6 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               Emitir
               <ChevronDown className="w-4 h-4" />

@@ -107,14 +107,22 @@ export function FilterChips({
   if (columnFilters.length === 0) return null;
 
   function removeFilter(id: string) {
+    if (table.getColumn(id)) {
+      const col = table.getColumn(id);
+      if (col) {
+        col.setFilterValue(undefined);
+      }
+    }
     setColumnFilters(columnFilters.filter((f) => f.id !== id));
   }
 
   function removeAllFilters() {
     columnFilters.forEach((f) => {
-      const col = table.getColumn(f.id);
-      if (col) {
-        col.setFilterValue("");
+      if (table.getColumn(f.id)) {
+        const col = table.getColumn(f.id);
+        if (col) {
+          col.setFilterValue("");
+        }
       }
     });
     setColumnFilters([]);
@@ -129,9 +137,11 @@ export function FilterChips({
           <DropdownMenu key={filter.id}>
             <DropdownMenuTrigger asChild>
               <button
-                className={`inline-flex items-center px-3 py-1 rounded-full border ${isDate ? "border-teal-300 bg-[#f8ffff]" : "border-gray-300 bg-white"
-                  } text-xs text-gray-700 font-medium shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition`}
-                type="button"
+                className={`inline-flex items-center px-3 py-1 rounded-full border ${isDate ? "border-primary/30 bg-primary/10 text-primary" : "border-border bg-background text-foreground"
+                  } text-xs font-medium shadow-sm 
+                    hover:bg-primary/10 hover:text-primary hover:border-primary/40
+                    focus:bg-primary/10 focus:text-primary
+                    transition-colors`}
               >
                 {filterIcons[filter.id] ?? <Funnel className="w-4 h-4 mr-1 text-gray-400" />}
                 <span className="mr-1">{filterLabels[filter.id] ?? filter.id}</span>
@@ -258,13 +268,13 @@ export function FilterChips({
         <DropdownMenu open={showPlusFilter} onOpenChange={setShowPlusFilter}>
           <DropdownMenuTrigger asChild>
             <button
-              className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-gray-200 bg-[#f5f7fa] text-gray-500 hover:bg-gray-100 focus:outline-none ml-1"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-gray-200 bg-secondary/60 text-muted-foreground hover:bg-secondary focus:outline-none ml-1"
               title="Agregar filtro"
               type="button"
             >
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="9" fill="none" />
-                <path d="M10 6v8M6 10h8" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
+                <path d="M10 6v8M6 10h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
           </DropdownMenuTrigger>
@@ -281,6 +291,7 @@ export function FilterChips({
                     onAddFilter(opt.value);
                     setShowPlusFilter(false);
                   }}
+                  className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors"
                 >
                   <Icon className="w-4 h-4 mr-2" />
                   {opt.label}

@@ -24,7 +24,7 @@ export function DatePickerSimple() {
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"
-                        className="bg-white border border-gray-300 rounded-xl h-9 px-3 text-sm font-medium w-full flex justify-start items-center gap-2 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                        className="bg-white border border-gray-300 rounded-xl h-9 px-3 text-sm font-medium w-full flex justify-start items-center gap-2 focus:bg-white focus:ring-2 focus:ring-ring/60 focus:border-primary/40 transition-colors"
                     >
                         <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
                         {date ? format(date, "dd/MM/yyyy") : <span>Selecciona fecha</span>}
@@ -39,7 +39,7 @@ export function DatePickerSimple() {
                         maxWidth: "320px",
                         boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
                         borderRadius: "16px",
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid var(--color-border)",
                     }}
                 >
                     <div className="p-2">

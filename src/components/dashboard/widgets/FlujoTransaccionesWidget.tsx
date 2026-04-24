@@ -37,7 +37,7 @@ export function FlujoTransaccionesWidget({
             </TooltipTrigger>
             <TooltipContent
               side="right"
-              className="bg-[#232B3A]/95 text-white text-[10px] font-medium shadow-lg px-2.5 py-1 rounded z-50 border-none"
+              className="bg-primary text-primary-foreground text-[10px] font-medium shadow-lg px-2.5 py-1 rounded z-50 border-none"
             >
               Revisa el resumen de tus entradas y salidas de dinero en este periodo.
             </TooltipContent>
@@ -68,21 +68,21 @@ export function FlujoTransaccionesWidget({
       <div className="flex-1 min-h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey="fecha" 
-              tick={{ fontSize: 11, fill: '#6b7280' }}
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+            <XAxis
+              dataKey="fecha"
+              tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
               tickLine={false}
             />
-            <YAxis 
-              tick={{ fontSize: 11, fill: '#6b7280' }}
+            <YAxis
+              tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
               tickLine={false}
               axisLine={false}
             />
-            <RechartsTooltip 
+            <RechartsTooltip
               contentStyle={{
                 backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--color-border)',
                 borderRadius: '8px',
                 fontSize: '12px',
               }}
@@ -90,25 +90,25 @@ export function FlujoTransaccionesWidget({
                 outline: 'none',
               }}
             />
-            <Legend 
-              wrapperStyle={{ 
-                fontSize: '12px', 
-                paddingTop: '10px' 
+            <Legend
+              wrapperStyle={{
+                fontSize: '12px',
+                paddingTop: '10px'
               }}
               iconType="circle"
             />
-            <Line 
-              type="monotone" 
-              dataKey="ingresos" 
-              stroke="#14b8a6" 
+            <Line
+              type="monotone"
+              dataKey="ingresos"
+              stroke="var(--color-chart-1)"
               strokeWidth={2}
               dot={{ r: 3 }}
               name="Ingresos"
             />
-            <Line 
-              type="monotone" 
-              dataKey="egresos" 
-              stroke="#ef4444" 
+            <Line
+              type="monotone"
+              dataKey="egresos"
+              stroke="var(--color-chart-2)"
               strokeWidth={2}
               dot={{ r: 3 }}
               name="Egresos"

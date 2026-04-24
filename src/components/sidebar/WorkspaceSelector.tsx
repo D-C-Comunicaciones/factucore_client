@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { Users, Check, ChevronsUpDown } from 'lucide-react';
-import { LogoDC } from '../logos/LogoDC';
+import { Logo } from '../logos/Logo';
 
 export function WorkspaceSelector() {
   const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false);
@@ -33,8 +33,8 @@ export function WorkspaceSelector() {
         ref={workspaceBtnRef}
         className={`
           flex items-center gap-2 bg-white rounded-lg px-2 py-1 mt-2 w-full border border-gray-200
-          hover:border-teal-400 transition
-          ${showWorkspaceDropdown ? 'ring-2 ring-teal-200 border-teal-400' : ''}
+          hover:border-primary/40 transition
+          ${showWorkspaceDropdown ? 'ring-2 ring-ring/40 border-primary/40' : ''}
         `}
         style={{ maxWidth: '100%', width: '100%' }}
         onClick={() => setShowWorkspaceDropdown((v) => !v)}
@@ -42,8 +42,8 @@ export function WorkspaceSelector() {
         aria-haspopup="listbox"
         aria-expanded={showWorkspaceDropdown}
       >
-        <div className="w-6 h-6 bg-[#E6F6F3] rounded-full flex items-center justify-center">
-          <LogoDC className="h-3.5" />
+        <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+          <Logo className="h-3.5" />
         </div>
         <div className="flex-1 min-w-0 text-left">
           <div className="font-semibold text-[11px] leading-tight truncate">Dc Contabilidad</div>
@@ -67,11 +67,11 @@ export function WorkspaceSelector() {
           <ul className="py-1">
             <li>
               <button
-                className="flex items-center w-full px-4 py-2 gap-2 rounded-lg bg-[#F4F7FB] text-teal-900 font-semibold"
+                className="flex items-center w-full px-4 py-2 gap-2 rounded-lg bg-primary/10 text-primary font-semibold"
                 tabIndex={0}
               >
-                <span className="w-7 h-7 bg-[#E6F6F3] rounded-lg flex items-center justify-center">
-                  <LogoDC className="h-4" />
+                <span className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Logo className="h-4" />
                 </span>
                 <span className="flex-1 text-left">
                   Alegra Contabilidad
@@ -79,7 +79,7 @@ export function WorkspaceSelector() {
                     Facturación, reportes, ingresos y más.
                   </div>
                 </span>
-                <Check className="w-4 h-4 text-teal-500" />
+                <Check className="w-4 h-4 text-primary" />
               </button>
             </li>
             <li>
@@ -87,8 +87,8 @@ export function WorkspaceSelector() {
                 className="flex items-center w-full px-4 py-2 gap-2 rounded-lg hover:bg-gray-100 text-gray-900"
                 tabIndex={0}
               >
-                <span className="w-7 h-7 bg-[#E6F6F3] rounded-lg flex items-center justify-center">
-                  <Users className="w-4 h-4 text-teal-500" />
+                <span className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Users className="w-4 h-4 text-primary" />
                 </span>
                 <span className="flex-1 text-left">
                   Espacio Contador

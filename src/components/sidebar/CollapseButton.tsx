@@ -2,22 +2,30 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CollapseButtonProps {
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
+  isCollapsed: boolean
+  onToggleCollapse: () => void
+  className?: string
 }
 
-export function CollapseButton({ isCollapsed, onToggleCollapse }: CollapseButtonProps) {
+export function CollapseButton({
+  isCollapsed,
+  onToggleCollapse,
+  className = ""
+}: CollapseButtonProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (typeof onToggleCollapse === 'function') {
-              onToggleCollapse();
-            }
+            onToggleCollapse?.();
           }}
-          className="p-2 hover:bg-gray-100 rounded-lg hidden lg:flex ml-2 mt-[-6px]"
+          className={`
+            p-2 rounded-lg hidden lg:flex ml-2
+            items-center justify-center
+            hover:bg-gray-100 transition-colors
+            ${className}
+          `}
           aria-label={isCollapsed ? "Mostrar menú" : "Ocultar menú"}
           type="button"
         >
@@ -28,9 +36,14 @@ export function CollapseButton({ isCollapsed, onToggleCollapse }: CollapseButton
           )}
         </button>
       </TooltipTrigger>
+
       <TooltipContent
         side="bottom"
-        className="bg-[#232B3A]/95 text-white text-xs font-semibold shadow-lg px-3 py-1 rounded z-50 border-none"
+        className="
+      bg-foreground text-white
+      text-xs font-semibold
+      shadow-lg px-3 py-1 rounded z-50 border-none
+  "
       >
         {isCollapsed ? "Mostrar menú" : "Ocultar menú"}
       </TooltipContent>

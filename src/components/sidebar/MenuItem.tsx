@@ -1,48 +1,110 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 import { SidebarMenuItem } from './Sidebar';
 
 interface MenuItemProps {
-  item: SidebarMenuItem;
-  isExpanded?: boolean;
-  onToggle?: () => void;
-  onNavigate: (view: string) => void;
-  hoveredSubmenu: string | null;
-  onHoverSubmenu: (key: string | null) => void;
-  isCollapsed?: boolean;
+  item: SidebarMenuItem
+  isExpanded: boolean
+  isActive?: boolean
+  onNavigate: (path: string) => void
+  isCollapsed: boolean
+  isExpandable?: boolean
+  onToggle?: () => void
 }
 
 export function MenuItem({
   item,
   isExpanded = false,
   isCollapsed = false,
+  isActive = false,
+  onNavigate,
+  isExpandable = false,
+  onToggle
 }: MenuItemProps) {
+
   const Icon = item.icon;
-  const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
+  const showPlus = item.label === "Contactos";
 
   return (
-    <div className={`relative ${isCollapsed ? 'mx-0' : 'mx-1.5 mr-[1.125rem]'}`}>
+    <div className={`${isCollapsed ? 'mx-0' : 'mx-1.5 mr-[1.125rem]'}`}>
+
+      {/* INDICADOR IZQUIERDO */}
       {isActive && !isCollapsed && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-teal-500 rounded-r" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-primary rounded-r" />
       )}
-      <button
+
+      {/* ITEM */}
+      <div
+        onClick={() => {
+          if (isExpandable) {
+            onToggle?.();
+          } else {
+            onNavigate(item.path);
+          }
+        }}
         className={`
-          w-full flex items-center gap-2 rounded-lg transition-colors border-none bg-transparent cursor-pointer
-          ${isCollapsed ? 'justify-center p-2 min-h-[36px]' : 'p-1.5 px-2.5 min-h-[32px]'}
-          ${isActive ? 'bg-gray-100' : 'hover:bg-gray-100'}
+          relative group w-full flex items-stretch
+          rounded-md overflow-hidden
+          cursor-pointer transition-colors
+
+          ${isCollapsed
+            ? 'justify-center h-10'
+            : 'h-8'
+          }
+
+          ${isActive
+            ? 'bg-primary/10'
+            : 'hover:bg-primary/10'
+          }
         `}
       >
-        <Icon className={`flex-shrink-0 ${isCollapsed ? 'w-4 h-4' : 'w-3.5 h-3.5'} ${isActive ? 'text-gray-900' : 'text-gray-500'}`} />
-        {!isCollapsed && (
-          <>
-            <span className="flex-1 text-left text-[13px] text-gray-700">{item.label}</span>
-            {item.expandable && (
-              <ChevronRight
-                className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-              />
-            )}
-          </>
+        {/* CONTENIDO IZQUIERDA */}
+        <div className="flex items-center gap-2 flex-1 px-2">
+
+          {/* ICONO */}
+          <Icon
+            className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-muted-foreground'
+              }`}
+          />
+
+          {!isCollapsed && (
+            <span className="flex-1 text-[12px] leading-none text-foreground">
+              {item.label}
+            </span>
+          )}
+        </div>
+
+        {/* BOTÓN + (DERECHA COMPLETA) */}
+        {showPlus && !isCollapsed && (
+          <button
+            type="button"
+            className="
+              flex items-center justify-center
+              h-full w-10
+
+              opacity-0 group-hover:opacity-100
+              transition-all
+
+              hover:bg-primary/20
+            "
+            onClick={(e) => {
+              e.stopPropagation();
+              onNavigate('/contacts/new');
+            }}
+          >
+            <Plus className="w-4 h-4 text-primary" />
+          </button>
         )}
-      </button>
+
+        {/* CHEVRON */}
+        {isExpandable && !isCollapsed && (
+          <div className="flex items-center pr-2">
+            <ChevronRight
+              className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''
+                }`}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

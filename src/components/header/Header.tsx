@@ -14,9 +14,10 @@ export function Header({
   showUserMenu,
   onToggleUserMenu,
   onToggleSidebar,
-}: HeaderProps) {
+  style
+}: HeaderProps & { style?: React.CSSProperties }) {
   return (
-    <header className="bg-white border-b border-gray-200 px-2 md:px-3 py-1 flex items-center justify-between sticky top-0 z-30 h-12">
+    <header style={style} className="w-full bg-white border-b border-gray-200 px-3 md:px-4 flex items-center justify-between sticky top-0 z-30 h-14">
       <div className="flex items-center gap-1 md:gap-2 flex-1">
         {/* Mobile menu button */}
         <button
@@ -30,7 +31,7 @@ export function Header({
           <input
             type="text"
             placeholder="Buscar"
-            className="w-full pl-7 md:pl-8 pr-3 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full pl-7 md:pl-8 pr-3 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-ring/60"
           />
         </div>
         <button className="p-1 hover:bg-gray-100 rounded-lg hidden md:block">
@@ -52,7 +53,7 @@ export function Header({
           onClick={onToggleUserMenu}
           className="flex items-center gap-1 px-1 md:px-2 py-1 hover:bg-gray-100 rounded-lg relative"
         >
-          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-semibold">
             L
           </div>
           <span className="text-xs font-medium hidden md:block">LEONES...</span>
@@ -60,7 +61,7 @@ export function Header({
 
           {showUserMenu && <UserMenu onClose={() => onToggleUserMenu()} />}
         </button>
-        <button className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs font-semibold hidden md:flex">
+        <button className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs font-semibold hidden md:flex">
           A
         </button>
       </div>

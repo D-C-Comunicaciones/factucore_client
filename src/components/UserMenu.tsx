@@ -11,7 +11,7 @@ export function UserMenu({ onClose }: UserMenuProps) {
       <div className="p-4 border-b border-gray-200">
         <div className="font-semibold text-gray-900">Andrés Leones</div>
         <div className="text-sm text-gray-600">leones1997@live.com</div>
-        <div className="mt-2 inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-200">
+        <div className="mt-2 inline-block px-2 py-1 bg-primary/10 text-primary text-xs rounded border border-primary/20">
           Identificación: 1143263398
         </div>
       </div>

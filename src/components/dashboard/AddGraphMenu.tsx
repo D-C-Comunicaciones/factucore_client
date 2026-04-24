@@ -1,6 +1,19 @@
 "use client";
 import { useState } from 'react';
-import { ChevronDown, FileText, DollarSign, BarChart3, Package, RotateCcw, Users, TrendingUp, Activity, PieChart as PieChartIcon, ShoppingCart, UserCheck } from 'lucide-react';
+import {
+  ChevronDown,
+  FileText,
+  DollarSign,
+  BarChart3,
+  Package,
+  RotateCcw,
+  Users,
+  TrendingUp,
+  Activity,
+  PieChart as PieChartIcon,
+  ShoppingCart,
+  UserCheck
+} from 'lucide-react';
 
 interface GraphOption {
   type: 'cuentas-cobrar' | 'cuentas-pagar' | 'impuestos' | 'productos' | 'devoluciones' | 'clientes' | 'ventas' | 'flujo-transacciones' | 'distribucion-gastos' | 'productos-vendidos' | 'mejores-clientes';
@@ -42,33 +55,64 @@ export function AddGraphMenu({ onAddWidget, existingWidgetTypes }: AddGraphMenuP
 
   return (
     <div className="relative">
+
+      {/* BOTÓN */}
       <button
         onClick={() => setShowMenu(!showMenu)}
         disabled={availableOptions.length === 0}
-        className="px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white rounded-full text-xs font-medium transition-colors flex items-center gap-2 min-w-[130px] justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+        className="
+          px-3 py-1.5 
+          bg-primary 
+          hover:bg-primary/90 
+          text-primary-foreground 
+          rounded-full 
+          text-xs font-medium 
+          transition-colors 
+          flex items-center gap-2 
+          min-w-[130px] justify-between 
+          disabled:opacity-50 disabled:cursor-not-allowed
+        "
       >
         <span>Agregar gráfica</span>
         <ChevronDown className="w-3.5 h-3.5" />
       </button>
+
+      {/* DROPDOWN */}
       {showMenu && availableOptions.length > 0 && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-20 overflow-hidden">
+        <div className="
+          absolute right-0 mt-2 w-56 
+          bg-popover 
+          text-popover-foreground
+          rounded-lg 
+          shadow-xl 
+          border border-border 
+          z-20 overflow-hidden
+        ">
           <div className="py-1">
             {availableOptions.map((option, index) => {
               const IconComponent = option.icon;
+
               return (
                 <button
                   key={index}
                   onClick={() => handleAddWidget(option)}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors flex items-center gap-2.5"
+                  className="
+                    w-full text-left px-3 py-2 text-xs 
+                    hover:bg-primary/10 
+                    hover:text-primary
+                    transition-colors 
+                    flex items-center gap-2.5
+                  "
                 >
-                  <IconComponent className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-                  <span className="text-gray-900">{option.title}</span>
+                  <IconComponent className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="text-foreground">{option.title}</span>
                 </button>
               );
             })}
           </div>
         </div>
       )}
+
     </div>
   );
 }

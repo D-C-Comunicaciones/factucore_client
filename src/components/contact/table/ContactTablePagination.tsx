@@ -12,7 +12,7 @@ interface ServerPagination {
   to: number;
 }
 
-interface InvoiceTablePaginationProps {
+interface ContactTablePaginationProps {
   page: number;
   setPage: (p: number) => void;
   perPage: number;
@@ -22,7 +22,7 @@ interface InvoiceTablePaginationProps {
   refreshing?: boolean;
 }
 
-export function InvoiceTablePagination({
+export function ContactTablePagination({
   page,
   setPage,
   perPage,
@@ -30,7 +30,7 @@ export function InvoiceTablePagination({
   pagination,
   onRefresh,
   refreshing = false,
-}: InvoiceTablePaginationProps) {
+}: ContactTablePaginationProps) {
   const { total, last_page, from, to } = pagination;
   const safeLastPage = Math.max(1, last_page || 1);
 
@@ -116,7 +116,7 @@ export function InvoiceTablePagination({
       </div>
 
       <div className="flex items-center gap-3 text-xs text-gray-700">
-        <span>Facturas por pagina:</span>
+        <span>Contactos por pagina:</span>
         <select
           value={perPage}
           onChange={(event) => {
@@ -139,7 +139,7 @@ export function InvoiceTablePagination({
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
           aria-label="Actualizar"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />

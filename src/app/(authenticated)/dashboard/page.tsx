@@ -84,7 +84,7 @@ function SortableWidget({ widget, onRemove }: SortableWidgetProps) {
     switch (widget.type) {
       case 'cuentas-cobrar':
         return <CuentasPorCobrarWidget {...cuentasPorCobrarMock} />;
-      
+
       case 'cuentas-pagar':
         return <CuentasPorPagarWidget {...cuentasPorPagarMock} />;
 
@@ -105,13 +105,13 @@ function SortableWidget({ widget, onRemove }: SortableWidgetProps) {
 
       case 'flujo-transacciones':
         return <FlujoTransaccionesWidget {...flujoTransaccionesMock} />;
-      
+
       case 'distribucion-gastos':
         return <DistribucionGastosWidget {...distribucionGastosMock} />;
-      
+
       case 'productos-vendidos':
         return <ProductosMasVendidosWidget {...productosMasVendidosMock} />;
-      
+
       case 'mejores-clientes':
         return <MejoresClientesWidget {...mejoresClientesMock} />;
 
@@ -122,7 +122,7 @@ function SortableWidget({ widget, onRemove }: SortableWidgetProps) {
 
   const getGridClass = () => {
     const size = widget.size || (widget.type === 'cuentas-cobrar' || widget.type === 'cuentas-pagar' ? 'large' : widget.type === 'ventas' ? 'full' : 'small');
-    
+
     switch (size) {
       case 'large':
         return 'lg:row-span-2';
@@ -279,10 +279,10 @@ export default function DashboardPage() {
       // Si es un widget predefinido, insertarlo en su posición original
       if (isPredefinedWidget(option.type)) {
         const targetPosition = PREDEFINED_POSITIONS[option.type];
-        
+
         // Crear una copia del array actual
         const updatedWidgets = [...items];
-        
+
         // Encontrar la posición de inserción correcta
         let insertIndex = 0;
         for (let i = 0; i < updatedWidgets.length; i++) {
@@ -294,12 +294,12 @@ export default function DashboardPage() {
             }
           }
         }
-        
+
         // Insertar el widget en la posición correcta
         updatedWidgets.splice(insertIndex, 0, newWidget);
         return updatedWidgets;
       }
-      
+
       // Si no es predefinido, agregarlo al final
       return [...items, newWidget];
     });
@@ -352,10 +352,15 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="w-full min-h-screen">
+    <div className="w-full min-h-screen bg-background text-foreground">
       <div className="w-full max-w-[1200px] mx-auto px-6 md:px-8">
+
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
-          <h2 className="text-xl font-semibold text-gray-900">Resumen del negocio</h2>
+          <h2 className="text-xl font-semibold text-foreground">
+            Resumen del negocio
+          </h2>
+
           <div className="flex gap-3 flex-wrap">
             <MonthSelector
               selectedMonth={selectedMonth}
@@ -368,6 +373,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* CONTENT */}
         {widgets.length === 0 ? (
           <EmptyDashboardState onAddPredefinedWidgets={handleAddPredefinedWidgets} />
         ) : (
@@ -376,7 +382,10 @@ export default function DashboardPage() {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
+            <SortableContext
+              items={widgets.map(w => w.id)}
+              strategy={rectSortingStrategy}
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-[minmax(90px,auto)]">
                 {widgets.map((widget) => (
                   <SortableWidget

@@ -35,9 +35,8 @@ function SortableHeader({
 
   return (
     <button
-      className={`flex items-center justify-center gap-1 w-full px-2 py-1 rounded group transition-colors duration-100 cursor-pointer ${
-        isSorted ? "bg-[#f1f5fd]" : "hover:bg-[#e5e7eb]"
-      }`}
+      className={`flex items-center justify-center gap-1 w-full px-2 py-1 rounded group transition-colors duration-100 cursor-pointer ${isSorted ? "bg-primary/10" : "hover:bg-accent"
+        }`}
       onClick={handleSort}
       tabIndex={0}
       type="button"
@@ -118,7 +117,7 @@ function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     cobrada: "bg-green-100 text-green-700",
     parcial: "bg-yellow-100 text-yellow-700",
-    pendiente: "bg-blue-100 text-blue-700",
+    pendiente: "bg-primary/10 text-primary",
     vencida: "bg-red-100 text-red-700",
   };
 

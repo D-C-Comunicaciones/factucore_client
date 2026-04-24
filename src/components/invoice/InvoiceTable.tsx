@@ -31,6 +31,8 @@ interface ServerPagination {
 interface InvoiceTableProps {
   invoices: InvoiceSummary[];
   loading?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
   columnFilters?: ColumnFiltersState;
   setColumnFilters?: (filters: ColumnFiltersState) => void;
   search?: string;
@@ -45,6 +47,8 @@ interface InvoiceTableProps {
 export function InvoiceTable({
   invoices,
   loading,
+  refreshing = false,
+  onRefresh,
   columnFilters,
   setColumnFilters,
   search = "",
@@ -63,12 +67,28 @@ export function InvoiceTable({
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({});
 
-  // Reset rowSelection when invoices data changes to avoid inconsistencies
-  React.useEffect(() => {
-    setRowSelection({});
-  }, [invoices]);
-
   const effectiveFilters = columnFilters ?? internalColumnFilters;
+  const hasActiveFilters = React.useMemo(
+    () =>
+      effectiveFilters.some((f) => {
+        if (f.id === "overdue") {
+          return Boolean(f.value);
+        }
+
+        if (Array.isArray(f.value)) {
+          return f.value.length > 0;
+        }
+
+        if (typeof f.value === "string") {
+          return f.value.trim() !== "";
+        }
+
+        return f.value !== undefined && f.value !== null && f.value !== "";
+      }),
+    [effectiveFilters],
+  );
+
+  const hasQueryContext = Boolean(search.trim()) || hasActiveFilters;
 
   const setEffectiveFilters = React.useCallback(
     (updaterOrValue: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
@@ -125,13 +145,21 @@ export function InvoiceTable({
         onAddFilter={handleAddFilter}
       />
 
-      <InvoiceTableBody table={table} columns={columns} loading={loading} />
+      <InvoiceTableBody
+        table={table}
+        columns={columns}
+        loading={loading}
+        showNoDataMessage={!hasQueryContext && !loading}
+      />
 
       <InvoiceTablePagination
         page={page}
         setPage={setPage}
         perPage={perPage}
+        setPerPage={setPerPage}
         pagination={pagination}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
       />
     </div>
   );

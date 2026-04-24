@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Table as TanTable, ColumnDef, flexRender } from "@tanstack/react-table";
 import {
   Table,
@@ -16,13 +18,15 @@ interface InvoiceTableBodyProps {
   table: TanTable<InvoiceSummary>;
   columns: ColumnDef<InvoiceSummary>[];
   loading?: boolean;
+  showNoDataMessage?: boolean;
 }
 
-export function InvoiceTableBody({ table, columns, loading }: InvoiceTableBodyProps) {
+export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = false }: InvoiceTableBodyProps) {
+  const router = useRouter();
   const sortableIds = ["number", "created_at", "payment_due_date"];
 
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
@@ -37,7 +41,7 @@ export function InvoiceTableBody({ table, columns, loading }: InvoiceTableBodyPr
                   else if (idx === hg.headers.length - 1) thClass = "rounded-r-xl border-r border-gray-200";
                 }
                 if (isSortable) {
-                  thClass += " group hover:bg-[#e5e7eb] transition-colors duration-100 cursor-pointer";
+                  thClass += "group hover:bg-primary/10 hover:text-primary transition-colors duration-200 cursor-pointer";
                 }
 
                 return (
@@ -53,18 +57,7 @@ export function InvoiceTableBody({ table, columns, loading }: InvoiceTableBodyPr
         </TableHeader>
 
         <TableBody>
-          {loading ? (
-            /* Skeleton rows */
-            Array.from({ length: 6 }).map((_, idx) => (
-              <TableRow key={"skeleton-" + idx}>
-                {columns.map((_, colIdx) => (
-                  <TableCell key={colIdx}>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-full" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : table.getRowModel().rows.length ? (
+          {table.getRowModel().rows.length ? (
             /* Filas de datos */
             table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
@@ -75,32 +68,58 @@ export function InvoiceTableBody({ table, columns, loading }: InvoiceTableBodyPr
                 ))}
               </TableRow>
             ))
+          ) : loading ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={columns.length} className="h-64 bg-white" />
+            </TableRow>
           ) : (
             /* Empty state */
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-64 text-center align-middle">
-                <div className="flex flex-col items-center justify-center h-full py-8">
-                  <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 48 48"
-                    fill="none"
-                    className="mb-4 text-gray-300"
-                  >
-                    <rect x="8" y="10" width="32" height="28" rx="4" fill="none" stroke="currentColor" strokeWidth="2" />
-                    <rect x="14" y="18" width="20" height="2" rx="1" fill="currentColor" />
-                    <rect x="14" y="24" width="12" height="2" rx="1" fill="currentColor" />
-                  </svg>
-                  <div className="text-lg font-semibold text-gray-700">Sin resultados</div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    La búsqueda no arrojó facturas electrónicas
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={columns.length} className="h-64 bg-white text-center align-middle">
+                {showNoDataMessage ? (
+                  <div className="flex h-full flex-col items-center justify-center py-8">
+                    <div className="max-w-[520px] text-center text-[40px] font-semibold leading-tight text-primary">
+                      ¡Aún no tienes facturas!
+                    </div>
+                    <button
+                      type="button"
+                      className="mt-6 inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                      onClick={() => router.push("/invoices/new")}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Crear primera factura
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full py-8">
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 48 48"
+                      fill="none"
+                      className="mb-4 text-gray-300"
+                    >
+                      <rect x="8" y="10" width="32" height="28" rx="4" fill="none" stroke="currentColor" strokeWidth="2" />
+                      <rect x="14" y="18" width="20" height="2" rx="1" fill="currentColor" />
+                      <rect x="14" y="24" width="12" height="2" rx="1" fill="currentColor" />
+                    </svg>
+                    <div className="text-lg font-semibold text-gray-700">Sin resultados</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      La búsqueda no arrojó facturas electrónicas
+                    </div>
+                  </div>
+                )}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      {loading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/55">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-ring/25 border-t-primary" />
+        </div>
+      )}
     </div>
   );
 }

@@ -52,8 +52,11 @@ export function InvoiceFilter({ options, selected, onSelect }: InvoiceFilterProp
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-2 flex gap-2 items-center">
-                    <Funnel className="w-4 h-4" />
+                <Button
+                    variant="outline"
+                    className="bg-white ml-2 flex items-center gap-2 h-8 px-3 text-xs border-0 shadow-none text-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
+                >
+                    <Funnel className="w-3.5 h-3.5" />
                     Filtrar
                 </Button>
             </DropdownMenuTrigger>
@@ -65,11 +68,14 @@ export function InvoiceFilter({ options, selected, onSelect }: InvoiceFilterProp
                         <DropdownMenuItem
                             key={opt.value}
                             onClick={() => onSelect(opt.value)}
-                            className={
-                                selected === opt.value
-                                    ? "bg-muted/50 font-semibold text-primary"
-                                    : ""
-                            }
+                            className={`
+                            ${selected === opt.value ? "bg-primary/10 text-primary font-semibold" : ""}
+                            data-[highlighted]:bg-primary/10
+                            data-[highlighted]:text-primary
+                            focus:bg-primary/10
+                            focus:text-primary
+                            transition-colors
+                            `}
                         >
                             <Icon className="w-4 h-4 mr-2" />
                             {opt.label}
