@@ -27,12 +27,6 @@ export function MenuItem({
   return (
     <div className={`${isCollapsed ? 'mx-0' : 'mx-1.5 mr-[1.125rem]'}`}>
 
-      {/* INDICADOR IZQUIERDO */}
-      {isActive && !isCollapsed && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-primary rounded-r" />
-      )}
-
-      {/* ITEM */}
       <div
         onClick={() => {
           if (isExpandable) {
@@ -42,49 +36,39 @@ export function MenuItem({
           }
         }}
         className={`
-          relative group w-full flex items-stretch
-          rounded-md overflow-hidden
-          cursor-pointer transition-colors
+      relative group w-full flex items-stretch
+      rounded-md overflow-hidden
+      cursor-pointer transition-colors
 
-          ${isCollapsed
-            ? 'justify-center h-10'
-            : 'h-8'
-          }
-
-          ${isActive
-            ? 'bg-primary/10'
-            : 'hover:bg-primary/10'
-          }
-        `}
+      ${isCollapsed ? 'justify-center h-10' : 'h-8'}
+      ${isActive ? 'bg-primary/10' : 'hover:bg-primary/10'}
+    `}
       >
-        {/* CONTENIDO IZQUIERDA */}
-        <div className="flex items-center gap-2 flex-1 px-2">
 
-          {/* ICONO */}
-          <Icon
-            className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-muted-foreground'
-              }`}
-          />
+        {/* ✅ INDICADOR BIEN POSICIONADO */}
+        {isActive && !isCollapsed && (
+          <div className="absolute left-0 top-0 h-full w-[3px] bg-primary rounded-r" />
+        )}
+
+        {/* CONTENIDO */}
+        <div className="flex items-center gap-2 flex-1 px-2">
+          <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
 
           {!isCollapsed && (
-            <span className="flex-1 text-[12px] leading-none text-foreground">
+            <span className="flex-1 text-[15px] leading-none text-foreground">
               {item.label}
             </span>
           )}
         </div>
 
-        {/* BOTÓN + (DERECHA COMPLETA) */}
         {showPlus && !isCollapsed && (
           <button
             type="button"
             className="
-              flex items-center justify-center
-              h-full w-10
-
+              flex items-center justify-center h-full w-10
               opacity-0 group-hover:opacity-100
-              transition-all
-
               hover:bg-primary/20
+              cursor-pointer
             "
             onClick={(e) => {
               e.stopPropagation();
@@ -95,16 +79,12 @@ export function MenuItem({
           </button>
         )}
 
-        {/* CHEVRON */}
         {isExpandable && !isCollapsed && (
           <div className="flex items-center pr-2">
-            <ChevronRight
-              className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''
-                }`}
-            />
+            <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
           </div>
         )}
+
       </div>
-    </div>
-  );
+    </div>);
 }

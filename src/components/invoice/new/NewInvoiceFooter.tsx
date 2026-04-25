@@ -9,7 +9,7 @@ export function NewInvoiceFooter({
     emitirHandler,
     guardarHandler,
     loadingEmitir,
-    loadingGuardar
+    loadingGuardar,
 }: {
     showEmitirMenu: boolean;
     setShowEmitirMenu: (v: boolean) => void;
@@ -20,42 +20,76 @@ export function NewInvoiceFooter({
     loadingGuardar?: boolean;
 }) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="text-xs text-gray-500 mb-4">
-                Los campos marcados con <span className="text-red-500">*</span> son obligatorios
+        <div className="bg-white rounded-lg border border-border p-6">
+
+            {/* TEXTO */}
+            <div className="text-xs text-muted-foreground mb-4">
+                Los campos marcados con{" "}
+                <span className="text-destructive">*</span> son obligatorios
             </div>
+
+            {/* BOTONES */}
             <div className="flex items-center justify-center gap-3">
+
+                {/* CANCELAR */}
                 <Button
                     variant="outline"
                     onClick={() => onNavigate("facturas-venta")}
-                    className="px-6 py-2.5 rounded-lg font-medium transition-colors"
+                    className="
+            px-6 py-2.5 rounded-lg font-medium
+            border-border bg-background
+            hover:bg-primary/10 hover:text-primary hover:border-primary/40
+            transition-colors
+          "
                 >
                     Cancelar
                 </Button>
+
+                {/* VISTA PREVIA */}
                 <Button
                     variant="outline"
-                    className="px-6 py-2.5 rounded-lg font-medium transition-colors"
+                    className="
+            px-6 py-2.5 rounded-lg font-medium
+            border-border bg-background
+            hover:bg-primary/10 hover:text-primary hover:border-primary/40
+            transition-colors
+          "
                 >
                     Vista previa
                 </Button>
+
+                {/* GUARDAR */}
                 <Button
                     variant="outline"
-                    className="px-6 py-2.5 rounded-lg font-medium transition-colors"
                     onClick={guardarHandler}
                     disabled={loadingGuardar}
+                    className="
+            px-6 py-2.5 rounded-lg font-medium
+            border-border bg-background
+            hover:bg-primary/10 hover:text-primary hover:border-primary/40
+            transition-colors
+          "
                 >
                     {loadingGuardar ? "Guardando..." : "Guardar"}
                 </Button>
+
+                {/* EMITIR */}
                 <div className="relative">
                     <Button
                         onClick={emitirHandler}
-                        className="px-6 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
                         disabled={loadingEmitir}
+                        className="
+              px-6 py-2.5 rounded-lg font-medium
+              bg-primary text-primary-foreground
+              hover:bg-primary/90
+              transition-colors
+              flex items-center gap-2
+            "
                     >
                         {loadingEmitir ? "Emitiendo..." : "Emitir"}
-                        <ChevronDown className="w-4 h-4" />
                     </Button>
                 </div>
+
             </div>
         </div>
     );

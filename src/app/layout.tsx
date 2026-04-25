@@ -10,8 +10,8 @@ import { ThemeProvider } from "@/components/ui/theme-provider"
 import { Providers } from '@/providers'
 
 export const metadata: Metadata = {
-    title: 'Facturación Electrónica - D&C IDEM COMUNICACIONES S.A.S.',
-    description: 'Created by D&C IDEM COMUNICACIONES S.A.S.',
+    title: 'Factucore Software de Facturación',
+    description: 'Software de facturación electrónica para Colombia',
     generator: 'D&C IDEM COMUNICACIONES S.A.S.',
     icons: {
         icon: [

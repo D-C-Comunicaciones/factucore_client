@@ -3,7 +3,7 @@ export function LogoHorizontal({ className = "", ...props }: React.HTMLProps<HTM
         <img
             src="/img/factucore_logo_horizontal.png"
             alt="Factucore S.A.S."
-            className={`h-full object-contain ${className}`}
+            className={`object-contain ${className}`}
             {...props}
         />
     );

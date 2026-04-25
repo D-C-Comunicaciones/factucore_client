@@ -103,18 +103,18 @@ function SidebarMenuItems({
                   `}
                 >
                   {item.submenu?.map(sub => {
-                    const isActive = typeof window !== 'undefined' && window.location.pathname === sub.path;
+                    const isActive = pathname.startsWith(sub.path);
 
                     return (
                       <div
                         key={sub.path} // 🔥 ESTA LÍNEA
                         className="
-        relative group flex items-stretch
-        rounded-md overflow-hidden
-        transition-colors
-        hover:bg-primary/10
-        h-7
-      "
+                          relative group flex items-stretch
+                          rounded-md overflow-hidden
+                          transition-colors
+                          hover:bg-primary/10
+                          h-7
+                        "
                       >
                         {/* Línea azul */}
                         {isActive && (
@@ -124,7 +124,7 @@ function SidebarMenuItems({
                         {/* TEXTO */}
                         <Link
                           href={sub.path}
-                          className="flex items-center flex-1 h-full text-[11px] leading-none px-2"
+                          className="flex items-center flex-1 h-full text-[14px] leading-none px-2"
                         >
                           <span className="flex-1 text-foreground">
                             {sub.label}
@@ -132,14 +132,34 @@ function SidebarMenuItems({
                         </Link>
 
                         {/* BOTÓN + */}
-                        {(sub.label === "Factura de venta") && (
+                        {(sub.label === "Factura de venta" || 
+                          sub.label === "Items de Venta" ||
+                          sub.label === "Bodegas" ||
+                          sub.label === "Categorías" ||
+                          sub.label === "Listas de precios" ||
+                          sub.label === "Ajustes de inventario") && (
                           <button
                             type="button"
-                            className="flex items-center justify-center w-10 h-full opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/20"
+                            className="
+                              flex items-center justify-center w-10 h-full
+                              opacity-0 group-hover:opacity-100
+                              transition-all
+                              hover:bg-primary/20
+                              cursor-pointer
+                            "
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              onNavigate('/invoices/new');
+                              
+                              let newPath = '';
+                              if (sub.label === "Factura de venta") newPath = '/invoices/new';
+                              else if (sub.label === "Items de Venta") newPath = '/items/new';
+                              else if (sub.label === "Bodegas") newPath = '/inventario/bodegas/new';
+                              else if (sub.label === "Categorías") newPath = '/inventario/categorias/new';
+                              else if (sub.label === "Listas de precios") newPath = '/inventario/precios/new';
+                              else if (sub.label === "Ajustes de inventario") newPath = '/inventario/ajustes/new';
+                              
+                              if (newPath) onNavigate(newPath);
                             }}
                           >
                             <Plus className="w-4 h-4 text-primary" />
@@ -211,13 +231,25 @@ export function Sidebar({
     <>
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
+          className={`
+  fixed top-0 left-0 z-40
+  h-screen bg-white border-r border-sidebar-border
+  transition-all duration-300
+  ${isSidebarExpanded ? 'w-64' : 'w-14'}
+  flex flex-col
+`}
           onClick={onToggleMobileMenu}
         />
       )}
 
       <div
-        className={`h-screen bg-white border-r border-sidebar-border transition-all duration-300 ${isSidebarExpanded ? 'w-64' : 'w-14'} flex flex-col`}
+        className={`
+    fixed top-0 left-0 z-40
+    h-screen bg-white border-r border-sidebar-border
+    transition-all duration-300
+    ${isSidebarExpanded ? 'w-64' : 'w-14'}
+    flex flex-col
+  `}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -234,7 +266,7 @@ export function Sidebar({
           {isSidebarExpanded ? (
             <div className="flex items-center justify-between w-full">
 
-              <LogoHorizontal className="h-10 max-w-[180px] object-contain" />
+              <LogoHorizontal className="h-30 max-w-[190px] object-contain" />
 
               <CollapseButton
                 isCollapsed={isCollapsed}
@@ -244,7 +276,7 @@ export function Sidebar({
             </div>
           ) : (
             <div className="flex items-center justify-center w-full">
-              <Logo className="h-10 max-w-[50px] object-contain" />
+              <Logo className="h-30 max-w-[50px] object-contain" />
             </div>
           )}
         </div>

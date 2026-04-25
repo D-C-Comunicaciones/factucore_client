@@ -6,13 +6,13 @@ import type { ToasterProps } from "sonner";
 export function CustomToaster(props: ToasterProps) {
   return (
     <SonnerToaster
-      position="bottom-right"
+      position="top-right"
       expand={false}
       richColors
       toastOptions={{
         classNames: {
           toast:
-            "group toast bg-white text-gray-950 border-gray-200 shadow-lg",
+            "group toast border-gray-200 shadow-lg !right-0 !left-auto animate-in slide-in-from-right duration-300 font-sans",
           description: "text-gray-600",
           actionButton:
             "bg-primary text-primary-foreground hover:bg-primary/90",

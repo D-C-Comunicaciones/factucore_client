@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DateFilterPopoverInline } from "@/components/invoice/DateFilterPopoverInline";
+import { DateFilterPopoverInline } from "@/components/ui/DateFilterPopoverInline";
 import { defaultFilterOptions } from "@/components/invoice/InvoiceFilter";
 import type { InvoiceSummary } from "@/types/invoice";
 
@@ -268,8 +268,23 @@ export function FilterChips({
         <DropdownMenu open={showPlusFilter} onOpenChange={setShowPlusFilter}>
           <DropdownMenuTrigger asChild>
             <button
-              className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-gray-200 bg-secondary/60 text-muted-foreground hover:bg-secondary focus:outline-none ml-1"
-              title="Agregar filtro"
+              className="
+inline-flex items-center justify-center
+w-7 h-7 rounded-full
+border border-border
+bg-background
+text-muted-foreground
+
+hover:bg-primary/10
+hover:text-primary
+hover:border-primary/40
+
+focus:bg-primary/10
+focus:text-primary
+
+transition-colors
+ml-1
+"              title="Agregar filtro"
               type="button"
             >
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none">

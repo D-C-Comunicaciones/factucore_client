@@ -11,41 +11,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { Item } from "./columns";
 
-interface ContactTableBodyProps {
-  table: TanTable<any>;
-  columns: ColumnDef<any>[];
+interface ItemTableBodyProps {
+  table: TanTable<Item>;
+  columns: ColumnDef<Item>[];
   loading?: boolean;
   rowSelection?: Record<string, boolean>;
   onToggleSelection?: (id: number) => void;
-  activeTab?: "all" | "customer" | "provider";
   searchTerm?: string;
+  onNewItem?: () => void;
 }
 
-export function ContactTableBody({
+export function ItemTableBody({
   table,
   columns,
   loading,
   rowSelection = {},
   onToggleSelection,
-  activeTab = "all",
   searchTerm = "",
-}: ContactTableBodyProps) {
+  onNewItem,
+}: ItemTableBodyProps) {
   const hasSearch = Boolean(searchTerm.trim());
-  const showEmptyByTab = !hasSearch;
-
-  const emptyMessageByTab: Record<"all" | "customer" | "provider", string> = {
-    all: "¡Aún no tienes contactos!",
-    customer: "¡Aún no tienes clientes!",
-    provider: "¡Aún no tienes proveedores!",
-  };
 
   const handleRowClick = (event: React.MouseEvent, row: any) => {
     const target = event.target as HTMLElement;
     const interactiveElement = target.closest(
-      'button, a, input, select, textarea, [role="checkbox"], [data-no-row-select="true"]',
+      'button, a, input, select, textarea, [role="checkbox"], [data-no-row-select="true"]'
     );
-
     if (interactiveElement) return;
     onToggleSelection?.(row.original.id);
   };
@@ -55,13 +48,11 @@ export function ContactTableBody({
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
-            <TableRow
-              key={hg.id}
-              className="bg-slate-50/50 border-b border-border"
-            >
+            <TableRow key={hg.id} className="bg-slate-50/50 border-b border-border">
               {hg.headers.map((header) => {
                 const isSelect = header.column.id === "select";
                 const isActions = header.column.id === "actions";
+                const isPrice = header.column.id === "price";
 
                 return (
                   <TableHead
@@ -69,15 +60,13 @@ export function ContactTableBody({
                     className={`
                       h-9 px-2 text-xs font-medium text-muted-foreground
                       ${isSelect ? "w-10" : ""}
-                      ${isActions ? "w-20 text-right" : ""}
+                      ${isActions ? "w-24" : ""}
+                      ${isPrice ? "text-right" : ""}
                     `}
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 );
               })}
@@ -88,9 +77,7 @@ export function ContactTableBody({
         <TableBody>
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => {
-              const isSelected = Boolean(
-                rowSelection[String(row.original.id)],
-              );
+              const isSelected = Boolean(rowSelection[String(row.original.id)]);
 
               return (
                 <TableRow
@@ -99,16 +86,17 @@ export function ContactTableBody({
                   onClick={(event) => handleRowClick(event, row)}
                   className={`
                     border-b border-border
-                    ${isSelected
-                      ? "bg-primary/10 hover:bg-primary/15"
-                      : "hover:bg-muted/50 cursor-pointer"
+                    ${
+                      isSelected
+                        ? "bg-primary/10 hover:bg-primary/15"
+                        : "hover:bg-muted/50 cursor-pointer"
                     }
                   `}
                 >
                   {row.getVisibleCells().map((cell) => {
                     const isSelect = cell.column.id === "select";
                     const isActions = cell.column.id === "actions";
-                    const isType = cell.column.id === "type";
+                    const isPrice = cell.column.id === "price";
 
                     return (
                       <TableCell
@@ -116,14 +104,11 @@ export function ContactTableBody({
                         className={`
                           h-10 px-2 py-2 text-xs
                           ${isSelect ? "w-10" : ""}
-                          ${isActions ? "w-20 text-right" : ""}
-                          ${isType ? "" : "text-foreground"}
+                          ${isActions ? "w-24" : ""}
+                          ${isPrice ? "text-right" : "text-foreground"}
                         `}
                       >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     );
                   })}
@@ -136,17 +121,18 @@ export function ContactTableBody({
                 colSpan={columns.length}
                 className="h-64 bg-card text-center align-middle"
               >
-                {showEmptyByTab ? (
+                {!hasSearch ? (
                   <div className="flex h-full flex-col items-center justify-center py-8">
                     <div className="max-w-[520px] text-center text-[40px] font-semibold leading-tight text-primary">
-                      {emptyMessageByTab[activeTab]}
+                      ¡Aún no tienes ítems!
                     </div>
                     <button
                       type="button"
                       className="mt-6 inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                      onClick={onNewItem}
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      Nuevo contacto
+                      Nuevo ítem
                     </button>
                   </div>
                 ) : (
@@ -158,38 +144,13 @@ export function ContactTableBody({
                       fill="none"
                       className="mb-4 text-muted-foreground/40"
                     >
-                      <rect
-                        x="8"
-                        y="10"
-                        width="32"
-                        height="28"
-                        rx="4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <rect
-                        x="14"
-                        y="18"
-                        width="20"
-                        height="2"
-                        rx="1"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="14"
-                        y="24"
-                        width="12"
-                        height="2"
-                        rx="1"
-                        fill="currentColor"
-                      />
+                      <rect x="8" y="10" width="32" height="28" rx="4" fill="none" stroke="currentColor" strokeWidth="2" />
+                      <rect x="14" y="18" width="20" height="2" rx="1" fill="currentColor" />
+                      <rect x="14" y="24" width="12" height="2" rx="1" fill="currentColor" />
                     </svg>
-                    <div className="text-lg font-semibold text-foreground">
-                      Sin resultados
-                    </div>
+                    <div className="text-lg font-semibold text-foreground">Sin resultados</div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      La búsqueda no arrojó contactos
+                      La búsqueda no arrojó ítems
                     </div>
                   </div>
                 )}

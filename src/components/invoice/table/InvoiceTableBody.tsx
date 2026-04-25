@@ -30,15 +30,18 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
-            <TableRow key={hg.id} className="bg-gray-50">
+            <TableRow key={hg.id} className="bg-gray-50/50">
               {hg.headers.map((header, idx) => {
                 const isActions = header.column.id === "actions";
                 const isSortable = sortableIds.includes(header.column.id);
 
                 let thClass = "";
                 if (!isActions) {
-                  if (idx === 0) thClass = "rounded-l-xl border-l border-gray-200";
-                  else if (idx === hg.headers.length - 1) thClass = "rounded-r-xl border-r border-gray-200";
+                  let thClass = "";
+                  if (!isActions) {
+                    if (idx === 0) thClass = "border-l border-gray-200";
+                    else if (idx === hg.headers.length - 1) thClass = "border-r border-gray-200";
+                  }
                 }
                 if (isSortable) {
                   thClass += "group hover:bg-primary/10 hover:text-primary transition-colors duration-200 cursor-pointer";
