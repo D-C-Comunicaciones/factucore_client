@@ -107,9 +107,14 @@ export function ContactTable({
     });
   }, [contacts]);
 
-  const visibleIds = React.useMemo(() => contacts.map((c) => String(c.id)), [contacts]);
-  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => Boolean(selection[id]));
-  const someSelected = visibleIds.some((id) => Boolean(selection[id]));
+  const allSelected = React.useMemo(() => {
+    if (contacts.length === 0) return false;
+    return contacts.every((c) => selection[String(c.id)]);
+  }, [contacts, selection]);
+
+  const someSelected = React.useMemo(() => {
+    return contacts.some((c) => selection[String(c.id)]);
+  }, [contacts, selection]);
 
   const columns = React.useMemo(() => 
     getContactColumns(
@@ -127,7 +132,13 @@ export function ContactTable({
     data: contacts,
     columns,
     getRowId: (row) => String(row.id),
-    state: { sorting, columnFilters, columnVisibility },
+    state: { 
+      sorting, 
+      columnFilters, 
+      columnVisibility,
+      rowSelection: selection,
+    },
+    onRowSelectionChange: setSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -158,41 +169,47 @@ export function ContactTable({
           onAddFilter={handleAddFilter}
         />
 
-        {selectedCount > 0 && (
-          <div className="absolute inset-0 z-20 flex h-full items-center justify-between px-4 bg-teal-500 rounded-t-lg">
-            <span className="text-sm font-medium text-white">
-              {selectedCount} fila{selectedCount > 1 ? 's' : ''} seleccionad{selectedCount > 1 ? 'as' : 'a'}s
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-white hover:bg-white/20 rounded transition"
-                onClick={() => console.log('Edit selected')}
-              >
-                <Pencil className="w-4 h-4" />
-                Editar
-              </button>
-              <button
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-white hover:bg-white/20 rounded transition"
-                onClick={() => {
-                  Object.keys(selection).forEach(id => {
-                    onDelete(Number(id));
-                  });
-                  setSelection({});
-                }}
-              >
-                <Trash2 className="w-4 h-4" />
-                Eliminar
-              </button>
-              <button
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-white hover:bg-white/20 rounded transition"
-                onClick={() => setSelection({})}
-              >
-                <X className="w-4 h-4" />
-                Cancelar
-              </button>
-            </div>
+      <div 
+        className={`transition-all duration-500 ease-in-out overflow-hidden ${
+          selectedCount > 0 
+            ? "max-h-32 opacity-100 translate-y-0 mb-4" 
+            : "max-h-0 opacity-0 -translate-y-4 mb-0 pointer-events-none"
+        }`}
+      >
+        <div className="absolute inset-0 z-20 flex h-full items-center justify-between px-4 bg-teal-500 rounded-lg">
+          <span className="text-sm font-medium text-white">
+            {selectedCount} fila{selectedCount > 1 ? 's' : ''} seleccionad{selectedCount > 1 ? 'as' : 'a'}s
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-white hover:bg-white/20 rounded transition"
+              onClick={() => console.log('Edit selected')}
+            >
+              <Pencil className="w-4 h-4" />
+              Editar
+            </button>
+            <button
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-white hover:bg-white/20 rounded transition"
+              onClick={() => {
+                Object.keys(selection).forEach(id => {
+                  onDelete(Number(id));
+                });
+                setSelection({});
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar
+            </button>
+            <button
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-white hover:bg-white/20 rounded transition"
+              onClick={() => setSelection({})}
+            >
+              <X className="w-4 h-4" />
+              Cancelar
+            </button>
           </div>
-        )}
+        </div>
+      </div>
       </div>
 
       <ContactFilterChips

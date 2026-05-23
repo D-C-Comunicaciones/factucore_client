@@ -34,7 +34,7 @@ export default function AuthenticatedLayout({
     const onToggleMenu = useCallback((menu: string) => {
         setExpandedMenus(prev => {
             const isOpen = prev[menu];
-            return isOpen ? { ...prev, [menu]: false } : { [menu]: true };
+            return { ...prev, [menu]: !isOpen };
         });
     }, []);
 
@@ -98,17 +98,35 @@ export default function AuthenticatedLayout({
             expandable: true,
             submenu: [
                 { icon: FileText, label: 'Factura de venta', path: '/invoices' },
-                { icon: FileText, label: 'Facturas recurrentes', path: '/ingresos/facturas-recurrentes' },
                 { icon: FileText, label: 'Pagos recibidos', path: '/ingresos/pagos-recibidos' },
+                { icon: FileText, label: 'Devoluciones en venta', path: '/ingresos/devoluciones-venta' },
+                { icon: FileText, label: 'Notas débito', path: '/ingresos/notas-debito' },
+                { icon: FileText, label: 'Cotizaciones', path: '/ingresos/cotizaciones' },
+                { icon: FileText, label: 'Remisiones', path: '/ingresos/remisiones' },
             ]
         },
-        { icon: ShoppingBag, label: 'Gastos', path: '/gastos', expandable: true, submenu: [] },
+        {
+            icon: ShoppingBag,
+            label: 'Gastos',
+            path: '/gastos',
+            expandable: true,
+            submenu: [
+                { icon: ShoppingBag, label: 'Facturas de compra', path: '/gastos/facturas-compra' },
+                { icon: ShoppingBag, label: 'Documento soporte', path: '/gastos/documento-soporte' },
+                { icon: ShoppingBag, label: 'Notas de ajuste', path: '/gastos/notas-ajuste' },
+                { icon: ShoppingBag, label: 'Pagos', path: '/gastos/pagos' },
+                { icon: ShoppingBag, label: 'Pagos recurrentes', path: '/gastos/pagos-recurrentes' },
+                { icon: ShoppingBag, label: 'Notas débito', path: '/gastos/notas-debito' },
+                { icon: ShoppingBag, label: 'Órdenes de compra', path: '/gastos/ordenes-compra' },
+                { icon: ShoppingBag, label: 'Recepción de comprobantes', path: '/gastos/recepcion-comprobantes' },
+            ]
+        },
         { icon: Users, label: 'Contactos', path: '/contacts' },
-        { 
-            icon: Package, 
-            label: 'Inventario', 
-            path: '/inventario', 
-            expandable: true, 
+        {
+            icon: Package,
+            label: 'Inventario',
+            path: '/inventario',
+            expandable: true,
             submenu: [
                 { icon: Package, label: 'Items de Venta', path: '/items' },
                 { icon: BarChart3, label: 'Valor de inventario', path: '/inventario/valor' },
@@ -118,13 +136,13 @@ export default function AuthenticatedLayout({
                 { icon: Warehouse, label: 'Bodegas', path: '/inventario/bodegas' },
                 { icon: Layers, label: 'Categorías', path: '/inventario/categorias' },
                 { icon: ListTree, label: 'Atributos', path: '/inventario/atributos' },
-            ] 
+            ]
         },
         { icon: Building2, label: 'Bancos', path: '/bancos' },
         { icon: FileText, label: 'Contabilidad', path: '/contabilidad' },
-        { icon: BarChart3, label: 'Reportes', path: '/reportes' },
-        { icon: CheckSquare, label: 'Mis tareas', path: '/tareas' },
-        { icon: Settings, label: 'Configuración', path: '/config' },
+        { icon: BarChart3, label: 'Reportes', path: '/reports' },
+        { icon: CheckSquare, label: 'Mis tareas', path: '/tasks' },
+        { icon: Settings, label: 'Configuración', path: '/configuration' },
     ];
 
     // 👉 ANCHO REAL DEL SIDEBAR (UNA SOLA FUENTE DE VERDAD)

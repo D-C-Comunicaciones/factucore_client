@@ -42,6 +42,7 @@ interface InvoiceTableProps {
   perPage: number;
   setPerPage: (n: number) => void;
   pagination: ServerPagination;
+  isError?: boolean;
 }
 
 export function InvoiceTable({
@@ -58,8 +59,10 @@ export function InvoiceTable({
   perPage,
   setPerPage,
   pagination,
+  isError = false,
 }: InvoiceTableProps) {
   const router = useRouter();
+  
   const columns = React.useMemo(() => getColumns(router), [router]);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -127,7 +130,7 @@ export function InvoiceTable({
     setEffectiveFilters([...effectiveFilters, { id: columnId, value: "" }]);
   }
 
-  return (
+return (
     <div className="bg-white rounded-lg border border-gray-200">
       <InvoiceTableToolbar
         table={table}
@@ -150,6 +153,7 @@ export function InvoiceTable({
         columns={columns}
         loading={loading}
         showNoDataMessage={!hasQueryContext && !loading}
+        isError={isError}
       />
 
       <InvoiceTablePagination

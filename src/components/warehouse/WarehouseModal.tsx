@@ -17,7 +17,7 @@ import {
   SelectSeparator,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CreateWarehouseModal } from "../../warehouse/CreateWarehouseModal";
+import { CreateWarehouseModal } from "./CreateWarehouseModal";
 
 interface WarehouseModalProps {
   open: boolean;
@@ -91,7 +91,7 @@ export function WarehouseModal({ open, onOpenChange, onSave, initialData, existi
   return (
     <>
       <Dialog open={open && !isCreating} onOpenChange={onOpenChange}>
-        <DialogContent 
+        <DialogContent
           className="max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}

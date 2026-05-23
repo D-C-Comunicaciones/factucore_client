@@ -9,6 +9,7 @@ interface MenuItemProps {
   isCollapsed: boolean
   isExpandable?: boolean
   onToggle?: () => void
+  showLabel?: boolean
 }
 
 export function MenuItem({
@@ -18,14 +19,16 @@ export function MenuItem({
   isActive = false,
   onNavigate,
   isExpandable = false,
-  onToggle
+  onToggle,
+  showLabel
 }: MenuItemProps) {
+  const sidebarExpanded = showLabel !== undefined ? showLabel : !isCollapsed;
 
   const Icon = item.icon;
   const showPlus = item.label === "Contactos";
 
   return (
-    <div className={`${isCollapsed ? 'mx-0' : 'mx-1.5 mr-[1.125rem]'}`}>
+    <div className={`${isCollapsed && !showLabel ? 'mx-0' : 'mx-1.5 mr-[1.125rem]'}`}>
 
       <div
         onClick={() => {
@@ -40,28 +43,36 @@ export function MenuItem({
       rounded-md overflow-hidden
       cursor-pointer transition-colors
 
-      ${isCollapsed ? 'justify-center h-10' : 'h-8'}
-      ${isActive ? 'bg-primary/10' : 'hover:bg-primary/10'}
+      ${isCollapsed && !showLabel ? 'justify-center h-10' : 'h-8'}
+      ${isActive ? 'bg-background' : 'hover:bg-background'}
     `}
       >
 
         {/* ✅ INDICADOR BIEN POSICIONADO */}
-        {isActive && !isCollapsed && (
+        {isActive && sidebarExpanded && (
           <div className="absolute left-0 top-0 h-full w-[3px] bg-primary rounded-r" />
         )}
 
         {/* CONTENIDO */}
-        <div className="flex items-center gap-2 flex-1 px-2">
-          <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+        <div className={`flex items-center gap-2 flex-1 ${isCollapsed && !showLabel ? 'justify-center px-0' : 'px-2'}`}>
+          <Icon className={`
+            ${isCollapsed && !showLabel ? 'w-6 h-6' : 'w-4 h-4'} 
+            transition-all duration-300
+            ${isActive ? 'text-primary' : 'text-muted-foreground'}
+          `} />
 
-          {!isCollapsed && (
-            <span className="flex-1 text-[15px] leading-none text-foreground">
-              {item.label}
-            </span>
-          )}
+          <span
+            className="flex-1 text-[15px] leading-none text-foreground overflow-hidden whitespace-nowrap transition-all duration-200"
+            style={{
+              maxWidth: sidebarExpanded ? '200px' : '0px',
+              opacity: sidebarExpanded ? 1 : 0,
+            }}
+          >
+            {item.label}
+          </span>
         </div>
 
-        {showPlus && !isCollapsed && (
+        {showPlus && sidebarExpanded && (
           <button
             type="button"
             className="
@@ -79,7 +90,7 @@ export function MenuItem({
           </button>
         )}
 
-        {isExpandable && !isCollapsed && (
+        {isExpandable && sidebarExpanded && (
           <div className="flex items-center pr-2">
             <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
           </div>

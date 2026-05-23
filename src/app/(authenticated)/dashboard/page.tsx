@@ -357,9 +357,9 @@ export default function DashboardPage() {
 
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
-          <h2 className="text-xl font-semibold text-foreground">
+          <h1 className="page-title mb-0">
             Resumen del negocio
-          </h2>
+          </h1>
 
           <div className="flex gap-3 flex-wrap">
             <MonthSelector

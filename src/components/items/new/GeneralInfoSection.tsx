@@ -14,6 +14,7 @@ import {
   SelectSeparator,
 } from "@/components/ui/select";
 import { SectionCard } from "./SectionCard";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 type ItemType = "producto" | "servicio" | "combo";
 
@@ -37,6 +38,25 @@ interface GeneralInfoSectionProps {
   tax: string;
   onTaxChange: (v: string) => void;
   onTotalChange: (total: number) => void;
+  hasVariants: boolean;
+  onHasVariantsChange: (v: boolean) => void;
+  
+  // Full integration props
+  reference: string;
+  onReferenceChange: (v: string) => void;
+  description: string;
+  onDescriptionChange: (v: string) => void;
+  unitMeasureId?: number;
+  onUnitMeasureIdChange: (v: number) => void;
+  categoryId?: number;
+  onCategoryIdChange: (v: number) => void;
+  warehouseId?: number;
+  onWarehouseIdChange: (v: number) => void;
+  initialStock: string;
+  onInitialStockChange: (v: string) => void;
+  minimumStock: string;
+  onMinimumStockChange: (v: string) => void;
+  catalogs: any;
 }
 
 export function GeneralInfoSection({
@@ -49,26 +69,53 @@ export function GeneralInfoSection({
   tax,
   onTaxChange,
   onTotalChange,
+  hasVariants,
+  onHasVariantsChange,
+  reference,
+  onReferenceChange,
+  description,
+  onDescriptionChange,
+  unitMeasureId,
+  onUnitMeasureIdChange,
+  categoryId,
+  onCategoryIdChange,
+  warehouseId,
+  onWarehouseIdChange,
+  initialStock,
+  onInitialStockChange,
+  minimumStock,
+  onMinimumStockChange,
+  catalogs
 }: GeneralInfoSectionProps) {
   const baseInput =
-    "bg-white h-8 px-3 text-sm border border-foreground/20 shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40";
+    "bg-white h-[34px] pl-3 pr-3 text-sm border border-foreground/20 shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none flex items-center w-full rounded-xl box-border";
 
   const selectItemClass =
     "rounded-lg cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary focus:bg-primary/10 data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary";
 
-  const [hasVariants, setHasVariants] = React.useState(false);
-  const [category, setCategory] = React.useState("");
-  const [unit, setUnit] = React.useState("");
-  const [reference, setReference] = React.useState("");
-  const [productCode, setProductCode] = React.useState("");
-  const [initialCost, setInitialCost] = React.useState("");
-  const [description, setDescription] = React.useState("");
+  const TAX_OPTIONS: { label: string; value: string }[] = catalogs.taxes?.map((t: any) => ({ label: `${t.name} (${t.rate}%)`, value: t.id.toString() })) || [];
+  const UNIT_OPTIONS = catalogs.unitMeasures || [];
+  const CATEGORY_OPTIONS = catalogs.categories || [];
+  const WAREHOUSE_OPTIONS = catalogs.warehouses || [];
+  const STANDARD_CODES = catalogs.standardCodes || [];
+
+  const handleNumericChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/[^0-9.]/g, "");
+    // Evitar múltiples puntos
+    if ((val.match(/\./g) || []).length > 1) {
+      const parts = val.split(".");
+      val = parts[0] + "." + parts.slice(1).join("");
+    }
+    setter(val);
+  };
 
   const totalPrice = React.useMemo(() => {
     const base = parseFloat(basePrice.replace(/[^0-9.]/g, "")) || 0;
-    const rate = parseFloat(tax) / 100;
+    // Find the tax rate from catalogs
+    const selectedTax = catalogs.taxes?.find((t: any) => t.id.toString() === tax);
+    const rate = selectedTax ? parseFloat(selectedTax.rate) / 100 : 0;
     return base + base * rate;
-  }, [basePrice, tax]);
+  }, [basePrice, tax, catalogs.taxes]);
 
   React.useEffect(() => {
     onTotalChange(totalPrice);
@@ -85,7 +132,7 @@ export function GeneralInfoSection({
       {/* Tipo de ítem */}
       <div className="mt-2 mb-5">
         <label className="text-sm font-medium text-foreground flex items-center gap-1 mb-2">
-          Tipo de ítem <span className="text-destructive">*</span>
+          Tipo de ítem <span className="text-primary">*</span>
           <Tooltip>
             <TooltipTrigger asChild>
               <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
@@ -122,135 +169,169 @@ export function GeneralInfoSection({
 
         {/* Producto con variantes */}
         {itemType === "producto" && (
-          <label className="flex items-center gap-2 mt-3 text-sm text-foreground cursor-pointer w-fit">
-            <Checkbox checked={hasVariants} onCheckedChange={(v) => setHasVariants(!!v)} />
-            Producto con variantes
-          </label>
+          <div className="flex flex-col gap-3 mt-4">
+            <label className="flex items-center gap-3 text-sm font-medium text-foreground cursor-pointer w-fit">
+              <Checkbox 
+                checked={hasVariants} 
+                onCheckedChange={(v) => onHasVariantsChange(!!v)}
+                className="h-5 w-5 rounded-md border-foreground/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-none"
+              />
+              <span>Producto con variantes</span>
+            </label>
+          </div>
         )}
       </div>
 
-      {/* Nombre */}
-      <div className="mb-4">
-        <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-0.5">
-          Nombre <span className="text-destructive">*</span>
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          className={cn(baseInput, "w-full rounded-md")}
-        />
-      </div>
-
-      {/* Categoría & Unidad de medida */}
+      {/* Grid Principal de Campos */}
       <div className="grid grid-cols-2 gap-4 mb-4">
+        {/* Nombre */}
+        <div className="col-span-2">
+          <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-0.5">
+            Nombre <span className="text-primary">*</span>
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
+            className={cn(baseInput, "pr-8")}
+          />
+        </div>
+
+        {/* Categoría */}
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
             Categoría
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-[#1e293b] text-white">
-                Selecciona una categoría para organizar tus productos.
-              </TooltipContent>
-            </Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-xs">
+                  Selecciona la categoría a la que pertenece tu producto y/o servicio. Ver más
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className={cn(baseInput, "w-full rounded-md")}>
+          <Select value={categoryId?.toString()} onValueChange={(v) => onCategoryIdChange(parseInt(v))}>
+            <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
               <SelectValue placeholder="Seleccionar" />
             </SelectTrigger>
             <SelectContent className="bg-white border border-border rounded-xl shadow-lg">
-              {CATEGORY_OPTIONS.map((c) => (
-                <SelectItem className={selectItemClass} key={c} value={c}>
-                  {c}
-                </SelectItem>
+              {CATEGORY_OPTIONS.map((c: any) => (
+                <SelectItem className={selectItemClass} key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Bodega <span className="text-primary">*</span></label>
+            <Select value={warehouseId?.toString()} onValueChange={(v) => onWarehouseIdChange(parseInt(v))}>
+              <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
+                <SelectValue placeholder="Seleccionar" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-border rounded-xl shadow-lg">
+                {WAREHOUSE_OPTIONS.map((w: any) => (
+                  <SelectItem className={selectItemClass} key={w.id} value={w.id.toString()}>{w.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+        {/* Unidad de medida */}
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
-            Unidad de medida
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-[#1e293b] text-white">
-                Define la unidad con la que se vende el producto.
-              </TooltipContent>
-            </Tooltip>
-            <span className="text-destructive">*</span>
+            Unidad de medida <span className="text-primary">*</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-xs">
+                  Selecciona una referencia de medición para tu producto. Ejemplo: Unidad, Kilogramo, Litro.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </label>
-          <Select value={unit} onValueChange={setUnit}>
-            <SelectTrigger className={cn(baseInput, "w-full rounded-md")}>
+          <Select value={unitMeasureId?.toString()} onValueChange={(v) => onUnitMeasureIdChange(parseInt(v))}>
+            <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
               <SelectValue placeholder="Buscar..." />
             </SelectTrigger>
             <SelectContent className="bg-white border border-border rounded-xl shadow-lg">
-              {UNIT_OPTIONS.map((u) => (
-                <SelectItem className={selectItemClass} key={u} value={u}>
-                  {u}
-                </SelectItem>
+              {UNIT_OPTIONS.map((u: any) => (
+                <SelectItem className={selectItemClass} key={u.id} value={u.id.toString()}>{u.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      {/* Referencia & Código */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+        {/* Referencia */}
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
             Referencia
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-[#1e293b] text-white">
-                Código único de referencia para el producto.
-              </TooltipContent>
-            </Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-xs">
+                  Ingresa una referencia única para tu producto.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </label>
-          <input type="text" value={reference} onChange={(e) => setReference(e.target.value)}
-            className={cn(baseInput, "w-full rounded-md")} />
+          <input type="text" value={reference} onChange={(e) => onReferenceChange(e.target.value)}
+            className={cn(baseInput, "pr-8")} />
         </div>
+
+        {/* Código del producto o servicio */}
         <div>
           <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
             Código del producto o servicio
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-[#1e293b] text-white">
-                Código estandarizado del producto o servicio.
-              </TooltipContent>
-            </Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-xs">
+                  Ingresa el código definido por Colombia Compra Eficiente, si no lo conoces haz clic aquí.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </label>
-          <Select value={productCode} onValueChange={setProductCode}>
-            <SelectTrigger className={cn(baseInput, "w-full rounded-md")}>
+          <Select 
+            onValueChange={(v) => {
+              // Logic to handle standard code
+            }}
+          >
+            <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
               <SelectValue placeholder="Buscar..." />
             </SelectTrigger>
             <SelectContent className="bg-white border border-border rounded-xl shadow-lg">
-              {PRODUCT_CODES.map((c) => (
-                <SelectItem className={selectItemClass} key={c} value={c}>
-                  {c}
-                </SelectItem>
+              {STANDARD_CODES.map((c: any) => (
+                <SelectItem className={selectItemClass} key={c.id} value={c.id.toString()}>{c.code} - {c.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      {/* Costo inicial */}
-      <div className="mb-4">
-        <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-0.5">
-          Costo inicial <span className="text-destructive">*</span>
-        </label>
-        <div className="relative max-w-[50%]">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-          <input type="text" placeholder="0.000" value={initialCost} onChange={(e) => setInitialCost(e.target.value)}
-            className={cn(baseInput, "w-full pl-7 rounded-md")} />
-        </div>
+        {/* Cantidad inicial (Solo Producto) */}
+        {itemType === "producto" && (
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Cantidad inicial <span className="text-primary">*</span></label>
+            <input type="text" value={initialStock} onChange={handleNumericChange(onInitialStockChange)}
+              className={cn(baseInput, "pr-8")} placeholder="0" />
+          </div>
+        )}
+
+        {/* Mínimo stock (Solo Producto, junto a bodega y cantidades) */}
+        {itemType === "producto" && (
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Mínimo stock</label>
+            <input type="text" value={minimumStock} onChange={handleNumericChange(onMinimumStockChange)}
+              className={cn(baseInput, "pr-8")} placeholder="0" />
+          </div>
+        )}
       </div>
 
       {/* Precio base + Impuesto = Precio Total */}
@@ -262,22 +343,26 @@ export function GeneralInfoSection({
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-              <input type="text" placeholder="$0.000 - Total $0.000" value={basePrice}
-                onChange={(e) => onBasePriceChange(e.target.value)}
-                className={cn(baseInput, "w-full pl-7 rounded-md")} />
+              <input
+                type="text"
+                placeholder="0.000"
+                value={basePrice}
+                onChange={handleNumericChange(onBasePriceChange)}
+                className={cn(baseInput, "w-full pl-7 pr-8")}
+              />
             </div>
           </div>
-          
-          <div className="h-8 flex items-center mt-[22px] text-muted-foreground font-medium text-2xl">+</div>
-          
+
+          <div className="h-[34px] flex items-center mt-[22px] text-muted-foreground font-medium text-2xl">+</div>
+
           <div className="flex-1">
             <label className="text-sm font-medium text-foreground mb-1.5 block">Impuesto</label>
             <Select
               value={tax}
-              onValueChange={(v) => onTaxChange(v)}
+              onValueChange={onTaxChange}
             >
-              <SelectTrigger className={cn(baseInput, "w-full rounded-md")}>
-                <SelectValue placeholder="Seleccionar impuesto" />
+              <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
+                <SelectValue placeholder="0%" />
               </SelectTrigger>
               <SelectContent className="bg-white border border-border rounded-xl shadow-lg">
                 {TAX_OPTIONS.map((o) => (
@@ -295,7 +380,7 @@ export function GeneralInfoSection({
                 >
                   <button
                     type="button"
-                    className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
+                    className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-xl transition-colors"
                   >
                     Nuevo impuesto
                   </button>
@@ -304,27 +389,30 @@ export function GeneralInfoSection({
             </Select>
           </div>
 
-          <div className="h-8 flex items-center mt-[22px] text-muted-foreground font-medium text-2xl">=</div>
-          
+          <div className="h-[34px] flex items-center mt-[22px] text-muted-foreground font-medium text-2xl">=</div>
+
           <div className="flex-1">
             <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-0.5">
               Precio Total <span className="text-destructive">*</span>
             </label>
-            <input 
+            <input
               readOnly
               value={totalPrice > 0 ? `$ ${totalPrice.toLocaleString("es-CO", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}` : ""}
               placeholder="$ 0.000"
-              className={cn(baseInput, "w-full rounded-md")} 
+              className={cn(baseInput, "pr-8")}
             />
           </div>
         </div>
       </div>
 
-      {/* Descripción */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1.5 block">Descripción</label>
-        <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-md text-sm outline-none focus:border-primary transition-colors shadow-none border-foreground/20 resize-none focus:ring-1 focus:ring-primary/40" />
+        <textarea
+          rows={3}
+          value={description}
+          onChange={(e) => onDescriptionChange(e.target.value)}
+          className="w-full px-3 py-2 border border-foreground/20 rounded-xl text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors shadow-none resize-none bg-white box-border"
+        />
       </div>
     </SectionCard>
   );

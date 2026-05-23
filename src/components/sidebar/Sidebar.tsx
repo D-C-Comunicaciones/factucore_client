@@ -86,6 +86,7 @@ function SidebarMenuItems({
                   isActive={isActive}
                   onNavigate={onNavigate}
                   isCollapsed={!isExpanded}
+                  showLabel={isExpanded}
                   isExpandable={true}
                   onToggle={() => onToggleMenu(menuKey)}
                 />
@@ -96,7 +97,7 @@ function SidebarMenuItems({
                 <div
                   className={`
                     ml-6 pl-3 pr-0 mr-[1.125rem] border-l border-sidebar-border mt-1 space-y-1 overflow-hidden
-                    transition-all duration-300 ease-in-out
+                    transition-all duration-150 ease-in-out
                     ${isMenuOpen
                       ? 'max-h-[500px] opacity-100'
                       : 'max-h-0 opacity-0'}
@@ -107,14 +108,14 @@ function SidebarMenuItems({
 
                     return (
                       <div
-                        key={sub.path} // 🔥 ESTA LÍNEA
-                        className="
+                        key={sub.path}
+                        className={`
                           relative group flex items-stretch
                           rounded-md overflow-hidden
                           transition-colors
-                          hover:bg-primary/10
-                          h-7
-                        "
+                          ${isActive ? 'bg-background' : 'hover:bg-background'}
+                          h-[30px]
+                        `}
                       >
                         {/* Línea azul */}
                         {isActive && (
@@ -124,9 +125,9 @@ function SidebarMenuItems({
                         {/* TEXTO */}
                         <Link
                           href={sub.path}
-                          className="flex items-center flex-1 h-full text-[14px] leading-none px-2"
+                          className="flex items-center flex-1 h-full text-[14px] leading-tight px-2 overflow-hidden"
                         >
-                          <span className="flex-1 text-foreground">
+                          <span className="flex-1 text-foreground truncate">
                             {sub.label}
                           </span>
                         </Link>
@@ -137,7 +138,18 @@ function SidebarMenuItems({
                           sub.label === "Bodegas" ||
                           sub.label === "Categorías" ||
                           sub.label === "Listas de precios" ||
-                          sub.label === "Ajustes de inventario") && (
+                          sub.label === "Ajustes de inventario" ||
+                          sub.label === "Facturas de compra" ||
+                          sub.label === "Documento soporte" ||
+                          sub.label === "Notas de ajuste" ||
+                          sub.label === "Pagos" ||
+                          sub.label === "Pagos recurrentes" ||
+                          sub.label === "Notas débito" ||
+                          sub.label === "Órdenes de compra" ||
+                          sub.label === "Pagos recibidos" ||
+                          sub.label === "Devoluciones en venta" ||
+                          sub.label === "Cotizaciones" ||
+                          sub.label === "Remisiones") && (
                           <button
                             type="button"
                             className="
@@ -150,16 +162,7 @@ function SidebarMenuItems({
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              
-                              let newPath = '';
-                              if (sub.label === "Factura de venta") newPath = '/invoices/new';
-                              else if (sub.label === "Items de Venta") newPath = '/items/new';
-                              else if (sub.label === "Bodegas") newPath = '/inventario/bodegas/new';
-                              else if (sub.label === "Categorías") newPath = '/inventario/categorias/new';
-                              else if (sub.label === "Listas de precios") newPath = '/inventario/precios/new';
-                              else if (sub.label === "Ajustes de inventario") newPath = '/inventario/ajustes/new';
-                              
-                              if (newPath) onNavigate(newPath);
+                              if (sub.path) onNavigate(sub.path + '/new');
                             }}
                           >
                             <Plus className="w-4 h-4 text-primary" />
@@ -211,7 +214,13 @@ export function Sidebar({
   onHoverChange
 }: SidebarProps) {
   const [isHovered, setIsHovered] = useState(false)
-  const isSidebarExpanded = !isCollapsed || (isCollapsed && isHovered)
+  const isSidebarExpanded = isMobileMenuOpen || !isCollapsed || (isCollapsed && isHovered)
+
+  // Reset hover state when collapse status changes to ensure immediate visual feedback
+  React.useEffect(() => {
+    setIsHovered(false);
+    onHoverChange?.(false);
+  }, [isCollapsed, onHoverChange]);
 
   const handleMouseEnter = () => {
     if (isCollapsed) {
@@ -229,25 +238,21 @@ export function Sidebar({
 
   return (
     <>
+      {/* OVERLAY MOBILE */}
       {isMobileMenuOpen && (
         <div
-          className={`
-  fixed top-0 left-0 z-40
-  h-screen bg-white border-r border-sidebar-border
-  transition-all duration-300
-  ${isSidebarExpanded ? 'w-64' : 'w-14'}
-  flex flex-col
-`}
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden transition-opacity"
           onClick={onToggleMobileMenu}
         />
       )}
 
-      <div
+    <div
         className={`
     fixed top-0 left-0 z-40
     h-screen bg-white border-r border-sidebar-border
-    transition-all duration-300
+    transition-[width] duration-100 ease-in-out
     ${isSidebarExpanded ? 'w-64' : 'w-14'}
+    ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
     flex flex-col
   `}
         onMouseEnter={handleMouseEnter}
@@ -256,7 +261,7 @@ export function Sidebar({
         {/* Botón cerrar mobile */}
         <button
           onClick={onToggleMobileMenu}
-          className="lg:hidden absolute top-3 right-3 p-2 hover:bg-primary/10 rounded-lg z-10"
+          className="lg:hidden absolute top-3 right-3 p-2 hover:bg-primary/10 rounded-lg z-20"
         >
           <X className="w-5 h-5 text-muted-foreground" />
         </button>
@@ -268,10 +273,12 @@ export function Sidebar({
 
               <LogoHorizontal className="h-30 max-w-[190px] object-contain" />
 
-              <CollapseButton
-                isCollapsed={isCollapsed}
-                onToggleCollapse={onToggleCollapse}
-              />
+              <div className="hidden lg:block">
+                <CollapseButton
+                  isCollapsed={isCollapsed}
+                  onToggleCollapse={onToggleCollapse}
+                />
+              </div>
 
             </div>
           ) : (

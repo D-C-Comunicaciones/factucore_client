@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
-import { toast } from "sonner"
+import { showToast } from "@/components/sonner/CustomToaster"
 import { getSession } from "@/common/interfaces/session"
 
 interface BackendUser {
@@ -60,6 +60,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ✅ LOGIN SIN /me
     const login = async (email: string, password: string) => {
         try {
+            // 🔥 Obtener CSRF Cookie primero
+            await apiClient.csrfCookie()
+
             const res = await apiClient.post<any>(
                 "/auth/login",
                 { email, password },
@@ -67,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             )
 
             if (res.status === "error") {
-                toast.error(res.message || "Credenciales inválidas")
+                showToast(res.message || "Credenciales inválidas", "error")
                 return
             }
 
@@ -93,11 +96,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     : []
             })
 
-            toast.success("Inicio de sesión exitoso")
+            showToast("Inicio de sesión exitoso", "success")
             router.push("/dashboard")
 
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Credenciales inválidas")
+            showToast(error?.response?.data?.message || "Credenciales inválidas", "error")
         }
     }
 
@@ -110,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("session")
         setUser(null)
 
-        toast.success("Sesión cerrada")
+        showToast("Sesión cerrada", "success")
         router.push("/login")
     }
 

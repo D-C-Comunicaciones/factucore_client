@@ -27,7 +27,7 @@ export function Header({
   const initial = userName?.charAt(0).toUpperCase() || "?";
 
   return (
-    <header className="w-full transition-all duration-300 bg-white border-b border-gray-200 px-3 md:px-4 flex items-center justify-between sticky top-0 z-30 h-14">
+    <header className="w-full bg-white border-b border-gray-200 px-3 md:px-4 flex items-center justify-between sticky top-0 z-30 h-14">
 
       {/* IZQUIERDA */}
       <div className="flex items-center gap-1 md:gap-2 flex-1">

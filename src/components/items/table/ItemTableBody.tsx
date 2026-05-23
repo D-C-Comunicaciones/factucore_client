@@ -81,7 +81,7 @@ export function ItemTableBody({
 
               return (
                 <TableRow
-                  key={row.id}
+                  key={`${row.id}-${row.index}`}
                   data-state={isSelected ? "selected" : undefined}
                   onClick={(event) => handleRowClick(event, row)}
                   className={`
@@ -100,7 +100,7 @@ export function ItemTableBody({
 
                     return (
                       <TableCell
-                        key={cell.id}
+                        key={`${cell.id}-${row.index}`}
                         className={`
                           h-10 px-2 py-2 text-xs
                           ${isSelect ? "w-10" : ""}

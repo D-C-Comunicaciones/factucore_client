@@ -14,9 +14,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Item } from "@/components/items/table/columns";
-import { AlertCircle, X } from "lucide-react";
-import { toast } from "sonner";
+import { showToast } from "@/components/sonner/CustomToaster";
+import { useItems } from "@/hooks/items/useItems";
+import { useToggleItemStatus } from "@/hooks/items/useToggleItemStatus";
+import { useDeleteItem } from "@/hooks/items/useDeleteItem";
+import { useItemCatalogs } from "@/hooks/items/useItemCatalogs";
+import { useCreateItem } from "@/hooks/items/useCreateItem";
+import { Item } from "@/types/items";
 
 export interface FormState {
   itemType: "producto" | "servicio" | "combo";
@@ -30,51 +34,12 @@ export interface FormState {
   totalPrice: string;
 }
 
-/* -----------------------------------------------------------------------
-   Mock data – reemplazar por llamada a la API cuando esté disponible
-   ----------------------------------------------------------------------- */
-const MOCK_ITEMS: Item[] = [
-  {
-    id: 1,
-    name: "Servicio de consultoría",
-    reference: "SRV-001",
-    price: 250000,
-    description: "Consultoría especializada por hora en desarrollo de software.",
-    active: true,
-  },
-  {
-    id: 2,
-    name: "Licencia de software anual",
-    reference: "LIC-002",
-    price: 1200000,
-    description: "Licencia de uso anual para la plataforma de facturación electrónica.",
-    active: true,
-  },
-  {
-    id: 3,
-    name: "Soporte técnico mensual",
-    reference: "SOP-003",
-    price: 180000,
-    description: "Plan de soporte técnico con atención prioritaria durante el mes.",
-    active: false,
-  },
-  {
-    id: 4,
-    name: "Capacitación grupal",
-    reference: "CAP-004",
-    price: 500000,
-    description: "Sesión de capacitación para equipos de hasta 10 personas.",
-    active: true,
-  },
-];
 
 export default function ItemsPage() {
   const router = useRouter();
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(10);
-  const [items, setItems] = React.useState<Item[]>(MOCK_ITEMS);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [exportModalOpen, setExportModalOpen] = React.useState(false);
 
@@ -92,59 +57,57 @@ export default function ItemsPage() {
   });
   const [errors, setErrors] = React.useState<Record<string, boolean>>({});
 
+  const catalogs = useItemCatalogs();
+  const { mutate: createItem, isPending: isCreating } = useCreateItem();
+
   const debouncedSearch = useDebounce(search, 600);
 
-  /* ---------- Filtering (client-side) ---------- */
-  const filteredItems = React.useMemo(() => {
-    if (!debouncedSearch) return items;
-    const lower = debouncedSearch.toLowerCase();
-    return items.filter(
-      (item) =>
-        item.name.toLowerCase().includes(lower) ||
-        item.reference.toLowerCase().includes(lower)
-    );
-  }, [items, debouncedSearch]);
-
-  /* ---------- Pagination (client-side) ---------- */
-  const paginatedItems = React.useMemo(() => {
-    const start = (page - 1) * perPage;
-    return filteredItems.slice(start, start + perPage);
-  }, [filteredItems, page, perPage]);
-
-  const pagination = {
-    current_page: page,
+  const { data, isLoading: isLoadingItems, isRefetching, refetch } = useItems({
+    search: debouncedSearch,
+    page,
     per_page: perPage,
-    total: filteredItems.length,
-    last_page: Math.max(1, Math.ceil(filteredItems.length / perPage)),
-    from: filteredItems.length === 0 ? 0 : (page - 1) * perPage + 1,
-    to: Math.min(page * perPage, filteredItems.length),
+  });
+
+  const { mutate: toggleStatus } = useToggleItemStatus();
+  const { mutate: deleteItem } = useDeleteItem();
+
+  const items = data?.data || [];
+  const pagination = data ? {
+    current_page: data.current_page,
+    per_page: data.per_page,
+    total: data.total,
+    last_page: data.last_page,
+    from: (data.current_page - 1) * data.per_page + 1,
+    to: Math.min(data.current_page * data.per_page, data.total),
+  } : {
+    current_page: 1,
+    per_page: 10,
+    total: 0,
+    last_page: 1,
+    from: 0,
+    to: 0,
   };
 
   /* ---------- Handlers ---------- */
   const handleRefresh = React.useCallback(() => {
-    setIsRefreshing(true);
-    window.setTimeout(() => setIsRefreshing(false), 600);
-  }, []);
+    refetch();
+  }, [refetch]);
 
   const handleView = React.useCallback((id: number) => {
-    console.log("Ver ítem:", id);
-  }, []);
+    router.push(`/items/${id}`);
+  }, [router]);
 
   const handleEdit = React.useCallback((id: number) => {
-    console.log("Editar ítem:", id);
-  }, []);
+    router.push(`/items/${id}/edit`);
+  }, [router]);
 
   const handleToggleActive = React.useCallback((id: number) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, active: !item.active } : item
-      )
-    );
-  }, []);
+    toggleStatus(id);
+  }, [toggleStatus]);
 
   const handleDelete = React.useCallback((id: number) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  }, []);
+    deleteItem(id);
+  }, [deleteItem]);
 
   const handleNewItem = React.useCallback(() => {
     setModalOpen(true);
@@ -182,47 +145,87 @@ export default function ItemsPage() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      toast.custom((t) => (
-        <div className="bg-[#fef2f2] border border-[#fee2e2] rounded-2xl p-4 shadow-xl max-w-md flex items-start gap-3 relative animate-in slide-in-from-right w-[380px]">
-          <div className="w-10 h-10 rounded-full bg-[#fee2e2] flex items-center justify-center shrink-0">
-            <AlertCircle className="w-6 h-6 text-[#dc2626]" />
-          </div>
-          <div className="flex-1 pr-6">
-            <h4 className="text-sm font-bold text-[#1e293b]">Error</h4>
-            <p className="text-sm text-[#475569] mt-0.5">
-              Debes verificar los campos marcados en rojo para continuar
-            </p>
-          </div>
-          <button
-            onClick={() => toast.dismiss(t)}
-            className="absolute top-4 right-4 text-[#94a3b8] hover:text-[#64748b]"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ), { duration: 4000, unstyled: true });
+      showToast("Debes verificar los campos marcados en rojo para continuar", "error");
       return false;
     }
     return true;
   };
 
+  const handleAdvanced = () => {
+    const params = new URLSearchParams({
+      type: form.itemType,
+      name: form.name,
+      basePrice: form.basePrice,
+      tax: form.tax,
+      unit: form.unit,
+      bodega: form.bodega,
+      qty: form.initialQty,
+      cost: form.initialCost
+    });
+    router.push(`/items/new?${params.toString()}`);
+    handleCloseModal();
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      console.log("Ítem creado:", form);
-      // Aquí iría la llamada a la API
-      handleCloseModal();
+      if (form.itemType === "combo") {
+        // Redirigir siempre al formulario avanzado para combos
+        handleAdvanced();
+      } else {
+        // Buscar IDs en catálogos
+        const unitMeasure = catalogs.unitMeasures?.find((u: any) => u.name?.toLowerCase() === form.unit.toLowerCase());
+        const unitMeasureId = unitMeasure ? unitMeasure.id : 1; // Fallback a 1
+
+        const warehouse = catalogs.warehouses?.find((w: any) => w.name?.toLowerCase() === form.bodega.toLowerCase());
+        const warehouseId = warehouse ? warehouse.id : 1; // Fallback a 1
+
+        const taxRate = catalogs.taxes?.find((t: any) => t.percentage == form.tax);
+        const taxId = taxRate ? taxRate.id : null;
+
+        const payload: any = {
+            basic_info: {
+                type_item_id: form.itemType === "producto" ? 1 : 2,
+                name: form.name,
+                code: "REF-" + Date.now(), // Código generado automáticamente
+                unit_measure_id: unitMeasureId,
+                has_variants: false,
+            },
+            pricing: {
+                base_price: parseFloat(form.basePrice) || 0,
+                total_price: parseFloat(form.totalPrice) || 0,
+                default_cost_price: parseFloat(form.initialCost) || 0,
+                tax_id: taxId,
+                apply_to_variants: false,
+            }
+        };
+
+        if (form.itemType === "producto") {
+            payload.inventory = {
+                initial_stock: {
+                    warehouse_id: warehouseId,
+                    quantity: parseFloat(form.initialQty) || 0,
+                }
+            };
+        }
+
+        createItem(payload, {
+          onSuccess: () => {
+            handleCloseModal();
+          }
+        });
+      }
     }
   };
 
   const handleExport = (config: ExportConfig) => {
     // Generar contenido para exportar (CSV básico)
     const headers = ["Nombre", "Referencia", "Precio", "Estado"];
-    const rows = filteredItems.map(item => [
+    const rows = items.map((item: Item) => [
       item.name,
       item.reference,
-      config.decimalSeparator === "comma" 
-        ? item.price.toString().replace(".", ",") 
+      config.decimalSeparator === "comma"
+        ? item.price.toString().replace(".", ",")
         : item.price.toString(),
       item.active ? "Activo" : "Inactivo"
     ]);
@@ -230,7 +233,7 @@ export default function ItemsPage() {
     const separator = config.fileType === "csv" ? "," : ";";
     const csvContent = [
       headers.join(separator),
-      ...rows.map(r => r.join(separator))
+      ...rows.map((r: any[]) => r.join(separator))
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -252,7 +255,7 @@ export default function ItemsPage() {
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
 
-            <h1 className="text-lg md:text-xl font-bold text-foreground">
+            <h1 className="page-title mb-0">
               Ítems de Venta
             </h1>
 
@@ -263,11 +266,10 @@ export default function ItemsPage() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-foreground"
+                    className="btn-base border-border bg-white text-foreground hover:bg-primary/10 hover:text-foreground"
                   >
                     Más acciones
-                    <ChevronDown className="w-3 h-3 ml-1" />
+                    <ChevronDown className="w-4 h-4 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
 
@@ -276,7 +278,7 @@ export default function ItemsPage() {
                   className="w-44 bg-popover text-popover-foreground border border-border"
                 >
                   <DropdownMenuItem
-                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer"
+                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer text-base py-2"
                     onClick={() => router.push("/items/imports/new")}
                   >
                     <Upload className="w-4 h-4 mr-2" />
@@ -284,7 +286,7 @@ export default function ItemsPage() {
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer"
+                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer text-base py-2"
                     onClick={() => setExportModalOpen(true)}
                   >
                     <Download className="w-4 h-4 mr-2" />
@@ -292,7 +294,7 @@ export default function ItemsPage() {
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors"
+                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors text-base py-2"
                     onClick={handleRefresh}
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
@@ -303,17 +305,16 @@ export default function ItemsPage() {
 
               {/* Nuevo ítem */}
               <Button
-                size="sm"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs px-6 ml-1"
+                className="btn-base bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground ml-1"
                 onClick={handleNewItem}
               >
-                <Plus className="w-3 h-3 mr-1" />
+                <Plus className="w-4 h-4 mr-1" />
                 Nuevo ítem
               </Button>
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="page-subtitle mb-0">
             Gestiona los productos y servicios que ofreces para asociarlos en tus facturas.
           </p>
         </div>
@@ -321,9 +322,9 @@ export default function ItemsPage() {
         {/* TABLE */}
         <div className="w-full">
           <ItemTable
-            items={paginatedItems}
-            loading={isRefreshing}
-            refreshing={isRefreshing}
+            items={items}
+            loading={isLoadingItems}
+            refreshing={isRefetching}
             onRefresh={handleRefresh}
             search={search}
             setSearch={setSearch}
@@ -351,6 +352,8 @@ export default function ItemsPage() {
         setErrors={setErrors}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
+        onAdvanced={handleAdvanced}
+        isCreating={isCreating}
       />
 
       {/* EXPORT MODAL */}

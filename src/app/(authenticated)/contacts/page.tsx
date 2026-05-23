@@ -107,7 +107,7 @@ export default function ContactPage() {
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
 
-            <h1 className="text-lg md:text-xl font-bold text-foreground">
+            <h1 className="page-title mb-0">
               Contactos
             </h1>
 
@@ -116,10 +116,9 @@ export default function ContactPage() {
               {/* Papelera */}
               <Button
                 variant="outline"
-                size="sm"
-                className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-foreground"
+                className="btn-base border-border text-foreground hover:bg-primary/10 hover:text-foreground"
               >
-                <Trash2 className="w-3 h-3 mr-1 text-foreground" />
+                <Trash2 className="w-4 h-4 mr-1 text-foreground" />
                 Papelera
               </Button>
 
@@ -128,11 +127,10 @@ export default function ContactPage() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-foreground"
+                    className="btn-base border-border bg-white text-foreground hover:bg-primary/10 hover:text-foreground"
                   >
                     Más acciones
-                    <ChevronDown className="w-3 h-3 ml-1" />
+                    <ChevronDown className="w-4 h-4 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
 
@@ -141,28 +139,28 @@ export default function ContactPage() {
                   className="w-56 bg-popover text-popover-foreground border border-border"
                 >
                   <DropdownMenuItem
-                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors"
+                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors text-base py-2"
                   >
                     <Upload className="w-4 h-4 mr-2 text-primary" />
                     Importar Contactos
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors"
+                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors text-base py-2"
                   >
                     <Download className="w-4 h-4 mr-2 text-primary" />
                     Exportar a Excel
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors"
+                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors text-base py-2"
                   >
                     <Download className="w-4 h-4 mr-2 text-primary" />
                     Exportar personas asociadas a Excel
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors"
+                    className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors text-base py-2"
                   >
                     <Clock className="w-4 h-4 mr-2 text-primary" />
                     Historial de operaciones masivas
@@ -172,16 +170,15 @@ export default function ContactPage() {
 
               {/* Nuevo contacto */}
               <Button
-                size="sm"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
+                className="btn-base bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                <Plus className="w-3 h-3 mr-1" />
+                <Plus className="w-4 h-4 mr-1" />
                 Nuevo contacto
               </Button>
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="page-subtitle mb-0">
             Crea tus clientes, proveedores y demás contactos para asociarlos en tus documentos.
           </p>
         </div>

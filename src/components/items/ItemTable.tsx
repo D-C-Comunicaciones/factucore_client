@@ -102,10 +102,8 @@ export function ItemTable({
     });
   }, [items]);
 
-  const visibleIds = React.useMemo(() => items.map((i) => String(i.id)), [items]);
-  const allSelected =
-    visibleIds.length > 0 && visibleIds.every((id) => Boolean(selection[id]));
-  const someSelected = visibleIds.some((id) => Boolean(selection[id]));
+  const allSelected = items.length > 0 && items.every((item) => selection[String(item.id)] === true);
+  const someSelected = items.length > 0 && items.some((item) => selection[String(item.id)] === true);
 
   const columns = React.useMemo(
     () =>
@@ -127,7 +125,13 @@ export function ItemTable({
     data: items,
     columns,
     getRowId: (row) => String(row.id),
-    state: { sorting, columnFilters, columnVisibility },
+    state: { 
+      sorting, 
+      columnFilters, 
+      columnVisibility,
+      rowSelection: selection,
+    },
+    onRowSelectionChange: setSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -149,8 +153,14 @@ export function ItemTable({
 
   return (
     <div className="space-y-4">
-      {selectedCount > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
+      <div 
+        className={`transition-all duration-500 ease-in-out overflow-hidden ${
+          selectedCount > 0 
+            ? "max-h-32 opacity-100 translate-y-0 mb-4" 
+            : "max-h-0 opacity-0 -translate-y-4 mb-0 pointer-events-none"
+        }`}
+      >
+        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center shadow-sm">
           <div className="flex items-center gap-3 h-full">
             <span className="text-[13px] font-medium text-[#64748b]">
               {selectedCount} seleccionados
@@ -192,7 +202,7 @@ export function ItemTable({
             <X className="w-4 h-4" />
           </button>
         </div>
-      )}
+      </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         <ItemTableToolbar

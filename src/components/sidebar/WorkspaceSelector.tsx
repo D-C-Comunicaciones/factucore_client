@@ -74,7 +74,7 @@ export function WorkspaceSelector() {
                   <Logo className="h-4" />
                 </span>
                 <span className="flex-1 text-left">
-                  Alegra Contabilidad
+                  Factucore Contabilidad
                   <div className="text-xs font-normal text-gray-500 leading-tight">
                     Facturación, reportes, ingresos y más.
                   </div>

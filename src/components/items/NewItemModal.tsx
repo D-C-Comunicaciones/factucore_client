@@ -112,6 +112,14 @@ function MoneyInput({
 }) {
   const isError = className?.includes("border-destructive");
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9.]/g, "");
+    // Evitar múltiples puntos
+    if ((val.match(/\./g) || []).length <= 1) {
+      onChange(val);
+    }
+  };
+
   return (
     <div className="relative flex items-center">
       <span className="absolute left-3 text-muted-foreground text-sm">$</span>
@@ -120,7 +128,7 @@ function MoneyInput({
         inputMode="decimal"
         placeholder={placeholder ?? "0.000"}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={handleChange}
         className={className}
       />
       {isError && (
@@ -141,6 +149,8 @@ interface NewItemModalProps {
   errors: Record<string, boolean>;
   setErrors: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   onSubmit: (e: React.FormEvent) => void;
+  onAdvanced: () => void;
+  isCreating?: boolean;
 }
 
 export function NewItemModal({
@@ -150,7 +160,9 @@ export function NewItemModal({
   setForm,
   errors,
   setErrors,
-  onSubmit
+  onSubmit,
+  onAdvanced,
+  isCreating
 }: NewItemModalProps) {
   const router = useRouter();
 
@@ -404,11 +416,12 @@ export function NewItemModal({
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
                       value={form.initialQty}
                       onChange={(e) => {
-                        set("initialQty", e.target.value);
+                        const val = e.target.value.replace(/[^0-9]/g, "");
+                        set("initialQty", val);
                         if (errors.initialQty) setErrors(prev => ({ ...prev, initialQty: false }));
                       }}
                       className={cn(baseInput, "w-full rounded-md pr-10", errors.initialQty && "border-destructive ring-destructive/20")}
@@ -539,10 +552,7 @@ export function NewItemModal({
           <div className="px-6 py-4 border-t border-border/40 flex items-center justify-between bg-[#f8fafc] rounded-b-2xl">
             <button
               type="button"
-              onClick={() => {
-                onClose();
-                router.push("/items/new");
-              }}
+              onClick={onAdvanced}
               className="inline-flex items-center gap-2 px-3 py-1.5 text-[13px] text-[#2563eb] font-bold no-underline hover:bg-background rounded-lg transition-all"
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -559,9 +569,10 @@ export function NewItemModal({
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-bold rounded-xl bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-all shadow-md active:scale-95"
+                disabled={isCreating}
+                className="px-5 py-2 text-sm font-bold rounded-xl bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-all shadow-md active:scale-95 disabled:opacity-50"
               >
-                {form.itemType === "combo" ? "Completar combo" : `Crear ${labelFor}`}
+                {isCreating ? "Creando..." : form.itemType === "combo" ? "Siguiente" : `Crear ${labelFor}`}
               </button>
             </div>
           </div>

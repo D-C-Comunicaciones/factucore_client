@@ -104,27 +104,22 @@ export default function InvoicesPage({ onNavigate }: FacturasVentaViewProps) {
                 </div>
 
                 <div className="w-full">
-                    {isError ? (
-                        <div className="py-10 text-center text-red-500">
-                            Error al cargar facturas
-                        </div>
-                    ) : (
-                        <InvoiceTable
-                            invoices={invoices}
-                            loading={isLoading || isFetching || isRefreshing}
-                            refreshing={isRefreshing}
-                            onRefresh={handleRefreshTable}
-                            columnFilters={columnFilters}
-                            setColumnFilters={setColumnFilters}
-                            search={search}
-                            setSearch={setSearch}
-                            page={page}
-                            setPage={setPage}
-                            perPage={perPage}
-                            setPerPage={setPerPage}
-                            pagination={pagination}
-                        />
-                    )}
+                    <InvoiceTable
+                        invoices={invoices}
+                        loading={isLoading || isFetching || isRefreshing}
+                        refreshing={isRefreshing}
+                        onRefresh={handleRefreshTable}
+                        columnFilters={columnFilters}
+                        setColumnFilters={setColumnFilters}
+                        search={search}
+                        setSearch={setSearch}
+                        page={page}
+                        setPage={setPage}
+                        perPage={perPage}
+                        setPerPage={setPerPage}
+                        pagination={pagination}
+                        isError={isError}
+                    />
                 </div>
 
             </div>

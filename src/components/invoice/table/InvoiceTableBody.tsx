@@ -19,9 +19,10 @@ interface InvoiceTableBodyProps {
   columns: ColumnDef<InvoiceSummary>[];
   loading?: boolean;
   showNoDataMessage?: boolean;
+  isError?: boolean;
 }
 
-export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = false }: InvoiceTableBodyProps) {
+export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = false, isError = false }: InvoiceTableBodyProps) {
   const router = useRouter();
   const sortableIds = ["number", "created_at", "payment_due_date"];
 
@@ -74,6 +75,17 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
           ) : loading ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={columns.length} className="h-64 bg-white" />
+            </TableRow>
+          ) : isError ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={columns.length} className="h-64 bg-white text-center align-middle">
+                <div className="flex flex-col items-center justify-center h-full py-8">
+                  <div className="text-lg font-semibold text-red-500">Error al cargar facturas</div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    Verifica tu conexión a internet e intenta de nuevo
+                  </div>
+                </div>
+              </TableCell>
             </TableRow>
           ) : (
             /* Empty state */

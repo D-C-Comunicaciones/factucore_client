@@ -15,6 +15,9 @@ class ApiClient {
         this.client = axios.create({
             baseURL,
             withCredentials: true, // 🔥 CLAVE: enviar cookies automáticamente
+            withXSRFToken: true,
+            xsrfCookieName: "XSRF-TOKEN",
+            xsrfHeaderName: "X-XSRF-TOKEN",
             headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
@@ -56,6 +59,12 @@ class ApiClient {
                 return Promise.reject(error)
             }
         )
+    }
+
+    // 🔥 CSRF Cookie
+    async csrfCookie(): Promise<void> {
+        const baseUrl = this.client.defaults.baseURL;
+        await this.client.get(`${baseUrl}/sanctum/csrf-cookie`);
     }
 
     // 🔥 GET

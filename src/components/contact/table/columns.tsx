@@ -131,12 +131,9 @@ export function getContactColumns(
       size: 48,
       header: ({ table }) => {
         const showIndeterminate = someSelected && !allSelected;
-
         return (
           <Checkbox
-            checked={
-              allSelected || (showIndeterminate ? "indeterminate" : false)
-            }
+            checked={allSelected ? true : showIndeterminate ? "indeterminate" : false}
             onClick={(e) => e.stopPropagation()}
             onCheckedChange={() =>
               onToggleAll ? onToggleAll() : table.toggleAllPageRowsSelected()

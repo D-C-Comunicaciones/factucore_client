@@ -19,6 +19,10 @@ export interface Item {
   price: number;
   description: string;
   active: boolean;
+  permissions: {
+    can_edit: boolean;
+    can_delete: boolean;
+  };
 }
 
 /* -----------------------------------------------------------------------
@@ -61,7 +65,7 @@ function ItemActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:bg-background hover:text-primary"
+              className="h-7 w-7 hover:bg-background"
               onClick={() => onView(item.id)}
             >
               <Eye className="w-3.5 h-3.5" />
@@ -78,14 +82,15 @@ function ItemActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:bg-background hover:text-primary"
+              className="h-7 w-7 hover:bg-background disabled:opacity-30"
               onClick={() => onEdit(item.id)}
+              disabled={!item.permissions.can_edit}
             >
               <Pencil className="w-3.5 h-3.5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Editar</p>
+            <p>{item.permissions.can_edit ? "Editar" : "No tienes permisos para editar este ítem"}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -95,8 +100,9 @@ function ItemActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:bg-background hover:text-primary"
+              className="h-7 w-7 hover:bg-background disabled:opacity-30"
               onClick={() => onToggleActive(item.id)}
+              disabled={!item.permissions.can_edit}
             >
               {item.active ? (
                 <Lightbulb className="w-3.5 h-3.5" />
@@ -106,7 +112,7 @@ function ItemActionsCell({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>{item.active ? "Desactivar" : "Activar"}</p>
+            <p>{item.permissions.can_edit ? (item.active ? "Desactivar" : "Activar") : "No tienes permisos para cambiar el estado"}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -116,14 +122,15 @@ function ItemActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:bg-background hover:text-primary"
+              className="h-7 w-7 hover:bg-background disabled:opacity-30"
               onClick={() => onDelete(item.id)}
+              disabled={!item.permissions.can_delete}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Eliminar</p>
+            <p>{item.permissions.can_delete ? "Eliminar" : "Este ítem no puede ser eliminado (tiene transacciones asociadas)"}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -154,7 +161,8 @@ export function getItemColumns(
         const showIndeterminate = someSelected && !allSelected;
         return (
           <Checkbox
-            checked={allSelected || (showIndeterminate ? "indeterminate" : false)}
+            key={allSelected ? "all-selected" : someSelected ? "some-selected" : "none-selected"}
+            checked={allSelected ? true : showIndeterminate ? "indeterminate" : false}
             onClick={(e) => e.stopPropagation()}
             onCheckedChange={() =>
               onToggleAll ? onToggleAll() : table.toggleAllPageRowsSelected()

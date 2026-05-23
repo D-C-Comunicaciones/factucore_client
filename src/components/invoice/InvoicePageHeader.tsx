@@ -32,7 +32,7 @@ export function InvoicePageHeader({ onNavigate }: InvoicePageHeaderProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
+                className="text-xs border-border bg-white text-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
               >
                 Más acciones
                 <ChevronDown className="w-3 h-3 ml-1" />
