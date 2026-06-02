@@ -13,17 +13,39 @@ import {
 import React from "react";
 import { cn } from "@/lib/utils";
 
+import { useCatalogs } from "@/hooks/useCatalogs";
+
 const selectItemClass = "rounded-lg cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary focus:bg-primary/10 data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary";
 
-const ACCOUNT_OPTIONS = ["Ventas", "Ingresos operacionales", "Otros ingresos"];
-const INVENTORY_ACCOUNTS = ["Inventarios", "Mercancía", "Materia prima"];
-const COST_ACCOUNTS = ["Costos del inventario", "Costo de ventas", "Costos directos"];
-
-export function AccountingSection() {
+export function AccountingSection({
+  salesAccountId,
+  setSalesAccountId,
+  inventoryAccountId,
+  setInventoryAccountId,
+  costAccountId,
+  setCostAccountId,
+}: {
+  salesAccountId: number | undefined;
+  setSalesAccountId: (id: number | undefined) => void;
+  inventoryAccountId: number | undefined;
+  setInventoryAccountId: (id: number | undefined) => void;
+  costAccountId: number | undefined;
+  setCostAccountId: (id: number | undefined) => void;
+}) {
   const baseInput = "bg-white h-[34px] pl-3 pr-3 text-sm border border-foreground/20 shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none flex items-center w-full rounded-xl box-border";
-  const [saleAccount, setSaleAccount] = React.useState("Ventas");
-  const [inventoryAccount, setInventoryAccount] = React.useState("Inventarios");
-  const [costAccount, setCostAccount] = React.useState("Costos del inventario");
+  const { salesAccounts, inventoryAccounts, costAccounts } = useCatalogs();
+
+  React.useEffect(() => {
+    if (!salesAccountId && salesAccounts.length > 0) {
+      setSalesAccountId(salesAccounts[0].id);
+    }
+    if (!inventoryAccountId && inventoryAccounts.length > 0) {
+      setInventoryAccountId(inventoryAccounts[0].id);
+    }
+    if (!costAccountId && costAccounts.length > 0) {
+      setCostAccountId(costAccounts[0].id);
+    }
+  }, [salesAccounts, inventoryAccounts, costAccounts, salesAccountId, inventoryAccountId, costAccountId, setSalesAccountId, setInventoryAccountId, setCostAccountId]);
 
   return (
     <SectionCard title="Configuración contable" defaultOpen={true}>
@@ -37,20 +59,20 @@ export function AccountingSection() {
             Cuenta Contable
             <Tooltip>
               <TooltipTrigger asChild>
-                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                <span tabIndex={0} className="cursor-help outline-none"><HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" /></span>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-xs">
                 Selecciona la cuenta contable en la que se registrarán los valores por ventas del producto.
               </TooltipContent>
             </Tooltip>
           </label>
-          <Select value={saleAccount} onValueChange={setSaleAccount}>
+          <Select value={salesAccountId?.toString() || ""} onValueChange={(val) => setSalesAccountId(parseInt(val))}>
             <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
               <SelectValue placeholder="Seleccionar" />
             </SelectTrigger>
             <SelectContent className="bg-white border border-border rounded-xl shadow-xl">
-              {ACCOUNT_OPTIONS.map((a) => (
-                <SelectItem key={a} value={a} className={selectItemClass}>{a}</SelectItem>
+              {salesAccounts.map((a: any) => (
+                <SelectItem key={a.id} value={a.id.toString()} className={selectItemClass}>{a.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -61,20 +83,20 @@ export function AccountingSection() {
             Cuenta de inventario
             <Tooltip>
               <TooltipTrigger asChild>
-                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                <span tabIndex={0} className="cursor-help outline-none"><HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" /></span>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-xs">
                 Selecciona la cuenta contable en la que se registrarán los valores de entradas y salidas del producto.
               </TooltipContent>
             </Tooltip>
           </label>
-          <Select value={inventoryAccount} onValueChange={setInventoryAccount}>
+          <Select value={inventoryAccountId?.toString() || ""} onValueChange={(val) => setInventoryAccountId(parseInt(val))}>
             <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
               <SelectValue placeholder="Seleccionar" />
             </SelectTrigger>
             <SelectContent className="bg-white border border-border rounded-xl shadow-xl">
-              {INVENTORY_ACCOUNTS.map((a) => (
-                <SelectItem key={a} value={a} className={selectItemClass}>{a}</SelectItem>
+              {inventoryAccounts.map((a: any) => (
+                <SelectItem key={a.id} value={a.id.toString()} className={selectItemClass}>{a.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -86,20 +108,20 @@ export function AccountingSection() {
           Cuenta de costo de venta
           <Tooltip>
             <TooltipTrigger asChild>
-              <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+              <span><HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" /></span>
             </TooltipTrigger>
             <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-xs">
               Selecciona la cuenta contable en la que se registrarán el valor del costo de venta del producto.
             </TooltipContent>
           </Tooltip>
         </label>
-        <Select value={costAccount} onValueChange={setCostAccount}>
+        <Select value={costAccountId?.toString() || ""} onValueChange={(val) => setCostAccountId(parseInt(val))}>
           <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
             <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent className="bg-white border border-border rounded-xl shadow-xl">
-            {COST_ACCOUNTS.map((a) => (
-              <SelectItem key={a} value={a} className={selectItemClass}>{a}</SelectItem>
+            {costAccounts.map((a: any) => (
+              <SelectItem key={a.id} value={a.id.toString()} className={selectItemClass}>{a.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

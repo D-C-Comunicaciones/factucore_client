@@ -17,7 +17,11 @@ import {
   SelectSeparator,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CreateWarehouseModal } from "./CreateWarehouseModal";
+import { NewWarehouseModal } from "./NewWarehouseModal";
+import { warehousesApi } from "@/lib/warehouses";
+import { queryClient } from "@/lib/queryClient";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { showToast } from "@/components/sonner/CustomToaster";
 
 interface WarehouseModalProps {
   open: boolean;
@@ -25,6 +29,7 @@ interface WarehouseModalProps {
   onSave: (data: WarehouseData) => void;
   initialData?: WarehouseData;
   existingWarehouses?: string[];
+  catalogs?: any;
 }
 
 export interface WarehouseData {
@@ -34,7 +39,7 @@ export interface WarehouseData {
   maxQty: string;
 }
 
-export function WarehouseModal({ open, onOpenChange, onSave, initialData, existingWarehouses = [] }: WarehouseModalProps) {
+export function WarehouseModal({ open, onOpenChange, onSave, initialData, existingWarehouses = [], catalogs }: WarehouseModalProps) {
   const [data, setData] = React.useState<WarehouseData>({
     warehouse: "",
     initialQty: "",
@@ -63,7 +68,8 @@ export function WarehouseModal({ open, onOpenChange, onSave, initialData, existi
   const baseInput =
     "bg-white h-8 px-3 text-sm border border-foreground/20 rounded-md shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none";
 
-  const allOptions = Array.from(new Set(["Principal", "Secundaria", ...extraOptions, data.warehouse])).filter(Boolean);
+  const catalogOptions = catalogs?.warehouses?.map((w: any) => w.name) || ["Principal", "Secundaria"];
+  const allOptions = Array.from(new Set([...catalogOptions, ...extraOptions, data.warehouse])).filter(Boolean);
   const visibleOptions = allOptions.filter(opt => !existingWarehouses.includes(opt) || opt === data.warehouse);
 
   const handleSave = () => {
@@ -212,17 +218,24 @@ export function WarehouseModal({ open, onOpenChange, onSave, initialData, existi
         </DialogContent>
       </Dialog>
 
-      <CreateWarehouseModal
+      <NewWarehouseModal
         open={isCreating}
         onOpenChange={(v) => {
           if (!v) setIsCreating(false);
         }}
         onCancel={() => setIsCreating(false)}
-        onSave={(newWarehouseData) => {
-          setExtraOptions(prev => [...prev, newWarehouseData.name]);
-          setData({ ...data, warehouse: newWarehouseData.name });
-          setErrorWarehouse(false);
-          setIsCreating(false);
+        onSave={async (newWarehouseData) => {
+          try {
+            await warehousesApi.createWarehouse(newWarehouseData);
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.catalogs.warehouses() });
+            setExtraOptions(prev => [...prev, newWarehouseData.name]);
+            setData({ ...data, warehouse: newWarehouseData.name });
+            setErrorWarehouse(false);
+            setIsCreating(false);
+            showToast(`La bodega "${newWarehouseData.name}" fue creada exitosamente.`, "success");
+          } catch (error) {
+            showToast("Ocurrió un error al crear la bodega. Intenta de nuevo.", "error");
+          }
         }}
       />
     </>

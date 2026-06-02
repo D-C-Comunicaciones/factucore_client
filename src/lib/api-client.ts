@@ -48,10 +48,18 @@ class ApiClient {
                 if (error.response) {
                     const status = error.response.status
 
-                    // 🔥 Si no autorizado → limpiar sesión
+                    // 🔥 Si no autorizado → limpiar sesión y redirigir
                     if (status === 401) {
                         if (typeof window !== "undefined") {
-                            localStorage.removeItem("auth_user")
+                            if (window.location.pathname !== "/login") {
+                                localStorage.clear()
+                                sessionStorage.clear()
+                                
+                                const { queryClient } = require("./queryClient")
+                                queryClient.clear()
+
+                                window.location.href = "/login"
+                            }
                         }
                     }
                 }
@@ -82,6 +90,12 @@ class ApiClient {
     // 🔥 PATCH
     async patch<T>(endpoint: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
         const response = await this.client.patch<ApiResponse<T>>(endpoint, data, config)
+        return response.data
+    }
+
+    // 🔥 PUT
+    async put<T>(endpoint: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+        const response = await this.client.put<ApiResponse<T>>(endpoint, data, config)
         return response.data
     }
 

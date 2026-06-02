@@ -144,6 +144,7 @@ export default function LoginPage() {
                 alt="Login"
                 fill
                 priority
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover object-center"
               />
               <div className="absolute inset-0 bg-white/30" />

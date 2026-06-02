@@ -9,7 +9,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { attributesApi } from "@/lib/attributes";
 import { showToast } from "../sonner/CustomToaster";
 
 interface AttributeModalProps {
@@ -21,6 +23,8 @@ interface AttributeModalProps {
 export function AttributeModal({ open, onOpenChange, onSave }: AttributeModalProps) {
   const [name, setName] = React.useState("");
   const [attributes, setAttributes] = React.useState<string[]>([""]);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const queryClient = useQueryClient();
   const [errors, setErrors] = React.useState<{ name: boolean; attributes: boolean[] }>({
     name: false,
     attributes: [false],
@@ -67,7 +71,7 @@ export function AttributeModal({ open, onOpenChange, onSave }: AttributeModalPro
     setErrors(prev => ({ ...prev, attributes: newErrors }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     let hasError = false;
     const newErrors = {
       name: !name.trim(),
@@ -85,8 +89,24 @@ export function AttributeModal({ open, onOpenChange, onSave }: AttributeModalPro
       return;
     }
 
-    onSave(name, attributes);
-    onOpenChange(false);
+    setIsSubmitting(true);
+    try {
+      await attributesApi.createAttribute({
+        name,
+        values: attributes.map(attr => ({ value: attr }))
+      });
+      
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.catalogs.attributes()
+      });
+
+      onSave(name, attributes);
+      onOpenChange(false);
+    } catch (error) {
+      showToast("Ocurrió un error al crear el atributo", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -199,15 +219,17 @@ export function AttributeModal({ open, onOpenChange, onSave }: AttributeModalPro
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="px-5 py-2 bg-white border border-border hover:bg-muted text-foreground text-sm font-bold rounded-xl transition-all cursor-pointer"
+            disabled={isSubmitting}
+            className="px-5 py-2 bg-white border border-border hover:bg-muted text-foreground text-sm font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
           <button
             onClick={handleSave}
-            className="px-8 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-95"
+            disabled={isSubmitting}
+            className="px-8 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
           >
-            Guardar
+            {isSubmitting ? "Guardando..." : "Guardar"}
           </button>
         </div>
       </DialogContent>

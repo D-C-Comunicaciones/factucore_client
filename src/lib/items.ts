@@ -1,13 +1,28 @@
-import { apiClient } from "./api-client";
-import { Item } from "@/types/items";
-import { ApiResponse, PaginatedData } from "@/types/api";
+import { apiClient } from "@/lib/api-client";
+import {
+    ItemResponse,
+    CreateItemPayload,
+    UpdateItemPayload,
+    UpdateVariantPayload,
+    ItemListResponse,
+    GetItemByIdResponse
+} from "@/types/items";
+import { PaginatedData } from "@/types/api";
 
 export const itemsApi = {
     /**
      * Obtiene la lista de ítems paginada
      */
-    getItems: async (params?: Record<string, any>) => {
-        const response = await apiClient.get<PaginatedData<Item>>("/items", { params });
+    getItems: async (
+        params?: Record<string, any>
+    ) => {
+        const response =
+            await apiClient.get<
+                PaginatedData<ItemListResponse>
+            >("/items", {
+                params,
+            });
+
         return response.data;
     },
 
@@ -15,21 +30,21 @@ export const itemsApi = {
      * Obtiene un ítem por ID
      */
     getItemById: async (id: number | string) => {
-        return apiClient.get<Item>(`/items/${id}`);
+        return apiClient.get<GetItemByIdResponse>(`/items/${id}`);
     },
 
     /**
      * Crea un nuevo ítem (Simple, con Variantes o Combo)
      */
-    createItem: async (payload: any) => {
-        return apiClient.post<Item>("/items", payload);
+    createItem: async (payload: CreateItemPayload) => {
+        return apiClient.post<ItemResponse>("/items", payload);
     },
 
     /**
      * Actualiza un ítem existente (Sync Inteligente)
      */
-    updateItem: async (id: number | string, payload: any) => {
-        return apiClient.patch<Item>(`/items/${id}`, payload);
+    updateItem: async (id: number | string, payload: Partial<UpdateItemPayload>) => {
+        return apiClient.patch<ItemResponse>(`/items/${id}`, payload);
     },
 
     /**
@@ -49,7 +64,7 @@ export const itemsApi = {
     /**
      * Actualiza una variante específica
      */
-    updateVariant: async (id: number | string, payload: any) => {
+    updateVariant: async (id: number | string, payload: UpdateVariantPayload) => {
         return apiClient.patch<any>(`/item-variants/${id}`, payload);
     },
 

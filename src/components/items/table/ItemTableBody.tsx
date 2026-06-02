@@ -11,11 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Item } from "./columns";
+import { ItemListResponse } from "@/types/items";
 
 interface ItemTableBodyProps {
-  table: TanTable<Item>;
-  columns: ColumnDef<Item>[];
+  table: TanTable<ItemListResponse>;
+  columns: ColumnDef<ItemListResponse>[];
   loading?: boolean;
   rowSelection?: Record<string, boolean>;
   onToggleSelection?: (id: number) => void;
@@ -86,10 +86,9 @@ export function ItemTableBody({
                   onClick={(event) => handleRowClick(event, row)}
                   className={`
                     border-b border-border
-                    ${
-                      isSelected
-                        ? "bg-primary/10 hover:bg-primary/15"
-                        : "hover:bg-muted/50 cursor-pointer"
+                    ${isSelected
+                      ? "bg-primary/10 hover:bg-primary/15"
+                      : "hover:bg-muted/50 cursor-pointer"
                     }
                   `}
                 >

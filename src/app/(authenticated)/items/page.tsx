@@ -18,22 +18,24 @@ import { showToast } from "@/components/sonner/CustomToaster";
 import { useItems } from "@/hooks/items/useItems";
 import { useToggleItemStatus } from "@/hooks/items/useToggleItemStatus";
 import { useDeleteItem } from "@/hooks/items/useDeleteItem";
-import { useItemCatalogs } from "@/hooks/items/useItemCatalogs";
+import { useCatalogs } from "@/hooks/useCatalogs";
 import { useCreateItem } from "@/hooks/items/useCreateItem";
-import { Item } from "@/types/items";
+import { CreateItemPayload, ItemListResponse } from "@/types/items";
 
-export interface FormState {
+export type FormState = {
   itemType: "producto" | "servicio" | "combo";
   name: string;
+  reference: string;
+  categoryId: string;
   bodega: string;
   unit: string;
-  initialQty: string;
+  comboCode: string;
+  initialQuantity: string;
   initialCost: string;
   basePrice: string;
-  tax: string;
   totalPrice: string;
-}
-
+  tax: string;
+};
 
 export default function ItemsPage() {
   const router = useRouter();
@@ -47,17 +49,28 @@ export default function ItemsPage() {
   const [form, setForm] = React.useState<FormState>({
     itemType: "producto",
     name: "",
+    reference: "",
+    categoryId: "",
     bodega: "Principal",
     unit: "",
-    initialQty: "",
+    comboCode: "",
+    initialQuantity: "",
     initialCost: "",
     basePrice: "",
-    tax: "0",
     totalPrice: "",
+    tax: "0",
   });
   const [errors, setErrors] = React.useState<Record<string, boolean>>({});
 
-  const catalogs = useItemCatalogs();
+  const catalogs = useCatalogs();
+  const catalogsData = {
+    taxes: catalogs.taxes,
+    taxTypes: catalogs.taxTypes,
+    categories: catalogs.categories,
+    warehouses: catalogs.warehouses,
+    unitMeasures: catalogs.unitMeasures,
+    isLoading: catalogs.isLoading,
+  };
   const { mutate: createItem, isPending: isCreating } = useCreateItem();
 
   const debouncedSearch = useDebounce(search, 600);
@@ -118,13 +131,16 @@ export default function ItemsPage() {
     setForm({
       itemType: "producto",
       name: "",
+      reference: "",
+      categoryId: "",
       bodega: "Principal",
       unit: "",
-      initialQty: "",
+      comboCode: "",
+      initialQuantity: "",
       initialCost: "",
       basePrice: "",
-      tax: "0",
       totalPrice: "",
+      tax: "0",
     });
     setErrors({});
   }, []);
@@ -134,10 +150,13 @@ export default function ItemsPage() {
     if (!form.name.trim()) newErrors.name = true;
     if (!form.unit) newErrors.unit = true;
 
-    // Solo validar cantidad/costo para productos
     if (form.itemType === "producto") {
-      if (!form.initialQty) newErrors.initialQty = true;
+      if (!form.bodega) newErrors.bodega = true;
+      if (!form.initialQuantity) newErrors.initialQuantity = true;
       if (!form.initialCost) newErrors.initialCost = true;
+    } else if (form.itemType === "combo") {
+      if (!form.bodega) newErrors.bodega = true;
+      // if (!form.comboCode) newErrors.comboCode = true; // Opcional según UI
     }
 
     if (!form.basePrice) newErrors.basePrice = true;
@@ -159,69 +178,244 @@ export default function ItemsPage() {
       tax: form.tax,
       unit: form.unit,
       bodega: form.bodega,
-      qty: form.initialQty,
+      qty: form.initialQuantity,
       cost: form.initialCost
     });
     router.push(`/items/new?${params.toString()}`);
     handleCloseModal();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
-    if (validateForm()) {
-      if (form.itemType === "combo") {
-        // Redirigir siempre al formulario avanzado para combos
-        handleAdvanced();
-      } else {
-        // Buscar IDs en catálogos
-        const unitMeasure = catalogs.unitMeasures?.find((u: any) => u.name?.toLowerCase() === form.unit.toLowerCase());
-        const unitMeasureId = unitMeasure ? unitMeasure.id : 1; // Fallback a 1
 
-        const warehouse = catalogs.warehouses?.find((w: any) => w.name?.toLowerCase() === form.bodega.toLowerCase());
-        const warehouseId = warehouse ? warehouse.id : 1; // Fallback a 1
+    if (!validateForm()) return;
 
-        const taxRate = catalogs.taxes?.find((t: any) => t.percentage == form.tax);
-        const taxId = taxRate ? taxRate.id : null;
+    const unitMeasure =
+      catalogsData.unitMeasures?.find(
+        (u: any) =>
+          u.name?.toLowerCase() ===
+          form.unit.toLowerCase()
+      );
 
-        const payload: any = {
-            basic_info: {
-                type_item_id: form.itemType === "producto" ? 1 : 2,
-                name: form.name,
-                code: "REF-" + Date.now(), // Código generado automáticamente
-                unit_measure_id: unitMeasureId,
-                has_variants: false,
+    const unitMeasureId =
+      unitMeasure?.id ?? 1;
+
+    const warehouse =
+      catalogsData.warehouses?.find(
+        (w: any) =>
+          w.name?.toLowerCase() ===
+          form.bodega.toLowerCase()
+      );
+
+    const warehouseId =
+      warehouse?.id ?? 1;
+
+    const taxRateIds =
+      form.tax && form.tax !== "0"
+        ? [Number(form.tax)]
+        : [];
+
+    /* ==================================================================== */
+    /* PRODUCTO                                                             */
+    /* ==================================================================== */
+
+    if (form.itemType === "producto") {
+      const payload: CreateItemPayload = {
+        basic_info: {
+          type_item_id: 1,
+          type_item_identification_id: 1,
+          name: form.name,
+          reference:
+            form.reference || undefined,
+          category_id: form.categoryId
+            ? Number(form.categoryId)
+            : undefined,
+          unit_measure_id:
+            unitMeasureId,
+          has_variants: false,
+        },
+
+        pricing: {
+          base_price:
+            parseFloat(form.basePrice) ||
+            0,
+
+          total_price:
+            parseFloat(form.totalPrice) ||
+            0,
+
+          default_cost_price:
+            parseFloat(
+              form.initialCost
+            ) || 0,
+
+          apply_to_variants: false,
+
+          tax_rate_ids: taxRateIds,
+
+          price_lists: [
+            {
+              id: 1,
+              value:
+                parseFloat(
+                  form.totalPrice
+                ) || 0,
             },
-            pricing: {
-                base_price: parseFloat(form.basePrice) || 0,
-                total_price: parseFloat(form.totalPrice) || 0,
-                default_cost_price: parseFloat(form.initialCost) || 0,
-                tax_id: taxId,
-                apply_to_variants: false,
-            }
-        };
+          ],
+        },
 
-        if (form.itemType === "producto") {
-            payload.inventory = {
-                initial_stock: {
-                    warehouse_id: warehouseId,
-                    quantity: parseFloat(form.initialQty) || 0,
-                }
-            };
-        }
+        inventory: {
+          initial_stock: {
+            warehouse_id: warehouseId,
 
-        createItem(payload, {
-          onSuccess: () => {
-            handleCloseModal();
-          }
-        });
-      }
+            quantity:
+              parseFloat(
+                form.initialQuantity
+              ) || 0,
+          },
+        },
+      };
+
+      createItem(payload, {
+        onSuccess: () => {
+          handleCloseModal();
+        },
+      });
+
+      return;
     }
+
+    /* ==================================================================== */
+    /* SERVICIO                                                             */
+    /* ==================================================================== */
+
+    if (form.itemType === "servicio") {
+      const payload: CreateItemPayload = {
+        basic_info: {
+          type_item_id: 2,
+          type_item_identification_id: 1,
+          name: form.name,
+          reference:
+            form.reference || undefined,
+          category_id: form.categoryId
+            ? Number(form.categoryId)
+            : undefined,
+          unit_measure_id:
+            unitMeasureId,
+          has_variants: false,
+        },
+
+        pricing: {
+          base_price:
+            parseFloat(form.basePrice) ||
+            0,
+
+          total_price:
+            parseFloat(form.totalPrice) ||
+            0,
+
+          apply_to_variants: false,
+
+          tax_rate_ids: taxRateIds,
+
+          price_lists: [
+            {
+              id: 1,
+              value:
+                parseFloat(
+                  form.totalPrice
+                ) || 0,
+            },
+          ],
+        },
+      };
+
+      createItem(payload, {
+        onSuccess: () => {
+          handleCloseModal();
+        },
+      });
+
+      return;
+    }
+
+    /* ==================================================================== */
+    /* COMBO                                                                 */
+    /* ==================================================================== */
+
+    const payload: CreateItemPayload = {
+      basic_info: {
+        type_item_id: 3,
+        type_item_identification_id: 1,
+        name: form.name,
+        reference:
+          form.reference || undefined,
+        category_id: form.categoryId
+          ? Number(form.categoryId)
+          : undefined,
+        unit_measure_id:
+          unitMeasureId,
+        has_variants: false,
+      },
+
+      pricing: {
+        base_price:
+          parseFloat(form.basePrice) ||
+          0,
+
+        total_price:
+          parseFloat(form.totalPrice) ||
+          0,
+
+        apply_to_variants: false,
+
+        tax_rate_ids: taxRateIds,
+
+        price_lists: [
+          {
+            id: 1,
+            value:
+              parseFloat(
+                form.totalPrice
+              ) || 0,
+          },
+        ],
+      },
+
+      combo_settings: {
+        cost_calculation_mode_id: 1,
+
+        components: [
+          {
+            child_item_id:
+              form.comboCode &&
+                !isNaN(
+                  Number(form.comboCode)
+                )
+                ? Number(
+                  form.comboCode
+                )
+                : 1,
+
+            quantity: 1,
+          },
+        ],
+      },
+    };
+
+    createItem(payload, {
+      onSuccess: () => {
+        handleCloseModal();
+      },
+    });
   };
 
   const handleExport = (config: ExportConfig) => {
     // Generar contenido para exportar (CSV básico)
     const headers = ["Nombre", "Referencia", "Precio", "Estado"];
-    const rows = items.map((item: Item) => [
+    const rows = items.map((item: ItemListResponse) => [
       item.name,
       item.reference,
       config.decimalSeparator === "comma"
@@ -323,7 +517,7 @@ export default function ItemsPage() {
         <div className="w-full">
           <ItemTable
             items={items}
-            loading={isLoadingItems}
+            loading={isLoadingItems || catalogs.isLoading}
             refreshing={isRefetching}
             onRefresh={handleRefresh}
             search={search}
@@ -354,6 +548,7 @@ export default function ItemsPage() {
         onSubmit={handleSubmit}
         onAdvanced={handleAdvanced}
         isCreating={isCreating}
+        catalogs={catalogsData}
       />
 
       {/* EXPORT MODAL */}

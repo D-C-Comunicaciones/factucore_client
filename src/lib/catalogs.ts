@@ -1,28 +1,143 @@
-import { apiClient } from "./api-client";
+import { apiClient } from "@/lib/api-client";
+
+import type { ApiResponse } from "@/types/api";
 
 export const catalogsApi = {
-    getCategories: async (search: string = "") => {
-        return apiClient.get("/catalogs/categories", { params: { search } });
+    /* ====================================================================== */
+    /* CATEGORIES                                                             */
+    /* ====================================================================== */
+
+    getCategories: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/categories"
+        );
     },
-    getWarehouses: async (search: string = "") => {
-        return apiClient.get("/catalogs/warehouses", { params: { search } });
+
+    /* ====================================================================== */
+    /* WAREHOUSES                                                             */
+    /* ====================================================================== */
+
+    getWarehouses: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/warehouses"
+        );
     },
-    getStandardCodes: async (search: string = "") => {
-        return apiClient.get("/catalogs/standard-codes", { params: { search } });
+
+
+    /* ====================================================================== */
+    /* STANDARD CODES                                                         */
+    /* ====================================================================== */
+
+    searchStandardCodes: async (search: string, perPage: number = 20): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            `/catalogs/standard-codes?search=${encodeURIComponent(search)}&per_page=${perPage}`
+        );
     },
-    getTaxRates: async (search: string = "") => {
-        return apiClient.get("/catalogs/tax-rates", { params: { search } });
+
+    /* ====================================================================== */
+    /* TAX RATES                                                              */
+    /* ====================================================================== */
+
+    getTaxRates: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/tax-rates"
+        );
     },
-    getUnitMeasures: async (search: string = "") => {
-        return apiClient.get("/catalogs/unit-measures", { params: { search } });
+
+    createTaxRate: async (
+        payload: unknown
+    ): Promise<ApiResponse<any>> => {
+        return await apiClient.post<any>(
+            "/catalogs/tax-rates",
+            payload
+        );
     },
-    getAttributes: async () => {
-        return apiClient.get<any[]>("/attributes");
+
+    /* ====================================================================== */
+    /* TAXES                                                                  */
+    /* ====================================================================== */
+
+    getTaxes: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/taxes"
+        );
     },
-    getCustomFields: async (module: string = "items") => {
-        return apiClient.get<any[]>(`/custom-fields`, { params: { module } });
+
+    /* ====================================================================== */
+    /* UNIT MEASURES                                                          */
+    /* ====================================================================== */
+
+    getUnitMeasures: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/unit-measures"
+        );
     },
-    getPriceLists: async () => {
-        return apiClient.get<any[]>("/price-lists");
-    }
+
+    /* ====================================================================== */
+    /* ATTRIBUTES                                                             */
+    /* ====================================================================== */
+
+    getAttributes: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/attributes"
+        );
+    },
+
+    /* ====================================================================== */
+    /* CUSTOM FIELD TYPES                                                     */
+    /* ====================================================================== */
+
+    getTypeCustomFields: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/type-custom-fields"
+        );
+    },
+
+    /* ====================================================================== */
+    /* CUSTOM FIELDS                                                          */
+    /* ====================================================================== */
+
+    getCustomFields: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/custom-fields"
+        );
+    },
+
+    /* ====================================================================== */
+    /* PRICE LISTS                                                            */
+    /* ====================================================================== */
+
+    getPriceLists: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/price-lists"
+        );
+    },
+
+    getTypePriceLists: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/type-price-lists"
+        );
+    },
+
+    /* ====================================================================== */
+    /* ACCOUNTING                                                             */
+    /* ====================================================================== */
+
+    getSalesAccounts: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/sales-accounts"
+        );
+    },
+
+    getInventoryAccounts: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/inventory-accounts"
+        );
+    },
+
+    getCostAccounts: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/cost-accounts"
+        );
+    },
 };

@@ -1,11 +1,11 @@
 "use client";
 
 import { NewItemForm } from "@/components/items/new/NewItemForm";
-import { useItemCatalogs } from "@/hooks/items/useItemCatalogs";
+import { useCatalogs } from "@/hooks/useCatalogs";
 import { useCreateItem } from "@/hooks/items/useCreateItem";
 
 export default function NewItemPage() {
-  const catalogs = useItemCatalogs();
+  const catalogs = useCatalogs();
   const { mutate: createItem, isPending: isCreating } = useCreateItem();
 
   return (

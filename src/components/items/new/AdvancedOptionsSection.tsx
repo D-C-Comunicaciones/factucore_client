@@ -14,18 +14,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectSeparator,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AttributeModal } from "@/components/attribute/AttributeModal";
 import { WarehouseData, WarehouseModal } from "@/components/warehouse/WarehouseModal";
-import { PriceListModal } from "./PriceListModal";
+import { NewPriceListModal } from "@/components/price-list/NewPriceListModal";
 
 interface WarehouseEntry extends WarehouseData {
   id: string;
@@ -37,8 +30,9 @@ interface ComboProductEntry extends ComboProductData {
 
 interface PriceListEntry {
   id: string;
-  list: string;
+  price_list_id: string;
   value: string;
+  isPercentage?: boolean;
 }
 
 export function AdvancedOptionsSection({
@@ -48,7 +42,13 @@ export function AdvancedOptionsSection({
   onVariantsChange,
   comboSettings,
   onComboSettingsChange,
-  catalogs
+  basePrice,
+  catalogs,
+  priceLists,
+  onPriceListsChange,
+  warehouses,
+  onWarehousesChange,
+  setInitialStock
 }: {
   itemType: "producto" | "servicio" | "combo",
   hasVariants: boolean,
@@ -56,7 +56,13 @@ export function AdvancedOptionsSection({
   onVariantsChange: React.Dispatch<React.SetStateAction<any[]>>,
   comboSettings: any,
   onComboSettingsChange: React.Dispatch<React.SetStateAction<any>>,
-  catalogs: any
+  basePrice: string,
+  catalogs: any,
+  priceLists: any[],
+  onPriceListsChange: (v: any[]) => void,
+  warehouses: WarehouseEntry[],
+  onWarehousesChange: React.Dispatch<React.SetStateAction<WarehouseEntry[]>>,
+  setInitialStock: (val: string) => void
 }) {
   // --- Compatibility Aliases for Integration ---
   const setVariants = onVariantsChange;
@@ -67,21 +73,46 @@ export function AdvancedOptionsSection({
       return { ...prev, components: nextComponents };
     });
   };
+  const comboModeId = comboSettings?.cost_calculation_mode_id || 1;
+  const setComboModeId = (val: number) => {
+    onComboSettingsChange((prev: any) => ({ ...prev, cost_calculation_mode_id: val }));
+  };
+  const comboCostValue = comboSettings?.cost_value || "";
+  const setComboCostValue = (val: string) => {
+    onComboSettingsChange((prev: any) => ({ ...prev, cost_value: val }));
+  };
   // ----------------------------------------------
 
   const baseInput = "bg-white h-[34px] pl-3 pr-3 text-sm border border-foreground/20 shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none flex items-center w-full rounded-xl box-border";
   const selectItemClass = "rounded-lg cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary focus:bg-primary/10 data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary";
 
-  const [priceLists, setPriceLists] = React.useState<PriceListEntry[]>([
-    { id: "1", list: "", value: "" }
-  ]);
+  const setPriceLists = onPriceListsChange;
   const [deletingPriceListId, setDeletingPriceListId] = React.useState<string | null>(null);
   const [isPriceListModalOpen, setIsPriceListModalOpen] = React.useState(false);
-  const [customPriceLists, setCustomPriceLists] = React.useState<{ name: string; description: string; type: string }[]>([]);
+  const [customPriceLists, setCustomPriceLists] = React.useState<any[]>([]);
 
-  const [warehouses, setWarehouses] = React.useState<WarehouseEntry[]>([
-    { id: "1", warehouse: "Principal", initialQty: "", minQty: "", maxQty: "" }
-  ]);
+  // Auto-select default price list when catalogs load
+  React.useEffect(() => {
+    if (priceLists.length === 0 && catalogs?.priceLists?.length > 0) {
+      const defaultList = catalogs.priceLists.find((pl: any) => pl.is_system_default);
+      if (defaultList) {
+        const selectedType = catalogs?.typePriceLists?.find(
+          (t: any) => String(t.id) === String(defaultList.type_price_list_id)
+        );
+        const isPercentage = selectedType &&
+          (selectedType.code === "percentage" || selectedType.name?.toLowerCase().includes("porcent"));
+        setPriceLists([{
+          id: `default-${defaultList.id}`,
+          price_list_id: String(defaultList.id),
+          value: defaultList.value || "",
+          isPercentage: isPercentage ?? false,
+        }]);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogs?.priceLists]);
+
+  const setWarehouses = onWarehousesChange;
   const [editingWarehouseId, setEditingWarehouseId] = React.useState<string | null>(null);
   const [isNewWarehouse, setIsNewWarehouse] = React.useState(false);
 
@@ -94,14 +125,28 @@ export function AdvancedOptionsSection({
   const [isAttributeModalOpen, setIsAttributeModalOpen] = React.useState(false);
 
   // Variants UI state (attributes, errors, modals)
-  const [attributes, setAttributes] = React.useState<{ id: string, name: string, values: string[], selectedValues: string[] }[]>([
-    { id: "initial-1", name: "", values: [], selectedValues: [] }
+  const [attributes, setAttributes] = React.useState<{
+    id: string,
+    name: string,
+    attribute_id: number | null,
+    values: { name: string; value_id: number }[],
+    selectedValues: string[]
+  }[]>([
+    { id: "initial-1", name: "", attribute_id: null, values: [], selectedValues: [] }
   ]);
-  
-  const [availableAttributes, setAvailableAttributes] = React.useState<{ name: string, values: string[] }[]>([
-    { name: "Color", values: ["Rojo", "Azul", "Negro", "Blanco"] },
-    { name: "Talla", values: ["S", "M", "L", "XL"] },
-  ]);
+
+  // Load available attributes from catalogs
+  const availableAttributes: { id: number, name: string, values: { name: string; value_id: number }[] }[] = React.useMemo(() => {
+    if (!catalogs?.attributes) return [];
+    return catalogs.attributes.map((attr: any) => ({
+      id: attr.id,
+      name: attr.name,
+      values: (attr.values || attr.attribute_values || []).map((v: any) => ({
+        name: v.value || v.name,
+        value_id: v.id
+      }))
+    }));
+  }, [catalogs?.attributes]);
 
   const [isVariantEditModalOpen, setIsVariantEditModalOpen] = React.useState(false);
   const [editingVariantId, setEditingVariantId] = React.useState<string | null>(null);
@@ -112,17 +157,17 @@ export function AdvancedOptionsSection({
   const [editingAttributeId, setEditingAttributeId] = React.useState<string | null>("initial-1");
   const [galleryOpenForVariant, setGalleryOpenForVariant] = React.useState<string | null>(null);
 
-  const handleToggleValue = (attrId: string, value: string) => {
+  const handleToggleValue = (attrId: string, valueName: string) => {
     setAttributes(prev => prev.map(attr => {
       if (attr.id === attrId) {
-        const isSelected = attr.selectedValues.includes(value);
+        const isSelected = attr.selectedValues.includes(valueName);
         const newSelected = isSelected
-          ? attr.selectedValues.filter(v => v !== value)
-          : [...attr.selectedValues, value];
+          ? attr.selectedValues.filter(v => v !== valueName)
+          : [...attr.selectedValues, valueName];
 
         // If value was removed, remove variants with that name
         if (isSelected) {
-          onVariantsChange(variants.filter(v => v.name !== value));
+          onVariantsChange(variants.filter(v => !v.name.includes(valueName)));
         }
 
         return { ...attr, selectedValues: newSelected };
@@ -153,30 +198,41 @@ export function AdvancedOptionsSection({
       return;
     }
 
-    // 2. Generate Cartesian Product of selected values
-    let combinations: string[][] = [[]];
+    // 2. Generate Cartesian Product of selected values (preserving value_id)
+    type AttrValue = { name: string; value_id: number; attribute_id: number; attribute_name: string };
+    let combinations: AttrValue[][] = [[]];
     for (const attr of activeAttrs) {
-      const nextCombinations: string[][] = [];
+      const nextCombinations: AttrValue[][] = [];
       for (const comb of combinations) {
-        for (const val of attr.selectedValues) {
-          nextCombinations.push([...comb, val]);
+        for (const valName of attr.selectedValues) {
+          const valueObj = attr.values.find(v => v.name === valName);
+          nextCombinations.push([...comb, {
+            name: valName,
+            value_id: valueObj?.value_id ?? 0,
+            attribute_id: attr.attribute_id ?? 0,
+            attribute_name: attr.name
+          }]);
         }
       }
       combinations = nextCombinations;
     }
 
-    const newVariantNames = combinations.map(c => c.join(" - "));
-
     // 3. Update variants state, preserving data for existing ones
-    const updatedVariants = newVariantNames.map(name => {
+    const updatedVariants = combinations.map(combo => {
+      const name = combo.map(c => c.name).join(" - ");
       const existing = variants.find(v => v.name === name);
       if (existing) return existing;
 
       return {
         id: Math.random().toString(36).substr(2, 9),
-        name: name,
+        name,
+        attributes: combo.map(c => ({
+          attribute_id: c.attribute_id,
+          value_id: c.value_id
+        })),
         warehouse: "",
-        initialQty: "-",
+        warehouse_id: null,
+        initialQty: "",
         active: true,
         inventory: [],
         images: [],
@@ -185,7 +241,6 @@ export function AdvancedOptionsSection({
     });
 
     onVariantsChange(updatedVariants);
-
     setEditingAttributeId(null);
   };
 
@@ -201,26 +256,39 @@ export function AdvancedOptionsSection({
       // Re-trigger the logic (we can't call handleGenerateVariants directly easily here with updated state)
       // So I'll duplicate the logic or use useEffect (but user wants direct actions)
       // I'll just use a local recalculation
-      let combinations: string[][] = [[]];
+      let combinations: AttrValue[][] = [[]];
+      type AttrValue = { name: string; value_id: number; attribute_id: number };
       for (const attr of activeAttrs) {
-        const nextCombinations: string[][] = [];
+        const nextCombinations: AttrValue[][] = [];
         for (const comb of combinations) {
-          for (const val of attr.selectedValues) {
-            nextCombinations.push([...comb, val]);
+          for (const valName of attr.selectedValues) {
+            const valueObj = attr.values.find((v: any) => v.name === valName);
+            nextCombinations.push([...comb, {
+              name: valName,
+              value_id: valueObj?.value_id ?? 0,
+              attribute_id: attr.attribute_id ?? 0
+            }]);
           }
         }
         combinations = nextCombinations;
       }
-      const newNames = combinations.map(c => c.join(" - "));
-      setVariants((prev: any[]) => newNames.map((name: string) => prev.find((v: any) => v.name === name) || {
-        id: Math.random().toString(36).substr(2, 9),
-        name: name,
-        warehouse: "",
-        initialQty: "-",
-        active: true,
-        inventory: [],
-        images: [],
-        favoriteImage: null
+      setVariants((prev: any[]) => combinations.map(combo => {
+        const name = combo.map((c: AttrValue) => c.name).join(" - ");
+        return prev.find((v: any) => v.name === name) || {
+          id: Math.random().toString(36).substr(2, 9),
+          name,
+          attributes: combo.map((c: AttrValue) => ({
+            attribute_id: c.attribute_id,
+            value_id: c.value_id
+          })),
+          warehouse: "",
+          warehouse_id: null,
+          initialQty: "",
+          active: true,
+          inventory: [],
+          images: [],
+          favoriteImage: null
+        };
       }));
     }
   };
@@ -240,9 +308,29 @@ export function AdvancedOptionsSection({
 
   const handleSaveVariantData = (data: { active: boolean; inventory: any[] }) => {
     if (editingVariantId) {
+      const firstInv = data.inventory[0];
+      const warehouseName = firstInv?.warehouse || "";
+      const catalogWarehouse = catalogs?.warehouses?.find((w: any) => w.name === warehouseName);
+      const warehouseId = catalogWarehouse?.id || (warehouseName === "Principal" ? 1 : null);
+
+      const enrichedInventory = data.inventory.map((inv: any) => {
+        const cw = catalogs?.warehouses?.find((w: any) => w.name === inv.warehouse);
+        return {
+          ...inv,
+          warehouse_id: cw?.id || (inv.warehouse === "Principal" ? 1 : null)
+        };
+      });
+
       setVariants((prev: any[]) => prev.map((v: any) =>
         v.id === editingVariantId
-          ? { ...v, active: data.active, inventory: data.inventory, initialQty: data.inventory[0]?.initialQty || "-" }
+          ? {
+              ...v,
+              active: data.active,
+              inventory: enrichedInventory,
+              warehouse: warehouseName,
+              warehouse_id: warehouseId,
+              initialQty: firstInv?.initialQty || ""
+            }
           : v
       ));
     }
@@ -267,9 +355,19 @@ export function AdvancedOptionsSection({
 
   const handleSaveWarehouse = (data: WarehouseData) => {
     if (editingWarehouseId) {
-      setWarehouses(prev => prev.map(w =>
-        w.id === editingWarehouseId ? { ...w, ...data } : w
-      ));
+      const catalogWarehouse = catalogs?.warehouses?.find((w: any) => w.name === data.warehouse);
+      const updatedData = { ...data, warehouse_id: catalogWarehouse?.id || 1 };
+      
+      if (isNewWarehouse) {
+        setWarehouses((prev: WarehouseEntry[]) => prev.map(w => w.id === editingWarehouseId ? { ...updatedData, id: editingWarehouseId } : w));
+      } else {
+        setWarehouses((prev: WarehouseEntry[]) => prev.map(w => w.id === editingWarehouseId ? { ...w, ...updatedData } : w));
+        
+        // Synchronize initial quantity with GeneralInfoSection if it's the Principal warehouse (first in array or ID 1)
+        if (editingWarehouseId === "1" || (warehouses.length > 0 && warehouses[0].id === editingWarehouseId)) {
+          setInitialStock(data.initialQty || "");
+        }
+      }
     }
     setEditingWarehouseId(null);
     setIsNewWarehouse(false);
@@ -325,14 +423,14 @@ export function AdvancedOptionsSection({
 
   const handleAddPriceList = () => {
     const newId = Date.now().toString();
-    setPriceLists((prev: PriceListEntry[]) => [...prev, { id: newId, list: "", value: "" }]);
+    setPriceLists([...priceLists, { id: newId, price_list_id: "", value: "", isPercentage: false }]);
   };
 
   const handleDeletePriceList = (id: string) => {
     if (priceLists.length <= 1) return;
     setDeletingPriceListId(id);
     setTimeout(() => {
-      setPriceLists((prev: PriceListEntry[]) => prev.filter(pl => pl.id !== id));
+      setPriceLists(priceLists.filter(pl => pl.id !== id));
       setDeletingPriceListId(null);
     }, 300);
   };
@@ -423,6 +521,7 @@ export function AdvancedOptionsSection({
                 initialData={activeWarehouse}
                 onSave={handleSaveWarehouse}
                 existingWarehouses={warehouses.map(w => w.warehouse).filter(w => w && w !== activeWarehouse?.warehouse)}
+                catalogs={catalogs}
               />
 
               <button
@@ -463,49 +562,44 @@ export function AdvancedOptionsSection({
                         <div className="px-2 space-y-1">
                           {isEditing ? (
                             <>
-                              <Select value={attr.name} onValueChange={(val) => handleUpdateAttributeName(attr.id, val)}>
-                                <SelectTrigger className={cn(
+                              <SearchableSelect
+                                value={attr.name}
+                                onValueChange={(val) => {
+                                  // Update the row with the selected attribute's values from catalog
+                                  const avail = availableAttributes.find(a => a.name === val);
+                                  if (avail) {
+                                    handleUpdateAttributeName(attr.id, val);
+                                    setAttributes(prev => prev.map(a =>
+                                      a.id === attr.id ? {
+                                        ...a,
+                                        name: avail.name,
+                                        attribute_id: avail.id,
+                                        values: avail.values,
+                                        selectedValues: []
+                                      } : a
+                                    ));
+                                  }
+                                }}
+                                options={availableAttributes.map((avail) => ({ value: avail.name, label: avail.name }))}
+                                placeholder="Seleccionar Atributo"
+                                searchPlaceholder="Buscar atributo..."
+                                emptyMessage="No hay atributos disponibles."
+                                className={cn(
                                   baseInput,
                                   variantErrors.attributes[idx] && "border-[#ef4444] ring-[#ef4444]/20 text-[#ef4444]"
-                                )}>
-                                  <SelectValue placeholder="Seleccionar Atributo" />
-                                  {variantErrors.attributes[idx] && <AlertCircle className="w-3.5 h-3.5 ml-auto" />}
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-border rounded-xl shadow-lg">
-                                  {availableAttributes.map((avail) => (
-                                    <SelectItem
-                                      key={avail.name}
-                                      value={avail.name}
-                                      className={cn(selectItemClass, "flex items-center gap-2 py-2")}
-                                      onPointerDown={(e) => {
-                                        // Update the row with the selected attribute's values
-                                        setAttributes(prev => prev.map(a =>
-                                          a.id === attr.id ? { ...a, name: avail.name, values: avail.values, selectedValues: [] } : a
-                                        ));
-                                      }}
-                                    >
-                                      {avail.name}
-                                    </SelectItem>
-                                  ))}
-                                  <SelectSeparator />
-                                  <div
-                                    className="p-1"
-                                    onPointerDown={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setIsAttributeModalOpen(true);
-                                    }}
+                                )}
+                                errorIcon={variantErrors.attributes[idx] ? <AlertCircle className="w-3.5 h-3.5" /> : undefined}
+                                footer={
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsAttributeModalOpen(true)}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/5 rounded-lg transition-colors"
                                   >
-                                    <button
-                                      type="button"
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/5 rounded-lg transition-colors"
-                                    >
-                                      <Plus className="w-4 h-4" />
-                                      Nueva Variante
-                                    </button>
-                                  </div>
-                                </SelectContent>
-                              </Select>
+                                    <Plus className="w-4 h-4" />
+                                    Nueva Variante
+                                  </button>
+                                }
+                              />
                               {variantErrors.attributes[idx] && (
                                 <p className="text-[10px] text-[#ef4444] font-medium ml-1">Debes seleccionar un atributo</p>
                               )}
@@ -541,20 +635,20 @@ export function AdvancedOptionsSection({
                               <DropdownMenuContent className="bg-white border border-border rounded-xl shadow-lg min-w-[200px] p-1">
                                 {attr.values.map((val) => (
                                   <div
-                                    key={val}
-                                    onClick={() => handleToggleValue(attr.id, val)}
+                                    key={val.value_id}
+                                    onClick={() => handleToggleValue(attr.id, val.name)}
                                     className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 rounded-lg cursor-pointer group transition-all"
                                   >
                                     <div className={cn(
                                       "w-4 h-4 border rounded flex items-center justify-center transition-all",
-                                      attr.selectedValues.includes(val) ? "bg-[#2563eb] border-[#2563eb]" : "border-border group-hover:border-[#2563eb]"
+                                      attr.selectedValues.includes(val.name) ? "bg-[#2563eb] border-[#2563eb]" : "border-border group-hover:border-[#2563eb]"
                                     )}>
-                                      {attr.selectedValues.includes(val) && <Check className="w-3 h-3 text-white" />}
+                                      {attr.selectedValues.includes(val.name) && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <span className={cn(
                                       "text-sm",
-                                      attr.selectedValues.includes(val) ? "text-[#2563eb] font-semibold" : "text-[#475569]"
-                                    )}>{val}</span>
+                                      attr.selectedValues.includes(val.name) ? "text-[#2563eb] font-semibold" : "text-[#475569]"
+                                    )}>{val.name}</span>
                                   </div>
                                 ))}
                               </DropdownMenuContent>
@@ -608,7 +702,7 @@ export function AdvancedOptionsSection({
                 type="button"
                 onClick={() => {
                   const newId = Date.now().toString();
-                  setAttributes(prev => [...prev, { id: newId, name: "", values: [], selectedValues: [] }]);
+                  setAttributes(prev => [...prev, { id: newId, name: "", attribute_id: null, values: [], selectedValues: [] }]);
                   setVariantErrors(prev => ({ ...prev, attributes: [...prev.attributes, false] }));
                   setEditingAttributeId(newId);
                 }}
@@ -651,6 +745,7 @@ export function AdvancedOptionsSection({
                           </div>
                           <span className="text-sm font-semibold text-[#123159]">{v.name}</span>
                         </div>
+                        {/* Bodega col: solo nombre */}
                         <div className="px-4 border-l border-border/40 h-full flex items-center py-2 flex-wrap gap-1">
                           {v.inventory && v.inventory.length > 1 ? (
                             <TooltipProvider>
@@ -663,7 +758,7 @@ export function AdvancedOptionsSection({
                                 <TooltipContent className="flex flex-col gap-1 bg-white border border-border shadow-lg" sideOffset={5}>
                                   {v.inventory.map((inv: any, idx: number) => (
                                     <span key={idx} className="px-2 py-1 bg-slate-50 border border-border/40 rounded-md text-[11px] font-medium text-[#123159] uppercase tracking-wide inline-block w-fit">
-                                      {inv.warehouse} - {inv.initialQty}
+                                      {inv.warehouse}
                                     </span>
                                   ))}
                                 </TooltipContent>
@@ -671,15 +766,18 @@ export function AdvancedOptionsSection({
                             </TooltipProvider>
                           ) : v.inventory && v.inventory.length === 1 && v.inventory[0].warehouse ? (
                             <span className="px-2 py-1 bg-slate-50 border border-border/40 rounded-md text-[11px] font-medium text-[#123159] uppercase tracking-wide inline-block">
-                              {v.inventory[0].warehouse} - {v.inventory[0].initialQty}
+                              {v.inventory[0].warehouse}
                             </span>
                           ) : (
-                            <span className="text-sm text-[#475569]">{v.warehouse || ""}</span>
+                            <span className="text-sm text-[#475569]">{v.warehouse || "-"}</span>
                           )}
                         </div>
+                        {/* Cantidad inicial col */}
                         <div className="px-4 border-l border-border/40 h-full flex items-center justify-center">
                           <span className="text-sm text-[#475569] font-medium">
-                            {v.inventory && v.inventory.length > 0 && v.inventory[0].warehouse ? "-" : (v.initialQty || "-")}
+                            {v.inventory && v.inventory.length > 0 && v.inventory[0].initialQty
+                              ? v.inventory[0].initialQty
+                              : (v.initialQty && v.initialQty !== "-" ? v.initialQty : "-")}
                           </span>
                         </div>
                         <div className="flex justify-end items-center gap-1 transition-all">
@@ -742,7 +840,7 @@ export function AdvancedOptionsSection({
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-4">Listas de precios</h3>
         <div className="space-y-2">
-          {priceLists.map((pl) => (
+          {priceLists.map((pl, index) => (
             <div
               key={pl.id}
               className={cn(
@@ -754,54 +852,51 @@ export function AdvancedOptionsSection({
             >
               <div className="flex-1">
                 <label className="text-xs text-muted-foreground mb-1 block">Lista de precios</label>
-                <Select
-                  value={pl.list}
+                <SearchableSelect
+                  value={pl.price_list_id}
                   onValueChange={(val) => {
-                    setPriceLists(prev => prev.map(item =>
-                      item.id === pl.id ? { ...item, list: val } : item
+                    const selectedList = catalogs?.priceLists?.find((c: any) => String(c.id) === val);
+                    const selectedType = catalogs?.typePriceLists?.find((t: any) => selectedList && String(t.id) === String(selectedList.type_price_list_id));
+                    const isPercentage = selectedType && (selectedType.code === 'percentage' || selectedType.name?.toLowerCase().includes('porcent'));
+                    
+                    const listValue = selectedList?.value || "";
+                    
+                    setPriceLists(priceLists.map(item =>
+                      item.id === pl.id ? { ...item, price_list_id: val, isPercentage, value: isPercentage ? listValue : item.value } : item
                     ));
                   }}
-                >
-                  <SelectTrigger className={cn(baseInput, "justify-between pr-2")}>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-border rounded-xl shadow-xl p-1">
-                    <SelectItem value="general" className={selectItemClass}>General</SelectItem>
-                    <SelectItem value="especial" className={selectItemClass}>Especial</SelectItem>
-                    {customPriceLists.map((cpl) => (
-                      <SelectItem key={cpl.name} value={cpl.name} className={selectItemClass}>
-                        {cpl.name}
-                      </SelectItem>
-                    ))}
-                    <div className="border-t border-border mt-1 pt-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsPriceListModalOpen(true);
-                        }}
-                        className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
-                      >
-                        Nueva Lista de precios
-                      </button>
-                    </div>
-                  </SelectContent>
-                </Select>
+                  options={[
+                    ...(catalogs?.priceLists || []).map((cpl: any) => ({ value: String(cpl.id), label: cpl.name }))
+                  ]}
+                  placeholder="Seleccionar"
+                  searchPlaceholder="Buscar lista..."
+                  emptyMessage="No se encontraron listas."
+                  className={cn(baseInput, "w-full")}
+                  footer={
+                    <button
+                      type="button"
+                      onClick={() => setIsPriceListModalOpen(true)}
+                      className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
+                    >
+                      Nueva Lista de precios
+                    </button>
+                  }
+                />
               </div>
               <div className="flex-1">
                 <label className="text-xs text-muted-foreground mb-1 block">Valor</label>
                 <input
                   type="text"
-                  value={pl.value}
+                  value={index === 0 ? basePrice : pl.value}
+                  disabled={pl.isPercentage || index === 0}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9.]/g, "");
-                    setPriceLists(prev => prev.map(item =>
+                    setPriceLists(priceLists.map(item =>
                       item.id === pl.id ? { ...item, value: val } : item
                     ));
                   }}
-                  className={cn(baseInput, "pr-8")}
-                  placeholder="0"
+                  className={cn(baseInput, "pr-8", (pl.isPercentage || index === 0) && "bg-muted cursor-not-allowed")}
+                  placeholder={pl.isPercentage ? "Valor automático" : "0"}
                 />
               </div>
               <DropdownMenu>
@@ -840,9 +935,37 @@ export function AdvancedOptionsSection({
         itemType === "combo" && (
           <div className="mt-8 border-t border-border pt-6">
             <h3 className="text-sm font-bold text-foreground mb-1">Combo</h3>
-            <p className="text-xs text-muted-foreground mb-6">
+            <p className="text-xs text-muted-foreground mb-4">
               Selecciona los productos y sus cantidades para armar un combo
             </p>
+
+            <div className="mb-6 flex gap-4">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Modo de cálculo del costo</label>
+                <SearchableSelect
+                  value={comboModeId.toString()}
+                  onValueChange={(val) => setComboModeId(Number(val))}
+                  options={[
+                    { value: "1", label: "Automático (Suma de componentes)" },
+                    { value: "2", label: "Manual" }
+                  ]}
+                  placeholder="Seleccionar"
+                  className={baseInput}
+                />
+              </div>
+              {comboModeId === 2 && (
+                <div className="flex-1 animate-in fade-in zoom-in-95 duration-200">
+                  <label className="text-xs text-muted-foreground mb-1 block">Costo manual</label>
+                  <input
+                    type="text"
+                    value={comboCostValue}
+                    onChange={(e) => setComboCostValue(e.target.value.replace(/[^0-9.]/g, ""))}
+                    className={baseInput}
+                    placeholder="0"
+                  />
+                </div>
+              )}
+            </div>
 
             <div className="space-y-2">
               {comboProducts.map((p) => (
@@ -950,6 +1073,7 @@ export function AdvancedOptionsSection({
         onOpenChange={handleCloseComboModal}
         initialData={comboProducts.find((p: any) => p.id === editingComboId)}
         existingProducts={comboProducts.map((p: any) => p.product).filter(Boolean)}
+        catalogs={catalogs}
         onSave={(data) => {
           if (editingComboId !== null) {
             setComboProducts((prev: any[]) => prev.map((item: any) =>
@@ -964,7 +1088,9 @@ export function AdvancedOptionsSection({
         open={isAttributeModalOpen}
         onOpenChange={setIsAttributeModalOpen}
         onSave={(name, values) => {
-          setAvailableAttributes(prev => [...prev, { name, values }]);
+          // Attributes are now loaded from catalogs via useMemo;
+          // the AttributeModal should call the API to create the attribute,
+          // and the catalog query will be invalidated automatically.
           showToast(`La variante ${name} ha sido creada exitosamente.`, "success");
         }}
       />
@@ -975,11 +1101,10 @@ export function AdvancedOptionsSection({
         initialData={variants.find(v => v.id === editingVariantId)}
         onSave={handleSaveVariantData}
       />
-      <PriceListModal
+      <NewPriceListModal
         open={isPriceListModalOpen}
         onOpenChange={setIsPriceListModalOpen}
         onSave={(data) => {
-          setCustomPriceLists(prev => [...prev, data]);
           showToast(`La lista de precios "${data.name}" ha sido creada.`, "success");
         }}
       />

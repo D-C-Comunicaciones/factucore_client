@@ -39,20 +39,20 @@ export default function RootLayout({
                 `}</style>
             </head>
             <body suppressHydrationWarning>
-                <Providers>
-                    <AuthProvider>
-                        <ThemeProvider
-                            attribute="class"
-                            defaultTheme="light"
-                            enableSystem
-                            disableTransitionOnChange
-                        >
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="light"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    <Providers>
+                        <AuthProvider>
                             {children}
-                        </ThemeProvider>
-                    </AuthProvider>
+                        </AuthProvider>
 
-                    <CustomToaster />
-                </Providers>
+                        <CustomToaster />
+                    </Providers>
+                </ThemeProvider>
             </body>
         </html>
     )

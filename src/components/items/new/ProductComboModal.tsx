@@ -23,16 +23,20 @@ interface ProductComboModalProps {
   onSave: (data: ComboProductData) => void;
   initialData?: ComboProductData;
   existingProducts?: string[];
+  catalogs?: any;
 }
 
 export interface ComboProductData {
+  id?: string;
+  product_id?: string;
+  variant_id?: string;
   product: string;
   quantity: string;
   unit: string;
   cost: string;
 }
 
-export function ProductComboModal({ open, onOpenChange, onSave, initialData, existingProducts = [] }: ProductComboModalProps) {
+export function ProductComboModal({ open, onOpenChange, onSave, initialData, existingProducts = [], catalogs }: ProductComboModalProps) {
   const [data, setData] = React.useState<ComboProductData>({
     product: "",
     quantity: "",
@@ -59,14 +63,21 @@ export function ProductComboModal({ open, onOpenChange, onSave, initialData, exi
   const baseInput =
     "bg-white h-8 px-3 text-sm border border-foreground/20 rounded-md shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none";
 
-  const products = [
-    { name: "Prueba", unit: "Unidad", cost: "100.000" },
-    { name: "Servicio técnico", unit: "Servicio", cost: "50.000" },
-    { name: "Producto A", unit: "Unidad", cost: "15.000" },
-    { name: "Producto B", unit: "Unidad", cost: "25.000" },
+  // Usar catalogo real si existe, sino usar mock
+  const products = catalogs?.items?.length ? catalogs.items.map((item: any) => ({
+    id: String(item.id),
+    name: item.name,
+    unit: item.unit_measure?.name || "Unidad",
+    cost: item.pricing?.default_cost_price?.toString() || "0",
+    variant_id: undefined
+  })) : [
+    { id: "1", name: "Prueba", unit: "Unidad", cost: "100000" },
+    { id: "2", name: "Servicio técnico", unit: "Servicio", cost: "50000" },
+    { id: "3", name: "Producto A", unit: "Unidad", cost: "15000" },
+    { id: "4", name: "Producto B", unit: "Unidad", cost: "25000" },
   ];
 
-  const visibleProducts = products.filter(p => !existingProducts.includes(p.name) || p.name === initialData?.product);
+  const visibleProducts = products.filter((p: any) => !existingProducts.includes(p.name) || p.name === initialData?.product);
 
   const handleSave = () => {
     let hasError = false;
@@ -106,10 +117,12 @@ export function ProductComboModal({ open, onOpenChange, onSave, initialData, exi
               <Select
                 value={data.product}
                 onValueChange={(v) => {
-                  const p = products.find(prod => prod.name === v);
+                  const p = products.find((prod: any) => prod.name === v);
                   setData({ 
                     ...data, 
                     product: v,
+                    product_id: p?.id,
+                    variant_id: p?.variant_id,
                     unit: p?.unit || "",
                     cost: p?.cost || ""
                   });
@@ -119,9 +132,9 @@ export function ProductComboModal({ open, onOpenChange, onSave, initialData, exi
                 <SelectTrigger className={cn(baseInput, "w-full", errorProduct && "border-destructive focus:border-destructive focus:ring-destructive/20")}>
                   <SelectValue placeholder="Buscar producto facturable" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-border rounded-xl shadow-xl">
-                  {visibleProducts.map(p => (
-                    <SelectItem key={p.name} value={p.name} className="cursor-pointer hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors">
+                <SelectContent className="bg-white border border-border rounded-xl shadow-xl max-h-[200px]">
+                  {visibleProducts.map((p: any) => (
+                    <SelectItem key={p.id + p.name} value={p.name} className="cursor-pointer hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors">
                       {p.name}
                     </SelectItem>
                   ))}

@@ -17,7 +17,7 @@ interface CreateWarehouseModalProps {
   onCancel: () => void;
 }
 
-export function CreateWarehouseModal({ open, onOpenChange, onSave, onCancel }: CreateWarehouseModalProps) {
+export function NewWarehouseModal({ open, onOpenChange, onSave, onCancel }: CreateWarehouseModalProps) {
   const [name, setName] = React.useState("");
   const [address, setAddress] = React.useState("");
   const [observations, setObservations] = React.useState("");

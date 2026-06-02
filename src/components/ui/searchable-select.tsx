@@ -1,0 +1,157 @@
+"use client";
+
+import * as React from "react";
+import { Check, ChevronDown, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+
+/* ------------------------------------------------------------------ */
+/* Types                                                                */
+/* ------------------------------------------------------------------ */
+
+export interface SearchableSelectOption {
+  /** Unique value (what gets stored/sent) */
+  value: string;
+  /** Human-readable label shown in the list */
+  label: string;
+}
+
+export interface SearchableSelectProps {
+  /** Current selected value */
+  value?: string;
+  /** Callback when value changes */
+  onValueChange: (value: string) => void;
+  /** Array of options */
+  options: SearchableSelectOption[];
+  /** Placeholder shown when nothing is selected */
+  placeholder?: string;
+  /** Placeholder for the search input inside the dropdown */
+  searchPlaceholder?: string;
+  /** Message shown when no results match the search */
+  emptyMessage?: string;
+  /** Extra className for the trigger button */
+  className?: string;
+  /** Extra className for the dropdown content */
+  contentClassName?: string;
+  /** Whether the select is disabled */
+  disabled?: boolean;
+  /** Optional footer element (e.g. "New item" button) rendered below the list */
+  footer?: React.ReactNode;
+  /** Optional error icon shown inside the trigger */
+  errorIcon?: React.ReactNode;
+}
+
+/* ------------------------------------------------------------------ */
+/* Component                                                            */
+/* ------------------------------------------------------------------ */
+
+export function SearchableSelect({
+  value,
+  onValueChange,
+  options,
+  placeholder = "Seleccionar",
+  searchPlaceholder = "Buscar...",
+  emptyMessage = "No se encontraron resultados.",
+  className,
+  contentClassName,
+  disabled = false,
+  footer,
+  errorIcon,
+}: SearchableSelectProps) {
+  const [open, setOpen] = React.useState(false);
+
+  const selectedOption = options.find((o) => o.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className={cn(
+            // Match the project's base input styling
+            "border-input data-[placeholder]:text-muted-foreground flex w-full items-center justify-between gap-2 rounded-md border bg-input-background px-3 py-2 text-sm whitespace-nowrap transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 h-9",
+            className,
+          )}
+        >
+          <span
+            className={cn(
+              "truncate text-left",
+              !selectedOption && "text-muted-foreground"
+            )}
+          >
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+          <span className="flex items-center gap-1 shrink-0">
+            {errorIcon}
+            <ChevronDown className="size-4 opacity-50" />
+          </span>
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        align="start"
+        sideOffset={4}
+        className={cn(
+          "w-[var(--radix-popover-trigger-width)] p-0 bg-white border-none rounded-xl shadow-xl",
+          contentClassName,
+        )}
+      >
+        <Command
+          filter={(value, search) => {
+            // Case-insensitive search across the label
+            const option = options.find((o) => o.value === value);
+            if (!option) return 0;
+            return option.label.toLowerCase().includes(search.toLowerCase())
+              ? 1
+              : 0;
+          }}
+        >
+          <CommandInput placeholder={searchPlaceholder} />
+          <CommandList>
+            <CommandEmpty>{emptyMessage}</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.value}
+                  onSelect={(currentValue) => {
+                    onValueChange(currentValue === value ? "" : currentValue);
+                    setOpen(false);
+                  }}
+                  className="rounded-lg cursor-pointer transition-colors data-[selected=true]:bg-primary/5 data-[selected=true]:text-primary hover:bg-primary/5 hover:text-primary"
+                >
+                  <span className="flex-1 truncate">{option.label}</span>
+                  {value === option.value && (
+                    <Check className="size-4 text-primary shrink-0" />
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+
+          {/* Optional footer (e.g. "+ Nueva categoría") */}
+          {footer && (
+            <div className="border-t border-border p-1">
+              {footer}
+            </div>
+          )}
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}

@@ -18,9 +18,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Activity, BarChart3, DollarSign, FileText, GripVertical, Package, PieChartIcon, RotateCcw, ShoppingCart, Trash2, TrendingUp, UserCheck, Users } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { EmptyDashboardState } from '@/components/dashboard/EmptyDashboardState';
+import { showToast } from '@/components/sonner/CustomToaster';
 
 import { FlujoTransaccionesWidget } from '@/components/dashboard/widgets/FlujoTransaccionesWidget';
 import { DistribucionGastosWidget } from '@/components/dashboard/widgets/DistribucionGastosWidget';
@@ -246,9 +246,7 @@ export default function DashboardPage() {
   const confirmDelete = () => {
     if (widgetToDelete) {
       setWidgets((items) => items.filter((item) => item.id !== widgetToDelete.id));
-      toast.info('Gráfica eliminada', {
-        description: `Se eliminó "${widgetToDelete.title}" del dashboard`,
-      });
+      showToast(`Se eliminó "${widgetToDelete.title}" del dashboard`, "success", "Gráfica eliminada");
       setWidgetToDelete(null);
     }
   };
@@ -304,9 +302,7 @@ export default function DashboardPage() {
       return [...items, newWidget];
     });
 
-    toast.success('Gráfica agregada con éxito', {
-      description: `Se añadió "${option.title}" al dashboard`,
-    });
+    showToast(`Se añadió "${option.title}" al dashboard`, "success", "Gráfica agregada con éxito");
   };
 
   const handleAddPredefinedWidgets = () => {
@@ -320,9 +316,7 @@ export default function DashboardPage() {
       { id: (Date.now() + 6).toString(), type: 'ventas', title: 'Total de ventas', size: 'full' },
     ];
     setWidgets(predefinedWidgets);
-    toast.success('Gráficas predefinidas agregadas', {
-      description: 'Se añadieron todas las gráficas predeterminadas',
-    });
+    showToast('Se añadieron todas las gráficas predeterminadas', "success", "Gráficas predefinidas agregadas");
   };
 
   const availableGraphOptions = graphOptions.filter(

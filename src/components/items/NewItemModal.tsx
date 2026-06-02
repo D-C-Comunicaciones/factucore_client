@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ExternalLink, HelpCircle, X, AlertCircle, Check } from "lucide-react";
+import { ExternalLink, HelpCircle, X, AlertCircle, Check, PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -10,27 +10,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectSeparator,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { type FormState } from "@/app/(authenticated)/items/page";
+import { type ItemFormState } from "@/types/items";
+import { NewTaxRateModal } from "@/components/items/taxes/NewTaxRateModal";
+import { showToast } from "@/components/sonner/CustomToaster";
+import { catalogsApi } from "@/lib/catalogs";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { queryClient } from "@/lib/queryClient";
+import { invalidateCatalog } from "@/hooks/useCatalogs";
+import { UnitMeasure } from "@/types/catalogs";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
 /* ------------------------------------------------------------------ */
 type ItemType = "producto" | "servicio" | "combo";
-
-const TAX_OPTIONS = [
-  { label: "Ninguno (0%)", value: "0" },
-  { label: "IVA 5%", value: "5" },
-  { label: "IVA 19%", value: "19" },
-];
 
 const UNIT_OPTIONS = [
   "Unidad",
@@ -144,13 +139,14 @@ function MoneyInput({
 interface NewItemModalProps {
   open: boolean;
   onClose: () => void;
-  form: FormState;
-  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  form: ItemFormState;
+  setForm: React.Dispatch<React.SetStateAction<ItemFormState>>;
   errors: Record<string, boolean>;
   setErrors: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   onSubmit: (e: React.FormEvent) => void;
   onAdvanced: () => void;
   isCreating?: boolean;
+  catalogs: any;
 }
 
 export function NewItemModal({
@@ -162,9 +158,11 @@ export function NewItemModal({
   setErrors,
   onSubmit,
   onAdvanced,
-  isCreating
+  isCreating,
+  catalogs,
 }: NewItemModalProps) {
   const router = useRouter();
+  const [isTaxModalOpen, setIsTaxModalOpen] = React.useState(false);
 
   const baseInput =
     "!bg-white !h-8 px-3 !py-0 text-sm border-[1px] border-foreground/20 shadow-none text-foreground transition-all focus:border-primary focus:ring-1 focus:ring-primary/40 flex items-center outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary leading-none";
@@ -172,13 +170,28 @@ export function NewItemModal({
   const selectItemClass =
     "rounded-lg cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary focus:bg-primary/10 data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary";
 
-  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+  const { taxes = [], categories = [], warehouses = [], unitMeasures = [], isLoading } = catalogs || {};
+
+  const uniqueUnitMeasures = getUniqueUnitMeasures(unitMeasures);
+
+  const TAX_OPTIONS = (taxes || []).map((tax: any) => ({
+    label: `${tax.name} (${tax.rate}%)`,
+    value: String(tax.id),
+  }));
+
+  const getTaxRate = (taxId: string) => {
+    if (!taxId || taxId === "0") return 0;
+    const selected = (catalogs?.taxes || []).find((t: any) => String(t.id) === String(taxId));
+    return parseFloat(String(selected?.rate ?? selected?.percentage ?? 0)) / 100;
+  };
+
+  function set<K extends keyof ItemFormState>(key: K, value: ItemFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleBasePriceChange(v: string) {
     const base = parseMoney(v);
-    const taxRate = parseFloat(form.tax) / 100;
+    const taxRate = getTaxRate(form.tax);
     const total = base + (base * taxRate);
     setForm(prev => ({
       ...prev,
@@ -190,7 +203,7 @@ export function NewItemModal({
 
   function handleTotalPriceChange(v: string) {
     const total = parseMoney(v);
-    const taxRate = parseFloat(form.tax) / 100;
+    const taxRate = getTaxRate(form.tax);
     const base = total / (1 + taxRate);
     setForm(prev => ({
       ...prev,
@@ -202,7 +215,7 @@ export function NewItemModal({
 
   function handleTaxChange(v: string) {
     const base = parseMoney(form.basePrice);
-    const taxRate = parseFloat(v) / 100;
+    const taxRate = getTaxRate(v);
     const total = base + (base * taxRate);
     setForm(prev => ({
       ...prev,
@@ -210,6 +223,33 @@ export function NewItemModal({
       totalPrice: total > 0 ? total.toFixed(2) : ""
     }));
   }
+
+  const handleSaveTaxRate = async (newTaxRate: {
+    name: string;
+    tax_id: number;
+    rate: number;
+    description?: string;
+    type: "percentage";
+  }) => {
+    const response = await catalogsApi.createTaxRate({
+      ...newTaxRate,
+      type: "percentage",
+    });
+
+    const created =
+      response?.data?.tax_rates?.[0] ??
+      response?.data?.tax_rate ??
+      response?.data ??
+      newTaxRate;
+
+    invalidateCatalog(queryClient, QUERY_KEYS.catalogs.taxRates());
+
+    if (created.id) set("tax", String(created.id));
+    if (created.id) handleTaxChange(String(created.id));
+    showToast(`El impuesto "${created.name ?? newTaxRate.name}" ha sido creado.`, "success");
+  };
+
+
 
   const labelFor = form.itemType === "producto" ? "producto" : form.itemType === "servicio" ? "servicio" : "combo";
 
@@ -284,30 +324,63 @@ export function NewItemModal({
               )}
             </div>
 
-            {/* Bodega + Unidad de medida (Hidden for Servicio) */}
-            {form.itemType !== "servicio" ? (
+            {/* Bodega + Categoría (Hidden for Servicio) */}
+            {form.itemType !== "servicio" && (
               <div className="grid grid-cols-2 gap-4 items-start">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
                     Bodega <span className="text-destructive">*</span>
                   </label>
-                  <Select
+                  <SearchableSelect
                     value={form.bodega}
                     onValueChange={(v) => set("bodega", v)}
-                  >
-                    <SelectTrigger size="sm" className={cn(baseInput, "w-full rounded-md")}>
-                      <SelectValue placeholder="Seleccionar bodega" />
-                    </SelectTrigger>
-                    <SelectContent className="!bg-white border border-border rounded-xl shadow-lg">
-                      <SelectItem className={selectItemClass} value="Principal">Principal</SelectItem>
-                      <SelectItem className={selectItemClass} value="Secundaria">Secundaria</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    options={catalogs?.warehouses?.length > 0
+                      ? catalogs.warehouses.map((w: any) => ({ value: w.name, label: w.name }))
+                      : []
+                    }
+                    placeholder="Seleccionar bodega"
+                    searchPlaceholder="Buscar bodega..."
+                    emptyMessage="No hay bodegas disponibles."
+                    className={cn(baseInput, "w-full rounded-md")}
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground flex items-center gap-1 h-5">
-                    Unidad de medida
+                    Categoría
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-[280px]">
+                          Selecciona la categoría a la que pertenece tu producto y/o servicio. Ver más
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </label>
+                  <SearchableSelect
+                    value={form.categoryId}
+                    onValueChange={(v) => set("categoryId", v)}
+                    options={categories?.length > 0
+                      ? categories.map((c: any) => ({ value: String(c.id), label: c.name }))
+                      : []
+                    }
+                    placeholder="Seleccionar"
+                    searchPlaceholder="Buscar categoría..."
+                    emptyMessage="No hay categorías disponibles."
+                    className={cn(baseInput, "w-full rounded-md")}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Unidad de medida + Referencia */}
+            <div className="grid grid-cols-2 gap-4 items-start">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground flex items-center gap-1 h-5">
+                  Unidad de medida
+                  <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
@@ -316,98 +389,52 @@ export function NewItemModal({
                         Selecciona una referencia de medición para tu producto. Ejemplo: Unidad, Kilogramo, Litro.
                       </TooltipContent>
                     </Tooltip>
-                    <span className="text-destructive">*</span>
-                  </label>
-                  <Select
-                    value={form.unit}
-                    onValueChange={(v) => {
-                      set("unit", v);
-                      if (errors.unit) setErrors(prev => ({ ...prev, unit: false }));
-                    }}
-                  >
-                    <SelectTrigger size="sm" className={cn(baseInput, "w-full rounded-md", errors.unit && "border-destructive ring-destructive/20")}>
-                      <SelectValue placeholder="Buscar..." />
-                      {errors.unit && <AlertCircle className="w-4 h-4 text-destructive mr-6" />}
-                    </SelectTrigger>
-                    <SelectContent className="!bg-white border border-border rounded-xl shadow-lg">
-                      {UNIT_OPTIONS.map((u) => (
-                        <SelectItem className={selectItemClass} key={u} value={u}>
-                          {u}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.unit && (
-                    <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              /* Unidad de medida para Servicio (Full width) */
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground flex items-center gap-1 h-5">
-                  Unidad de medida
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-[280px]">
-                      Selecciona una referencia de medición para tu producto. Ejemplo: Unidad, Kilogramo, Litro.
-                    </TooltipContent>
-                  </Tooltip>
+                  </TooltipProvider>
                   <span className="text-destructive">*</span>
                 </label>
-                <Select
-                  value={form.unit || "Servicio"}
+                <SearchableSelect
+                  value={form.unit || (form.itemType === "servicio" ? "servicio" : "")}
                   onValueChange={(v) => {
                     set("unit", v);
                     if (errors.unit) setErrors(prev => ({ ...prev, unit: false }));
                   }}
-                >
-                  <SelectTrigger size="sm" className={cn(baseInput, "w-full rounded-md", errors.unit && "border-destructive ring-destructive/20")}>
-                    <SelectValue placeholder="Buscar..." />
-                  </SelectTrigger>
-                  <SelectContent className="!bg-white border border-border rounded-xl shadow-lg">
-                    {UNIT_OPTIONS.map((u) => (
-                      <SelectItem className={selectItemClass} key={u} value={u}>
-                        {u}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={uniqueUnitMeasures.map((unit) => ({ value: unit.name.toLowerCase(), label: unit.name }))}
+                  placeholder="Buscar..."
+                  searchPlaceholder="Buscar unidad..."
+                  emptyMessage="No se encontraron unidades."
+                  className={cn(baseInput, "w-full rounded-md", errors.unit && "border-destructive ring-destructive/20")}
+                  errorIcon={errors.unit ? <AlertCircle className="w-4 h-4 text-destructive" /> : undefined}
+                />
                 {errors.unit && (
                   <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
                 )}
               </div>
-            )}
 
-            {/* Código del producto o servicio (Only for Combo) */}
-            {form.itemType === "combo" && (
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground flex items-center gap-1 h-5">
-                  Código del producto o servicio
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="bg-[#1e293b] text-white">
-                      Busca productos o servicios para agregar al combo.
-                    </TooltipContent>
-                  </Tooltip>
+                  Referencia
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-[280px]">
+                        Agrega un código único para identificar tu producto. Ejemplo: CAS002
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </label>
-                <Select>
-                  <SelectTrigger size="sm" className={cn(baseInput, "w-full rounded-md")}>
-                    <SelectValue placeholder="Buscar..." />
-                  </SelectTrigger>
-                  <SelectContent className="!bg-white border border-border rounded-xl shadow-lg">
-                    <SelectItem className={selectItemClass} value="p1">Producto Ejemplo 1</SelectItem>
-                    <SelectItem className={selectItemClass} value="p2">Servicio Ejemplo 2</SelectItem>
-                  </SelectContent>
-                </Select>
+                <input
+                  type="text"
+                  value={form.reference || ""}
+                  onChange={(e) => set("reference", e.target.value)}
+                  className={cn(baseInput, "w-full rounded-md")}
+                />
               </div>
-            )}
+            </div>
 
-            {/* Cantidad inicial + Costo inicial (Only for Producto) */}
+
+            {/* Cantidad inicial + Costo inicial (Solo para Producto) */}
             {form.itemType === "producto" && (
               <div className="grid grid-cols-2 gap-4 items-start">
                 <div className="space-y-1.5">
@@ -416,22 +443,28 @@ export function NewItemModal({
                   </label>
                   <div className="relative">
                     <input
-                      type="text"
-                      inputMode="numeric"
-                      value={form.initialQty}
+                      type="number"
+                      value={form.initialQuantity}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, "");
-                        set("initialQty", val);
-                        if (errors.initialQty) setErrors(prev => ({ ...prev, initialQty: false }));
+                        set("initialQuantity", e.target.value);
+                        if (errors.initialQuantity)
+                          setErrors((prev) => ({ ...prev, initialQuantity: false }));
                       }}
-                      className={cn(baseInput, "w-full rounded-md pr-10", errors.initialQty && "border-destructive ring-destructive/20")}
+                      className={cn(
+                        baseInput,
+                        "w-full rounded-md pr-10",
+                        errors.initialQuantity &&
+                        "border-destructive ring-destructive/20"
+                      )}
                     />
-                    {errors.initialQty && (
+                    {errors.initialQuantity && (
                       <AlertCircle className="w-4 h-4 text-destructive absolute right-3 top-1/2 -translate-y-1/2" />
                     )}
                   </div>
-                  {errors.initialQty && (
-                    <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
+                  {errors.initialQuantity && (
+                    <p className="text-[11px] text-destructive leading-none">
+                      Este campo es obligatorio
+                    </p>
                   )}
                 </div>
 
@@ -439,23 +472,65 @@ export function NewItemModal({
                   <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
                     Costo inicial <span className="text-destructive">*</span>
                   </label>
-                  <MoneyInput
-                    placeholder="$0.000"
-                    value={form.initialCost}
-                    onChange={(v) => {
-                      set("initialCost", v);
-                      if (errors.initialCost) setErrors(prev => ({ ...prev, initialCost: false }));
-                    }}
-                    className={cn(baseInput, "w-full pl-7 rounded-md pr-10", errors.initialCost && "border-destructive ring-destructive/20")}
-                  />
+                  <div className="relative">
+                    <MoneyInput
+                      placeholder="$0.000"
+                      value={form.initialCost}
+                      onChange={(v) => {
+                        set("initialCost", v);
+                        if (errors.initialCost)
+                          setErrors((prev) => ({ ...prev, initialCost: false }));
+                      }}
+                      className={cn(
+                        baseInput,
+                        "w-full pl-7 rounded-md pr-10",
+                        errors.initialCost && "border-destructive ring-destructive/20"
+                      )}
+                    />
+                  </div>
                   {errors.initialCost && (
-                    <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
+                    <p className="text-[11px] text-destructive leading-none">
+                      Este campo es obligatorio
+                    </p>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Precio base + Impuesto = Precio Total */}
+
+
+            {/* Código del producto o servicio (Only for Combo) */}
+            {form.itemType === "combo" && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground flex items-center gap-1 h-5">
+                  Código del producto o servicio
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-[280px]">
+                        Ingresa el código definido por Colombia Compra Eficiente, si no lo conoces haz clic aquí.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </label>
+                <SearchableSelect
+                  value={form.comboCode}
+                  onValueChange={(v) => set("comboCode", v)}
+                  options={[
+                    { value: "1", label: "Producto Ejemplo 1" },
+                    { value: "2", label: "Servicio Ejemplo 2" },
+                  ]}
+                  placeholder="Buscar..."
+                  searchPlaceholder="Buscar código..."
+                  emptyMessage="No se encontraron códigos."
+                  className={cn(baseInput, "w-full rounded-md")}
+                />
+              </div>
+            )}
+
+            {/* Precios */}
             <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-x-2 gap-y-1.5 items-start">
               {/* Labels Row */}
               <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
@@ -493,36 +568,24 @@ export function NewItemModal({
               </div>
 
               <div className="space-y-1.5">
-                <Select
+                <SearchableSelect
                   value={form.tax}
                   onValueChange={handleTaxChange}
-                >
-                  <SelectTrigger size="sm" className={cn(baseInput, "w-full rounded-md")}>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent className="!bg-white border border-border rounded-xl shadow-lg">
-                    {TAX_OPTIONS.map((o) => (
-                      <SelectItem className={selectItemClass} key={o.value} value={o.value}>
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                    <SelectSeparator />
-                    <div
-                      className="px-2 py-1.5"
-                      onPointerUp={(e) => {
-                        e.preventDefault();
-                        console.log("Nuevo impuesto");
-                      }}
+                  options={TAX_OPTIONS}
+                  placeholder="Seleccionar"
+                  searchPlaceholder="Buscar impuesto..."
+                  emptyMessage="No se encontraron impuestos."
+                  className={cn(baseInput, "w-full rounded-md")}
+                  footer={
+                    <button
+                      type="button"
+                      onClick={() => setIsTaxModalOpen(true)}
+                      className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
                     >
-                      <button
-                        type="button"
-                        className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
-                      >
-                        Nuevo impuesto
-                      </button>
-                    </div>
-                  </SelectContent>
-                </Select>
+                      Nuevo impuesto
+                    </button>
+                  }
+                />
               </div>
 
               <div className="h-8 flex items-center justify-center">
@@ -550,14 +613,18 @@ export function NewItemModal({
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-border/40 flex items-center justify-between bg-[#f8fafc] rounded-b-2xl">
-            <button
-              type="button"
-              onClick={onAdvanced}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-[13px] text-[#2563eb] font-bold no-underline hover:bg-background rounded-lg transition-all"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Ir al formulario avanzado
-            </button>
+            {form.itemType !== "combo" ? (
+              <button
+                type="button"
+                onClick={onAdvanced}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-[13px] text-[#2563eb] font-bold no-underline hover:bg-background rounded-lg transition-all"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Ir al formulario avanzado
+              </button>
+            ) : (
+              <div />
+            )}
 
             <div className="flex items-center gap-3">
               <button
@@ -572,12 +639,32 @@ export function NewItemModal({
                 disabled={isCreating}
                 className="px-5 py-2 text-sm font-bold rounded-xl bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-all shadow-md active:scale-95 disabled:opacity-50"
               >
-                {isCreating ? "Creando..." : form.itemType === "combo" ? "Siguiente" : `Crear ${labelFor}`}
+                {isCreating ? "Creando..." : form.itemType === "combo" ? "Completar combo" : "Crear producto"}
               </button>
             </div>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </form >
+
+        <NewTaxRateModal
+          open={isTaxModalOpen}
+          onOpenChange={setIsTaxModalOpen}
+          onSave={handleSaveTaxRate}
+          taxTypes={catalogs?.taxTypes || []}
+        />
+      </DialogContent >
+    </Dialog >
   );
 }
+
+// Helper to remove duplicates by name
+const getUniqueUnitMeasures = (units: UnitMeasure[]): UnitMeasure[] => {
+  if (!units) return [];
+  const uniqueNames = new Set<string>();
+  return units.filter(unit => {
+    if (!uniqueNames.has(unit.name)) {
+      uniqueNames.add(unit.name);
+      return true;
+    }
+    return false;
+  });
+};

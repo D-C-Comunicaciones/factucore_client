@@ -1,0 +1,334 @@
+{
+  "info": {
+    "name": "DCFAC - Casos de Creación de Items",
+    "description": "Colección exhaustiva para probar la lógica de creación de ítems, cubriendo todos los casos posibles (productos simples, con variantes, servicios, combos, campos personalizados, impuestos, listas de precios, etc.).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": "TU_TOKEN_AQUI"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Producto Simple (Sin IVA, Sin Campos Personalizados)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 1,\n    \"category_id\": 1,\n    \"unit_measure_id\": 70,\n    \"has_variants\": false,\n    \"name\": \"Producto Básico\",\n    \"reference\": \"PROD-BASICO-01\",\n    \"barcode\": \"7700000000001\",\n    \"description\": \"Un producto simple sin impuestos ni configuraciones extra.\"\n  },\n  \"pricing\": {\n    \"base_price\": 10000,\n    \"total_price\": 10000,\n    \"default_cost_price\": 5000,\n    \"tax_rate_ids\": []\n  },\n  \"inventory\": {\n    \"allow_negative_stock\": false,\n    \"initial_stock\": {\n      \"warehouse_id\": 1,\n      \"quantity\": 50\n    }\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "2. Producto Simple (Con IVA y Lista de Precios)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 1,\n    \"unit_measure_id\": 70,\n    \"has_variants\": false,\n    \"name\": \"Producto con IVA\",\n    \"reference\": \"PROD-IVA-02\"\n  },\n  \"pricing\": {\n    \"base_price\": 10000,\n    \"total_price\": 11900,\n    \"default_cost_price\": 6000,\n    \"tax_rate_ids\": [1],\n    \"price_lists\": [\n      { \"id\": 1, \"value\": 15000 }\n    ]\n  },\n  \"inventory\": {\n    \"allow_negative_stock\": false,\n    \"initial_stock\": {\n      \"warehouse_id\": 1,\n      \"quantity\": 100\n    }\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "3. Producto Simple (Con Todos los Campos Personalizados)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 1,\n    \"unit_measure_id\": 70,\n    \"has_variants\": false,\n    \"name\": \"Producto Detallado\",\n    \"reference\": \"PROD-CUSTOM-03\"\n  },\n  \"pricing\": {\n    \"base_price\": 25000,\n    \"total_price\": 25000,\n    \"default_cost_price\": 10000,\n    \"tax_rate_ids\": []\n  },\n  \"inventory\": {\n    \"initial_stock\": {\n      \"warehouse_id\": 1,\n      \"quantity\": 20\n    }\n  },\n  \"custom_fields\": [\n    { \"id\": 1, \"value\": \"Madera de Roble\" },\n    { \"id\": 2, \"value\": \"2026-12-31\" },\n    { \"id\": 3, \"value\": \"Pasillo 4, Estante B\" },\n    { \"id\": 4, \"value\": true },\n    { \"id\": 5, \"value\": \"importado\" }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "4. Producto Simple (Venta en Negativo Permitida)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 1,\n    \"unit_measure_id\": 70,\n    \"has_variants\": false,\n    \"name\": \"Producto Bajo Demanda\",\n    \"reference\": \"PROD-NEG-04\"\n  },\n  \"pricing\": {\n    \"base_price\": 50000,\n    \"total_price\": 50000,\n    \"default_cost_price\": 25000\n  },\n  \"inventory\": {\n    \"allow_negative_stock\": true,\n    \"initial_stock\": {\n      \"warehouse_id\": 1,\n      \"quantity\": 0\n    }\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "5. Servicio Simple (Sin IVA)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 2,\n    \"unit_measure_id\": 94,\n    \"has_variants\": false,\n    \"name\": \"Consultoría Exenta\",\n    \"reference\": \"SERV-EXENTO-01\",\n    \"description\": \"Servicio de consultoría sin impuestos.\"\n  },\n  \"pricing\": {\n    \"base_price\": 150000,\n    \"total_price\": 150000,\n    \"tax_rate_ids\": []\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "6. Servicio (Con IVA y Lista de Precios)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 2,\n    \"unit_measure_id\": 94,\n    \"has_variants\": false,\n    \"name\": \"Mantenimiento de Servidores\",\n    \"reference\": \"SERV-IVA-02\"\n  },\n  \"pricing\": {\n    \"base_price\": 200000,\n    \"total_price\": 238000,\n    \"tax_rate_ids\": [1],\n    \"price_lists\": [\n      { \"id\": 1, \"value\": 250000 }\n    ]\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Producto con Variantes (Con Inventario por Variante)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 1,\n    \"unit_measure_id\": 70,\n    \"has_variants\": true,\n    \"name\": \"Camiseta Algodón\",\n    \"reference\": \"PROD-VAR-01\"\n  },\n  \"pricing\": {\n    \"base_price\": 30000,\n    \"total_price\": 35700,\n    \"default_cost_price\": 15000,\n    \"tax_rate_ids\": [1],\n    \"price_lists\": [\n      { \"id\": 1, \"value\": 40000 }\n    ]\n  },\n  \"variants\": [\n    {\n      \"reference\": \"PROD-VAR-01-ROJO-S\",\n      \"base_price\": 30000,\n      \"total_price\": 35700,\n      \"attributes\": [\n        { \"attribute_id\": 1, \"value_id\": 1 },\n        { \"attribute_id\": 2, \"value_id\": 4 }\n      ],\n      \"initial_stock\": {\n        \"warehouse_id\": 1,\n        \"quantity\": 15\n      }\n    },\n    {\n      \"reference\": \"PROD-VAR-01-AZUL-M\",\n      \"base_price\": 32000,\n      \"total_price\": 38080,\n      \"attributes\": [\n        { \"attribute_id\": 1, \"value_id\": 2 },\n        { \"attribute_id\": 2, \"value_id\": 5 }\n      ],\n      \"initial_stock\": {\n        \"warehouse_id\": 1,\n        \"quantity\": 25\n      }\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "8. Combo Básico (Componentes Simples)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 3,\n    \"unit_measure_id\": 70,\n    \"has_variants\": false,\n    \"name\": \"Kit de Limpieza\",\n    \"reference\": \"COMBO-01\"\n  },\n  \"pricing\": {\n    \"base_price\": 45000,\n    \"total_price\": 45000,\n    \"tax_rate_ids\": []\n  },\n  \"combo_settings\": {\n    \"cost_calculation_mode_id\": 1,\n    \"components\": [\n      { \"child_item_id\": 1, \"quantity\": 2 },\n      { \"child_item_id\": 2, \"quantity\": 1 }\n    ]\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "9. Combo Avanzado (Con Componentes Variante y Venta en Negativo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/items",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "items"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"basic_info\": {\n    \"type_item_id\": 3,\n    \"unit_measure_id\": 70,\n    \"has_variants\": false,\n    \"name\": \"Outfit Completo Verano\",\n    \"reference\": \"COMBO-VAR-02\"\n  },\n  \"pricing\": {\n    \"base_price\": 120000,\n    \"total_price\": 142800,\n    \"tax_rate_ids\": [1],\n    \"price_lists\": [\n      { \"id\": 1, \"value\": 150000 }\n    ]\n  },\n  \"inventory\": {\n    \"allow_negative_stock\": true\n  },\n  \"combo_settings\": {\n    \"cost_calculation_mode_id\": 2,\n    \"cost_value\": 80000,\n    \"components\": [\n      { \"child_item_id\": 1, \"child_item_variant_id\": 1, \"quantity\": 1 },\n      { \"child_item_id\": 2, \"quantity\": 2 }\n    ]\n  }\n}"
+        }
+      }
+    }
+  ]
+}
