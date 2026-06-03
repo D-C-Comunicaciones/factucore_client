@@ -536,6 +536,6 @@ export interface ItemListResponse {
     updated_at?: string;
 }
 
-export interface GetItemByIdResponse extends ApiResponse<{
+export interface GetItemByIdResponse {
     item: ItemResponse;
-}> { }
+}

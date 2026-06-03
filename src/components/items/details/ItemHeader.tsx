@@ -34,7 +34,7 @@ function StatusToggle({
                 onClick={active ? undefined : onToggle}
                 disabled={isTogglingStatus}
                 className={cn(
-                    "px-4 py-1.5 text-sm font-bold transition-all border-r border-border/40",
+                    "px-3 py-1 text-xs font-medium transition-all border-r border-border/40",
                     active
                         ? "bg-primary text-white"
                         : "bg-white text-muted-foreground hover:bg-muted/50"
@@ -47,7 +47,7 @@ function StatusToggle({
                 onClick={active ? onToggle : undefined}
                 disabled={isTogglingStatus}
                 className={cn(
-                    "px-4 py-1.5 text-sm font-bold transition-all",
+                    "px-3 py-1 text-xs font-medium transition-all",
                     !active
                         ? "bg-destructive text-white"
                         : "bg-white text-muted-foreground hover:bg-muted/50"
@@ -86,46 +86,46 @@ export function ItemHeader({
             </button>
 
             <h1 className="text-[28px] font-bold text-[#1e293b] mb-5">
-                {item.name}
+                {item.basic_info?.name}
             </h1>
 
             <div className="flex flex-wrap items-center gap-2.5">
-                <StatusToggle active={item.active} onToggle={onToggleStatus} isTogglingStatus={isTogglingStatus} />
+                <StatusToggle active={item.basic_info?.is_active ?? false} onToggle={onToggleStatus} isTogglingStatus={isTogglingStatus} />
 
                 <Button
                     variant="outline"
-                    className="h-9 px-4 rounded-xl border border-border bg-white text-foreground hover:bg-slate-50 transition-colors shadow-sm"
+                    className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-foreground hover:bg-slate-50 transition-colors shadow-none"
                     onClick={() => router.push(`/invoices/new?item=${item.id}`)}
                 >
-                    <Plus className="w-4 h-4 mr-1.5 text-muted-foreground" />
-                    <span className="font-semibold text-sm">Facturar este ítem</span>
+                    <Plus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                    <span className="font-medium text-xs text-slate-800">Facturar este ítem</span>
                 </Button>
 
                 <Button
                     variant="outline"
-                    className="h-9 px-4 rounded-xl border border-border bg-white text-foreground hover:bg-slate-50 transition-colors shadow-sm"
+                    className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-foreground hover:bg-slate-50 transition-colors shadow-none"
                 >
-                    <Plus className="w-4 h-4 mr-1.5 text-muted-foreground" />
-                    <span className="font-semibold text-sm">Comprar este ítem</span>
+                    <Plus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                    <span className="font-medium text-xs text-slate-800">Comprar este ítem</span>
                 </Button>
 
                 <Button
                     variant="outline"
-                    className="h-9 px-4 rounded-xl border border-border bg-white text-foreground hover:bg-slate-50 transition-colors shadow-sm"
+                    className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-foreground hover:bg-slate-50 transition-colors shadow-none"
                     onClick={() => router.push(`/items/${item.id}/edit`)}
                 >
-                    <Edit className="w-4 h-4 mr-1.5 text-muted-foreground" />
-                    <span className="font-semibold text-sm">Editar</span>
+                    <Edit className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                    <span className="font-medium text-xs text-slate-800">Editar</span>
                 </Button>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
                             variant="outline"
-                            className="h-9 px-4 rounded-xl border border-[1.5px] border-[#0f172a]/10 bg-white text-[#0f172a] hover:bg-slate-50 font-semibold text-sm transition-colors shadow-sm focus-visible:ring-0"
+                            className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-[#0f172a] hover:bg-slate-50 font-medium text-xs transition-colors shadow-none focus-visible:ring-0"
                         >
                             Más acciones
-                            <ChevronDown className="w-4 h-4 ml-1.5" />
+                            <ChevronDown className="w-3.5 h-3.5 ml-1" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent

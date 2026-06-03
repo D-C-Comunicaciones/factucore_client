@@ -9,7 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Item } from "./columns";
+import type { ItemListResponse as Item } from "@/types/items";
+import { useCatalogs } from "@/hooks/useCatalogs";
 
 const filterLabels: Record<string, string> = {
   type: "Tipo",
@@ -33,9 +34,8 @@ export const itemFilterOptions = [
   { value: "inventariable", label: "Inventariable", icon: Funnel },
 ];
 
-// Mock data for Bodega and Categoría
+// Mock data for Bodega (can be replaced similarly if needed)
 const MOCK_WAREHOUSES = ["Principal", "aa"];
-const MOCK_CATEGORIES: string[] = [];
 
 interface ItemFilterChipsProps {
   columnFilters: ColumnFiltersState;
@@ -55,6 +55,9 @@ export function ItemFilterChips({
   // States for search inputs in popovers
   const [warehouseSearch, setWarehouseSearch] = React.useState("");
   const [categorySearch, setCategorySearch] = React.useState("");
+
+  const { categories = [] } = useCatalogs();
+  const categoryOptions = categories.map((c: any) => c.name).filter(Boolean);
 
   if (columnFilters.length === 0) return null;
 
@@ -197,10 +200,10 @@ export function ItemFilterChips({
                     />
                   </div>
                   <div className="space-y-0.5 max-h-28 overflow-y-auto">
-                    {MOCK_CATEGORIES.filter(c => c.toLowerCase().includes(categorySearch.toLowerCase())).map(c => (
+                    {categoryOptions.filter((c: string) => c.toLowerCase().includes(categorySearch.toLowerCase())).map((c: string) => (
                       renderRadioOption(filter.id, filter.value, c, c)
                     ))}
-                    {MOCK_CATEGORIES.filter(c => c.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 && (
+                    {categoryOptions.filter((c: string) => c.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 && (
                       <p className="text-xs text-[#64748b] py-1 px-1">No hay resultados</p>
                     )}
                   </div>

@@ -29,15 +29,15 @@ export function ItemInventory({ inventoryQty }: ItemInventoryProps) {
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
-                        className="h-9 px-4 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-primary/30 font-semibold text-sm shadow-sm transition-colors duration-200"
+                        className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-black hover:bg-slate-100 hover:text-black transition-colors font-medium text-xs shadow-none"
                     >
-                        <Download className="w-4 h-4 mr-1.5 text-slate-500" />
+                        <Download className="w-3.5 h-3.5 mr-1 text-black" />
                         Historial
                     </Button>
                     <Button
                         variant="outline"
                         onClick={() => setExpanded(!expanded)}
-                        className="h-9 px-4 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-primary/30 font-semibold text-sm shadow-sm transition-colors duration-200"
+                        className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-black hover:bg-slate-100 hover:text-black transition-colors font-medium text-xs shadow-none"
                     >
                         {expanded ? "Ocultar detalle" : "Mostrar detalle"}
                     </Button>

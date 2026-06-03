@@ -4,6 +4,7 @@ import * as React from "react";
 import { Plus, ChevronDown, Upload, Download, RefreshCw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ColumnFiltersState } from "@tanstack/react-table";
 import { ItemTable } from "@/components/items/ItemTable";
 import { NewItemModal } from "@/components/items/NewItemModal";
 import { ExportItemsModal, type ExportConfig } from "@/components/items/ExportItemsModal";
@@ -14,6 +15,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { useItems } from "@/hooks/items/useItems";
 import { useToggleItemStatus } from "@/hooks/items/useToggleItemStatus";
@@ -44,6 +52,8 @@ export default function ItemsPage() {
   const [perPage, setPerPage] = React.useState(10);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [exportModalOpen, setExportModalOpen] = React.useState(false);
+  const [selectedPriceList, setSelectedPriceList] = React.useState<string>("General");
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   // Form State
   const [form, setForm] = React.useState<FormState>({
@@ -75,10 +85,50 @@ export default function ItemsPage() {
 
   const debouncedSearch = useDebounce(search, 600);
 
+  const buildApiFilters = React.useCallback(() => {
+    const apiParams: Record<string, any> = {};
+
+    // Map selected price list
+    if (selectedPriceList !== "General" && selectedPriceList) {
+      const pl = catalogs.priceLists?.find((p: any) => p.name === selectedPriceList);
+      if (pl) {
+        apiParams.price_list_id = pl.id;
+      }
+    }
+
+    // Map column filters
+    columnFilters.forEach((f) => {
+      if (f.id === "type") {
+        if (f.value === "producto") apiParams.type_item_id = 1;
+        else if (f.value === "servicio") apiParams.type_item_id = 2;
+        else if (f.value === "combo") apiParams.type_item_id = 3;
+      } else if (f.id === "active") {
+        apiParams.estado = f.value ? 1 : 0;
+      } else if (f.id === "reference") {
+        apiParams.referencia = f.value;
+      } else if (f.id === "description") {
+        apiParams.descripción = f.value;
+      } else if (f.id === "price") {
+        apiParams.precio = f.value;
+      } else if (f.id === "warehouse") {
+        const w = catalogs.warehouses?.find((w: any) => w.name === f.value);
+        if (w) apiParams.warehouse_id = w.id;
+      } else if (f.id === "category") {
+        const c = catalogs.categories?.find((c: any) => c.name === f.value);
+        if (c) apiParams.category_id = c.id;
+      } else if (f.id === "inventariable") {
+        apiParams.inventariable = f.value ? 1 : 0;
+      }
+    });
+
+    return apiParams;
+  }, [selectedPriceList, columnFilters, catalogs]);
+
   const { data, isLoading: isLoadingItems, isRefetching, refetch } = useItems({
     search: debouncedSearch,
     page,
     per_page: perPage,
+    ...buildApiFilters(),
   });
 
   const { mutate: toggleStatus } = useToggleItemStatus();
@@ -513,6 +563,32 @@ export default function ItemsPage() {
           </p>
         </div>
 
+        {/* PRICE LIST SELECTOR */}
+        <div className="mb-6 w-full max-w-xs">
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            Lista de precios
+          </label>
+          <Select
+            value={selectedPriceList}
+            onValueChange={setSelectedPriceList}
+          >
+            <SelectTrigger className="w-full bg-white h-9 border border-border/60 text-sm focus:ring-1 focus:ring-primary/20 transition-all rounded-lg">
+              <SelectValue placeholder="Selecciona una lista de precios" />
+            </SelectTrigger>
+            <SelectContent className="bg-white rounded-xl shadow-lg border-border">
+              {/* Opción por defecto o las que vengan del catálogo */}
+              <SelectItem value="General" className="cursor-pointer hover:bg-slate-50">
+                General
+              </SelectItem>
+              {catalogs.priceLists?.map((pl: any) => (
+                <SelectItem key={pl.id} value={pl.name} className="cursor-pointer hover:bg-slate-50">
+                  {pl.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* TABLE */}
         <div className="w-full">
           <ItemTable
@@ -532,6 +608,8 @@ export default function ItemsPage() {
             onToggleActive={handleToggleActive}
             onDelete={handleDelete}
             onNewItem={handleNewItem}
+            columnFilters={columnFilters}
+            setColumnFilters={setColumnFilters}
           />
         </div>
 

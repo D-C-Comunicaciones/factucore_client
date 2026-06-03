@@ -3,22 +3,22 @@ import { ItemResponse, CreateItemPayload } from "@/types/items";
 
 export function useItemForm(initialData?: Partial<ItemResponse>) {
     const [itemType, setItemType] = useState<"producto" | "servicio" | "combo">(
-        initialData?.type_item_id === 1 ? "producto" : 
-        initialData?.type_item_id === 2 ? "servicio" : 
-        initialData?.type_item_id === 3 ? "combo" : "producto"
+        initialData?.basic_info?.type_item_id === 1 ? "producto" : 
+        initialData?.basic_info?.type_item_id === 2 ? "servicio" : 
+        initialData?.basic_info?.type_item_id === 3 ? "combo" : "producto"
     );
-    const [name, setName] = useState(initialData?.name || "");
-    const [reference, setReference] = useState(initialData?.reference || "");
-    const [description, setDescription] = useState(initialData?.description || "");
-    const [unitMeasureId, setUnitMeasureId] = useState<number | undefined>(initialData?.unit_measure_id);
+    const [name, setName] = useState(initialData?.basic_info?.name || "");
+    const [reference, setReference] = useState(initialData?.basic_info?.reference || "");
+    const [description, setDescription] = useState(initialData?.basic_info?.description || "");
+    const [unitMeasureId, setUnitMeasureId] = useState<number | undefined>(initialData?.basic_info?.unit_measure_id);
     const [categoryId, setCategoryId] = useState<number | undefined>(initialData?.basic_info?.category_id ?? undefined);
-    const [typeItemIdentificationId, setTypeItemIdentificationId] = useState<number | undefined>(initialData?.basic_info?.type_item_identification_id);
+    const [typeItemIdentificationId, setTypeItemIdentificationId] = useState<number | undefined>(initialData?.basic_info?.type_item_identification_id ?? undefined);
     
     // Pricing
     const [basePrice, setBasePrice] = useState(initialData?.pricing?.base_price?.toString() || "");
     const [taxId, setTaxId] = useState<number | undefined>(initialData?.pricing?.tax_rate_ids?.[0] ?? undefined);
-    const [totalPrice, setTotalPrice] = useState(initialData?.pricing?.total_price || 0);
-    const [applyToVariants, setApplyToVariants] = useState(initialData?.pricing?.apply_to_variants ?? true);
+    const [totalPrice, setTotalPrice] = useState(parseFloat(initialData?.pricing?.total_price || "0"));
+    const [applyToVariants, setApplyToVariants] = useState(true);
 
     // Accounting
     const [salesAccountId, setSalesAccountId] = useState<number | undefined>(initialData?.accounting?.sales_account_id ?? undefined);
@@ -27,14 +27,23 @@ export function useItemForm(initialData?: Partial<ItemResponse>) {
 
     // Inventory
     const [hasVariants, setHasVariants] = useState(initialData?.basic_info?.has_variants ?? false);
-    const [warehouseId, setWarehouseId] = useState<number | undefined>(initialData?.inventory?.initial_stock?.warehouse_id);
+    
+    const firstStock = initialData?.inventory?.inventory_stocks?.[0];
+    const [warehouseId, setWarehouseId] = useState<number | undefined>(firstStock?.warehouse_id);
     const [isInventoriable, setIsInventoriable] = useState(initialData?.inventory?.is_inventoriable ?? true);
     const [allowNegativeStock, setAllowNegativeStock] = useState(initialData?.inventory?.allow_negative_stock ?? false);
-    const [initialStock, setInitialStockState] = useState(initialData?.inventory?.initial_stock?.quantity?.toString() || "");
-    const [minimumStock, setMinimumStock] = useState(initialData?.inventory?.initial_stock?.minimum_stock?.toString() || "");
+    const [initialStock, setInitialStockState] = useState(firstStock?.stock_quantity?.toString() || "");
+    const [minimumStock, setMinimumStock] = useState(firstStock?.minimum_stock?.toString() || "");
 
     const [warehouses, setWarehouses] = useState<any[]>([
-        { id: "1", warehouse_id: warehouseId ?? 1, warehouse: "Principal", initialQty: initialData?.inventory?.initial_stock?.quantity?.toString() || "", minQty: minimumStock || "", maxQty: initialData?.inventory?.initial_stock?.maximum_stock?.toString() || "" }
+        { 
+            id: "1", 
+            warehouse_id: warehouseId ?? 1, 
+            warehouse: "Principal", 
+            initialQty: firstStock?.stock_quantity?.toString() || "", 
+            minQty: firstStock?.minimum_stock?.toString() || "", 
+            maxQty: firstStock?.maximum_stock?.toString() || "" 
+        }
     ]);
 
     const setInitialStock = useCallback((val: string) => {

@@ -212,7 +212,7 @@ export default function ItemDetailPage() {
     const tax = catalogs?.taxes?.find(
       (t: any) => Number(t.id) === Number(taxId)
     );
-    return tax ? `${tax.name} (${tax.rate}%)` : "Ninguno";
+    return tax ? tax.name : "Ninguno";
   }, [item, catalogs]);
 
   const formatMoney = (value: number | undefined | null) => {
@@ -237,7 +237,7 @@ export default function ItemDetailPage() {
     }
   };
 
-  const isProduct = item?.basic_info?.type_item_id === 1;
+  const isProduct = Number(item?.basic_info?.type_item_id) === 1;
 
   return (
     <div className="w-full min-h-screen">
@@ -269,15 +269,17 @@ export default function ItemDetailPage() {
           />
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mt-4">
-          <div className="space-y-4">
-            <ItemPriceLists item={item} formatMoney={formatMoney} />
-            <ItemDocumentsTab />
-          </div>
-          <div className="space-y-4">
-            <ItemAttachments />
-            <ItemAccounting />
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+          <ItemPriceLists item={item} formatMoney={formatMoney} />
+          <ItemAttachments />
+        </div>
+
+        <div className="mt-4">
+          <ItemDocumentsTab />
+        </div>
+
+        <div className="mt-4">
+          <ItemAccounting />
         </div>
       </div>
     </div>

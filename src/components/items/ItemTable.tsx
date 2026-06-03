@@ -72,6 +72,10 @@ interface ItemTableProps {
   onDelete: (id: number) => void;
 
   onNewItem?: () => void;
+
+  columnFilters: ColumnFiltersState;
+
+  setColumnFilters: React.Dispatch<React.SetStateAction<ColumnFiltersState>>;
 }
 
 type SelectionState =
@@ -94,12 +98,10 @@ export function ItemTable({
   onToggleActive,
   onDelete,
   onNewItem,
+  columnFilters,
+  setColumnFilters,
 }: ItemTableProps) {
-  const [sorting, setSorting] =
-    React.useState<SortingState>([]);
-
-  const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});

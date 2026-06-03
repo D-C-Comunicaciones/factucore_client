@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import type { InvoiceStats } from "@/data/invoiceMockData";
+import type { InvoiceStats } from "@/data/InvoiceMockData";
 
 interface StatCardProps {
   stat: InvoiceStats;

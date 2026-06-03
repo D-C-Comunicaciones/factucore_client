@@ -1,12 +1,13 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
 import { queryClient } from "@/lib/queryClient";
 import { showToast } from "@/components/sonner/CustomToaster"
 import { getSession } from "@/common/interfaces/session"
 import { prefetchAllCatalogs } from "@/hooks/useCatalogs";
+import { SplashScreen } from "@/components/SplashScreen";
 
 interface BackendUser {
     id: number
@@ -30,7 +31,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<BackendUser | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [showSplash, setShowSplash] = useState(true) // covers initial load & page refresh
+    const pendingLogoutRef = useRef(false)
     const router = useRouter()
+
+    const handleSplashDone = () => {
+        setShowSplash(false)
+        if (pendingLogoutRef.current) {
+            pendingLogoutRef.current = false
+            router.push("/login")
+        }
+    }
 
     // ✅ INIT desde localStorage (SIN API)
     useEffect(() => {
@@ -61,6 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // ✅ LOGIN SIN /me
     const login = async (email: string, password: string) => {
+        // Show splash immediately while the login request is in flight
+        setShowSplash(true)
         try {
             // 🔥 Obtener CSRF Cookie primero
             await apiClient.csrfCookie()
@@ -72,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             )
 
             if (res.status === "error") {
+                setShowSplash(false)
                 showToast(res.message || "Credenciales inválidas", "error")
                 return
             }
@@ -102,15 +116,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             prefetchAllCatalogs(queryClient);
 
             showToast("Inicio de sesión exitoso", "success")
+            // Splash will fade out after its animation; navigate once it's done
             router.push("/dashboard")
 
         } catch (error: any) {
+            setShowSplash(false)
             showToast(error?.response?.data?.message || "Credenciales inválidas", "error")
         }
     }
 
     // ✅ LOGOUT
     const logout = async () => {
+        // Show splash and redirect to /login after animation (no full-page reload)
+        pendingLogoutRef.current = true
+        setShowSplash(true)
+
         try {
             await apiClient.post("/logout", {}, { withCredentials: true })
         } catch { }
@@ -182,18 +202,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // swallow any errors during cleanup
         }
 
-        // Reset local user state and navigate to login (force reload to clear memory)
+        // Reset local user state — splash will call router.push('/login') via handleSplashDone
         setUser(null)
         showToast("Sesión cerrada", "success")
-        try {
-            if (typeof window !== 'undefined') {
-                // Use location.replace to ensure a full reload to the login page
-                window.location.replace('/login');
-                return;
-            }
-        } catch { }
-        // Fallback to router navigation
-        router.push('/login');
     }
 
     return (
@@ -206,6 +217,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 logout,
             }}
         >
+            {/* Splash covers the screen on initial load, login, and logout */}
+            {showSplash && <SplashScreen onDone={handleSplashDone} />}
             {children}
         </AuthContext.Provider>
     )

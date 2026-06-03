@@ -120,7 +120,7 @@ export function ItemTableBody({
                 colSpan={columns.length}
                 className="h-64 bg-card text-center align-middle"
               >
-                {!hasSearch ? (
+                {loading ? null : !hasSearch ? (
                   <div className="flex h-full flex-col items-center justify-center py-8">
                     <div className="max-w-[520px] text-center text-[40px] font-semibold leading-tight text-primary">
                       ¡Aún no tienes ítems!

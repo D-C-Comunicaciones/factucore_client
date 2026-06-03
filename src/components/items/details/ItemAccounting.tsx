@@ -16,7 +16,7 @@ export function ItemAccounting() {
                     <Button
                         variant="outline"
                         onClick={() => setExpanded(true)}
-                        className="h-9 px-4 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-primary/30 font-semibold text-[13px] shadow-sm transition-colors duration-200"
+                        className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-black hover:bg-slate-100 hover:text-black transition-colors font-medium text-xs shadow-none"
                     >
                         Mostrar detalle
                     </Button>
@@ -33,19 +33,19 @@ export function ItemAccounting() {
                                 Fecha: <span className="font-normal text-slate-600">30/05/2026</span>
                             </p>
                         </div>
-                        <div className="flex flex-col gap-2 items-end">
+                        <div className="flex flex-row items-center gap-2">
                             <Button
                                 variant="outline"
                                 onClick={() => setExpanded(false)}
-                                className="h-9 px-4 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-primary/30 font-semibold text-[13px] shadow-sm transition-colors duration-200"
+                                className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-black hover:bg-slate-100 hover:text-black transition-colors font-medium text-xs shadow-none"
                             >
                                 Ocultar detalle
                             </Button>
                             <Button
                                 variant="outline"
-                                className="h-9 px-4 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-primary/30 font-semibold text-[13px] shadow-sm transition-colors duration-200"
+                                className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-black hover:bg-slate-100 hover:text-black transition-colors font-medium text-xs shadow-none"
                             >
-                                <Printer className="w-4 h-4 mr-2 text-slate-500" />
+                                <Printer className="w-3.5 h-3.5 mr-1 text-black" />
                                 Imprimir
                             </Button>
                         </div>
