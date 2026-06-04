@@ -23,8 +23,8 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             clearTimeout(t3)
             clearTimeout(t4)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, []
+    )
 
     return (
         <div
@@ -32,7 +32,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                 }`}
         >
             {/* Branding row */}
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center relative">
                 {/* Logo / F icon */}
                 <div
                     className={`transition-all duration-700 ease-out transform ${animateLogo
@@ -64,14 +64,14 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                         </span>
                     </div>
                 </div>
-            </div>
 
-            {/* Spinner */}
-            <div
-                className={`mt-12 transition-opacity duration-500 delay-300 ${animateText ? "opacity-30" : "opacity-0"
-                    }`}
-            >
-                <div className="w-5 h-5 border-2 border-[#0056A6] border-t-transparent rounded-full animate-spin" />
+                {/* Spinner absolutely positioned below the branding row so it doesn't push the logo out of vertical center */}
+                <div
+                    className={`absolute top-full left-1/2 -translate-x-1/2 mt-12 flex justify-center items-center transition-opacity duration-500 delay-300 ${animateText ? "opacity-30" : "opacity-0"
+                        }`}
+                >
+                    <div className="w-5 h-5 border-2 border-[#0056A6] border-t-transparent rounded-full animate-spin" />
+                </div>
             </div>
         </div>
     )

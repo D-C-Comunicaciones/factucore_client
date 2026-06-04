@@ -12,7 +12,7 @@ function TooltipProvider({
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
-      delayDuration={delayDuration}
+      delayDuration={0}
       {...props}
     />
   )

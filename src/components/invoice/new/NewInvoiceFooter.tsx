@@ -25,7 +25,7 @@ export function NewInvoiceFooter({
             {/* TEXTO */}
             <div className="text-xs text-muted-foreground mb-4">
                 Los campos marcados con{" "}
-                <span className="text-destructive">*</span> son obligatorios
+                <span className="text-primary">*</span> son obligatorios
             </div>
 
             {/* BOTONES */}

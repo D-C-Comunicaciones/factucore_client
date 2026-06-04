@@ -98,26 +98,30 @@ export default function ItemsPage() {
 
     // Map column filters
     columnFilters.forEach((f) => {
+      // Ignorar valores vacíos (pero permitir false, que es un valor válido para el filtro "active")
+      if (f.value === "" || f.value === undefined || f.value === null) return;
+      if (f.id !== "active" && f.value === false) return;
+
       if (f.id === "type") {
-        if (f.value === "producto") apiParams.type_item_id = 1;
-        else if (f.value === "servicio") apiParams.type_item_id = 2;
-        else if (f.value === "combo") apiParams.type_item_id = 3;
+        if (f.value === "producto") apiParams.Type_item_id = 1;
+        else if (f.value === "servicio") apiParams.Type_item_id = 2;
+        else if (f.value === "combo") apiParams.Type_item_id = 3;
       } else if (f.id === "active") {
-        apiParams.estado = f.value ? 1 : 0;
+        apiParams.is_active = f.value ? 1 : 0;
       } else if (f.id === "reference") {
-        apiParams.referencia = f.value;
+        apiParams.Reference = f.value;
       } else if (f.id === "description") {
-        apiParams.descripción = f.value;
+        apiParams.Description = f.value;
       } else if (f.id === "price") {
-        apiParams.precio = f.value;
+        apiParams.Price = f.value;
       } else if (f.id === "warehouse") {
         const w = catalogs.warehouses?.find((w: any) => w.name === f.value);
-        if (w) apiParams.warehouse_id = w.id;
+        if (w) apiParams.Warehouse_id = w.id;
       } else if (f.id === "category") {
         const c = catalogs.categories?.find((c: any) => c.name === f.value);
-        if (c) apiParams.category_id = c.id;
+        if (c) apiParams.Category_id = c.id;
       } else if (f.id === "inventariable") {
-        apiParams.inventariable = f.value ? 1 : 0;
+        apiParams.Inventariable = f.value ? 1 : 0;
       }
     });
 
@@ -125,7 +129,7 @@ export default function ItemsPage() {
   }, [selectedPriceList, columnFilters, catalogs]);
 
   const { data, isLoading: isLoadingItems, isRefetching, refetch } = useItems({
-    search: debouncedSearch,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
     page,
     per_page: perPage,
     ...buildApiFilters(),
@@ -164,8 +168,12 @@ export default function ItemsPage() {
     router.push(`/items/${id}/edit`);
   }, [router]);
 
-  const handleToggleActive = React.useCallback((id: number) => {
-    toggleStatus(id);
+  const handleToggleActive = React.useCallback((
+    ids: number | number[],
+    isActive?: boolean,
+    entityType?: "item" | "variant"
+  ) => {
+    toggleStatus({ ids, isActive, entityType: entityType ?? "item" });
   }, [toggleStatus]);
 
   const handleDelete = React.useCallback((id: number) => {
@@ -242,15 +250,7 @@ export default function ItemsPage() {
 
     if (!validateForm()) return;
 
-    const unitMeasure =
-      catalogsData.unitMeasures?.find(
-        (u: any) =>
-          u.name?.toLowerCase() ===
-          form.unit.toLowerCase()
-      );
-
-    const unitMeasureId =
-      unitMeasure?.id ?? 1;
+    const unitMeasureId = parseInt(form.unit) || 1;
 
     const warehouse =
       catalogsData.warehouses?.find(
@@ -471,7 +471,7 @@ export default function ItemsPage() {
       config.decimalSeparator === "comma"
         ? item.price.toString().replace(".", ",")
         : item.price.toString(),
-      item.active ? "Activo" : "Inactivo"
+      (item.is_active ?? item.active) ? "Activo" : "Inactivo"
     ]);
 
     const separator = config.fileType === "csv" ? "," : ";";
@@ -576,12 +576,12 @@ export default function ItemsPage() {
               <SelectValue placeholder="Selecciona una lista de precios" />
             </SelectTrigger>
             <SelectContent className="bg-white rounded-xl shadow-lg border-border">
-              {/* Opción por defecto o las que vengan del catálogo */}
-              <SelectItem value="General" className="cursor-pointer hover:bg-slate-50">
-                General
-              </SelectItem>
               {catalogs.priceLists?.map((pl: any) => (
-                <SelectItem key={pl.id} value={pl.name} className="cursor-pointer hover:bg-slate-50">
+                <SelectItem
+                  key={pl.id}
+                  value={pl.name}
+                  className="cursor-pointer focus:bg-slate-100 focus:text-slate-900 data-[state=checked]:bg-slate-100 data-[state=checked]:text-slate-900"
+                >
                   {pl.name}
                 </SelectItem>
               ))}
@@ -610,6 +610,7 @@ export default function ItemsPage() {
             onNewItem={handleNewItem}
             columnFilters={columnFilters}
             setColumnFilters={setColumnFilters}
+            emptyMessage={data?.message}
           />
         </div>
 

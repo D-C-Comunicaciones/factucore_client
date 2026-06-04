@@ -11,16 +11,15 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { type ItemFormState } from "@/types/items";
-import { NewTaxRateModal } from "@/components/items/taxes/NewTaxRateModal";
+import { NewTaxRateModal } from "@/components/taxes/NewTaxRateModal";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { catalogsApi } from "@/lib/catalogs";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { queryClient } from "@/lib/queryClient";
 import { invalidateCatalog } from "@/hooks/useCatalogs";
-import { UnitMeasure } from "@/types/catalogs";
-import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { TaxRate, UnitMeasure } from "@/types/catalogs";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -172,12 +171,13 @@ export function NewItemModal({
 
   const { taxes = [], categories = [], warehouses = [], unitMeasures = [], isLoading } = catalogs || {};
 
-  const uniqueUnitMeasures = getUniqueUnitMeasures(unitMeasures);
-
-  const TAX_OPTIONS = (taxes || []).map((tax: any) => ({
-    label: `${tax.name} (${tax.rate}%)`,
-    value: String(tax.id),
-  }));
+  const TAX_OPTIONS = (taxes || []).map((tax: TaxRate) => {
+    const rate = tax.code;
+    return {
+      label: `${tax.name} (${rate})`,
+      value: String(tax.id),
+    };
+  });
 
   const getTaxRate = (taxId: string) => {
     if (!taxId || taxId === "0") return 0;
@@ -277,10 +277,10 @@ export function NewItemModal({
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground flex items-center gap-1 h-5">
                 Tipo de ítem
-                <span className="text-destructive">*</span>
+                <span className="text-primary">*</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                    <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="bg-[#1e293b] text-white">
                     El tipo de item no se podrá modificar una vez creado.
@@ -293,7 +293,7 @@ export function NewItemModal({
               />
               <p className="text-xs text-muted-foreground flex items-start gap-1">
                 <HelpCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                {form.itemType === "servicio"
+                {form.itemType === "servicio" || form.itemType === "combo"
                   ? "Ten en cuenta que, una vez creado, no podrás cambiar el tipo de ítem."
                   : "Ten en cuenta que, una vez creado, no podrás cambiar el tipo de ítem ni su condición variable."
                 }
@@ -303,7 +303,7 @@ export function NewItemModal({
             {/* Nombre */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
-                Nombre <span className="text-destructive">*</span>
+                Nombre <span className="text-primary">*</span>
               </label>
               <div className="relative">
                 <input
@@ -329,7 +329,7 @@ export function NewItemModal({
               <div className="grid grid-cols-2 gap-4 items-start">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
-                    Bodega <span className="text-destructive">*</span>
+                    Bodega <span className="text-primary">*</span>
                   </label>
                   <SearchableSelect
                     value={form.bodega}
@@ -351,7 +351,7 @@ export function NewItemModal({
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                          <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-[280px]">
                           Selecciona la categoría a la que pertenece tu producto y/o servicio. Ver más
@@ -383,22 +383,22 @@ export function NewItemModal({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                        <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-[280px]">
                         Selecciona una referencia de medición para tu producto. Ejemplo: Unidad, Kilogramo, Litro.
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  <span className="text-destructive">*</span>
+                  <span className="text-primary">*</span>
                 </label>
                 <SearchableSelect
-                  value={form.unit || (form.itemType === "servicio" ? "servicio" : "")}
+                  value={form.unit || (form.itemType === "servicio" ? (unitMeasures?.find((u: any) => u.name.toLowerCase() === "servicio")?.id?.toString() || "") : "")}
                   onValueChange={(v) => {
                     set("unit", v);
                     if (errors.unit) setErrors(prev => ({ ...prev, unit: false }));
                   }}
-                  options={uniqueUnitMeasures.map((unit) => ({ value: unit.name.toLowerCase(), label: unit.name }))}
+                  options={(unitMeasures || []).map((unit: any) => ({ value: String(unit.id), label: unit.name }))}
                   placeholder="Buscar..."
                   searchPlaceholder="Buscar unidad..."
                   emptyMessage="No se encontraron unidades."
@@ -416,7 +416,7 @@ export function NewItemModal({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                        <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-[280px]">
                         Agrega un código único para identificar tu producto. Ejemplo: CAS002
@@ -439,7 +439,7 @@ export function NewItemModal({
               <div className="grid grid-cols-2 gap-4 items-start">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
-                    Cantidad inicial <span className="text-destructive">*</span>
+                    Cantidad inicial <span className="text-primary">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -470,7 +470,7 @@ export function NewItemModal({
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
-                    Costo inicial <span className="text-destructive">*</span>
+                    Costo inicial <span className="text-primary">*</span>
                   </label>
                   <div className="relative">
                     <MoneyInput
@@ -507,7 +507,7 @@ export function NewItemModal({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                        <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="bg-[#1e293b] text-white max-w-[280px]">
                         Ingresa el código definido por Colombia Compra Eficiente, si no lo conoces haz clic aquí.
@@ -534,7 +534,7 @@ export function NewItemModal({
             <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-x-2 gap-y-1.5 items-start">
               {/* Labels Row */}
               <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
-                Precio base <span className="text-destructive">*</span>
+                Precio base <span className="text-primary">*</span>
               </label>
               <div className="w-4" /> {/* Spacer for + */}
               <label className="text-sm font-medium text-foreground block h-5">
@@ -542,7 +542,7 @@ export function NewItemModal({
               </label>
               <div className="w-4" /> {/* Spacer for = */}
               <label className="text-sm font-medium text-foreground flex items-center gap-0.5 h-5">
-                Precio Total <span className="text-destructive">*</span>
+                Precio Total <span className="text-primary">*</span>
               </label>
 
               {/* Inputs/Symbols Row */}
@@ -655,16 +655,3 @@ export function NewItemModal({
     </Dialog >
   );
 }
-
-// Helper to remove duplicates by name
-const getUniqueUnitMeasures = (units: UnitMeasure[]): UnitMeasure[] => {
-  if (!units) return [];
-  const uniqueNames = new Set<string>();
-  return units.filter(unit => {
-    if (!uniqueNames.has(unit.name)) {
-      uniqueNames.add(unit.name);
-      return true;
-    }
-    return false;
-  });
-};

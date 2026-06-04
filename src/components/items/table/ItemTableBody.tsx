@@ -18,9 +18,10 @@ interface ItemTableBodyProps {
   columns: ColumnDef<ItemListResponse>[];
   loading?: boolean;
   rowSelection?: Record<string, boolean>;
-  onToggleSelection?: (id: number) => void;
+  onToggleSelection?: (uniqueId: string) => void;
   searchTerm?: string;
   onNewItem?: () => void;
+  emptyMessage?: string;
 }
 
 export function ItemTableBody({
@@ -31,6 +32,7 @@ export function ItemTableBody({
   onToggleSelection,
   searchTerm = "",
   onNewItem,
+  emptyMessage,
 }: ItemTableBodyProps) {
   const hasSearch = Boolean(searchTerm.trim());
 
@@ -40,7 +42,7 @@ export function ItemTableBody({
       'button, a, input, select, textarea, [role="checkbox"], [data-no-row-select="true"]'
     );
     if (interactiveElement) return;
-    onToggleSelection?.(row.original.id);
+    onToggleSelection?.(row.id);
   };
 
   return (
@@ -77,7 +79,7 @@ export function ItemTableBody({
         <TableBody>
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => {
-              const isSelected = Boolean(rowSelection[String(row.original.id)]);
+              const isSelected = Boolean(rowSelection[row.id]);
 
               return (
                 <TableRow
@@ -120,21 +122,7 @@ export function ItemTableBody({
                 colSpan={columns.length}
                 className="h-64 bg-card text-center align-middle"
               >
-                {loading ? null : !hasSearch ? (
-                  <div className="flex h-full flex-col items-center justify-center py-8">
-                    <div className="max-w-[520px] text-center text-[40px] font-semibold leading-tight text-primary">
-                      ¡Aún no tienes ítems!
-                    </div>
-                    <button
-                      type="button"
-                      className="mt-6 inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-                      onClick={onNewItem}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Nuevo ítem
-                    </button>
-                  </div>
-                ) : (
+                {loading ? null : (
                   <div className="flex flex-col items-center justify-center h-full py-8">
                     <svg
                       width="48"
@@ -149,7 +137,7 @@ export function ItemTableBody({
                     </svg>
                     <div className="text-lg font-semibold text-foreground">Sin resultados</div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      La búsqueda no arrojó ítems
+                      {emptyMessage || "La búsqueda no arrojó ítems"}
                     </div>
                   </div>
                 )}

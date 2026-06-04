@@ -9,7 +9,7 @@ import { AccountingSection } from "./AccountingSection";
 import { ItemSidebar } from "./ItemSidebar";
 import { CustomFieldModal } from "@/components/custom-fields/CustomFieldModal";
 import { showToast } from "@/components/sonner/CustomToaster";
-import { NewTaxRateModal } from "@/components/items/taxes/NewTaxRateModal";
+import { NewTaxRateModal } from "@/components/taxes/NewTaxRateModal";
 import { NewCategoryModal } from "@/components/category/NewCategoryModal";
 import { NewWarehouseModal } from "@/components/warehouse/NewWarehouseModal";
 

@@ -525,11 +525,21 @@ export interface ItemListResponse {
 
     active: boolean;
 
+    is_active?: boolean;
+
     type_item_id: ItemTypeId;
 
     price: number;
 
     permissions: Permission;
+
+    /**
+     * Indica si el registro es un ítem padre o una variante.
+     * Viene del endpoint de listado aplanado.
+     */
+    entity_type?: "item" | "variant";
+
+    parent_id?: number | null;
 
     created_at?: string;
 

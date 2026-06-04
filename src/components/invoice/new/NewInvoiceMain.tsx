@@ -80,7 +80,7 @@ export function NewInvoiceMain({
                 {/* DOCUMENTO */}
                 <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                        Documento <span className="text-destructive">*</span>
+                        Documento <span className="text-primary">*</span>
                     </label>
 
                     <div className="flex gap-2">
@@ -108,7 +108,7 @@ export function NewInvoiceMain({
                 {/* FECHA */}
                 <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                        Fecha <span className="text-destructive">*</span>
+                        Fecha <span className="text-primary">*</span>
                     </label>
                     <DatePickerSimple />
                 </div>
@@ -117,7 +117,7 @@ export function NewInvoiceMain({
                 <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
                         Nombre o razón social{" "}
-                        <span className="text-destructive">*</span>
+                        <span className="text-primary">*</span>
                     </label>
 
                     <Select>
@@ -141,7 +141,7 @@ export function NewInvoiceMain({
                 {/* FORMA DE PAGO */}
                 <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                        Forma de pago <span className="text-destructive">*</span>
+                        Forma de pago <span className="text-primary">*</span>
                     </label>
 
                     <Select>
@@ -173,7 +173,7 @@ export function NewInvoiceMain({
                 {/* MEDIO DE PAGO */}
                 <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                        Medio de pago <span className="text-destructive">*</span>
+                        Medio de pago <span className="text-primary">*</span>
                     </label>
 
                     <Select>

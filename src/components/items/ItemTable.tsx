@@ -67,15 +67,15 @@ interface ItemTableProps {
 
   onEdit: (id: number) => void;
 
-  onToggleActive: (id: number) => void;
+  onToggleActive: (ids: number | number[], isActive?: boolean, entityType?: "item" | "variant") => void;
 
   onDelete: (id: number) => void;
 
   onNewItem?: () => void;
 
   columnFilters: ColumnFiltersState;
-
   setColumnFilters: React.Dispatch<React.SetStateAction<ColumnFiltersState>>;
+  emptyMessage?: string;
 }
 
 type SelectionState =
@@ -100,6 +100,7 @@ export function ItemTable({
   onNewItem,
   columnFilters,
   setColumnFilters,
+  emptyMessage,
 }: ItemTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -109,97 +110,85 @@ export function ItemTable({
   const [selection, setSelection] =
     React.useState<SelectionState>({});
 
-  const toggleSelection =
-    React.useCallback((id: number) => {
-      setSelection((prev) => {
-        const key = String(id);
+  const getRowUniqueId = React.useCallback(
+    (item: ItemListResponse) => `${item.entity_type || "item"}-${item.id}`,
+    []
+  );
 
+  const toggleSelection =
+    React.useCallback((uniqueId: string) => {
+      setSelection((prev) => {
         const next = { ...prev };
 
-        if (next[key]) {
-          delete next[key];
+        if (next[uniqueId]) {
+          delete next[uniqueId];
         } else {
-          next[key] = true;
+          next[uniqueId] = true;
         }
 
         return next;
       });
     }, []);
 
-  const toggleSelectAll =
-    React.useCallback(() => {
+  const toggleSelectAll = React.useCallback(
+    (value: boolean) => {
       setSelection((prev) => {
-        const visibleIds = new Set(
-          items.map((i) => String(i.id))
-        );
-
-        const areAllSelected =
-          items.length > 0 &&
-          items.every(
-            (i) => prev[String(i.id)]
-          );
-
-        if (areAllSelected) {
-          const next: SelectionState = {};
-
-          Object.keys(prev).forEach((key) => {
-            if (!visibleIds.has(key)) {
-              next[key] = true;
-            }
+        const next = { ...prev };
+        if (value) {
+          // Select all visible items
+          items.forEach((item) => {
+            next[getRowUniqueId(item)] = true;
           });
-
-          return next;
+        } else {
+          // Deselect all visible items
+          items.forEach((item) => {
+            delete next[getRowUniqueId(item)];
+          });
         }
-
-        const next: SelectionState = {
-          ...prev,
-        };
-
-        items.forEach((i) => {
-          next[String(i.id)] = true;
-        });
-
         return next;
       });
-    }, [items]);
+    },
+    [items, getRowUniqueId]
+  );
+
+  // Adaptador: columns.tsx llama con un único id; aquí lo envolvemos en array
+  // y lo forwarded hacia el onToggleActive de la prop (que acepta ids | ids[])
+  const handleToggleActiveRow = React.useCallback(
+    (id: number, isActive: boolean, entityType?: "item" | "variant") => {
+      onToggleActive([id], isActive, entityType);
+    },
+    [onToggleActive]
+  );
 
   const allSelected =
     items.length > 0 &&
-    items.every(
-      (item) =>
-        selection[String(item.id)] === true
-    );
+    items.every((item) => selection[getRowUniqueId(item)] === true);
 
   const someSelected =
     items.length > 0 &&
-    items.some(
-      (item) =>
-        selection[String(item.id)] === true
-    );
+    items.some((item) => selection[getRowUniqueId(item)] === true);
 
   const columns = React.useMemo(
     () =>
       getItemColumns(
         onView,
         onEdit,
-        onToggleActive,
+        handleToggleActiveRow,
         onDelete,
         toggleSelection,
         toggleSelectAll,
         allSelected,
-        someSelected,
-        selection
+        someSelected
       ),
     [
       onView,
       onEdit,
-      onToggleActive,
+      handleToggleActiveRow,
       onDelete,
       toggleSelection,
       toggleSelectAll,
       allSelected,
       someSelected,
-      selection,
     ]
   );
 
@@ -210,7 +199,7 @@ export function ItemTable({
       columns,
 
       getRowId: (row) =>
-        String(row.id),
+        getRowUniqueId(row),
 
       state: {
         sorting,
@@ -218,6 +207,8 @@ export function ItemTable({
         columnVisibility,
         rowSelection: selection,
       },
+
+      enableRowSelection: true,
 
       onRowSelectionChange:
         setSelection,
@@ -268,12 +259,20 @@ export function ItemTable({
   const selectedCount =
     Object.keys(selection).length;
 
+  const selectedItemsArr = items.filter((item) => selection[getRowUniqueId(item)]);
+  const canDeleteAll = selectedItemsArr.length > 0 && selectedItemsArr.every((item) => item.permissions?.can_delete !== false);
+  const canEditAll = selectedItemsArr.length > 0 && selectedItemsArr.every((item) => item.permissions?.can_edit !== false);
+
+  // is_active es el campo principal del API; active como fallback
+  const allSelectedActive = selectedItemsArr.length > 0 && selectedItemsArr.every((item) => item.is_active ?? item.active);
+  const allSelectedInactive = selectedItemsArr.length > 0 && selectedItemsArr.every((item) => !(item.is_active ?? item.active));
+
   return (
     <div className="space-y-4">
       <div
         className={`transition-all duration-500 ease-in-out overflow-hidden ${selectedCount > 0
-            ? "max-h-32 opacity-100 translate-y-0 mb-4"
-            : "max-h-0 opacity-0 -translate-y-4 mb-0 pointer-events-none"
+          ? "max-h-32 opacity-100 translate-y-0 mb-4"
+          : "max-h-0 opacity-0 -translate-y-4 mb-0 pointer-events-none"
           }`}
       >
         <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center shadow-sm">
@@ -287,37 +286,40 @@ export function ItemTable({
 
           <div className="flex items-center gap-2 ml-4">
             <button
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold text-[#2563eb] bg-[#eff6ff] hover:bg-[#dbeafe] rounded-lg transition-colors"
-              onClick={() =>
-                console.log(
-                  "Activar seleccionados"
-                )
-              }
+              disabled={!canEditAll || allSelectedActive}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold text-[#2563eb] bg-[#eff6ff] hover:bg-[#dbeafe] rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => {
+                const itemIds = selectedItemsArr.filter((i) => (i.entity_type ?? "item") === "item").map((i) => i.id);
+                const variantIds = selectedItemsArr.filter((i) => i.entity_type === "variant").map((i) => i.id);
+                if (itemIds.length > 0) onToggleActive(itemIds, true, "item");
+                if (variantIds.length > 0) onToggleActive(variantIds, true, "variant");
+                setSelection({});
+              }}
             >
               <Lightbulb className="w-3.5 h-3.5" />
               Activar
             </button>
 
             <button
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors shadow-sm"
-              onClick={() =>
-                console.log(
-                  "Desactivar seleccionados"
-                )
-              }
+              disabled={!canEditAll || allSelectedInactive}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => {
+                const itemIds = selectedItemsArr.filter((i) => (i.entity_type ?? "item") === "item").map((i) => i.id);
+                const variantIds = selectedItemsArr.filter((i) => i.entity_type === "variant").map((i) => i.id);
+                if (itemIds.length > 0) onToggleActive(itemIds, false, "item");
+                if (variantIds.length > 0) onToggleActive(variantIds, false, "variant");
+                setSelection({});
+              }}
             >
               <LightbulbOff className="w-3.5 h-3.5" />
               Desactivar
             </button>
 
             <button
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors shadow-sm"
+              disabled={!canDeleteAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => {
-                Object.keys(selection).forEach(
-                  (id) =>
-                    onDelete(Number(id))
-                );
-
+                selectedItemsArr.forEach((item) => onDelete(item.id));
                 setSelection({});
               }}
             >
@@ -366,6 +368,7 @@ export function ItemTable({
           }
           searchTerm={search}
           onNewItem={onNewItem}
+          emptyMessage={emptyMessage}
         />
 
         <ItemTablePagination

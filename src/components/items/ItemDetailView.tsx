@@ -219,9 +219,9 @@ export function ItemDetailView({
   /* Derived data                                                           */
   /* ---------------------------------------------------------------------- */
 
-  const itemTypeName = getItemTypeName(item.type_item_id);
-  const isProduct = item.type_item_id === 1;
-  const isService = item.type_item_id === 2;
+  const itemTypeName = getItemTypeName(item.basic_info.type_item_id);
+  const isProduct = item.basic_info.type_item_id === 1;
+  const isService = item.basic_info.type_item_id === 2;
 
   const basePrice = item.pricing?.base_price ?? 0;
   const totalPrice = item.pricing?.total_price ?? 0;
@@ -240,10 +240,10 @@ export function ItemDetailView({
   // Find unit measure name
   const unitName = React.useMemo(() => {
     const unit = catalogs?.unitMeasures?.find(
-      (u: any) => Number(u.id) === Number(item.unit_measure_id)
+      (u: any) => Number(u.id) === Number(item.basic_info.unit_measure_id)
     );
     return unit?.name ?? "Unidad";
-  }, [item.unit_measure_id, catalogs?.unitMeasures]);
+  }, [item.basic_info.unit_measure_id, catalogs?.unitMeasures]);
 
   // Find category name
   const categoryName = React.useMemo(() => {
@@ -255,7 +255,13 @@ export function ItemDetailView({
   }, [item.basic_info?.category_id, catalogs?.categories]);
 
   // Inventory info
-  const inventoryQty = item.inventory?.initial_stock?.quantity ?? 0;
+  const inventoryQty = React.useMemo(() => {
+    if (!item.inventory?.inventory_stocks) return 0;
+    return item.inventory.inventory_stocks.reduce(
+      (sum, stock) => sum + (parseFloat(stock.stock_quantity) || 0),
+      0
+    );
+  }, [item.inventory?.inventory_stocks]);
   const isInventoriable = item.inventory?.is_inventoriable !== false;
   const allowNegative = item.inventory?.allow_negative_stock ?? false;
 
@@ -289,7 +295,7 @@ export function ItemDetailView({
         </button>
 
         <h1 className="text-2xl font-bold text-foreground mb-4">
-          {item.name}
+          {item.basic_info.name}
         </h1>
 
         {/* ================================================================ */}
@@ -297,7 +303,7 @@ export function ItemDetailView({
         {/* ================================================================ */}
 
         <div className="flex flex-wrap items-center gap-2.5 mb-6">
-          <StatusToggle active={item.active} onToggle={onToggleStatus} />
+          <StatusToggle active={item.basic_info.is_active} onToggle={onToggleStatus} />
 
           <Button
             variant="outline"
@@ -380,7 +386,7 @@ export function ItemDetailView({
                   <InfoField label="Código" value={item.id} />
                   <InfoField
                     label="Referencia"
-                    value={item.reference}
+                    value={item.basic_info.reference}
                   />
                 </div>
 
@@ -406,7 +412,7 @@ export function ItemDetailView({
                   </p>
                   <div className="border-b border-border/30 pb-3">
                     <p className="text-sm text-muted-foreground">
-                      {item.description || "-"}
+                      {item.basic_info.description || "-"}
                     </p>
                   </div>
                 </div>
@@ -485,7 +491,7 @@ export function ItemDetailView({
                     <span className="text-xs text-muted-foreground">COP</span>
                   </div>
                   <p className="text-3xl font-bold text-foreground">
-                    {formatMoney(totalPrice)}
+                    {formatMoney(parseFloat(totalPrice))}
                   </p>
 
                   <div className="grid grid-cols-2 gap-4 pt-1">
@@ -494,7 +500,7 @@ export function ItemDetailView({
                         Precio sin impuesto
                       </p>
                       <p className="text-sm font-semibold text-foreground">
-                        {formatMoney(basePrice)}{" "}
+                        {formatMoney(parseFloat(basePrice))}{" "}
                         <span className="text-xs text-muted-foreground font-normal">
                           COP
                         </span>
@@ -517,7 +523,7 @@ export function ItemDetailView({
                           Costo inicial
                         </p>
                         <p className="text-sm font-semibold text-foreground">
-                          {formatMoney(costPrice)}
+                          {formatMoney(parseFloat(costPrice))}
                         </p>
                       </div>
                       <div>
@@ -593,7 +599,7 @@ export function ItemDetailView({
                       General
                     </span>
                     <span className="text-sm font-semibold text-foreground">
-                      {formatMoney(pl.value ?? totalPrice)}
+                      {formatMoney(parseFloat(pl.value ?? totalPrice))}
                     </span>
                   </div>
                 ))}
@@ -604,7 +610,7 @@ export function ItemDetailView({
                   General
                 </span>
                 <span className="text-sm font-semibold text-foreground">
-                  {formatMoney(totalPrice)}
+                  {formatMoney(parseFloat(totalPrice))}
                 </span>
               </div>
             )}

@@ -93,12 +93,15 @@ export function ItemFilterChips({
       {columnFilters.map((filter) => {
         const isType = filter.id === "type";
         const isState = filter.id === "active";
-        const isText = ["reference", "description", "price"].includes(filter.id);
+        const isText = ["reference", "description"].includes(filter.id);
+        const isPrice = filter.id === "price";
         const isWarehouse = filter.id === "warehouse";
         const isCategory = filter.id === "category";
         const isInventoriable = filter.id === "inventariable";
         
-        const hasValue = filter.value !== undefined && filter.value !== "" && filter.value !== false;
+        // Para el filtro "active", false es un valor v\u00e1lido (Inactivo)
+        const hasValue = filter.value !== undefined && filter.value !== "" &&
+          (filter.id === "active" ? filter.value !== undefined : filter.value !== false);
 
         return (
           <DropdownMenu key={filter.id}>
@@ -156,6 +159,43 @@ export function ItemFilterChips({
                     onBlur={(e) => {
                       if (e.target.value.trim()) {
                         setFilterValue(filter.id, e.target.value.trim());
+                      } else {
+                        setFilterValue(filter.id, "");
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {isPrice && (
+                <div className="mt-1 px-1">
+                  <input 
+                    type="text" 
+                    autoFocus
+                    placeholder={filterLabels[filter.id]}
+                    className="w-full h-8 px-2.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-[#94a3b8] text-[#0f172a]"
+                    defaultValue={filter.value as string}
+                    onChange={(e) => {
+                      e.target.value = e.target.value.replace(/[^\d.]/g, '');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        let val = e.currentTarget.value;
+                        if (val && !val.includes('.')) {
+                          val = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                          e.currentTarget.value = val;
+                        }
+                        setFilterValue(filter.id, val);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      let val = e.target.value;
+                      if (val) {
+                        if (!val.includes('.')) {
+                          val = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                          e.target.value = val;
+                        }
+                        setFilterValue(filter.id, val);
                       } else {
                         setFilterValue(filter.id, "");
                       }

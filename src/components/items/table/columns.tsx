@@ -61,7 +61,9 @@ function ItemActionsCell({
   onEdit: (id: number) => void;
 
   onToggleActive: (
-    id: number
+    id: number,
+    isActive: boolean,
+    entityType?: "item" | "variant"
   ) => void;
 
   onDelete: (id: number) => void;
@@ -73,6 +75,9 @@ function ItemActionsCell({
   const canDelete =
     item.permissions?.can_delete ??
     true;
+
+  // is_active es el campo principal que devuelve el API; active como fallback
+  const isActive = item.is_active ?? item.active;
 
   return (
     <div
@@ -135,14 +140,14 @@ function ItemActionsCell({
               size="icon"
               className="h-7 w-7 hover:bg-background disabled:opacity-30"
               onClick={() =>
-                onToggleActive(item.id)
+                onToggleActive(item.id, !isActive, item.entity_type ?? "item")
               }
               disabled={!canEdit}
             >
-              {item.active ? (
-                <Lightbulb className="w-3.5 h-3.5" />
-              ) : (
+              {isActive ? (
                 <LightbulbOff className="w-3.5 h-3.5" />
+              ) : (
+                <Lightbulb className="w-3.5 h-3.5" />
               )}
             </Button>
           </TooltipTrigger>
@@ -150,7 +155,7 @@ function ItemActionsCell({
           <TooltipContent side="bottom">
             <p>
               {canEdit
-                ? item.active
+                ? isActive
                   ? "Desactivar"
                   : "Activar"
                 : "No tienes permisos para cambiar el estado"}
@@ -196,23 +201,20 @@ export function getItemColumns(
   onEdit: (id: number) => void,
 
   onToggleActive: (
-    id: number
+    id: number,
+    isActive: boolean,
+    entityType?: "item" | "variant"
   ) => void,
 
   onDelete: (id: number) => void,
 
-  onToggle?: (id: number) => void,
+  onToggle?: (uniqueId: string) => void,
 
-  onToggleAll?: () => void,
+  onToggleAll?: (value: boolean) => void,
 
   allSelected?: boolean,
 
-  someSelected?: boolean,
-
-  selection?: Record<
-    string,
-    boolean
-  >
+  someSelected?: boolean
 ): ColumnDef<ItemListResponse>[] {
   return [
     /* CHECKBOX */
@@ -221,20 +223,11 @@ export function getItemColumns(
 
       size: 48,
 
-      header: ({ table }) => {
-        const showIndeterminate =
-          someSelected &&
-          !allSelected;
+      header: () => {
+        const showIndeterminate = someSelected && !allSelected;
 
         return (
           <Checkbox
-            key={
-              allSelected
-                ? "all-selected"
-                : someSelected
-                  ? "some-selected"
-                  : "none-selected"
-            }
             checked={
               allSelected
                 ? true
@@ -245,39 +238,30 @@ export function getItemColumns(
             onClick={(e) =>
               e.stopPropagation()
             }
-            onCheckedChange={() =>
-              onToggleAll
-                ? onToggleAll()
-                : table.toggleAllPageRowsSelected()
+            onCheckedChange={(value) =>
+              onToggleAll && onToggleAll(!!value)
             }
           />
         );
       },
 
       cell: ({ row }) => {
-        const isSelected =
-          selection
-            ? !!selection[
-            String(
-              row.original.id
-            )
-            ]
-            : row.getIsSelected();
+        const isSelected = row.getIsSelected();
 
         return (
-          <Checkbox
-            checked={isSelected}
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-            onCheckedChange={() =>
-              onToggle
-                ? onToggle(
-                  row.original.id
-                )
-                : row.toggleSelected()
-            }
-          />
+          <div
+            data-no-row-select="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() =>
+                onToggle
+                  ? onToggle(row.id)
+                  : row.toggleSelected()
+              }
+            />
+          </div>
         );
       },
 
@@ -364,7 +348,7 @@ export function getItemColumns(
       cell: ({ row }) => (
         <StatusBadge
           active={
-            row.original.active
+            row.original.is_active ?? row.original.active
           }
         />
       ),

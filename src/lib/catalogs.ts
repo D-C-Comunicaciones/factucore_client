@@ -69,7 +69,13 @@ export const catalogsApi = {
 
     getUnitMeasures: async (): Promise<ApiResponse<any>> => {
         return await apiClient.get<any>(
-            "/catalogs/unit-measures"
+            "/catalogs/unit-measures?per_page=10000"
+        );
+    },
+
+    searchUnitMeasures: async (search: string, perPage: number = 20): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            `/catalogs/unit-measures?search=${encodeURIComponent(search)}&per_page=${perPage}`
         );
     },
 

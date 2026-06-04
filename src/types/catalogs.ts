@@ -66,12 +66,15 @@ export interface Category {
 export interface TaxRate {
     id: number;
     name: string;
-    percentage: number;
+    code: string;
 }
 
 export interface Tax {
     id: number;
+    code: string;
     name: string;
+    description: string;
+    tax_rates: TaxRate[];
 }
 
 export interface UnitMeasure {

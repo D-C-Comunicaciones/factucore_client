@@ -124,8 +124,7 @@ export function SearchableSelect({
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{emptyMessage}</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
+            <CommandGroup>{options.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
@@ -133,15 +132,19 @@ export function SearchableSelect({
                     onValueChange(currentValue === value ? "" : currentValue);
                     setOpen(false);
                   }}
-                  className="rounded-lg cursor-pointer transition-colors data-[selected=true]:bg-primary/5 data-[selected=true]:text-primary hover:bg-primary/5 hover:text-primary"
+                  className="rounded-lg cursor-pointer transition-colors data-[selected=true]:bg-primary/5 data-[selected=true]:text-primary hover:bg-primary/5 hover:text-primary group/item relative"
                 >
                   <span className="flex-1 truncate">{option.label}</span>
                   {value === option.value && (
                     <Check className="size-4 text-primary shrink-0" />
                   )}
+                  {/* Custom tooltip — shows full label on hover */}
+                  <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 hidden group-hover/item:block whitespace-nowrap rounded-md bg-[#2563eb] px-2.5 py-1.5 text-xs font-medium text-white shadow-lg">
+                    {option.label}
+                  </span>
                 </CommandItem>
-              ))}
-            </CommandGroup>
+              ))}</CommandGroup>
+            
           </CommandList>
 
           {/* Optional footer (e.g. "+ Nueva categoría") */}

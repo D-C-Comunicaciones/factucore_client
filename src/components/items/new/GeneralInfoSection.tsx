@@ -389,7 +389,7 @@ export function GeneralInfoSection({
         <div className="flex items-start gap-2">
           <div className="flex-1">
             <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-0.5">
-              Precio base <span className="text-destructive">*</span>
+              Precio base <span className="text-primary">*</span>
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
@@ -432,7 +432,7 @@ export function GeneralInfoSection({
 
           <div className="flex-1">
             <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-0.5">
-              Precio Total <span className="text-destructive">*</span>
+              Precio Total <span className="text-primary">*</span>
             </label>
             <input
               readOnly

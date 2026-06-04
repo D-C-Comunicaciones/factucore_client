@@ -48,10 +48,48 @@ export const itemsApi = {
     },
 
     /**
-     * Alterna el estado activo/inactivo de un ítem
+     * Alterna el estado de uno o varios ítems.
+     * Acepta un ID, un arreglo de IDs o un arreglo de objetos { id, is_active }.
      */
-    toggleItemStatus: async (id: number | string) => {
-        return apiClient.post<any>(`/items/${id}/toggle-status`);
+    toggleItemStatus: async (
+        ids: number | string | (number | string)[],
+        isActive?: boolean
+    ) => {
+        const idsArray = Array.isArray(ids) ? ids : [ids];
+        const payload: Record<string, any> = { ids: idsArray };
+        if (isActive !== undefined) payload.is_active = isActive;
+        return apiClient.post<any>("/items/toggle-status", payload);
+    },
+
+    /**
+     * Alterna el estado de una o varias variantes.
+     */
+    toggleVariantStatus: async (
+        ids: number | string | (number | string)[],
+        isActive?: boolean
+    ) => {
+        const idsArray = Array.isArray(ids) ? ids : [ids];
+        const payload: Record<string, any> = { ids: idsArray };
+        if (isActive !== undefined) payload.is_active = isActive;
+        return apiClient.post<any>("/item-variants/toggle-status", payload);
+    },
+
+    /**
+     * Detecta si el registro es ítem o variante y llama al endpoint correcto.
+     * entityType: "item" | "variant"
+     */
+    toggleEntityStatus: async (
+        entityType: "item" | "variant",
+        ids: number | string | (number | string)[],
+        isActive?: boolean
+    ) => {
+        const idsArray = Array.isArray(ids) ? ids : [ids];
+        const payload: Record<string, any> = { ids: idsArray };
+        if (isActive !== undefined) payload.is_active = isActive;
+        const url = entityType === "variant"
+            ? "/item-variants/toggle-status"
+            : "/items/toggle-status";
+        return apiClient.post<any>(url, payload);
     },
 
     /**
@@ -66,12 +104,5 @@ export const itemsApi = {
      */
     updateVariant: async (id: number | string, payload: UpdateVariantPayload) => {
         return apiClient.patch<any>(`/item-variants/${id}`, payload);
-    },
-
-    /**
-     * Alterna el estado activo/inactivo de una variante
-     */
-    toggleVariantStatus: async (id: number | string) => {
-        return apiClient.post<any>(`/item-variants/${id}/toggle-status`);
     }
 };
