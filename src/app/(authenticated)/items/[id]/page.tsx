@@ -169,8 +169,13 @@ export default function ItemDetailPage() {
   const catalogs = useCatalogs();
 
   const handleToggleStatus = React.useCallback(() => {
-    if (id) toggleStatus(id);
-  }, [id, toggleStatus]);
+    if (id) {
+      toggleStatus({
+        ids: Number(id),
+        isActive: !item?.basic_info?.is_active,
+      });
+    }
+  }, [id, item, toggleStatus]);
 
   const handleDeleteItem = React.useCallback(() => {
     if (id) {

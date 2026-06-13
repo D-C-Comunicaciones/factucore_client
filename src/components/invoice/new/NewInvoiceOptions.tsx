@@ -1,57 +1,68 @@
 "use client";
-import { HelpCircle } from "lucide-react";
+import { useState } from "react";
+import { HelpCircle, Plus } from "lucide-react";
 import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 export function NewInvoiceOptions({
     warehouseOptions,
     priceListOptions,
     sellerOptions,
+    selectedWarehouseId,
+    setSelectedWarehouseId,
+    selectedPriceListId,
+    setSelectedPriceListId,
+    showWarehouse,
+    showPriceList,
+    tipoDoc,
+    setTipoDoc,
 }: {
     warehouseOptions: { value: string; label: string }[];
     priceListOptions: { value: string; label: string }[];
     sellerOptions: { value: string; label: string }[];
+    selectedWarehouseId: number | null;
+    setSelectedWarehouseId: (id: number | null) => void;
+    selectedPriceListId: number | null;
+    setSelectedPriceListId: (id: number | null) => void;
+    showWarehouse: boolean;
+    showPriceList: boolean;
+    tipoDoc: 'factura' | 'tiquete';
+    setTipoDoc: (tipo: 'factura' | 'tiquete') => void;
 }) {
-    const baseInput =
-        "bg-white h-9 px-3 text-sm border border-foreground/20 shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40";
-
-    const selectItemClass =
-        "rounded-lg cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary focus:bg-primary/10 data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary";
+    const [selectedSeller, setSelectedSeller] = useState<string>("");
 
     return (
         <div className="bg-white rounded-lg border border-border p-4 md:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="flex flex-wrap items-end gap-4">
 
                 {/* TIPO DOCUMENTO */}
-                <div className="sm:col-span-2 lg:col-span-1">
+                <div className="shrink-0">
                     <label className="block text-sm font-medium text-foreground mb-2">
                         Tipo de documento
                     </label>
-
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 bg-gray-50 p-1 border border-gray-200 rounded-lg h-[38px] items-center min-w-[210px]">
                         <button
-                            className="
-                                flex-1 h-[42px] rounded-lg text-sm font-medium
-                                bg-primary text-primary-foreground
-                                hover:bg-primary/90 transition-colors
-                            "
+                            onClick={() => setTipoDoc('factura')}
+                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold transition-all whitespace-nowrap px-3 ${
+                                tipoDoc === 'factura'
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "bg-transparent text-gray-500 hover:text-gray-900"
+                            }`}
                         >
-                            FE Venta
+                            Factura de venta
                         </button>
-
                         <button
-                            className="
-                                flex-1 h-[42px] rounded-lg text-sm font-medium
-                                border border-border bg-background
-                                hover:bg-primary/10 hover:text-primary hover:border-primary/40
-                                transition-colors
-                            "
+                            onClick={() => setTipoDoc('tiquete')}
+                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold transition-all whitespace-nowrap px-3 ${
+                                tipoDoc === 'tiquete'
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "bg-transparent text-gray-500 hover:text-gray-900"
+                            }`}
                         >
                             Tiquete
                         </button>
@@ -59,101 +70,105 @@ export function NewInvoiceOptions({
                 </div>
 
                 {/* BODEGA */}
-                <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                        Bodega
-                    </label>
-
-                    <Select>
-                        <SelectTrigger className={baseInput}>
-                            <SelectValue placeholder="Selecciona bodega" />
-                        </SelectTrigger>
-
-                        <SelectContent className="bg-background border border-border rounded-xl shadow-lg">
-                            {warehouseOptions.map((opt) => (
-                                <SelectItem
-                                    key={opt.value}
-                                    value={opt.value}
-                                    className={selectItemClass}
-                                >
-                                    {opt.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                {showWarehouse && (
+                    <div className="shrink-0 min-w-[160px]">
+                        <div className="flex items-center gap-1 mb-2">
+                            <label className="text-sm font-medium text-foreground">
+                                Bodega
+                            </label>
+                            <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
+                                        Selecciona la bodega desde donde se despacharán los productos de esta factura.
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <SearchableSelect
+                            value={selectedWarehouseId?.toString() ?? ""}
+                            onValueChange={(val) => setSelectedWarehouseId(val ? Number(val) : null)}
+                            options={warehouseOptions}
+                            placeholder="Selecciona bodega"
+                            searchPlaceholder="Buscar bodega..."
+                        />
+                    </div>
+                )}
 
                 {/* LISTA DE PRECIOS */}
-                <div>
-                    <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-1">
-                        Lista de precios
-                        <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                    </label>
-
-                    <Select>
-                        <SelectTrigger className={baseInput}>
-                            <SelectValue placeholder="Selecciona lista" />
-                        </SelectTrigger>
-
-                        <SelectContent className="bg-background border border-border rounded-xl shadow-lg">
-                            {priceListOptions.map((opt) => (
-                                <SelectItem
-                                    key={opt.value}
-                                    value={opt.value}
-                                    className={selectItemClass}
-                                >
-                                    {opt.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                {showPriceList && (
+                    <div className="shrink-0 min-w-[160px]">
+                        <div className="flex items-center gap-1 mb-2">
+                            <label className="text-sm font-medium text-foreground">
+                                Lista de precios
+                            </label>
+                            <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
+                                        Define qué lista de precios se aplicará a los productos de esta factura.
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <SearchableSelect
+                            value={selectedPriceListId?.toString() ?? ""}
+                            onValueChange={(val) => setSelectedPriceListId(val ? Number(val) : null)}
+                            options={priceListOptions}
+                            placeholder="Selecciona lista"
+                            searchPlaceholder="Buscar lista..."
+                        />
+                    </div>
+                )}
 
                 {/* VENDEDOR */}
-                <div>
-                    <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-1">
-                        Vendedor
-                        <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                    </label>
-
-                    <Select>
-                        <SelectTrigger className={baseInput}>
-                            <SelectValue placeholder="Seleccionar vendedor" />
-                        </SelectTrigger>
-
-                        <SelectContent className="bg-background border border-border rounded-xl shadow-lg">
-                            {sellerOptions.map((opt) => (
-                                <SelectItem
-                                    key={opt.value}
-                                    value={opt.value}
-                                    className={selectItemClass}
-                                >
-                                    {opt.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <div className="shrink-0 min-w-[170px]">
+                    <div className="flex items-center gap-1 mb-2">
+                        <label className="text-sm font-medium text-foreground">
+                            Vendedor
+                        </label>
+                        <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
+                                    Vendedor asignado a esta factura. Se usará para reportes y comisiones.
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                    <SearchableSelect
+                        value={selectedSeller}
+                        onValueChange={setSelectedSeller}
+                        options={sellerOptions}
+                        placeholder="Seleccionar vendedor"
+                        searchPlaceholder="Buscar vendedor..."
+                    />
                 </div>
 
-                {/* ORDEN COMPRA */}
-                <div>
-                    <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-1">
+                {/* ORDEN DE COMPRA — estilo link igual a Agregar remisión */}
+                <div className="shrink-0 flex items-end h-[38px]">
+                    <button className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors whitespace-nowrap h-full">
+                        <Plus className="w-4 h-4 shrink-0" />
                         Orden de compra
-                        <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                    </label>
-
-                    <Input className={baseInput} />
+                        <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <HelpCircle className="w-3.5 h-3.5 text-primary ml-0.5 shrink-0 cursor-help hover:text-primary/70 transition-colors" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
+                                    Asocia un número de orden de compra del cliente a esta factura.
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </button>
                 </div>
 
-                {/* ORDEN ENTREGA */}
-                <div>
-                    <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-1">
-                        Orden de entrega
-                        <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                    </label>
-
-                    <Input className={baseInput} />
-                </div>
             </div>
         </div>
     );

@@ -146,4 +146,20 @@ export const catalogsApi = {
             "/catalogs/cost-accounts"
         );
     },
+
+    /* ====================================================================== */
+    /* PAYMENT METHODS & FORMS                                                */
+    /* ====================================================================== */
+
+    getPaymentForms: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/payment-forms"
+        );
+    },
+
+    getPaymentMethods: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/payment-methods"
+        );
+    }
 };

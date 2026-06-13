@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
+import { AuthService } from "@/lib/auth"
 import { queryClient } from "@/lib/queryClient";
 import { showToast } from "@/components/sonner/CustomToaster"
 import { getSession } from "@/common/interfaces/session"
@@ -72,8 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // ✅ LOGIN SIN /me
     const login = async (email: string, password: string) => {
-        // Show splash immediately while the login request is in flight
-        setShowSplash(true)
         try {
             // 🔥 Obtener CSRF Cookie primero
             await apiClient.csrfCookie()
@@ -85,15 +84,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             )
 
             if (res.status === "error") {
-                setShowSplash(false)
-                showToast(res.message || "Credenciales inválidas", "error")
-                return
+                const errorMsg = res.message || "Credenciales inválidas"
+                showToast(errorMsg, "error")
+                throw new Error(errorMsg)
             }
 
             const session = res.data
 
             // 🔥 Guardar sesión
             localStorage.setItem("session", JSON.stringify(session))
+
+            // 🔥 Guardar company de forma independiente
+            if (session.company) {
+                AuthService.setCompany(session.company)
+            }
 
             // 🔥 Setear user seguro
             setUser({
@@ -116,12 +120,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             prefetchAllCatalogs(queryClient);
 
             showToast("Inicio de sesión exitoso", "success")
-            // Splash will fade out after its animation; navigate once it's done
-            router.push("/dashboard")
-
+            setShowSplash(true) // Splash will fade out after its animation; navigate once it's done
         } catch (error: any) {
-            setShowSplash(false)
-            showToast(error?.response?.data?.message || "Credenciales inválidas", "error")
+            if (error?.response) {
+                showToast(error?.response?.data?.message || "Credenciales inválidas", "error")
+            }
+            throw error
         }
     }
 

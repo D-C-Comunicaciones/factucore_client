@@ -544,6 +544,10 @@ export interface ItemListResponse {
     created_at?: string;
 
     updated_at?: string;
+
+    standard_code?: string;
+
+    tax_rates?: any[];
 }
 
 export interface GetItemByIdResponse {

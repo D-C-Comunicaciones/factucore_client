@@ -77,10 +77,11 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
             <button className="flex-1 h-[42px] bg-primary text-primary-foreground rounded-lg text-sm font-medium">
               Factura de venta
             </button>
-
-            <button className={`flex-1 h-[42px] ${buttonSecondary}`}>
-              Tiquete
-            </button>
+            {/*
+                        <button className={`flex-1 h-[42px] ${buttonSecondary}`}>
+                          Tiquete
+                        </button>
+                        */}
           </div>
         </div>
 
@@ -151,7 +152,7 @@ export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
         </button>
 
         {/* ITEMS */}
-        <InvoiceItemsTable items={invoiceItems} onAddItem={handleAddItem} />
+        {/* <InvoiceItemsTable items={invoiceItems} onAddItem={handleAddItem} /> */}
 
         {/* FOOTER IZQ */}
         <div className="grid grid-cols-2 gap-6">

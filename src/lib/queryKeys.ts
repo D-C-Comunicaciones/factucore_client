@@ -107,6 +107,18 @@ export const QUERY_KEYS = {
                 "catalogs",
                 "cost-accounts",
             ] as const,
+
+        paymentForms: () =>
+            [
+                "catalogs",
+                "payment-forms",
+            ] as const,
+
+        paymentMethods: () =>
+            [
+                "catalogs",
+                "payment-methods",
+            ] as const,
     },
 
     /* ====================================================================== */

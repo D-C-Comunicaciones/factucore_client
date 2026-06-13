@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface Contact {
+export interface Contact {
   id: number;
   name: string;
   identification: string;

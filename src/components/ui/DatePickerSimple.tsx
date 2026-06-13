@@ -21,10 +21,17 @@ import {
 
 import { cn } from "@/lib/utils";
 
-export function DatePickerSimple() {
-    const [date, setDate] = React.useState<Date>();
-    const [tempDate, setTempDate] = React.useState<Date>();
+export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?: (date: Date) => void } = {}) {
+    const [date, setDate] = React.useState<Date>(value || new Date());
+    const [tempDate, setTempDate] = React.useState<Date>(value || new Date());
     const [open, setOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        if (value) {
+            setDate(value);
+            setTempDate(value);
+        }
+    }, [value]);
     const [view, setView] = React.useState<"default" | "month" | "year">("default");
 
     const safeMonth = tempDate ?? new Date();
@@ -118,7 +125,7 @@ export function DatePickerSimple() {
                             <Calendar
                                 mode="single"
                                 selected={tempDate}
-                                onSelect={setTempDate}
+                                onSelect={(val) => val && setTempDate(val)}
                                 locale={es}
                                 hideNavigation
                                 month={safeMonth}
@@ -215,7 +222,10 @@ export function DatePickerSimple() {
                         <Button
                             className="bg-primary hover:bg-primary/90 text-primary-foreground"
                             onClick={() => {
-                                setDate(tempDate);
+                                if (tempDate) {
+                                    setDate(tempDate);
+                                    if (onChange) onChange(tempDate);
+                                }
                                 setOpen(false);
                             }}
                         >

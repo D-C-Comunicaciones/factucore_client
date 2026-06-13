@@ -1,4 +1,18 @@
+import { useEffect, useState } from "react";
+import { AuthService } from "@/lib/auth";
+
 export function CompanySummaryCard() {
+  const [company, setCompany] = useState<any>(null);
+
+  useEffect(() => {
+    setCompany(AuthService.getCompany<any>());
+  }, []);
+
+  const companyName = company?.company_name || "NO PROPORCIONADO";
+  const nit = company
+    ? `${company.identification_number}${company.verification_digit != null ? `-${company.verification_digit}` : ""}`
+    : "1143263398-4";
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row items-center justify-between gap-6 w-full">
 
@@ -6,7 +20,7 @@ export function CompanySummaryCard() {
       <div className="flex flex-col items-center text-center flex-1 min-w-0">
         <span className="text-muted-foreground text-xs font-medium uppercase mb-2">Empresa</span>
         <span className="text-foreground text-sm font-semibold w-full break-words">
-          LEONES PALACIO ANDRES FELIPE
+          {companyName}
         </span>
       </div>
 
@@ -16,7 +30,7 @@ export function CompanySummaryCard() {
       <div className="flex flex-col items-center text-center flex-1 min-w-0">
         <span className="text-muted-foreground text-xs font-medium uppercase mb-2">Identificación (NIT)</span>
         <span className="text-foreground text-sm font-semibold truncate w-full">
-          1143263398-4
+          {nit}
         </span>
       </div>
 
@@ -25,8 +39,8 @@ export function CompanySummaryCard() {
       {/* Responsabilidad */}
       <div className="flex flex-col items-center text-center flex-1 min-w-0">
         <span className="text-muted-foreground text-xs font-medium uppercase mb-2">Responsabilidad tributaria</span>
-        <span className="text-foreground text-sm font-semibold truncate w-full">
-          No responsable de IVA
+        <span className="text-foreground text-sm font-semibold break-words w-full">
+          {company?.type_regime?.name || "NO PROPORCIONADO"}
         </span>
       </div>
 

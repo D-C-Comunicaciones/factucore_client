@@ -79,6 +79,16 @@ export const prefetchAllCatalogs = async (
             queryKey: QUERY_KEYS.catalogs.costAccounts(),
             queryFn: catalogsApi.getCostAccounts,
         }),
+
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.paymentForms(),
+            queryFn: catalogsApi.getPaymentForms,
+        }),
+
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.paymentMethods(),
+            queryFn: catalogsApi.getPaymentMethods,
+        }),
     ]);
 };
 
@@ -168,6 +178,16 @@ export function useCatalogs() {
     const costAccountsQuery = useQuery({
         queryKey: QUERY_KEYS.catalogs.costAccounts(),
         queryFn: catalogsApi.getCostAccounts,
+    });
+
+    const paymentFormsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.paymentForms(),
+        queryFn: catalogsApi.getPaymentForms,
+    });
+
+    const paymentMethodsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.paymentMethods(),
+        queryFn: catalogsApi.getPaymentMethods,
     });
 
     /* ====================================================================== */
@@ -282,6 +302,20 @@ export function useCatalogs() {
             "data"
         ),
 
+        paymentForms: extractArray(
+            paymentFormsQuery.data?.data,
+            "payment_forms",
+            "paymentForms",
+            "data"
+        ),
+
+        paymentMethods: extractArray(
+            paymentMethodsQuery.data?.data,
+            "payment_methods",
+            "paymentMethods",
+            "data"
+        ),
+
         isLoading:
             warehousesQuery.isLoading ||
             categoriesQuery.isLoading ||
@@ -295,6 +329,8 @@ export function useCatalogs() {
             unitMeasuresQuery.isLoading ||
             salesAccountsQuery.isLoading ||
             inventoryAccountsQuery.isLoading ||
-            costAccountsQuery.isLoading,
+            costAccountsQuery.isLoading ||
+            paymentFormsQuery.isLoading ||
+            paymentMethodsQuery.isLoading,
     };
 }

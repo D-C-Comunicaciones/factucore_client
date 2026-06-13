@@ -1,97 +1,106 @@
 "use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { NewInvoiceFooter } from "@/components/invoice/new/NewInvoiceFooter";
 import { NewInvoiceHeader } from "@/components/invoice/new/NewInvoiceHeader";
 import { NewInvoiceInfo } from "@/components/invoice/new/NewInvoiceInfo";
 import { NewInvoiceMain } from "@/components/invoice/new/NewInvoiceMain";
 import { NewInvoiceOptions } from "@/components/invoice/new/NewInvoiceOptions";
 import { NewInvoicePayment } from "@/components/invoice/new/NewInvoicePayment";
-import { useState } from "react";
 import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
+import { useInvoiceBuilder } from "@/hooks/invoices/useInvoiceBuilder";
+import { useCatalogs } from "@/hooks/useCatalogs";
 import { InvoicesService } from "@/lib/invoices";
-import { useRouter } from "next/navigation";
+import { AuthService } from "@/lib/auth";
+import { useResolutions } from "@/hooks/useResolutions";
 
 export default function NewInvoicePage() {
-  // Data de prueba para selects y catálogo
+  const router = useRouter();
+  const createInvoice = useCreateInvoice();
+  const catalogData = useCatalogs();
+  const { resolutions } = useResolutions();
+  const activeResolution = resolutions?.find(r => r.is_active) || resolutions?.[0] || null;
+
+  // Leer company guardada en localStorage al iniciar sesión
+  const storedCompany = AuthService.getCompany<any>();
+
+  const [showEmitirMenu, setShowEmitirMenu] = useState(false);
+  const [formState, setFormState] = useState<any>({});
+  const [loadingEmitir, setLoadingEmitir] = useState(false);
+  const [loadingGuardar, setLoadingGuardar] = useState(false);
+
+  // Selected filters for items
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | null>(null);
+  const [selectedPriceListId, setSelectedPriceListId] = useState<number | null>(null);
+
+  // States for customizing visible fields
+  const [showWarehouse, setShowWarehouse] = useState(true);
+  const [showPriceList, setShowPriceList] = useState(true);
+  const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
+
+  // Initialize the builder hook
+  const invoiceBuilder = useInvoiceBuilder();
+
+  // Set default warehouse and price list when catalogs load
+  useEffect(() => {
+    if (catalogData.warehouses?.length > 0 && !selectedWarehouseId) {
+      const defaultWh = catalogData.warehouses.find((w: any) => w.is_default) || catalogData.warehouses[0];
+      setSelectedWarehouseId(defaultWh.id);
+    }
+    if (catalogData.priceLists?.length > 0 && !selectedPriceListId) {
+      const defaultPl = catalogData.priceLists.find((pl: any) => pl.name === 'General') || catalogData.priceLists[0];
+      setSelectedPriceListId(defaultPl.id);
+    }
+  }, [catalogData.warehouses, catalogData.priceLists]);
+
+  // Data de prueba para selects y catálogo (to be replaced with catalogs eventually)
   const documentTypes = [
     { value: "CC", label: "Cédula" },
     { value: "NIT", label: "NIT" },
     { value: "CE", label: "Cédula de extranjería" },
   ];
-  const warehouseOptions = [
-    { value: "principal", label: "Principal" },
-    { value: "secundaria", label: "Secundaria" },
-  ];
-  const priceListOptions = [
-    { value: "general", label: "General" },
-    { value: "mayorista", label: "Mayorista" },
-  ];
+  
+  const warehouseOptions = catalogData.warehouses?.map((w: any) => ({ value: w.id.toString(), label: w.name })) || [];
+  const priceListOptions = catalogData.priceLists?.map((pl: any) => ({ value: pl.id.toString(), label: pl.name })) || [];
+  
   const sellerOptions = [
     { value: "andres", label: "Andrés Leones" },
     { value: "maria", label: "María Gómez" },
   ];
-  const paymentMethods = [
-    { value: "efectivo", label: "Efectivo" },
-    { value: "transferencia", label: "Transferencia" },
-    { value: "tarjeta", label: "Tarjeta" },
-  ];
-  const paymentForms = [
-    { value: "contado", label: "Contado" },
-    { value: "credito", label: "Crédito" },
-  ];
-
-  const invoiceItemsMock = [
-    { id: 1, item: "", referencia: "", precio: "", descuento: "", impuesto: "", descripcion: "", cantidad: 0, total: 0 },
-  ];
-
-  const [invoiceItems, setInvoiceItems] = useState(invoiceItemsMock);
-  const [showEmitirMenu, setShowEmitirMenu] = useState(false);
-  const [formState, setFormState] = useState<any>({});
-  const createInvoice = useCreateInvoice();
-  const [loadingEmitir, setLoadingEmitir] = useState(false);
-  const [loadingGuardar, setLoadingGuardar] = useState(false);
-  const router = useRouter();
+  const paymentMethods = catalogData.paymentMethods?.map((pm: any) => ({
+    value: pm.id.toString(),
+    label: pm.name
+  })) || [];
+  const paymentForms = catalogData.paymentForms?.map((pf: any) => ({
+    value: pf.id.toString(),
+    label: pf.name
+  })) || [];
 
   // Data para el main
   const mainData = {
     logo: "/img/logo.png",
     company: {
-      name: "LEONES PALACIO ANDRES FELIPE",
-      nit: "1143263398",
-      email: "leones1997@live.com",
+      name: storedCompany?.company_name ?? "",
+      nit: storedCompany
+        ? `${storedCompany.identification_number}${storedCompany.verification_digit != null ? `-${storedCompany.verification_digit}` : ""}`
+        : "",
+      email: storedCompany?.email ?? "",
     },
     invoiceType: "Factura electrónica",
-    invoiceNumber: "LTCH-2",
+    invoiceNumber: activeResolution ? `${activeResolution.prefix || ''}${((activeResolution.current_number ?? (activeResolution.from_number - 1)) + 1)}` : "LTCH-2",
     documentTypes,
     warehouseOptions,
     priceListOptions,
     sellerOptions,
     paymentMethods,
     paymentForms,
-    invoiceItems,
-    onAddItem: () => {
-      setInvoiceItems([
-        ...invoiceItems,
-        {
-          id: invoiceItems.length + 1,
-          item: "",
-          referencia: "",
-          precio: "",
-          descuento: "",
-          impuesto: "",
-          descripcion: "",
-          cantidad: 0,
-          total: 0,
-        },
-      ]);
-    },
   };
 
   // Handler para guardar como borrador
   const handleGuardar = async () => {
     setLoadingGuardar(true);
     try {
-      // Construir payload dinámico
-      const payload = InvoicesService.buildInvoicePayload({ ...formState, invoice_lines: invoiceItems });
+      const payload = invoiceBuilder.buildPayload(formState);
       const res: any = await createInvoice.mutateAsync(payload);
       const id = res?.id || res?.data?.id;
       if (id) {
@@ -106,12 +115,10 @@ export default function NewInvoicePage() {
   const handleEmitir = async () => {
     setLoadingEmitir(true);
     try {
-      // Construir payload dinámico
-      const payload = InvoicesService.buildInvoicePayload({ ...formState, invoice_lines: invoiceItems });
+      const payload = invoiceBuilder.buildPayload(formState);
       const res: any = await createInvoice.mutateAsync(payload);
       const id = res?.id || res?.data?.id;
       if (id) {
-        // Emitir llamando a /send
         await InvoicesService.sendInvoice(id);
         router.push(`/invoices/${id}`);
       }
@@ -124,25 +131,39 @@ export default function NewInvoicePage() {
     <div className="w-full min-h-screen">
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
         <div className="space-y-6">
-          <NewInvoiceHeader />
+          <NewInvoiceHeader 
+            showWarehouse={showWarehouse} 
+            setShowWarehouse={setShowWarehouse} 
+            showPriceList={showPriceList} 
+            setShowPriceList={setShowPriceList}
+            tipoDoc={tipoDoc}
+          />
           <NewInvoiceOptions
             warehouseOptions={warehouseOptions}
             priceListOptions={priceListOptions}
             sellerOptions={sellerOptions}
+            selectedWarehouseId={selectedWarehouseId}
+            setSelectedWarehouseId={setSelectedWarehouseId}
+            selectedPriceListId={selectedPriceListId}
+            setSelectedPriceListId={setSelectedPriceListId}
+            showWarehouse={showWarehouse}
+            showPriceList={showPriceList}
+            tipoDoc={tipoDoc}
+            setTipoDoc={setTipoDoc}
           />
           <NewInvoiceMain
             mainData={mainData}
-            setInvoiceItems={setInvoiceItems}
+            invoiceBuilder={invoiceBuilder}
+            selectedWarehouseId={selectedWarehouseId}
+            selectedPriceListId={selectedPriceListId}
+            taxes={catalogData.taxes}
+            activeResolution={activeResolution}
           />
           <NewInvoicePayment />
           <NewInvoiceInfo />
           <NewInvoiceFooter
-            showEmitirMenu={showEmitirMenu}
-            setShowEmitirMenu={setShowEmitirMenu}
             onNavigate={() => { }}
-            emitirHandler={handleEmitir}
             guardarHandler={handleGuardar}
-            loadingEmitir={loadingEmitir}
             loadingGuardar={loadingGuardar}
           />
         </div>

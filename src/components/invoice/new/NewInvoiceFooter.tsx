@@ -1,46 +1,34 @@
-"use client";
-import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function NewInvoiceFooter({
-    showEmitirMenu,
-    setShowEmitirMenu,
     onNavigate,
-    emitirHandler,
     guardarHandler,
-    loadingEmitir,
     loadingGuardar,
 }: {
-    showEmitirMenu: boolean;
-    setShowEmitirMenu: (v: boolean) => void;
     onNavigate: (view: string) => void;
-    emitirHandler?: () => void;
     guardarHandler?: () => void;
-    loadingEmitir?: boolean;
     loadingGuardar?: boolean;
 }) {
     return (
-        <div className="bg-white rounded-lg border border-border p-6">
-
-            {/* TEXTO */}
-            <div className="text-xs text-muted-foreground mb-4">
-                Los campos marcados con{" "}
-                <span className="text-primary">*</span> son obligatorios
-            </div>
-
+        <div className="p-6">
             {/* BOTONES */}
-            <div className="flex items-center justify-center gap-3">
-
+            <div className="flex items-center justify-end gap-3">
                 {/* CANCELAR */}
                 <Button
                     variant="outline"
                     onClick={() => onNavigate("facturas-venta")}
                     className="
-            px-6 py-2.5 rounded-lg font-medium
-            border-border bg-background
-            hover:bg-primary/10 hover:text-primary hover:border-primary/40
-            transition-colors
-          "
+                        px-6 py-2.5 rounded-lg font-medium
+                        border border-border bg-white text-foreground
+                        hover:bg-muted hover:border-border cursor-pointer transition-colors
+                    "
                 >
                     Cancelar
                 </Button>
@@ -49,47 +37,66 @@ export function NewInvoiceFooter({
                 <Button
                     variant="outline"
                     className="
-            px-6 py-2.5 rounded-lg font-medium
-            border-border bg-background
-            hover:bg-primary/10 hover:text-primary hover:border-primary/40
-            transition-colors
-          "
+                        px-6 py-2.5 rounded-lg font-medium
+                        border border-border bg-white text-foreground
+                        hover:bg-muted hover:border-border cursor-pointer transition-colors
+                    "
                 >
                     Vista previa
                 </Button>
 
-                {/* GUARDAR */}
+                {/* GUARDAR Y CREAR NUEVA */}
                 <Button
                     variant="outline"
-                    onClick={guardarHandler}
-                    disabled={loadingGuardar}
                     className="
-            px-6 py-2.5 rounded-lg font-medium
-            border-border bg-background
-            hover:bg-primary/10 hover:text-primary hover:border-primary/40
-            transition-colors
-          "
+                        px-6 py-2.5 rounded-lg font-medium
+                        border border-border bg-white text-foreground
+                        hover:bg-muted hover:border-border cursor-pointer transition-colors
+                    "
                 >
-                    {loadingGuardar ? "Guardando..." : "Guardar"}
+                    Guardar y crear nueva
                 </Button>
 
-                {/* EMITIR */}
-                <div className="relative">
+                {/* GUARDAR SPLIT BUTTON */}
+                <div className="flex">
                     <Button
-                        onClick={emitirHandler}
-                        disabled={loadingEmitir}
+                        onClick={guardarHandler}
+                        disabled={loadingGuardar}
                         className="
-              px-6 py-2.5 rounded-lg font-medium
-              bg-primary text-primary-foreground
-              hover:bg-primary/90
-              transition-colors
-              flex items-center gap-2
-            "
+                            px-6 py-2.5 rounded-r-none font-medium
+                            bg-primary text-primary-foreground
+                            hover:bg-primary/90 transition-colors
+                        "
                     >
-                        {loadingEmitir ? "Emitiendo..." : "Emitir"}
+                        {loadingGuardar ? "Guardando..." : "Guardar"}
                     </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                disabled={loadingGuardar}
+                                className="
+                                    px-2 py-2.5 rounded-l-none font-medium
+                                    bg-primary text-primary-foreground
+                                    hover:bg-primary/90 transition-colors
+                                    border-l border-white/20
+                                "
+                            >
+                                <ChevronDown className="w-4 h-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 bg-white border border-border shadow-lg">
+                            <DropdownMenuItem className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
+                                Guardar como borrador
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
+                                Guardar e imprimir
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
+                                Guardar y enviar por correo
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
-
             </div>
         </div>
     );
