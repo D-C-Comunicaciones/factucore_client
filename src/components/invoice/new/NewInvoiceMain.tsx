@@ -28,7 +28,12 @@ export function NewInvoiceMain({
     selectedWarehouseId,
     selectedPriceListId,
     taxes,
-    activeResolution
+    activeResolution,
+    resolutions,
+    selectedResolutionId,
+    setSelectedResolutionId,
+    notes,
+    onNotesChange,
 }: {
     mainData: any;
     invoiceBuilder: any;
@@ -36,6 +41,11 @@ export function NewInvoiceMain({
     selectedPriceListId: number | null;
     taxes: any[];
     activeResolution?: Resolution | null;
+    resolutions?: Resolution[];
+    selectedResolutionId?: number | null;
+    setSelectedResolutionId?: (id: number | null) => void;
+    notes?: string;
+    onNotesChange?: (val: string) => void;
 }) {
     const inputClass =
         "bg-white border border-foreground/20 rounded-lg h-9 px-3 text-sm text-foreground hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors";
@@ -54,6 +64,7 @@ export function NewInvoiceMain({
     const [vencimiento, setVencimiento] = useState<Date>(new Date());
     const [cliente, setCliente] = useState<string>("");
     const [medioPago, setMedioPago] = useState<string>("");
+    const [docType, setDocType] = useState<string>("");
 
     useEffect(() => {
         if (mainData.paymentForms && mainData.paymentForms.length > 0 && !formaPago) {
@@ -125,17 +136,32 @@ export function NewInvoiceMain({
                 </div>
 
                 <div className="text-right">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">No.</span>
-                        <span className="font-bold text-lg text-foreground">
-                            {mainData.invoiceNumber}
-                        </span>
-                        <button 
-                            className="p-1 rounded hover:bg-muted/40 transition"
-                            onClick={() => setIsResolutionModalOpen(true)}
-                        >
-                            <Settings className="w-4 h-4 text-muted-foreground" />
-                        </button>
+                    <div className="inline-flex flex-col items-start gap-1 text-left">
+                        <span className="text-sm text-muted-foreground">Numeración</span>
+                        <div className="flex items-center gap-2">
+                            <SearchableSelect
+                                value={selectedResolutionId?.toString() || ""}
+                                onValueChange={(val) => setSelectedResolutionId?.(Number(val))}
+                                options={resolutions?.map((res) => ({
+                                    value: res.id.toString(),
+                                    label: res.prefix || res.description || `Resolución ${res.id}`
+                                })) || []}
+                                placeholder="Seleccionar"
+                                className="w-[160px] text-foreground"
+                            />
+                            <button
+                                className="p-1 rounded hover:bg-muted/40 transition"
+                                onClick={() => setIsResolutionModalOpen(true)}
+                            >
+                                <Settings className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                            <span className="text-sm text-muted-foreground">No.</span>
+                            <span className="font-bold text-lg text-foreground">
+                                {mainData.invoiceNumber}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -151,22 +177,13 @@ export function NewInvoiceMain({
                         </label>
                         <div className="flex-1 flex items-center gap-2">
                             <div className="flex flex-1">
-                                <Select>
-                                    <SelectTrigger className={cn(inputClass, "w-24 rounded-r-none border-r-0 cursor-pointer")}>
-                                        <SelectValue placeholder="Tipo" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {mainData.documentTypes.map((opt: any) => (
-                                            <SelectItem
-                                                key={opt.value}
-                                                value={opt.value}
-                                                className={selectItemClass}
-                                            >
-                                                {opt.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <SearchableSelect
+                                    value={docType}
+                                    onValueChange={setDocType}
+                                    options={mainData.documentTypes}
+                                    placeholder="Tipo"
+                                    className={cn(inputClass, "w-28 rounded-r-none border-r-0 cursor-pointer")}
+                                />
                                 <Input placeholder="Buscar Nº de ID" className={cn(inputClass, "rounded-l-none flex-1")} />
                             </div>
                             <TooltipProvider>
@@ -588,6 +605,8 @@ export function NewInvoiceMain({
                         </label>
                         <textarea
                             rows={4}
+                            value={notes ?? ""}
+                            onChange={(e) => onNotesChange?.(e.target.value)}
                             className="w-full px-3 py-2 border border-foreground/20 rounded-lg text-sm text-foreground hover:bg-primary/10 focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors resize-none"
                         />
                     </div>
@@ -624,10 +643,10 @@ export function NewInvoiceMain({
             </div>
 
             {/* Resolution Edit Modal */}
-            <EditResolutionModal 
-                isOpen={isResolutionModalOpen} 
-                onClose={() => setIsResolutionModalOpen(false)} 
-                resolution={activeResolution || null} 
+            <EditResolutionModal
+                isOpen={isResolutionModalOpen}
+                onClose={() => setIsResolutionModalOpen(false)}
+                resolution={activeResolution || null}
             />
         </div>
     );

@@ -119,6 +119,12 @@ export const QUERY_KEYS = {
                 "catalogs",
                 "payment-methods",
             ] as const,
+
+        typeDocumentIdentifications: () =>
+            [
+                "catalogs",
+                "type-document-identifications",
+            ] as const,
     },
 
     /* ====================================================================== */

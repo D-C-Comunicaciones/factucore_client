@@ -89,6 +89,11 @@ export const prefetchAllCatalogs = async (
             queryKey: QUERY_KEYS.catalogs.paymentMethods(),
             queryFn: catalogsApi.getPaymentMethods,
         }),
+
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.typeDocumentIdentifications(),
+            queryFn: catalogsApi.getTypeDocumentIdentifications,
+        }),
     ]);
 };
 
@@ -188,6 +193,11 @@ export function useCatalogs() {
     const paymentMethodsQuery = useQuery({
         queryKey: QUERY_KEYS.catalogs.paymentMethods(),
         queryFn: catalogsApi.getPaymentMethods,
+    });
+
+    const typeDocumentIdentificationsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.typeDocumentIdentifications(),
+        queryFn: catalogsApi.getTypeDocumentIdentifications,
     });
 
     /* ====================================================================== */
@@ -316,6 +326,13 @@ export function useCatalogs() {
             "data"
         ),
 
+        typeDocumentIdentifications: extractArray(
+            typeDocumentIdentificationsQuery.data?.data,
+            "type_document_identifications",
+            "typeDocumentIdentifications",
+            "data"
+        ),
+
         isLoading:
             warehousesQuery.isLoading ||
             categoriesQuery.isLoading ||
@@ -331,6 +348,7 @@ export function useCatalogs() {
             inventoryAccountsQuery.isLoading ||
             costAccountsQuery.isLoading ||
             paymentFormsQuery.isLoading ||
-            paymentMethodsQuery.isLoading,
+            paymentMethodsQuery.isLoading ||
+            typeDocumentIdentificationsQuery.isLoading,
     };
 }

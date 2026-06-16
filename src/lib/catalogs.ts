@@ -14,6 +14,16 @@ export const catalogsApi = {
     },
 
     /* ====================================================================== */
+    /* DOCUMENT TYPES                                                         */
+    /* ====================================================================== */
+
+    getTypeDocumentIdentifications: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/type-document-identifications"
+        );
+    },
+
+    /* ====================================================================== */
     /* WAREHOUSES                                                             */
     /* ====================================================================== */
 

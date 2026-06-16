@@ -19,13 +19,23 @@ export default function NewInvoicePage() {
   const createInvoice = useCreateInvoice();
   const catalogData = useCatalogs();
   const { resolutions } = useResolutions();
-  const activeResolution = resolutions?.find(r => r.is_active) || resolutions?.[0] || null;
+  const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
 
+  useEffect(() => {
+    if (resolutions.length > 0) {
+      const isValid = resolutions.some(r => r.id === selectedResolutionId);
+      if (!isValid) {
+        setSelectedResolutionId(resolutions[0].id);
+      }
+    }
+  }, [resolutions, selectedResolutionId]);
+
+  const activeResolution = resolutions.find(r => r.id === selectedResolutionId) || resolutions[0] || null;
   // Leer company guardada en localStorage al iniciar sesión
   const storedCompany = AuthService.getCompany<any>();
 
   const [showEmitirMenu, setShowEmitirMenu] = useState(false);
-  const [formState, setFormState] = useState<any>({});
+  const [formState, setFormState] = useState<any>({ notes: "" });
   const [loadingEmitir, setLoadingEmitir] = useState(false);
   const [loadingGuardar, setLoadingGuardar] = useState(false);
 
@@ -53,12 +63,10 @@ export default function NewInvoicePage() {
     }
   }, [catalogData.warehouses, catalogData.priceLists]);
 
-  // Data de prueba para selects y catálogo (to be replaced with catalogs eventually)
-  const documentTypes = [
-    { value: "CC", label: "Cédula" },
-    { value: "NIT", label: "NIT" },
-    { value: "CE", label: "Cédula de extranjería" },
-  ];
+  const documentTypes = catalogData.typeDocumentIdentifications?.map((doc: any) => ({
+    value: doc.id.toString(),
+    label: doc.name
+  })) || [];
   
   const warehouseOptions = catalogData.warehouses?.map((w: any) => ({ value: w.id.toString(), label: w.name })) || [];
   const priceListOptions = catalogData.priceLists?.map((pl: any) => ({ value: pl.id.toString(), label: pl.name })) || [];
@@ -158,6 +166,11 @@ export default function NewInvoicePage() {
             selectedPriceListId={selectedPriceListId}
             taxes={catalogData.taxes}
             activeResolution={activeResolution}
+            resolutions={resolutions || []}
+            selectedResolutionId={selectedResolutionId}
+            setSelectedResolutionId={setSelectedResolutionId}
+            notes={formState.notes}
+            onNotesChange={(val: string) => setFormState((prev: any) => ({ ...prev, notes: val }))}
           />
           <NewInvoicePayment />
           <NewInvoiceInfo />

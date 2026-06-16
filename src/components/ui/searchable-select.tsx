@@ -107,18 +107,19 @@ export function SearchableSelect({
         align="start"
         sideOffset={4}
         className={cn(
-          "w-[var(--radix-popover-trigger-width)] p-0 bg-white border-none rounded-xl shadow-xl",
+          "min-w-[var(--radix-popover-trigger-width)] w-auto max-w-[400px] p-0 bg-white border border-border rounded-xl shadow-xl",
           contentClassName,
         )}
       >
         <Command
           filter={(value, search) => {
-            // Case-insensitive search across the label
             const option = options.find((o) => o.value === value);
             if (!option) return 0;
-            return option.label.toLowerCase().includes(search.toLowerCase())
-              ? 1
-              : 0;
+            
+            const normalize = (str: string) => 
+              str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+            return normalize(option.label).includes(normalize(search)) ? 1 : 0;
           }}
         >
           <CommandInput placeholder={searchPlaceholder} />

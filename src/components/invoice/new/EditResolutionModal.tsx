@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { type Resolution } from "@/lib/resolutions";
 import { useResolutions } from "@/hooks/useResolutions";
+import { showToast } from "@/components/sonner/CustomToaster";
 
 interface EditResolutionModalProps {
   isOpen: boolean;
@@ -17,7 +18,7 @@ interface EditResolutionModalProps {
 }
 
 export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolutionModalProps) {
-  const { updateResolution, isUpdating } = useResolutions();
+  const { updateResolution, createResolution, isUpdating } = useResolutions();
   
   const [formData, setFormData] = useState({
     prefix: "",
@@ -32,16 +33,37 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
         from_number: resolution.from_number || 1,
         footer_text: resolution.footer_text || "",
       });
+    } else {
+      setFormData({
+        prefix: "",
+        from_number: 1,
+        footer_text: "",
+      });
     }
-  }, [resolution]);
+  }, [resolution, isOpen]);
 
   const handleSubmit = async () => {
-    if (!resolution) return;
     try {
-      await updateResolution({ id: resolution.id, data: formData });
+      if (resolution && resolution.id > 0) {
+        await updateResolution({ id: resolution.id, data: formData });
+        showToast("Numeración actualizada correctamente.", "success");
+      } else {
+        await createResolution({
+          ...formData,
+          description: "Principal",
+          is_active: true,
+          resolution_number: "0",
+        });
+        showToast("Numeración creada correctamente.", "success");
+      }
       onClose();
-    } catch (error) {
-      console.error("Failed to update resolution", error);
+    } catch (error: any) {
+      console.error("Failed to save resolution", error);
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Ocurrió un error al guardar la numeración.";
+      showToast(message, "error");
     }
   };
 
@@ -51,7 +73,7 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-teal-600 font-normal">Editar numeración</DialogTitle>
+          <DialogTitle className="text-primary font-normal">Editar numeración</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -62,7 +84,7 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
 
           <div className="grid grid-cols-[160px_1fr] items-center gap-4">
             <span className="text-right text-sm text-gray-500">Numeración automática:</span>
-            <input type="checkbox" className="w-4 h-4 rounded text-teal-500" checked readOnly />
+            <input type="checkbox" className="w-4 h-4 rounded text-primary" checked readOnly />
           </div>
 
           <div className="grid grid-cols-[160px_1fr] items-center gap-4">
@@ -71,19 +93,19 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
               type="text"
               value={formData.prefix}
               onChange={(e) => setFormData({ ...formData, prefix: e.target.value })}
-              className="w-full h-8 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+              className="w-full h-8 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <div className="grid grid-cols-[160px_1fr] items-center gap-4">
             <span className="text-right text-sm text-gray-500">
-              Siguiente número: <span className="text-teal-600">*</span>
+              Siguiente número: <span className="text-primary">*</span>
             </span>
             <input
               type="number"
               value={formData.from_number}
               onChange={(e) => setFormData({ ...formData, from_number: parseInt(e.target.value) || 0 })}
-              className="w-full h-8 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+              className="w-full h-8 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -95,13 +117,13 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
               rows={4}
               value={formData.footer_text}
               onChange={(e) => setFormData({ ...formData, footer_text: e.target.value })}
-              className="w-full p-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-teal-500 resize-none"
+              className="w-full p-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
             />
           </div>
         </div>
 
         <div className="flex items-center justify-between mt-6">
-          <a href="#" className="text-teal-600 text-sm hover:underline">
+          <a href="#" className="text-primary text-sm hover:underline">
             Administrar mis numeraciones
           </a>
           <div className="flex gap-2">
@@ -116,7 +138,7 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
             <button
               type="button"
               onClick={handleSubmit}
-              className="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
               disabled={isUpdating}
             >
               {isUpdating ? "Guardando..." : "Guardar"}
