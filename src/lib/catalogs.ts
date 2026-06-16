@@ -24,6 +24,16 @@ export const catalogsApi = {
     },
 
     /* ====================================================================== */
+    /* COUNTRIES                                                              */
+    /* ====================================================================== */
+
+    getCountries: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/countries"
+        );
+    },
+
+    /* ====================================================================== */
     /* WAREHOUSES                                                             */
     /* ====================================================================== */
 
@@ -171,5 +181,15 @@ export const catalogsApi = {
         return await apiClient.get<any>(
             "/catalogs/payment-methods"
         );
-    }
+    },
+
+    /* ====================================================================== */
+    /* MUNICIPALITIES                                                         */
+    /* ====================================================================== */
+
+    getMunicipalities: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/municipalities?per_page=10000"
+        );
+    },
 };

@@ -94,6 +94,10 @@ export const prefetchAllCatalogs = async (
             queryKey: QUERY_KEYS.catalogs.typeDocumentIdentifications(),
             queryFn: catalogsApi.getTypeDocumentIdentifications,
         }),
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.countries(),
+            queryFn: catalogsApi.getCountries,
+        }),
     ]);
 };
 
@@ -198,6 +202,18 @@ export function useCatalogs() {
     const typeDocumentIdentificationsQuery = useQuery({
         queryKey: QUERY_KEYS.catalogs.typeDocumentIdentifications(),
         queryFn: catalogsApi.getTypeDocumentIdentifications,
+    });
+
+    const countriesQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.countries(),
+        queryFn: catalogsApi.getCountries,
+        staleTime: 1000 * 60 * 60, // 1 hour
+    });
+
+    const municipalitiesQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.municipalities(),
+        queryFn: catalogsApi.getMunicipalities,
+        staleTime: 1000 * 60 * 60, // 1 hour — this data rarely changes
     });
 
     /* ====================================================================== */
@@ -333,6 +349,18 @@ export function useCatalogs() {
             "data"
         ),
 
+        municipalities: extractArray(
+            municipalitiesQuery.data?.data,
+            "municipalities",
+            "data"
+        ),
+
+        countries: extractArray(
+            countriesQuery.data?.data,
+            "countries",
+            "data"
+        ),
+
         isLoading:
             warehousesQuery.isLoading ||
             categoriesQuery.isLoading ||
@@ -349,6 +377,8 @@ export function useCatalogs() {
             costAccountsQuery.isLoading ||
             paymentFormsQuery.isLoading ||
             paymentMethodsQuery.isLoading ||
-            typeDocumentIdentificationsQuery.isLoading,
+            typeDocumentIdentificationsQuery.isLoading ||
+            municipalitiesQuery.isLoading ||
+            countriesQuery.isLoading,
     };
 }

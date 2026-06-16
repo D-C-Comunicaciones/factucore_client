@@ -13,6 +13,7 @@ import { useCatalogs } from "@/hooks/useCatalogs";
 import { InvoicesService } from "@/lib/invoices";
 import { AuthService } from "@/lib/auth";
 import { useResolutions } from "@/hooks/useResolutions";
+import type { Resolution } from "@/lib/resolutions";
 
 export default function NewInvoicePage() {
   const router = useRouter();
@@ -23,19 +24,25 @@ export default function NewInvoicePage() {
 
   useEffect(() => {
     if (resolutions.length > 0) {
-      const isValid = resolutions.some(r => r.id === selectedResolutionId);
+      const isValid = resolutions.some((r: Resolution) => r.id === selectedResolutionId);
       if (!isValid) {
         setSelectedResolutionId(resolutions[0].id);
       }
     }
   }, [resolutions, selectedResolutionId]);
 
-  const activeResolution = resolutions.find(r => r.id === selectedResolutionId) || resolutions[0] || null;
+  const activeResolution = resolutions.find((r: Resolution) => r.id === selectedResolutionId) || resolutions[0] || null;
   // Leer company guardada en localStorage al iniciar sesión
   const storedCompany = AuthService.getCompany<any>();
 
   const [showEmitirMenu, setShowEmitirMenu] = useState(false);
-  const [formState, setFormState] = useState<any>({ notes: "" });
+  const [formState, setFormState] = useState<any>({ 
+    notes: "",
+    customer_id: null,
+    payment_form_id: null,
+    payment_method_id: null,
+    payment_due_date: null
+  });
   const [loadingEmitir, setLoadingEmitir] = useState(false);
   const [loadingGuardar, setLoadingGuardar] = useState(false);
 
@@ -108,7 +115,10 @@ export default function NewInvoicePage() {
   const handleGuardar = async () => {
     setLoadingGuardar(true);
     try {
-      const payload = invoiceBuilder.buildPayload(formState);
+      const payload = invoiceBuilder.buildPayload({
+        ...formState,
+        numbering_range_id: selectedResolutionId,
+      });
       const res: any = await createInvoice.mutateAsync(payload);
       const id = res?.id || res?.data?.id;
       if (id) {
@@ -123,7 +133,10 @@ export default function NewInvoicePage() {
   const handleEmitir = async () => {
     setLoadingEmitir(true);
     try {
-      const payload = invoiceBuilder.buildPayload(formState);
+      const payload = invoiceBuilder.buildPayload({
+        ...formState,
+        numbering_range_id: selectedResolutionId,
+      });
       const res: any = await createInvoice.mutateAsync(payload);
       const id = res?.id || res?.data?.id;
       if (id) {
@@ -161,6 +174,7 @@ export default function NewInvoicePage() {
           />
           <NewInvoiceMain
             mainData={mainData}
+            catalogData={catalogData}
             invoiceBuilder={invoiceBuilder}
             selectedWarehouseId={selectedWarehouseId}
             selectedPriceListId={selectedPriceListId}
@@ -169,6 +183,8 @@ export default function NewInvoicePage() {
             resolutions={resolutions || []}
             selectedResolutionId={selectedResolutionId}
             setSelectedResolutionId={setSelectedResolutionId}
+            formState={formState}
+            setFormState={setFormState}
             notes={formState.notes}
             onNotesChange={(val: string) => setFormState((prev: any) => ({ ...prev, notes: val }))}
           />

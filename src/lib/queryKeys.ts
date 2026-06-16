@@ -17,6 +17,8 @@ export const QUERY_KEYS = {
     catalogs: {
         all: ["catalogs"] as const,
 
+        countries: () => ["catalogs", "countries"] as const,
+
         warehouses: () =>
             [
                 "catalogs",
@@ -124,6 +126,12 @@ export const QUERY_KEYS = {
             [
                 "catalogs",
                 "type-document-identifications",
+            ] as const,
+
+        municipalities: () =>
+            [
+                "catalogs",
+                "municipalities",
             ] as const,
     },
 

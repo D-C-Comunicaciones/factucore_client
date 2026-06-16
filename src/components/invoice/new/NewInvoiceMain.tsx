@@ -1,5 +1,5 @@
 "use client";
-import { Settings, HelpCircle, Plus, Trash2 } from "lucide-react";
+import { Settings, HelpCircle, Plus, Trash2, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -20,10 +20,16 @@ import {
 } from "@/components/ui/tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { EditResolutionModal } from "@/components/invoice/new/EditResolutionModal";
+import { AddContactModal } from "@/components/invoice/new/AddContactModal";
 import { type Resolution } from "@/lib/resolutions";
+import { customersApi } from "@/lib/customers";
+import { adquirerApi } from "@/lib/acquirers";
+import { toast } from "sonner";
+import { showToast } from "@/components/sonner/CustomToaster";
 
 export function NewInvoiceMain({
     mainData,
+    catalogData,
     invoiceBuilder,
     selectedWarehouseId,
     selectedPriceListId,
@@ -34,8 +40,11 @@ export function NewInvoiceMain({
     setSelectedResolutionId,
     notes,
     onNotesChange,
+    formState,
+    setFormState,
 }: {
     mainData: any;
+    catalogData: any;
     invoiceBuilder: any;
     selectedWarehouseId: number | null;
     selectedPriceListId: number | null;
@@ -46,6 +55,8 @@ export function NewInvoiceMain({
     setSelectedResolutionId?: (id: number | null) => void;
     notes?: string;
     onNotesChange?: (val: string) => void;
+    formState: any;
+    setFormState: React.Dispatch<React.SetStateAction<any>>;
 }) {
     const inputClass =
         "bg-white border border-foreground/20 rounded-lg h-9 px-3 text-sm text-foreground hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors";
@@ -55,6 +66,8 @@ export function NewInvoiceMain({
 
     const [globalAdjType, setGlobalAdjType] = useState<"discount" | "charge">("discount");
     const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
+    const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+    const [prefilledContactData, setPrefilledContactData] = useState<any>(null);
     const [globalAdjValueType, setGlobalAdjValueType] = useState<"percentage" | "fixed">("percentage");
     const [globalAdjPercent, setGlobalAdjPercent] = useState<number>(0);
     const [globalAdjReason, setGlobalAdjReason] = useState<string>("");
@@ -65,6 +78,213 @@ export function NewInvoiceMain({
     const [cliente, setCliente] = useState<string>("");
     const [medioPago, setMedioPago] = useState<string>("");
     const [docType, setDocType] = useState<string>("");
+
+    const [docNumber, setDocNumber] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
+    const [displayName, setDisplayName] = useState<string>(""); // name shown in the invoice form
+    const [emailAutoFilled, setEmailAutoFilled] = useState<boolean>(false);
+    const [customersList, setCustomersList] = useState<any[]>([]);
+    const [loadingCustomers, setLoadingCustomers] = useState<boolean>(false);
+    const [searchingDocument, setSearchingDocument] = useState<boolean>(false);
+
+    // Cargar clientes locales
+    const loadCustomers = async (searchVal?: string) => {
+        setLoadingCustomers(true);
+        try {
+            const res = await customersApi.getCustomers(searchVal ? { search: searchVal } : undefined);
+            let list: any[] = [];
+            if (res && res.data) {
+                if (Array.isArray(res.data)) {
+                    list = res.data;
+                } else if (res.data.data && Array.isArray(res.data.data)) {
+                    list = res.data.data;
+                } else if (res.data.customers && Array.isArray(res.data.customers)) {
+                    list = res.data.customers;
+                }
+            }
+            setCustomersList(list);
+        } catch (error) {
+            console.error("Error al cargar clientes:", error);
+        } finally {
+            setLoadingCustomers(false);
+        }
+    };
+
+    useEffect(() => {
+        loadCustomers();
+    }, []);
+
+    // Sincronizar estados de pago y cliente con formState del padre
+    useEffect(() => {
+        setFormState((prev: any) => ({
+            ...prev,
+            customer_id: cliente ? Number(cliente) : null,
+            payment_form_id: formaPago ? Number(formaPago) : null,
+            payment_method_id: medioPago ? Number(medioPago) : null,
+        }));
+    }, [cliente, formaPago, medioPago, setFormState]);
+
+    // Sincronizar fecha de vencimiento
+    useEffect(() => {
+        if (vencimiento) {
+            const dateStr = vencimiento.toISOString().split("T")[0];
+            setFormState((prev: any) => {
+                if (prev.payment_due_date !== dateStr) {
+                    return { ...prev, payment_due_date: dateStr };
+                }
+                return prev;
+            });
+        }
+    }, [vencimiento, setFormState]);
+
+    // Algoritmo matemático para calcular el DV (Dígito de Verificación) de NIT en Colombia
+    const calculateDV = (nit: string): number => {
+        const vpri = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
+        const cleanNit = nit.replace(/\D/g, "");
+        if (!cleanNit) return 0;
+        const len = cleanNit.length;
+        let sum = 0;
+        for (let i = 0; i < len; i++) {
+            sum += Number(cleanNit.charAt(len - 1 - i)) * vpri[i];
+        }
+        const val = sum % 11;
+        return val > 1 ? 11 - val : val;
+    };
+
+    // Buscar cliente por número de documento
+    const handleSearchDocument = async () => {
+        const cleanNum = docNumber.trim();
+        if (!cleanNum) {
+            showToast("Por favor ingrese un número de documento", "warning");
+            return;
+        }
+
+        setSearchingDocument(true);
+
+        try {
+            // 1. Buscar en el backend local
+            const res = await customersApi.getCustomers({ search: cleanNum });
+
+            let foundCustomer: any = null;
+            let list: any[] = [];
+
+            if (res && res.data) {
+                if (Array.isArray(res.data)) {
+                    list = res.data;
+                } else if (res.data.data && Array.isArray(res.data.data)) {
+                    list = res.data.data;
+                } else if (res.data.customers && Array.isArray(res.data.customers)) {
+                    list = res.data.customers;
+                }
+            }
+
+            // Coincidencia exacta de identification_number primero
+            foundCustomer = list.find((c: any) => String(c.identification_number) === cleanNum);
+            if (!foundCustomer && list.length > 0) {
+                foundCustomer = list[0];
+            }
+
+            if (foundCustomer) {
+                // Encontrado en local
+                showToast("Cliente encontrado", "success");
+
+                setCustomersList(prev => {
+                    if (!prev.some(c => c.id === foundCustomer.id)) {
+                        return [foundCustomer, ...prev];
+                    }
+                    return prev;
+                });
+
+                const name = foundCustomer.registration_name ||
+                    `${foundCustomer.first_name || ""} ${foundCustomer.last_name || ""}`.trim() ||
+                    foundCustomer.identification_number;
+
+                setCliente(foundCustomer.id.toString());
+                setDisplayName(name);
+                setEmail(foundCustomer.email || "");
+                setEmailAutoFilled(true);
+                if (foundCustomer.type_document_identification_id) {
+                    setDocType(foundCustomer.type_document_identification_id.toString());
+                }
+            } else {
+                // 2. No existe en local → consultar DIAN
+                const docTypeId = docType
+                    ? Number(docType)
+                    : mainData.documentTypes?.[0]?.value
+                        ? Number(mainData.documentTypes[0].value)
+                        : 1;
+
+                const acquirerRes = await adquirerApi.getAcquirer({
+                    type_document_identification_id: docTypeId,
+                    identification_number: cleanNum,
+                });
+
+                const acquirerData =
+                    (acquirerRes as any)?.data?.acquirer ||
+                    (acquirerRes as any)?.acquirer ||
+                    acquirerRes?.data;
+
+                if (acquirerData && (acquirerData.found || acquirerData.receiver_name)) {
+                    const dianName = acquirerData.receiver_name || "";
+                    const dianEmail = acquirerData.receiver_email || "";
+
+                    // DIAN format: APELLIDO1 APELLIDO2 NOMBRE1 NOMBRE2
+                    const parts = dianName.trim().split(/\s+/);
+                    let parsedApellidos = "";
+                    let parsedNombres = "";
+
+                    if (parts.length <= 1) {
+                        parsedApellidos = dianName;
+                    } else if (parts.length === 2) {
+                        parsedApellidos = parts[0];
+                        parsedNombres = parts[1];
+                    } else {
+                        parsedApellidos = `${parts[0]} ${parts[1]}`;
+                        parsedNombres = parts.slice(2).join(" ");
+                    }
+
+                    // Show name in the invoice form field
+                    setDisplayName(dianName);
+                    setEmail(dianEmail);
+                    setEmailAutoFilled(!!dianEmail);
+
+                    // Open the modal pre-filled (modal will show the autocomplete toast)
+                    setPrefilledContactData({
+                        docType: docTypeId.toString(),
+                        docNumber: cleanNum,
+                        nombres: parsedNombres,
+                        apellidos: parsedApellidos,
+                        email: dianEmail,
+                        registration_name: dianName,
+                        showAutocompleteToast: true,
+                    });
+                    setIsAddContactModalOpen(true);
+                } else {
+                    // Not found anywhere — show message from API or generic
+                    const apiMessage = typeof acquirerRes === 'string' ? acquirerRes : (acquirerRes as any)?.message || "No se encontró información en la DIAN";
+                    showToast(apiMessage, "error");
+
+                    // Still open the modal so they can register manually
+                    setPrefilledContactData({
+                        docType: docTypeId.toString(),
+                        docNumber: cleanNum,
+                        nombres: "",
+                        apellidos: "",
+                        email: "",
+                        registration_name: "",
+                        showAutocompleteToast: false,
+                    });
+                    setIsAddContactModalOpen(true);
+                }
+            }
+        } catch (err: any) {
+            console.error("Error al buscar documento:", err);
+            const errMsg = err?.response?.data?.message || err?.message || "Ocurrió un error al buscar el cliente";
+            showToast(errMsg, "error");
+        } finally {
+            setSearchingDocument(false);
+        }
+    };
 
     useEffect(() => {
         if (mainData.paymentForms && mainData.paymentForms.length > 0 && !formaPago) {
@@ -184,7 +404,32 @@ export function NewInvoiceMain({
                                     placeholder="Tipo"
                                     className={cn(inputClass, "w-28 rounded-r-none border-r-0 cursor-pointer")}
                                 />
-                                <Input placeholder="Buscar Nº de ID" className={cn(inputClass, "rounded-l-none flex-1")} />
+                                <div className="relative flex-1 flex">
+                                    <Input
+                                        placeholder="Buscar Nº de ID"
+                                        value={docNumber}
+                                        onChange={(e) => setDocNumber(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleSearchDocument();
+                                            }
+                                        }}
+                                        className={cn(inputClass, "rounded-l-none flex-1 pr-10")}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSearchDocument}
+                                        disabled={searchingDocument}
+                                        className="absolute right-0 top-0 h-9 w-9 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                                    >
+                                        {searchingDocument ? (
+                                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                        ) : (
+                                            <Search className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                             <TooltipProvider>
                                 <Tooltip>
@@ -205,13 +450,58 @@ export function NewInvoiceMain({
                             Nombre o razón social <span className="text-primary">*</span>
                         </label>
                         <div className="flex-1 flex items-center gap-2">
-                            <SearchableSelect
-                                value={cliente}
-                                onValueChange={setCliente}
-                                options={mainData.sellerOptions || []}
-                                placeholder="Seleccionar cliente"
-                                className="w-full text-foreground"
-                            />
+                            {displayName ? (
+                                // Show the auto-filled name as a read-only pill with a clear button
+                                <div className="flex-1 flex items-center gap-2">
+                                    <div className={cn(inputClass, "flex-1 flex items-center justify-between gap-2 bg-white")}>
+                                        <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setDisplayName("");
+                                                setCliente("");
+                                                setEmail("");
+                                                setEmailAutoFilled(false);
+                                                setDocNumber("");
+                                            }}
+                                            className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <SearchableSelect
+                                    value={cliente}
+                                    onValueChange={(val) => {
+                                        setCliente(val);
+                                        const selected = customersList.find(c => c.id.toString() === val);
+                                        if (selected) {
+                                            const name = selected.registration_name ||
+                                                `${selected.first_name || ""} ${selected.last_name || ""}`.trim() ||
+                                                selected.identification_number;
+                                            setDisplayName(name);
+                                            setEmail(selected.email || "");
+                                            setEmailAutoFilled(true);
+                                            setDocNumber(selected.identification_number || "");
+                                            if (selected.type_document_identification_id) {
+                                                setDocType(selected.type_document_identification_id.toString());
+                                            }
+                                        } else {
+                                            setDisplayName("");
+                                            setEmail("");
+                                            setEmailAutoFilled(false);
+                                            setDocNumber("");
+                                        }
+                                    }}
+                                    options={customersList.map((c: any) => ({
+                                        value: c.id.toString(),
+                                        label: c.registration_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.identification_number
+                                    }))}
+                                    placeholder="Seleccionar cliente"
+                                    className="w-full text-foreground"
+                                />
+                            )}
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -231,7 +521,14 @@ export function NewInvoiceMain({
                             Correo
                         </label>
                         <div className="flex-1 flex items-center gap-2">
-                            <Input type="email" placeholder="Leones1997@live.com" className={cn(inputClass, "w-full bg-muted/20")} />
+                            <Input
+                                type="email"
+                                placeholder="email@mail.com"
+                                value={email}
+                                readOnly={emailAutoFilled}
+                                onChange={(e) => !emailAutoFilled && setEmail(e.target.value)}
+                                className={cn(inputClass, "w-full", emailAutoFilled ? "bg-muted/20 cursor-default text-muted-foreground" : "")}
+                            />
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -385,7 +682,11 @@ export function NewInvoiceMain({
 
             {/* NUEVO CONTACTO */}
             <div className="flex justify-start mb-8 pl-[11rem]">
-                <button className="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 transition-colors">
+                <button
+                    type="button"
+                    onClick={() => setIsAddContactModalOpen(true)}
+                    className="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 transition-colors"
+                >
                     <Plus className="w-4 h-4" />
                     Nuevo contacto
                 </button>
@@ -647,6 +948,35 @@ export function NewInvoiceMain({
                 isOpen={isResolutionModalOpen}
                 onClose={() => setIsResolutionModalOpen(false)}
                 resolution={activeResolution || null}
+            />
+
+            {/* Add Contact Modal (Simple / Advanced) */}
+            <AddContactModal
+                isOpen={isAddContactModalOpen}
+                onClose={() => {
+                    setIsAddContactModalOpen(false);
+                    setPrefilledContactData(null);
+                }}
+                prefilledData={prefilledContactData}
+                catalogData={catalogData}
+                onCustomerCreated={(newCustomer) => {
+                    // Agregar a la lista local
+                    setCustomersList((prev) => [newCustomer, ...prev]);
+                    // Seleccionar cliente
+                    setCliente(newCustomer.id.toString());
+                    // Mostrar nombre en el formulario
+                    const name = newCustomer.registration_name ||
+                        `${newCustomer.first_name || ""} ${newCustomer.last_name || ""}`.trim() ||
+                        newCustomer.identification_number;
+                    setDisplayName(name);
+                    // Autocompletar datos en pantalla principal
+                    setEmail(newCustomer.email || "");
+                    setEmailAutoFilled(!!(newCustomer.email));
+                    setDocNumber(newCustomer.identification_number || "");
+                    if (newCustomer.type_document_identification_id) {
+                        setDocType(newCustomer.type_document_identification_id.toString());
+                    }
+                }}
             />
         </div>
     );
