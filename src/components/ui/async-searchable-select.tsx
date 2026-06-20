@@ -16,7 +16,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useDebounce } from "@/hooks/useDebounce"; // Asumiré que existe o lo crearé
 
 export interface AsyncSearchableSelectOption {
   value: string;
@@ -35,6 +34,7 @@ export interface AsyncSearchableSelectProps {
   disabled?: boolean;
   loading?: boolean;
   onSearchChange: (search: string) => void;
+  footer?: React.ReactNode;
 }
 
 export function AsyncSearchableSelect({
@@ -42,17 +42,18 @@ export function AsyncSearchableSelect({
   onValueChange,
   options,
   placeholder = "Seleccionar",
-  searchPlaceholder = "Buscar...",
+  searchPlaceholder = "Buscar.",
   emptyMessage = "No se encontraron resultados.",
   className,
   contentClassName,
   disabled = false,
   loading = false,
   onSearchChange,
+  footer,
 }: AsyncSearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
-  
+
   // Custom hook for debouncing search (if missing, we'll inline it or create it later)
   React.useEffect(() => {
     const handler = setTimeout(() => {
@@ -102,40 +103,45 @@ export function AsyncSearchableSelect({
         )}
       >
         <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder={searchPlaceholder} 
+          <CommandInput
+            placeholder={searchPlaceholder}
             value={search}
             onValueChange={setSearch}
           />
           <CommandList>
             {loading && options.length === 0 ? (
-                <div className="py-6 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
-                    <Loader2 className="size-4 animate-spin" /> Buscando...
-                </div>
+              <div className="py-6 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 className="size-4 animate-spin" /> Buscando...
+              </div>
             ) : (
-                <>
-                    <CommandEmpty>{emptyMessage}</CommandEmpty>
-                    <CommandGroup>
-                    {options.map((option) => (
-                        <CommandItem
-                        key={option.value}
-                        value={option.value}
-                        onSelect={(currentValue) => {
-                            onValueChange(currentValue === value ? "" : currentValue);
-                            setOpen(false);
-                        }}
-                        className="rounded-lg cursor-pointer transition-colors data-[selected=true]:bg-primary/5 data-[selected=true]:text-primary hover:bg-primary/5 hover:text-primary"
-                        >
-                        <span className="flex-1 truncate">{option.label}</span>
-                        {value === option.value && (
-                            <Check className="size-4 text-primary shrink-0" />
-                        )}
-                        </CommandItem>
-                    ))}
-                    </CommandGroup>
-                </>
+              <>
+                <CommandEmpty>{emptyMessage}</CommandEmpty>
+                <CommandGroup>
+                  {options.map((option) => (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={(currentValue) => {
+                        onValueChange(currentValue === value ? "" : currentValue);
+                        setOpen(false);
+                      }}
+                      className="rounded-lg cursor-pointer transition-colors data-[selected=true]:bg-primary/5 data-[selected=true]:text-primary hover:bg-primary/5 hover:text-primary"
+                    >
+                      <span className="flex-1 truncate">{option.label}</span>
+                      {value === option.value && (
+                        <Check className="size-4 text-primary shrink-0" />
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
             )}
           </CommandList>
+          {footer && (
+            <div className="p-1 border-t border-border bg-muted/20">
+              {footer}
+            </div>
+          )}
         </Command>
       </PopoverContent>
     </Popover>

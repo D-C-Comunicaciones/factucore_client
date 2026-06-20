@@ -23,6 +23,12 @@ export const catalogsApi = {
         );
     },
 
+    getTypeResolutions: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/type-resolutions"
+        );
+    },
+
     /* ====================================================================== */
     /* COUNTRIES                                                              */
     /* ====================================================================== */
@@ -183,6 +189,12 @@ export const catalogsApi = {
         );
     },
 
+    getPaymentTerms: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/payment-terms"
+        );
+    },
+
     /* ====================================================================== */
     /* MUNICIPALITIES                                                         */
     /* ====================================================================== */
@@ -191,5 +203,16 @@ export const catalogsApi = {
         return await apiClient.get<any>(
             "/catalogs/municipalities?per_page=10000"
         );
+    },
+    /* ====================================================================== */
+    /* ACCOUNTS                                                               */
+    /* ====================================================================== */
+
+    getReceivableAccounts: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>("/catalogs/receivable-accounts");
+    },
+
+    getPayableAccounts: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>("/catalogs/payable-accounts");
     },
 };

@@ -8,6 +8,13 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { NewWarehouseModal } from "@/components/warehouse/NewWarehouseModal";
+import { NewPriceListModal } from "@/components/price-list/NewPriceListModal";
+import { NewSellerModal } from "@/components/seller/NewSellerModal";
+import { warehousesApi } from "@/lib/warehouses";
+import { queryClient } from "@/lib/queryClient";
+import { QUERY_KEYS } from "@/lib/queryKeys";
+import { showToast } from "@/components/sonner/CustomToaster";
 
 export function NewInvoiceOptions({
     warehouseOptions,
@@ -21,6 +28,8 @@ export function NewInvoiceOptions({
     showPriceList,
     tipoDoc,
     setTipoDoc,
+    showRemissionBar,
+    setShowRemissionBar,
 }: {
     warehouseOptions: { value: string; label: string }[];
     priceListOptions: { value: string; label: string }[];
@@ -33,8 +42,35 @@ export function NewInvoiceOptions({
     showPriceList: boolean;
     tipoDoc: 'factura' | 'tiquete';
     setTipoDoc: (tipo: 'factura' | 'tiquete') => void;
+    showRemissionBar: boolean;
+    setShowRemissionBar: (show: boolean) => void;
 }) {
     const [selectedSeller, setSelectedSeller] = useState<string>("");
+
+    const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
+    const [isPriceListModalOpen, setIsPriceListModalOpen] = useState(false);
+    const [isSellerModalOpen, setIsSellerModalOpen] = useState(false);
+
+    const handleCreateWarehouse = async (data: { name: string; address: string; observations: string }) => {
+        try {
+            const res = await warehousesApi.createWarehouse({
+                name: data.name,
+                address: data.address,
+                observations: data.observations,
+                status: 1
+            });
+            await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.catalogs.warehouses() });
+            
+            const newWarehouse = res?.data?.warehouse || res?.data || res;
+            if (newWarehouse?.id) {
+                setSelectedWarehouseId(Number(newWarehouse.id));
+            }
+            setIsWarehouseModalOpen(false);
+            showToast("Bodega creada exitosamente", "success");
+        } catch (error) {
+            showToast("Error al crear la bodega", "error");
+        }
+    };
 
     return (
         <div className="bg-white rounded-lg border border-border p-4 md:p-6">
@@ -93,6 +129,15 @@ export function NewInvoiceOptions({
                             options={warehouseOptions}
                             placeholder="Selecciona bodega"
                             searchPlaceholder="Buscar bodega..."
+                            footer={
+                                <button
+                                    className="w-full text-left px-3 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-1"
+                                    onClick={() => setIsWarehouseModalOpen(true)}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Nueva bodega
+                                </button>
+                            }
                         />
                     </div>
                 )}
@@ -121,6 +166,15 @@ export function NewInvoiceOptions({
                             options={priceListOptions}
                             placeholder="Selecciona lista"
                             searchPlaceholder="Buscar lista..."
+                            footer={
+                                <button
+                                    className="w-full text-left px-3 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-1"
+                                    onClick={() => setIsPriceListModalOpen(true)}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Nueva lista de precios
+                                </button>
+                            }
                         />
                     </div>
                 )}
@@ -148,21 +202,33 @@ export function NewInvoiceOptions({
                         options={sellerOptions}
                         placeholder="Seleccionar vendedor"
                         searchPlaceholder="Buscar vendedor..."
+                        footer={
+                            <button
+                                className="w-full text-left px-3 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-1"
+                                onClick={() => setIsSellerModalOpen(true)}
+                            >
+                                <Plus className="w-4 h-4" />
+                                Nuevo vendedor
+                            </button>
+                        }
                     />
                 </div>
 
-                {/* ORDEN DE COMPRA — estilo link igual a Agregar remisión */}
+                {/* AGREGAR REMISIÓN */}
                 <div className="shrink-0 flex items-end h-[38px]">
-                    <button className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors whitespace-nowrap h-full">
+                    <button 
+                        onClick={() => setShowRemissionBar(!showRemissionBar)}
+                        className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors whitespace-nowrap h-full"
+                    >
                         <Plus className="w-4 h-4 shrink-0" />
-                        Orden de compra
+                        Agregar remisión
                         <TooltipProvider delayDuration={200}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <HelpCircle className="w-3.5 h-3.5 text-primary ml-0.5 shrink-0 cursor-help hover:text-primary/70 transition-colors" />
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
-                                    Asocia un número de orden de compra del cliente a esta factura.
+                                    Asocia una remisión existente a esta factura.
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
@@ -170,6 +236,29 @@ export function NewInvoiceOptions({
                 </div>
 
             </div>
+
+            <NewWarehouseModal
+                open={isWarehouseModalOpen}
+                onOpenChange={setIsWarehouseModalOpen}
+                onSave={handleCreateWarehouse}
+                onCancel={() => setIsWarehouseModalOpen(false)}
+            />
+
+            <NewPriceListModal
+                open={isPriceListModalOpen}
+                onOpenChange={setIsPriceListModalOpen}
+                onSave={(data: any) => {
+                    if (data?.id) setSelectedPriceListId(Number(data.id));
+                }}
+            />
+
+            <NewSellerModal
+                open={isSellerModalOpen}
+                onOpenChange={setIsSellerModalOpen}
+                onSave={(data: any) => {
+                    if (data?.id) setSelectedSeller(String(data.id));
+                }}
+            />
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AuthService } from "@/lib/auth";
+import Image from "next/image";
 
 export function CompanySummaryCard() {
   const [company, setCompany] = useState<any>(null);
@@ -36,12 +37,15 @@ export function CompanySummaryCard() {
 
       <div className="hidden md:block w-px h-12 bg-gray-200"></div>
 
-      {/* Responsabilidad */}
-      <div className="flex flex-col items-center text-center flex-1 min-w-0">
-        <span className="text-muted-foreground text-xs font-medium uppercase mb-2">Responsabilidad tributaria</span>
-        <span className="text-foreground text-sm font-semibold break-words w-full">
-          {company?.type_regime?.name || "NO PROPORCIONADO"}
-        </span>
+      {/* Logo Factucore */}
+      <div className="flex flex-col items-center justify-center flex-1 min-w-0">
+        <Image 
+          src="/img/factucore_logo_horizontal.png" 
+          alt="Factucore Logo" 
+          width={220} 
+          height={60} 
+          className="object-contain"
+        />
       </div>
 
       <div className="hidden md:block w-px h-12 bg-gray-200"></div>

@@ -67,8 +67,8 @@ export function NewPriceListModal({ open, onOpenChange, onSave }: NewPriceListMo
       
       const created = response?.data?.price_list || response?.data || payload;
 
-      // Invalida la caché de listas de precios
-      invalidateCatalog(queryClient, QUERY_KEYS.catalogs.priceLists());
+      // Invalida la caché de listas de precios y espera
+      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.catalogs.priceLists() });
 
       onSave(created);
       

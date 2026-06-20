@@ -1,5 +1,6 @@
 "use client";
-import { Settings, HelpCircle, Plus, Trash2, Loader2, Search } from "lucide-react";
+import { Settings, HelpCircle, Plus, Trash2, Loader2, Search, X } from "lucide-react";
+import { useCatalogs } from "@/hooks/useCatalogs";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { InvoiceItemsTable } from "@/components/invoice/new/InvoiceItemsTable";
 import { DatePickerSimple } from "@/components/ui/DatePickerSimple";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
     Tooltip,
@@ -19,13 +20,50 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+
+// Reusable component for currency formatting without cursor jumps
+function FormattedInput({ value, onChange, placeholder, className }: any) {
+    const [displayValue, setDisplayValue] = React.useState(value ? new Intl.NumberFormat('es-CO').format(value) : "");
+
+    React.useEffect(() => {
+        const numericDisplay = parseFloat(displayValue.replace(/\./g, "").replace(/,/g, ".")) || 0;
+        if (value !== numericDisplay && value !== undefined) {
+            setDisplayValue(value ? new Intl.NumberFormat('es-CO').format(value) : "");
+        }
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value.replace(/[^0-9]/g, "");
+        if (!raw) {
+            setDisplayValue("");
+            onChange(0);
+            return;
+        }
+        const num = parseFloat(raw);
+        setDisplayValue(new Intl.NumberFormat('es-CO').format(num));
+        onChange(num);
+    };
+
+    return (
+        <Input
+            type="text"
+            placeholder={placeholder}
+            value={displayValue}
+            onChange={handleChange}
+            className={className}
+        />
+    );
+}
+
 import { EditResolutionModal } from "@/components/invoice/new/EditResolutionModal";
-import { AddContactModal } from "@/components/invoice/new/AddContactModal";
+import { AddContactModal } from "@/components/contact/new/AddContactModal";
+import { QuickCreateItemModal } from "@/components/invoice/new/QuickCreateItemModal";
+import { PaymentBlock } from "@/components/invoice/new/PaymentBlock";
 import { type Resolution } from "@/lib/resolutions";
-import { customersApi } from "@/lib/customers";
+import { ContactsService } from "@/lib/contacts";
 import { adquirerApi } from "@/lib/acquirers";
 import { toast } from "sonner";
-import { showToast } from "@/components/sonner/CustomToaster";
+import { showToast, showToastWithAction } from "@/components/sonner/CustomToaster";
 
 export function NewInvoiceMain({
     mainData,
@@ -42,6 +80,8 @@ export function NewInvoiceMain({
     onNotesChange,
     formState,
     setFormState,
+    showRemissionBar,
+    setShowRemissionBar,
 }: {
     mainData: any;
     catalogData: any;
@@ -57,7 +97,12 @@ export function NewInvoiceMain({
     onNotesChange?: (val: string) => void;
     formState: any;
     setFormState: React.Dispatch<React.SetStateAction<any>>;
+    showRemissionBar?: boolean;
+    setShowRemissionBar?: (show: boolean) => void;
 }) {
+    const catalogs = useCatalogs();
+    const paymentTerms = catalogs?.paymentTerms || [];
+
     const inputClass =
         "bg-white border border-foreground/20 rounded-lg h-9 px-3 text-sm text-foreground hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors";
 
@@ -67,6 +112,8 @@ export function NewInvoiceMain({
     const [globalAdjType, setGlobalAdjType] = useState<"discount" | "charge">("discount");
     const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+    const [isQuickCreateItemModalOpen, setIsQuickCreateItemModalOpen] = useState(false);
+    const [quickCreateItemTargetRow, setQuickCreateItemTargetRow] = useState<string | null>(null);
     const [prefilledContactData, setPrefilledContactData] = useState<any>(null);
     const [globalAdjValueType, setGlobalAdjValueType] = useState<"percentage" | "fixed">("percentage");
     const [globalAdjPercent, setGlobalAdjPercent] = useState<number>(0);
@@ -91,15 +138,15 @@ export function NewInvoiceMain({
     const loadCustomers = async (searchVal?: string) => {
         setLoadingCustomers(true);
         try {
-            const res = await customersApi.getCustomers(searchVal ? { search: searchVal } : undefined);
+            const res = await ContactsService.list({ role: 'customer', search: searchVal });
             let list: any[] = [];
             if (res && res.data) {
                 if (Array.isArray(res.data)) {
                     list = res.data;
                 } else if (res.data.data && Array.isArray(res.data.data)) {
                     list = res.data.data;
-                } else if (res.data.customers && Array.isArray(res.data.customers)) {
-                    list = res.data.customers;
+                } else if (res.data.contacts && Array.isArray(res.data.contacts)) {
+                    list = res.data.contacts;
                 }
             }
             setCustomersList(list);
@@ -163,7 +210,7 @@ export function NewInvoiceMain({
 
         try {
             // 1. Buscar en el backend local
-            const res = await customersApi.getCustomers({ search: cleanNum });
+            const res = await ContactsService.list({ role: 'customer', search: cleanNum });
 
             let foundCustomer: any = null;
             let list: any[] = [];
@@ -173,16 +220,13 @@ export function NewInvoiceMain({
                     list = res.data;
                 } else if (res.data.data && Array.isArray(res.data.data)) {
                     list = res.data.data;
-                } else if (res.data.customers && Array.isArray(res.data.customers)) {
-                    list = res.data.customers;
+                } else if (res.data.contacts && Array.isArray(res.data.contacts)) {
+                    list = res.data.contacts;
                 }
             }
 
-            // Coincidencia exacta de identification_number primero
+            // Coincidencia exacta de identification_number
             foundCustomer = list.find((c: any) => String(c.identification_number) === cleanNum);
-            if (!foundCustomer && list.length > 0) {
-                foundCustomer = list[0];
-            }
 
             if (foundCustomer) {
                 // Encontrado en local
@@ -214,10 +258,37 @@ export function NewInvoiceMain({
                         ? Number(mainData.documentTypes[0].value)
                         : 1;
 
-                const acquirerRes = await adquirerApi.getAcquirer({
-                    type_document_identification_id: docTypeId,
-                    identification_number: cleanNum,
-                });
+                let acquirerRes: any = null;
+                try {
+                    acquirerRes = await adquirerApi.getAcquirer({
+                        type_document_identification_id: docTypeId,
+                        identification_number: cleanNum,
+                    });
+                } catch (acquirerErr: any) {
+                    const apiMessage = acquirerErr?.response?.data?.message || acquirerErr?.message || "No se encontró información en la DIAN";
+
+                    showToastWithAction(
+                        'Sin datos para autocompletar',
+                        'Por favor, ingresa el tipo de identificación, o ingresa los datos manualmente',
+                        'info',
+                        {
+                            label: 'Completar',
+                            onClick: () => {
+                                setPrefilledContactData({
+                                    docType: "3",
+                                    docNumber: cleanNum,
+                                    firstName: "",
+                                    lastName: "",
+                                    email: "",
+                                    registration_name: "",
+                                    showAutocompleteToast: false,
+                                });
+                                setIsAddContactModalOpen(true);
+                            }
+                        }
+                    );
+                    return;
+                }
 
                 const acquirerData =
                     (acquirerRes as any)?.data?.acquirer ||
@@ -252,29 +323,34 @@ export function NewInvoiceMain({
                     setPrefilledContactData({
                         docType: docTypeId.toString(),
                         docNumber: cleanNum,
-                        nombres: parsedNombres,
-                        apellidos: parsedApellidos,
+                        firstName: parsedNombres,
+                        lastName: parsedApellidos,
                         email: dianEmail,
                         registration_name: dianName,
                         showAutocompleteToast: true,
                     });
                     setIsAddContactModalOpen(true);
                 } else {
-                    // Not found anywhere — show message from API or generic
-                    const apiMessage = typeof acquirerRes === 'string' ? acquirerRes : (acquirerRes as any)?.message || "No se encontró información en la DIAN";
-                    showToast(apiMessage, "error");
-
-                    // Still open the modal so they can register manually
-                    setPrefilledContactData({
-                        docType: docTypeId.toString(),
-                        docNumber: cleanNum,
-                        nombres: "",
-                        apellidos: "",
-                        email: "",
-                        registration_name: "",
-                        showAutocompleteToast: false,
-                    });
-                    setIsAddContactModalOpen(true);
+                    showToastWithAction(
+                        'Sin datos para autocompletar',
+                        'Por favor, ingresa el tipo de identificación, o ingresa los datos manualmente',
+                        'info',
+                        {
+                            label: 'Completar',
+                            onClick: () => {
+                                setPrefilledContactData({
+                                    docType: "3",
+                                    docNumber: cleanNum,
+                                    firstName: "",
+                                    lastName: "",
+                                    email: "",
+                                    registration_name: "",
+                                    showAutocompleteToast: false,
+                                });
+                                setIsAddContactModalOpen(true);
+                            }
+                        }
+                    );
                 }
             }
         } catch (err: any) {
@@ -309,14 +385,25 @@ export function NewInvoiceMain({
 
     useEffect(() => {
         if (plazo) {
-            const days = parseInt(plazo, 10);
+            let days = 0;
+            if (paymentTerms) {
+                const selectedTerm = paymentTerms.find((pt: any) => pt.id.toString() === plazo);
+                if (selectedTerm) {
+                    days = parseInt(selectedTerm.days, 10);
+                }
+            } else {
+                days = parseInt(plazo, 10);
+            }
             if (!isNaN(days)) {
                 const newDate = new Date(fecha);
                 newDate.setDate(newDate.getDate() + days);
-                setVencimiento(newDate);
+                setVencimiento((prev) => {
+                    if (prev.getTime() === newDate.getTime()) return prev;
+                    return newDate;
+                });
             }
         }
-    }, [plazo, fecha]);
+    }, [plazo, fecha, paymentTerms]);
 
     const handleAddGlobalAdjustment = () => {
         if (globalAdjPercent <= 0) return;
@@ -333,8 +420,8 @@ export function NewInvoiceMain({
             </div>
 
             {/* HEADER */}
-            <div className="flex items-start justify-between mb-8">
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+            <div className="grid grid-cols-3 items-start mb-8">
+                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center justify-self-start">
                     <div className="text-muted-foreground font-medium mb-1">
                         Utilizar mi logo
                     </div>
@@ -355,16 +442,18 @@ export function NewInvoiceMain({
                     </div>
                 </div>
 
-                <div className="text-right">
-                    <div className="inline-flex flex-col items-start gap-1 text-left">
-                        <span className="text-sm text-muted-foreground">Numeración</span>
+                <div className="text-right justify-self-end">
+                    <div className="inline-flex flex-col items-end gap-1">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            {activeResolution?.name || (activeResolution?.is_main ? "Numeración Principal" : "Numeración")}
+                        </span>
                         <div className="flex items-center gap-2">
                             <SearchableSelect
                                 value={selectedResolutionId?.toString() || ""}
                                 onValueChange={(val) => setSelectedResolutionId?.(Number(val))}
                                 options={resolutions?.map((res) => ({
                                     value: res.id.toString(),
-                                    label: res.prefix || res.description || `Resolución ${res.id}`
+                                    label: res.prefix || res.prefix || `Resolución ${res.id}`
                                 })) || []}
                                 placeholder="Seleccionar"
                                 className="w-[160px] text-foreground"
@@ -378,9 +467,13 @@ export function NewInvoiceMain({
                         </div>
                         <div className="flex items-center gap-1 mt-1">
                             <span className="text-sm text-muted-foreground">No.</span>
-                            <span className="font-bold text-lg text-foreground">
-                                {mainData.invoiceNumber}
-                            </span>
+                            {mainData.invoiceNumber ? (
+                                <span className="font-bold text-lg text-foreground">
+                                    {mainData.invoiceNumber}
+                                </span>
+                            ) : (
+                                <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -417,18 +510,11 @@ export function NewInvoiceMain({
                                         }}
                                         className={cn(inputClass, "rounded-l-none flex-1 pr-10")}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={handleSearchDocument}
-                                        disabled={searchingDocument}
-                                        className="absolute right-0 top-0 h-9 w-9 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                                    >
-                                        {searchingDocument ? (
+                                    {searchingDocument && (
+                                        <div className="absolute right-0 top-0 h-9 w-9 flex items-center justify-center">
                                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                        ) : (
-                                            <Search className="w-4 h-4" />
-                                        )}
-                                    </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <TooltipProvider>
@@ -630,14 +716,10 @@ export function NewInvoiceMain({
                                     <SearchableSelect
                                         value={plazo}
                                         onValueChange={setPlazo}
-                                        options={[
-                                            { value: "0", label: "De contado" },
-                                            { value: "8", label: "8 días" },
-                                            { value: "15", label: "15 días" },
-                                            { value: "30", label: "30 días" },
-                                            { value: "60", label: "60 días" },
-                                            { value: "90", label: "90 días" },
-                                        ]}
+                                        options={paymentTerms?.map((pt: any) => ({
+                                            value: pt.id.toString(),
+                                            label: pt.name
+                                        })) || []}
                                         placeholder="Seleccionar"
                                         className="w-full text-foreground"
                                     />
@@ -741,15 +823,24 @@ export function NewInvoiceMain({
                             </Select>
                         </div>
 
-                        <Input
-                            type="number"
-                            min={0}
-                            onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
-                            placeholder="Valor"
-                            value={globalAdjPercent || ""}
-                            onChange={(e) => setGlobalAdjPercent(Number(e.target.value))}
-                            className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
+                        {globalAdjValueType === 'percentage' ? (
+                            <Input
+                                type="number"
+                                min={0}
+                                onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
+                                placeholder="Valor"
+                                value={globalAdjPercent || ""}
+                                onChange={(e) => setGlobalAdjPercent(Number(e.target.value))}
+                                className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                        ) : (
+                            <FormattedInput
+                                placeholder="Valor"
+                                value={globalAdjPercent || 0}
+                                onChange={(val: number) => setGlobalAdjPercent(val)}
+                                className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                        )}
 
                         <Input
                             placeholder="Motivo"
@@ -792,6 +883,32 @@ export function NewInvoiceMain({
                 </div>
             </div>
 
+            {/* REMISIÓN BAR */}
+            <div className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                showRemissionBar ? "max-h-24 opacity-100 mt-6" : "max-h-0 opacity-0"
+            )}>
+                <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-primary">Remisión</span>
+                        <div className="w-[240px]">
+                            <SearchableSelect
+                                value={formState.remission_id || ""}
+                                onValueChange={(val) => setFormState((prev: any) => ({ ...prev, remission_id: val }))}
+                                options={[]}
+                                placeholder="Buscar."
+                                searchPlaceholder="Buscar remisión..."
+                                className="w-full bg-white h-9"
+                                emptyMessage={cliente ? "Sin resultados" : "Debe seleccionar primero un cliente para la factura"}
+                            />
+                        </div>
+                    </div>
+                    <button onClick={() => setShowRemissionBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+
             {/* FOOTER & TOTALS */}
             <div className="mt-8 border-t border-border pt-8">
                 {/* Primera fila: Firma y Totales */}
@@ -810,17 +927,13 @@ export function NewInvoiceMain({
                     <div className="w-full max-w-xs space-y-3 p-2 mt-6 md:mt-0">
                         <div className="flex justify-end mb-4">
                             <div className="flex items-center gap-1">
-                                <button className="text-primary hover:text-primary hover:bg-muted/40 px-2 py-1 rounded-md text-sm font-medium flex items-center gap-1 transition-colors">
-                                    <Plus className="w-4 h-4" />
-                                    Agregar remisión
-                                </button>
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <HelpCircle className="w-3 h-3 text-primary cursor-help hover:text-primary/70 transition-colors" />
                                         </TooltipTrigger>
                                         <TooltipContent className="bg-white text-zinc-800 border border-border shadow-md p-3 text-xs">
-                                            Aprende a crear tus remisiones <a href="#" className="underline font-medium">aquí</a>
+                                            Aprende a crear tus facturas <a href="#" className="underline font-medium">aquí</a>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
@@ -829,43 +942,45 @@ export function NewInvoiceMain({
 
                         <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Subtotal</span>
-                            <span className="font-medium text-foreground">${(invoiceBuilder.totals.subtotal || 0).toFixed(2)}</span>
+                            <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.subtotal || 0)}</span>
                         </div>
 
                         {invoiceBuilder.totals.lineDiscountsAmount > 0 && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Descuento</span>
-                                <span className="font-medium text-destructive">-${(invoiceBuilder.totals.lineDiscountsAmount || 0).toFixed(2)}</span>
+                                <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.lineDiscountsAmount || 0)}</span>
                             </div>
                         )}
 
                         {invoiceBuilder.totals.globalDiscountsAmount > 0 && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Descuentos Globales</span>
-                                <span className="font-medium text-destructive">-${(invoiceBuilder.totals.globalDiscountsAmount || 0).toFixed(2)}</span>
+                                <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.globalDiscountsAmount || 0)}</span>
                             </div>
                         )}
 
                         {invoiceBuilder.totals.globalChargesAmount > 0 && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Recargos Globales</span>
-                                <span className="font-medium text-foreground">${(invoiceBuilder.totals.globalChargesAmount || 0).toFixed(2)}</span>
+                                <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.globalChargesAmount || 0)}</span>
                             </div>
                         )}
 
                         {invoiceBuilder.totals.taxBreakdown && (Object.values(invoiceBuilder.totals.taxBreakdown) as { name: string; amount: number }[]).map(({ name, amount }) => (
                             <div key={name} className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">{name}</span>
-                                <span className="font-medium text-foreground">${(amount || 0).toFixed(2)}</span>
+                                <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0)}</span>
                             </div>
                         ))}
 
                         <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-2">
                             <span className="text-xl font-medium text-foreground">Total</span>
-                            <span className="text-2xl font-medium text-foreground">${(invoiceBuilder.totals.total || 0).toFixed(2)}</span>
+                            <span className="text-2xl font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.total || 0)}</span>
                         </div>
                     </div>
                 </div>
+
+                <PaymentBlock />
 
                 {/* Segunda fila: Términos y Notas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -959,7 +1074,9 @@ export function NewInvoiceMain({
                 }}
                 prefilledData={prefilledContactData}
                 catalogData={catalogData}
-                onCustomerCreated={(newCustomer) => {
+                onCustomerCreated={(respCustomer) => {
+                    const newCustomer = respCustomer?.customer || respCustomer?.data || respCustomer;
+                    if (!newCustomer) return;
                     // Agregar a la lista local
                     setCustomersList((prev) => [newCustomer, ...prev]);
                     // Seleccionar cliente
@@ -976,6 +1093,40 @@ export function NewInvoiceMain({
                     if (newCustomer.type_document_identification_id) {
                         setDocType(newCustomer.type_document_identification_id.toString());
                     }
+                }}
+            />
+
+            {/* Hidden button to open item modal from table */}
+            <button
+                id="open-quick-item-modal"
+                className="hidden"
+                onClick={(e) => {
+                    const targetRowId = e.currentTarget.getAttribute('data-target-row');
+                    setQuickCreateItemTargetRow(targetRowId);
+                    setIsQuickCreateItemModalOpen(true);
+                }}
+            />
+
+            {/* Quick Create Item Modal */}
+            <QuickCreateItemModal
+                open={isQuickCreateItemModalOpen}
+                onClose={() => setIsQuickCreateItemModalOpen(false)}
+                catalogs={catalogs}
+                onCreated={(createdItem) => {
+                    if (createdItem && quickCreateItemTargetRow) {
+                        // Update item data into the specific row
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "item_id", createdItem.id);
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "standard_code", createdItem.standard_code || "");
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "item", createdItem.name);
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "referencia", createdItem.reference || "");
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "description", createdItem.description || "");
+
+                        const price = parseFloat(createdItem.base_price) || parseFloat(createdItem.total_price) || parseFloat(createdItem.price) || 0;
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "precio", price);
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "cantidad", 1);
+                        // Remove tax auto-fill to default to "Sin impuesto"
+                    }
+                    setQuickCreateItemTargetRow(null);
                 }}
             />
         </div>

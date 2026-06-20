@@ -20,7 +20,7 @@ export function ConfigurationGrid() {
         description="Configura la información que se mostrará en tus facturas."
         links={[
           { label: 'Términos de pago', href: '/configuration/terminos-pago' },
-          { label: 'Numeraciones', href: '/configuration/numeraciones' },
+          { label: 'Numeraciones', href: '/resolutions' },
           { label: 'Configuración de documentos', href: '/configuration/configuracion-documentos' },
           { label: 'Vendedores', href: '/configuration/vendedores' },
           { label: 'Propinas', href: '/configuration/propinas' },

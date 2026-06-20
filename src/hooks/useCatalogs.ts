@@ -91,12 +91,31 @@ export const prefetchAllCatalogs = async (
         }),
 
         queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.paymentTerms(),
+            queryFn: catalogsApi.getPaymentTerms,
+        }),
+
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.receivableAccounts(),
+            queryFn: catalogsApi.getReceivableAccounts,
+        }),
+
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.payableAccounts(),
+            queryFn: catalogsApi.getPayableAccounts,
+        }),
+
+        queryClient.prefetchQuery({
             queryKey: QUERY_KEYS.catalogs.typeDocumentIdentifications(),
             queryFn: catalogsApi.getTypeDocumentIdentifications,
         }),
         queryClient.prefetchQuery({
             queryKey: QUERY_KEYS.catalogs.countries(),
             queryFn: catalogsApi.getCountries,
+        }),
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.typeResolutions(),
+            queryFn: catalogsApi.getTypeResolutions,
         }),
     ]);
 };
@@ -117,6 +136,8 @@ export const invalidateCatalog = (
 /* ========================================================================== */
 /* HOOK                                                                       */
 /* ========================================================================== */
+
+const EMPTY_ARRAY: any[] = [];
 
 export function useCatalogs() {
     /* ====================================================================== */
@@ -199,6 +220,21 @@ export function useCatalogs() {
         queryFn: catalogsApi.getPaymentMethods,
     });
 
+    const paymentTermsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.paymentTerms(),
+        queryFn: catalogsApi.getPaymentTerms,
+    });
+
+    const receivableAccountsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.receivableAccounts(),
+        queryFn: catalogsApi.getReceivableAccounts,
+    });
+
+    const payableAccountsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.payableAccounts(),
+        queryFn: catalogsApi.getPayableAccounts,
+    });
+
     const typeDocumentIdentificationsQuery = useQuery({
         queryKey: QUERY_KEYS.catalogs.typeDocumentIdentifications(),
         queryFn: catalogsApi.getTypeDocumentIdentifications,
@@ -208,6 +244,11 @@ export function useCatalogs() {
         queryKey: QUERY_KEYS.catalogs.countries(),
         queryFn: catalogsApi.getCountries,
         staleTime: 1000 * 60 * 60, // 1 hour
+    });
+
+    const typeResolutionsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.typeResolutions(),
+        queryFn: catalogsApi.getTypeResolutions,
     });
 
     const municipalitiesQuery = useQuery({
@@ -224,7 +265,7 @@ export function useCatalogs() {
         data: any,
         ...keys: string[]
     ): T[] => {
-        if (!data) return [];
+        if (!data) return EMPTY_ARRAY as T[];
 
         if (Array.isArray(data)) {
             return data as T[];
@@ -236,7 +277,7 @@ export function useCatalogs() {
             }
         }
 
-        return [];
+        return EMPTY_ARRAY as T[];
     };
 
     /* ====================================================================== */
@@ -342,6 +383,29 @@ export function useCatalogs() {
             "data"
         ),
 
+        paymentTerms: extractArray(
+            paymentTermsQuery.data?.data,
+            "payment_terms",
+            "paymentTerms",
+            "data"
+        ),
+
+        receivableAccounts: extractArray(
+            receivableAccountsQuery.data?.data,
+            "accounts",
+            "receivable_accounts",
+            "receivableAccounts",
+            "data"
+        ),
+
+        payableAccounts: extractArray(
+            payableAccountsQuery.data?.data,
+            "accounts",
+            "payable_accounts",
+            "payableAccounts",
+            "data"
+        ),
+
         typeDocumentIdentifications: extractArray(
             typeDocumentIdentificationsQuery.data?.data,
             "type_document_identifications",
@@ -361,6 +425,13 @@ export function useCatalogs() {
             "data"
         ),
 
+        typeResolutions: extractArray(
+            typeResolutionsQuery.data?.data,
+            "type_resolutions",
+            "typeResolutions",
+            "data"
+        ),
+
         isLoading:
             warehousesQuery.isLoading ||
             categoriesQuery.isLoading ||
@@ -377,8 +448,12 @@ export function useCatalogs() {
             costAccountsQuery.isLoading ||
             paymentFormsQuery.isLoading ||
             paymentMethodsQuery.isLoading ||
+            paymentTermsQuery.isLoading ||
+            receivableAccountsQuery.isLoading ||
+            payableAccountsQuery.isLoading ||
             typeDocumentIdentificationsQuery.isLoading ||
             municipalitiesQuery.isLoading ||
-            countriesQuery.isLoading,
+            countriesQuery.isLoading ||
+            typeResolutionsQuery.isLoading,
     };
 }

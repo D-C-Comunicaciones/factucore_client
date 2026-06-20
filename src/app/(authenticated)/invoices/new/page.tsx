@@ -10,6 +10,7 @@ import { NewInvoicePayment } from "@/components/invoice/new/NewInvoicePayment";
 import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
 import { useInvoiceBuilder } from "@/hooks/invoices/useInvoiceBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
+import { useSellersList } from "@/hooks/sellers/useSellers";
 import { InvoicesService } from "@/lib/invoices";
 import { AuthService } from "@/lib/auth";
 import { useResolutions } from "@/hooks/useResolutions";
@@ -19,24 +20,32 @@ export default function NewInvoicePage() {
   const router = useRouter();
   const createInvoice = useCreateInvoice();
   const catalogData = useCatalogs();
-  const { resolutions } = useResolutions();
+  const { data: sellersData } = useSellersList();
+  const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
+  const resolutionTypeFilter = tipoDoc === 'tiquete' ? 2 : 1; // 1=INVOICE, 2=POS
+  const { resolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
   const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
 
+  // Set is_main resolution as default when resolutions load or tipoDoc changes
   useEffect(() => {
     if (resolutions.length > 0) {
       const isValid = resolutions.some((r: Resolution) => r.id === selectedResolutionId);
       if (!isValid) {
-        setSelectedResolutionId(resolutions[0].id);
+        // Prefer is_main, fallback to first
+        const mainRes = resolutions.find((r: Resolution) => r.is_main) || resolutions[0];
+        setSelectedResolutionId(mainRes.id);
       }
+    } else {
+      setSelectedResolutionId(null);
     }
-  }, [resolutions, selectedResolutionId]);
+  }, [resolutions]);
 
   const activeResolution = resolutions.find((r: Resolution) => r.id === selectedResolutionId) || resolutions[0] || null;
   // Leer company guardada en localStorage al iniciar sesión
   const storedCompany = AuthService.getCompany<any>();
 
   const [showEmitirMenu, setShowEmitirMenu] = useState(false);
-  const [formState, setFormState] = useState<any>({ 
+  const [formState, setFormState] = useState<any>({
     notes: "",
     customer_id: null,
     payment_form_id: null,
@@ -53,7 +62,7 @@ export default function NewInvoicePage() {
   // States for customizing visible fields
   const [showWarehouse, setShowWarehouse] = useState(true);
   const [showPriceList, setShowPriceList] = useState(true);
-  const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
+  const [showRemissionBar, setShowRemissionBar] = useState(false);
 
   // Initialize the builder hook
   const invoiceBuilder = useInvoiceBuilder();
@@ -72,16 +81,15 @@ export default function NewInvoicePage() {
 
   const documentTypes = catalogData.typeDocumentIdentifications?.map((doc: any) => ({
     value: doc.id.toString(),
-    label: doc.name
+    label: doc.abbreviation
   })) || [];
-  
+
   const warehouseOptions = catalogData.warehouses?.map((w: any) => ({ value: w.id.toString(), label: w.name })) || [];
   const priceListOptions = catalogData.priceLists?.map((pl: any) => ({ value: pl.id.toString(), label: pl.name })) || [];
-  
-  const sellerOptions = [
-    { value: "andres", label: "Andrés Leones" },
-    { value: "maria", label: "María Gómez" },
-  ];
+
+  const sellersArray = Array.isArray(sellersData) ? sellersData : (sellersData?.data || []);
+  const sellerOptions = sellersArray.map((s: any) => ({ value: String(s.id), label: s.name }));
+
   const paymentMethods = catalogData.paymentMethods?.map((pm: any) => ({
     value: pm.id.toString(),
     label: pm.name
@@ -102,7 +110,7 @@ export default function NewInvoicePage() {
       email: storedCompany?.email ?? "",
     },
     invoiceType: "Factura electrónica",
-    invoiceNumber: activeResolution ? `${activeResolution.prefix || ''}${((activeResolution.current_number ?? (activeResolution.from_number - 1)) + 1)}` : "LTCH-2",
+    invoiceNumber: activeResolution ? `${activeResolution.prefix || ''}${((activeResolution.current_number ?? (activeResolution.from_number - 1)) + 1)}` : "",
     documentTypes,
     warehouseOptions,
     priceListOptions,
@@ -152,10 +160,10 @@ export default function NewInvoicePage() {
     <div className="w-full min-h-screen">
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
         <div className="space-y-6">
-          <NewInvoiceHeader 
-            showWarehouse={showWarehouse} 
-            setShowWarehouse={setShowWarehouse} 
-            showPriceList={showPriceList} 
+          <NewInvoiceHeader
+            showWarehouse={showWarehouse}
+            setShowWarehouse={setShowWarehouse}
+            showPriceList={showPriceList}
             setShowPriceList={setShowPriceList}
             tipoDoc={tipoDoc}
           />
@@ -171,6 +179,8 @@ export default function NewInvoicePage() {
             showPriceList={showPriceList}
             tipoDoc={tipoDoc}
             setTipoDoc={setTipoDoc}
+            showRemissionBar={showRemissionBar}
+            setShowRemissionBar={setShowRemissionBar}
           />
           <NewInvoiceMain
             mainData={mainData}
@@ -187,6 +197,8 @@ export default function NewInvoicePage() {
             setFormState={setFormState}
             notes={formState.notes}
             onNotesChange={(val: string) => setFormState((prev: any) => ({ ...prev, notes: val }))}
+            showRemissionBar={showRemissionBar}
+            setShowRemissionBar={setShowRemissionBar}
           />
           <NewInvoicePayment />
           <NewInvoiceInfo />

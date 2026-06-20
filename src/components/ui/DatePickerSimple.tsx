@@ -22,12 +22,12 @@ import {
 import { cn } from "@/lib/utils";
 
 export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?: (date: Date) => void } = {}) {
-    const [date, setDate] = React.useState<Date>(value || new Date());
+    const [date, setDate] = React.useState<Date | undefined>(value);
     const [tempDate, setTempDate] = React.useState<Date>(value || new Date());
     const [open, setOpen] = React.useState(false);
 
     React.useEffect(() => {
-        if (value) {
+        if (value !== undefined) {
             setDate(value);
             setTempDate(value);
         }
@@ -41,26 +41,26 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
         "Jul", "Ago", "Sept", "Oct", "Nov", "Dic"
     ];
 
-    const years = Array.from({ length: 20 }, (_, i) => 2020 + i);
+    const years = Array.from({ length: 20 }, (_, i) => 2010 + i);
 
     const inputClass =
-        "bg-white border border-foreground/20 rounded-lg h-9 px-3 text-sm text-foreground hover:bg-primary/10 focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors";
+        "bg-white border border-gray-200 rounded-md h-10 px-3 text-sm text-foreground hover:bg-gray-50 focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors";
 
     React.useEffect(() => {
         if (open) {
-            setTempDate(date);
+            setTempDate(date || new Date());
             setView("default");
         }
-    }, [open]);
+    }, [open, date]);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button className={cn(inputClass, "w-full justify-start")}>
-                    <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                <Button variant="outline" className={cn(inputClass, "w-full justify-start font-normal", !date && "text-muted-foreground")}>
                     {date
                         ? format(date, "dd/MM/yyyy", { locale: es })
-                        : "Selecciona fecha"}
+                        : "dd/mm/aaaa"}
+                    <CalendarIcon className="ml-auto h-4 w-4 text-foreground" />
                 </Button>
             </PopoverTrigger>
 

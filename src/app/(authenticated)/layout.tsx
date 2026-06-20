@@ -18,7 +18,7 @@ export default function AuthenticatedLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading, user } = useAuth();
     const router = useRouter();
 
     // STATE
@@ -179,6 +179,7 @@ export default function AuthenticatedLayout({
                         showUserMenu={showUserMenu}
                         onToggleUserMenu={onToggleUserMenu}
                         onToggleSidebar={onToggleMobileMenu}
+                        userName={user?.name}
                     />
 
                     <main className="px-4 md:px-6 py-4 max-w-[1400px] mx-auto">

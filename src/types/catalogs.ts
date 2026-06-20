@@ -28,6 +28,7 @@ export interface TypeDocumentIdentification {
     id: number;
     name: string;
     code: string;
+    abbreviation: string;
     created_at: string;
     updated_at: string;
 }

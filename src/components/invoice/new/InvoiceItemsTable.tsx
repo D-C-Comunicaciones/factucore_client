@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,21 +12,55 @@ import {
 import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
 import { useItems } from "@/hooks/items/useItems";
 
-function ItemRow({ 
-  item, 
-  invoiceBuilder, 
-  selectedWarehouseId, 
+// Reusable component for currency formatting without cursor jumps
+function FormattedInput({ value, onChange, placeholder, className }: any) {
+  const [displayValue, setDisplayValue] = React.useState(value ? new Intl.NumberFormat('es-CO').format(value) : "");
+
+  React.useEffect(() => {
+    const numericDisplay = parseFloat(displayValue.replace(/\./g, "").replace(/,/g, ".")) || 0;
+    if (value !== numericDisplay && value !== undefined) {
+       setDisplayValue(value ? new Intl.NumberFormat('es-CO').format(value) : "");
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9]/g, "");
+    if (!raw) {
+      setDisplayValue("");
+      onChange(0);
+      return;
+    }
+    const num = parseFloat(raw);
+    setDisplayValue(new Intl.NumberFormat('es-CO').format(num));
+    onChange(num);
+  };
+
+  return (
+    <Input
+      type="text"
+      placeholder={placeholder}
+      value={displayValue}
+      onChange={handleChange}
+      className={className}
+    />
+  );
+}
+
+function ItemRow({
+  item,
+  invoiceBuilder,
+  selectedWarehouseId,
   selectedPriceListId,
-  taxes 
-}: { 
-  item: any; 
+  taxes
+}: {
+  item: any;
   invoiceBuilder: any;
   selectedWarehouseId: number | null;
   selectedPriceListId: number | null;
   taxes: any[];
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const { data, isLoading } = useItems({
     search: searchQuery,
     Warehouse_id: selectedWarehouseId ?? undefined,
@@ -53,22 +87,8 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "description", ri.description || "");
       invoiceBuilder.updateItem(item.id, "precio", ri.price || 0);
       invoiceBuilder.updateItem(item.id, "cantidad", 1);
-      
-      // Attempt to auto-fill tax if the item has one assigned
-      if (ri.tax_rates && ri.tax_rates.length > 0) {
-        const tax = ri.tax_rates[0];
-        const rawRate = tax.code ?? tax.rate ?? tax.percentage ?? 0;
-        const taxRate = Number(rawRate);
-        const safeRate = isNaN(taxRate) ? 0 : taxRate;
-        const normalizedName = `${tax.name || 'IVA'} (${safeRate}%)`;
-        const taxObj = {
-          tax_id: tax.id,
-          type: "percentage",
-          rate: safeRate,
-          name: normalizedName
-        };
-        invoiceBuilder.updateItemTax(item.id, taxObj);
-      }
+
+      // Tax auto-fill removed, defaults to "Sin impuesto"
     }
   };
 
@@ -77,18 +97,18 @@ function ItemRow({
   const discValue = item.discountValue || 0;
 
   const lineBase = qty * price;
-  const lineDiscount = item.discountType === 'percentage' 
-      ? lineBase * (discValue / 100) 
-      : discValue;
-  
+  const lineDiscount = item.discountType === 'percentage'
+    ? lineBase * (discValue / 100)
+    : discValue;
+
   const lineNet = lineBase - lineDiscount;
-  
+
   let taxRate = 0;
   if (item.taxObj && item.taxObj.rate !== undefined && item.taxObj.rate !== null) {
-      taxRate = Number(item.taxObj.rate);
-      if (isNaN(taxRate)) taxRate = 0;
+    taxRate = Number(item.taxObj.rate);
+    if (isNaN(taxRate)) taxRate = 0;
   }
-  
+
   const lineTax = lineNet * (taxRate / 100);
   const safeNet = isNaN(lineNet) ? 0 : lineNet;
   const safeTax = isNaN(lineTax) ? 0 : lineTax;
@@ -105,9 +125,24 @@ function ItemRow({
           options={options}
           loading={isLoading}
           onSearchChange={setSearchQuery}
-          placeholder="Buscar ítem..."
+          placeholder="Buscar ítem"
           searchPlaceholder="Nombre o ref..."
-          className="h-8 text-xs border-foreground/20 bg-white hover:bg-muted cursor-pointer transition-colors"
+          className="h-8 text-xs border-foreground/20 bg-white hover:border-primary/50 focus:border-primary focus-visible:border-primary cursor-pointer transition-colors shadow-none"
+          footer={
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('open-quick-item-modal');
+                if (el) {
+                  el.setAttribute('data-target-row', item.id);
+                  el.click();
+                }
+              }}
+              className="w-full text-left px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
+            >
+              + Nuevo ítem
+            </button>
+          }
         />
       </td>
 
@@ -121,46 +156,52 @@ function ItemRow({
       </td>
 
       <td className="px-2 py-2 w-24">
-        <Input
-          type="number"
-          min={0}
-          onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
+        <FormattedInput
           placeholder="Precio"
-          value={item.precio || ""}
-          onChange={(e) => invoiceBuilder.updateItem(item.id, "precio", Number(e.target.value))}
+          value={item.precio || 0}
+          onChange={(val: number) => invoiceBuilder.updateItem(item.id, "precio", val)}
           className={inputClasses}
         />
       </td>
 
       <td className="px-2 py-2 w-32">
         <div className="flex items-center">
+          {item.discountType === 'percentage' ? (
             <Input
-                type="number"
-                min={0}
-                onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
-                placeholder="0"
-                value={item.discountValue || ""}
-                onChange={(e) => invoiceBuilder.updateItemDiscount(item.id, Number(e.target.value), item.discountType || 'percentage')}
-                className={`${inputClasses} rounded-r-none border-r-0`}
+              type="number"
+              min={0}
+              onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
+              placeholder="0"
+              value={item.discountValue || ""}
+              onChange={(e) => invoiceBuilder.updateItemDiscount(item.id, Number(e.target.value), 'percentage')}
+              className={`${inputClasses} rounded-r-none border-r-0`}
             />
-            <Select 
-                value={item.discountType || "percentage"} 
-                onValueChange={(val: any) => invoiceBuilder.updateItemDiscount(item.id, item.discountValue || 0, val)}
-            >
-                <SelectTrigger className={`h-8 px-1 text-xs border border-foreground/20 bg-white shadow-none rounded-l-none w-12 hover:bg-muted cursor-pointer transition-colors`}>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="percentage" className="cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
-                    <SelectItem value="fixed" className="cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
-                </SelectContent>
-            </Select>
+          ) : (
+            <FormattedInput
+              placeholder="0"
+              value={item.discountValue || 0}
+              onChange={(val: number) => invoiceBuilder.updateItemDiscount(item.id, val, 'fixed')}
+              className={`${inputClasses} rounded-r-none border-r-0`}
+            />
+          )}
+          <Select
+            value={item.discountType || "percentage"}
+            onValueChange={(val: any) => invoiceBuilder.updateItemDiscount(item.id, item.discountValue || 0, val)}
+          >
+            <SelectTrigger className={`h-8 px-1 text-xs border border-foreground/20 bg-white shadow-none rounded-l-none w-12 hover:bg-muted cursor-pointer transition-colors`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="percentage" className="cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
+              <SelectItem value="fixed" className="cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </td>
 
       <td className="px-2 py-2 w-32">
-        <Select 
-          value={item.taxObj?.tax_id?.toString() || "0"} 
+        <Select
+          value={item.taxObj?.tax_id?.toString() || "0"}
           onValueChange={(val) => {
             if (val === "0") {
               invoiceBuilder.updateItemTax(item.id, null);
@@ -220,11 +261,11 @@ function ItemRow({
       </td>
 
       <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap">
-        ${rowTotal.toFixed(2)}
+        $ {new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rowTotal)}
       </td>
 
       <td className="px-2 py-2 text-center w-10">
-        <button 
+        <button
           onClick={() => invoiceBuilder.removeItem(item.id)}
           className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
         >
@@ -288,9 +329,9 @@ export function InvoiceItemsTable({
             </tr>
           ) : (
             invoiceBuilder.items.map((item: any) => (
-              <ItemRow 
-                key={item.id} 
-                item={item} 
+              <ItemRow
+                key={item.id}
+                item={item}
                 invoiceBuilder={invoiceBuilder}
                 selectedWarehouseId={selectedWarehouseId}
                 selectedPriceListId={selectedPriceListId}

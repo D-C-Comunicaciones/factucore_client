@@ -19,25 +19,25 @@ interface EditResolutionModalProps {
 
 export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolutionModalProps) {
   const { updateResolution, createResolution, isUpdating } = useResolutions();
-  
+
   const [formData, setFormData] = useState({
     prefix: "",
-    from_number: 1,
-    footer_text: "",
+    current_number: 1,
+    resolution_text: "",
   });
 
   useEffect(() => {
     if (resolution) {
       setFormData({
         prefix: resolution.prefix || "",
-        from_number: resolution.from_number || 1,
-        footer_text: resolution.footer_text || "",
+        current_number: resolution.current_number !== undefined ? resolution.current_number : (resolution.from_number || 1),
+        resolution_text: resolution.resolution_text || resolution.footer_text || "",
       });
     } else {
       setFormData({
         prefix: "",
-        from_number: 1,
-        footer_text: "",
+        current_number: 1,
+        resolution_text: "",
       });
     }
   }, [resolution, isOpen]);
@@ -50,7 +50,8 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
       } else {
         await createResolution({
           ...formData,
-          description: "Principal",
+          name: "Principal",
+          type_resolution_id: 1,
           is_active: true,
           resolution_number: "0",
         });
@@ -71,7 +72,7 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-white">
         <DialogHeader>
           <DialogTitle className="text-primary font-normal">Editar numeración</DialogTitle>
         </DialogHeader>
@@ -79,7 +80,7 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-[160px_1fr] items-center gap-4">
             <span className="text-right text-sm text-gray-500">Nombre:</span>
-            <span className="text-sm font-medium">{resolution?.description || "Principal"}</span>
+            <span className="text-sm font-medium">{resolution?.name || resolution?.description || "Principal"}</span>
           </div>
 
           <div className="grid grid-cols-[160px_1fr] items-center gap-4">
@@ -92,8 +93,8 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
             <input
               type="text"
               value={formData.prefix}
-              onChange={(e) => setFormData({ ...formData, prefix: e.target.value })}
-              className="w-full h-8 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              disabled
+              className="w-full h-8 px-3 rounded-md border border-border bg-muted/50 text-muted-foreground text-sm cursor-not-allowed"
             />
           </div>
 
@@ -103,9 +104,11 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
             </span>
             <input
               type="number"
-              value={formData.from_number}
-              onChange={(e) => setFormData({ ...formData, from_number: parseInt(e.target.value) || 0 })}
-              className="w-full h-8 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              min={0}
+              onKeyDown={(e) => { if (['e', 'E', '+', '-', '.'].includes(e.key)) e.preventDefault(); }}
+              value={formData.current_number}
+              onChange={(e) => setFormData({ ...formData, current_number: parseInt(e.target.value) || 0 })}
+              className="w-full h-8 px-3 rounded-md border border-border hover:border-primary bg-white text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
 
@@ -115,15 +118,15 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
             </label>
             <textarea
               rows={4}
-              value={formData.footer_text}
-              onChange={(e) => setFormData({ ...formData, footer_text: e.target.value })}
-              className="w-full p-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              value={formData.resolution_text}
+              onChange={(e) => setFormData({ ...formData, resolution_text: e.target.value })}
+              className="w-full p-3 rounded-md border border-border hover:border-primary bg-white text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none transition-colors"
             />
           </div>
         </div>
 
         <div className="flex items-center justify-between mt-6">
-          <a href="#" className="text-primary text-sm hover:underline">
+          <a href="/resolutions" target="_blank" className="text-primary text-sm hover:underline">
             Administrar mis numeraciones
           </a>
           <div className="flex gap-2">

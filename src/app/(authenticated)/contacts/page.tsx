@@ -4,6 +4,9 @@ import * as React from 'react';
 import { Plus, ChevronDown, FileEdit, Upload, Download, Trash2, Clock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ContactTable } from '@/components/contact/ContactTable';
+import { useContactsList } from '@/hooks/contacts/useContacts';
+import { AddContactModal } from "@/components/contact/new/AddContactModal";
+import { useCatalogs } from "@/hooks/useCatalogs";
 import { useDebounce } from '@/hooks/useDebounce';
 import {
   DropdownMenu,
@@ -34,12 +37,56 @@ export default function ContactPage() {
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(10);
   const [fetchKey, setFetchKey] = React.useState(0);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+
+  const catalogData = useCatalogs();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  const [contacts] = React.useState<Contact[]>([]);
-
   const debouncedSearch = useDebounce(search, 600);
+
+  const params = React.useMemo(() => {
+    const obj: Record<string, any> = {
+      current_page: page,
+      per_page: perPage,
+    };
+
+    if (activeTab !== 'all') {
+      obj.role = activeTab; // 'customer' or 'provider'
+    }
+
+    if (debouncedSearch) {
+      obj.search = debouncedSearch;
+    }
+
+    return obj;
+  }, [activeTab, debouncedSearch, page, perPage]);
+
+  const { data, isLoading, isFetching, refetch } = useContactsList({
+    params,
+    enabled: true,
+    fetchKey
+  });
+
+  const rawContacts = data?.contacts ?? data?.data ?? [];
+  const contactsData = rawContacts.map((c: any) => {
+    const isCustomer = c.type_contact_ids?.includes(1) || c.type_contacts?.some((tc: any) => tc.id === 1);
+    return {
+      id: c.id,
+      name: c.registration_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.identification_number || "Sin nombre",
+      identification: c.identification_number || "",
+      phone: c.phone1 || c.phone2 || "",
+      type: isCustomer ? "customer" : "provider"
+    };
+  });
+  const serverPagination = data?.pagination ?? data?.meta ?? {
+    current_page: 1,
+    per_page: perPage,
+    total: 0,
+    last_page: 1,
+    from: 0,
+    to: 0,
+  };
 
   const handleDelete = React.useCallback((id: number) => {
     console.log('Delete contact:', id);
@@ -47,27 +94,8 @@ export default function ContactPage() {
 
   const columns = React.useMemo(() => getContactColumns(handleDelete), [handleDelete]);
 
-  const filteredContacts = React.useMemo(() => {
-    let result = contacts;
-
-    if (activeTab !== 'all') {
-      result = result.filter(c => c.type === activeTab);
-    }
-
-    if (debouncedSearch) {
-      const lowerSearch = debouncedSearch.toLowerCase();
-      result = result.filter(c =>
-        c.name.toLowerCase().includes(lowerSearch) ||
-        c.identification.includes(lowerSearch) ||
-        c.phone.includes(lowerSearch)
-      );
-    }
-
-    return result;
-  }, [contacts, search, activeTab, debouncedSearch]);
-
   const table = useReactTable({
-    data: filteredContacts,
+    data: contactsData,
     columns,
     getRowId: (row) => String(row.id),
     state: { sorting },
@@ -75,23 +103,14 @@ export default function ContactPage() {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const pagination = {
-    current_page: 1,
-    per_page: perPage,
-    total: filteredContacts.length,
-    last_page: Math.ceil(filteredContacts.length / perPage),
-    from: 1,
-    to: filteredContacts.length,
-  };
-
-  const handleRefreshTable = React.useCallback(() => {
+  const handleRefreshTable = React.useCallback(async () => {
     setIsRefreshing(true);
-    setFetchKey((k) => k + 1);
-
-    window.setTimeout(() => {
+    try {
+      await refetch();
+    } finally {
       setIsRefreshing(false);
-    }, 600);
-  }, []);
+    }
+  }, [refetch]);
 
   const tabs = [
     { key: 'all' as ContactType, label: 'Todos' },
@@ -170,6 +189,7 @@ export default function ContactPage() {
 
               {/* Nuevo contacto */}
               <Button
+                onClick={() => setIsModalOpen(true)}
                 className="btn-base bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Plus className="w-4 h-4 mr-1" />
@@ -210,8 +230,8 @@ export default function ContactPage() {
         {/* TABLE */}
         <div className="w-full">
           <ContactTable
-            contacts={filteredContacts}
-            loading={isRefreshing}
+            contacts={contactsData}
+            loading={isLoading || isFetching || isRefreshing}
             refreshing={isRefreshing}
             onRefresh={handleRefreshTable}
             activeTab={activeTab}
@@ -221,12 +241,22 @@ export default function ContactPage() {
             setPage={setPage}
             perPage={perPage}
             setPerPage={setPerPage}
-            pagination={pagination}
+            pagination={serverPagination}
             onDelete={handleDelete}
           />
         </div>
 
       </div>
+
+      <AddContactModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        catalogData={catalogData}
+        onCustomerCreated={() => {
+          refetch();
+          setIsModalOpen(false);
+        }}
+      />
     </div>
   );
 }

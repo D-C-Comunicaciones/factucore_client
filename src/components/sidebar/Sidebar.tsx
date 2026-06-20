@@ -150,8 +150,8 @@ function SidebarMenuItems({
                           sub.label === "Devoluciones en venta" ||
                           sub.label === "Cotizaciones" ||
                           sub.label === "Remisiones") && (
-                          <button
-                            type="button"
+                          <Link
+                            href={sub.path + '/new'}
                             className="
                               flex items-center justify-center w-10 h-full
                               opacity-0 group-hover:opacity-100
@@ -160,13 +160,12 @@ function SidebarMenuItems({
                               cursor-pointer
                             "
                             onClick={(e) => {
-                              e.preventDefault();
                               e.stopPropagation();
                               if (sub.path) onNavigate(sub.path + '/new');
                             }}
                           >
                             <Plus className="w-4 h-4 text-primary" />
-                          </button>
+                          </Link>
                         )}
                       </div>
                     );

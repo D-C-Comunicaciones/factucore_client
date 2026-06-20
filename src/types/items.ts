@@ -487,26 +487,16 @@ export type ItemsApiResponse = ApiResponse<ItemListResponse[]>;
 
 export interface ItemFormState {
     itemType: ItemTypeName;
-
     name: string;
     reference: string;
-
     categoryId: string;
-
     bodega: string;
-
     unit: string;
-
     comboCode: string;
-
     initialQuantity: string;
-
     initialCost: string;
-
     basePrice: string;
-
     totalPrice: string;
-
     tax: string;
 }
 
@@ -516,37 +506,23 @@ export interface ItemFormState {
 
 export interface ItemListResponse {
     id: number;
-
     name: string;
-
     reference?: string;
-
     description?: string;
-
     active: boolean;
-
     is_active?: boolean;
-
     type_item_id: ItemTypeId;
-
     price: number;
-
     permissions: Permission;
-
     /**
      * Indica si el registro es un ítem padre o una variante.
      * Viene del endpoint de listado aplanado.
      */
     entity_type?: "item" | "variant";
-
     parent_id?: number | null;
-
     created_at?: string;
-
     updated_at?: string;
-
     standard_code?: string;
-
     tax_rates?: any[];
 }
 

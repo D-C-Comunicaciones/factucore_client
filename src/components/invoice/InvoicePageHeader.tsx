@@ -74,7 +74,7 @@ export function InvoicePageHeader({ onNavigate }: InvoicePageHeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                className="hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground"
+                className="hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground cursor-pointer"
               >
                 <Plus className="w-3 h-3 mr-1" />
                 Nueva factura de venta

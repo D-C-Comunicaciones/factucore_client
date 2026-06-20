@@ -89,6 +89,7 @@ export function AdvancedOptionsSection({
   const setPriceLists = onPriceListsChange;
   const [deletingPriceListId, setDeletingPriceListId] = React.useState<string | null>(null);
   const [isPriceListModalOpen, setIsPriceListModalOpen] = React.useState(false);
+  const [priceListTargetRow, setPriceListTargetRow] = React.useState<string | null>(null);
   const [customPriceLists, setCustomPriceLists] = React.useState<any[]>([]);
 
   // Auto-select default price list when catalogs load
@@ -857,16 +858,18 @@ export function AdvancedOptionsSection({
                   onValueChange={(val) => {
                     const selectedList = catalogs?.priceLists?.find((c: any) => String(c.id) === val);
                     const selectedType = catalogs?.typePriceLists?.find((t: any) => selectedList && String(t.id) === String(selectedList.type_price_list_id));
-                    const isPercentage = selectedType && (selectedType.code === 'percentage' || selectedType.name?.toLowerCase().includes('porcent'));
+                    const isPercentage = (selectedType && (selectedType.code === 'PORCENTAJE' || selectedType.code === 'percentage' || selectedType.name?.toLowerCase().includes('porcent'))) || (selectedList && selectedList.percentage !== null && selectedList.percentage !== undefined);
                     
                     const listValue = selectedList?.value || "";
                     
                     setPriceLists(priceLists.map(item =>
-                      item.id === pl.id ? { ...item, price_list_id: val, isPercentage, value: isPercentage ? listValue : item.value } : item
+                      item.id === pl.id ? { ...item, price_list_id: val, isPercentage, value: isPercentage ? listValue : "0" } : item
                     ));
                   }}
                   options={[
-                    ...(catalogs?.priceLists || []).map((cpl: any) => ({ value: String(cpl.id), label: cpl.name }))
+                    ...(catalogs?.priceLists || [])
+                      .filter((cpl: any) => !priceLists.some((p) => p.price_list_id === String(cpl.id) && p.id !== pl.id))
+                      .map((cpl: any) => ({ value: String(cpl.id), label: cpl.name }))
                   ]}
                   placeholder="Seleccionar"
                   searchPlaceholder="Buscar lista..."
@@ -875,7 +878,10 @@ export function AdvancedOptionsSection({
                   footer={
                     <button
                       type="button"
-                      onClick={() => setIsPriceListModalOpen(true)}
+                      onClick={() => {
+                        setPriceListTargetRow(pl.id);
+                        setIsPriceListModalOpen(true);
+                      }}
                       className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
                     >
                       Nueva Lista de precios
@@ -887,15 +893,32 @@ export function AdvancedOptionsSection({
                 <label className="text-xs text-muted-foreground mb-1 block">Valor</label>
                 <input
                   type="text"
-                  value={index === 0 ? basePrice : pl.value}
-                  disabled={pl.isPercentage || index === 0}
+                  value={(() => {
+                    const formatMoney = (val: string | number) => {
+                      const num = parseFloat(String(val).replace(/[^0-9.-]/g, "")) || 0;
+                      return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(num);
+                    };
+
+                    if (pl.isPercentage) {
+                      const selectedList = catalogs?.priceLists?.find((c: any) => String(c.id) === pl.price_list_id);
+                      if (selectedList && selectedList.percentage !== null) {
+                        const baseVal = parseFloat(basePrice.replace(/[^0-9.]/g, "")) || 0;
+                        const percent = parseFloat(selectedList.percentage) || 0;
+                        const calculated = baseVal - (baseVal * (percent / 100));
+                        return calculated > 0 ? formatMoney(calculated) : "0";
+                      }
+                      return "";
+                    }
+                    return pl.value;
+                  })()}
+                  disabled={pl.isPercentage}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9.]/g, "");
                     setPriceLists(priceLists.map(item =>
                       item.id === pl.id ? { ...item, value: val } : item
                     ));
                   }}
-                  className={cn(baseInput, "pr-8", (pl.isPercentage || index === 0) && "bg-muted cursor-not-allowed")}
+                  className={cn(baseInput, "pr-8 font-medium", pl.isPercentage ? "bg-white text-muted-foreground cursor-not-allowed border-border/50 shadow-sm" : "")}
                   placeholder={pl.isPercentage ? "Valor automático" : "0"}
                 />
               </div>
@@ -1106,6 +1129,18 @@ export function AdvancedOptionsSection({
         onOpenChange={setIsPriceListModalOpen}
         onSave={(data) => {
           showToast(`La lista de precios "${data.name}" ha sido creada.`, "success");
+          if (priceListTargetRow) {
+            const val = String(data.id);
+            const isPercentage = data.percentage !== null && data.percentage !== undefined;
+            const listValue = isPercentage ? `${parseFloat(data.percentage)}%` : "0";
+
+            setPriceLists(priceLists.map(item =>
+              item.id === priceListTargetRow 
+                ? { ...item, price_list_id: val, isPercentage, value: isPercentage ? listValue : "0" } 
+                : item
+            ));
+            setPriceListTargetRow(null);
+          }
         }}
       />
     </SectionCard >

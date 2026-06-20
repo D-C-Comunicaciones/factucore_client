@@ -62,7 +62,7 @@ export function SearchableSelect({
   onValueChange,
   options,
   placeholder = "Seleccionar",
-  searchPlaceholder = "Buscar...",
+  searchPlaceholder = "Buscar.",
   emptyMessage = "No se encontraron resultados.",
   className,
   contentClassName,
@@ -115,8 +115,8 @@ export function SearchableSelect({
           filter={(value, search) => {
             const option = options.find((o) => o.value === value);
             if (!option) return 0;
-            
-            const normalize = (str: string) => 
+
+            const normalize = (str: string) =>
               str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
             return normalize(option.label).includes(normalize(search)) ? 1 : 0;
@@ -126,26 +126,26 @@ export function SearchableSelect({
           <CommandList>
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>{options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? "" : currentValue);
-                    setOpen(false);
-                  }}
-                  className="rounded-lg cursor-pointer transition-colors data-[selected=true]:bg-primary/5 data-[selected=true]:text-primary hover:bg-primary/5 hover:text-primary group/item relative"
-                >
-                  <span className="flex-1 truncate">{option.label}</span>
-                  {value === option.value && (
-                    <Check className="size-4 text-primary shrink-0" />
-                  )}
-                  {/* Custom tooltip — shows full label on hover */}
-                  <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 hidden group-hover/item:block whitespace-nowrap rounded-md bg-[#2563eb] px-2.5 py-1.5 text-xs font-medium text-white shadow-lg">
-                    {option.label}
-                  </span>
-                </CommandItem>
-              ))}</CommandGroup>
-            
+              <CommandItem
+                key={option.value}
+                value={option.value}
+                onSelect={(currentValue) => {
+                  onValueChange(currentValue === value ? "" : currentValue);
+                  setOpen(false);
+                }}
+                className="rounded-lg cursor-pointer transition-colors data-[selected=true]:bg-primary/5 data-[selected=true]:text-primary hover:bg-primary/5 hover:text-primary group/item relative"
+              >
+                <span className="flex-1 truncate">{option.label}</span>
+                {value === option.value && (
+                  <Check className="size-4 text-primary shrink-0" />
+                )}
+                {/* Custom tooltip — shows full label on hover */}
+                <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 hidden group-hover/item:block whitespace-nowrap rounded-md bg-[#2563eb] px-2.5 py-1.5 text-xs font-medium text-white shadow-lg">
+                  {option.label}
+                </span>
+              </CommandItem>
+            ))}</CommandGroup>
+
           </CommandList>
 
           {/* Optional footer (e.g. "+ Nueva categoría") */}

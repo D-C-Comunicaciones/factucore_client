@@ -122,6 +122,12 @@ export const QUERY_KEYS = {
                 "payment-methods",
             ] as const,
 
+        paymentTerms: () => ["catalogs", "payment-terms"] as const,
+
+        receivableAccounts: () => ["catalogs", "receivable-accounts"] as const,
+
+        payableAccounts: () => ["catalogs", "payable-accounts"] as const,
+
         typeDocumentIdentifications: () =>
             [
                 "catalogs",
@@ -132,6 +138,12 @@ export const QUERY_KEYS = {
             [
                 "catalogs",
                 "municipalities",
+            ] as const,
+
+        typeResolutions: () =>
+            [
+                "catalogs",
+                "type-resolutions",
             ] as const,
     },
 

@@ -20,7 +20,7 @@ export function AccountSwitcher({ onClose, userName }: AccountSwitcherProps) {
 
   return (
     <div className="absolute top-full right-0 mt-2 w-[320px] bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
-      
+
       {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-transparent">
         <h3 className="text-[15px] font-semibold text-gray-900">Cambiar cuenta</h3>
@@ -32,9 +32,9 @@ export function AccountSwitcher({ onClose, userName }: AccountSwitcherProps) {
       {/* Search */}
       <div className="px-4 pb-4 border-b border-gray-100">
         <div className="relative">
-          <input 
-            type="text" 
-            placeholder="Buscar..." 
+          <input
+            type="text"
+            placeholder="Buscar."
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all text-gray-700"
           />
         </div>

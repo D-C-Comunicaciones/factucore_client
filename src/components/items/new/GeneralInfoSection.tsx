@@ -92,14 +92,14 @@ export function GeneralInfoSection({
   const TAX_OPTIONS: { label: string; value: string }[] = [
     { label: "Ninguno (0%)", value: "0" },
     ...(Array.isArray(catalogs.taxes) ? catalogs.taxes.map((t: any) => {
-      const rate = t.rate ?? t.percentage ?? 0;
+      const rate = t.rate ?? t.percentage ?? t.code ?? 0;
       return { label: `${t.name} (${rate}%)`, value: t.id.toString() };
     }) : []),
   ];
   const UNIT_OPTIONS = catalogs.unitMeasures || [];
   const CATEGORY_OPTIONS = catalogs.categories || [];
   const WAREHOUSE_OPTIONS = catalogs.warehouses || [];
-  const [standardCodeOptions, setStandardCodeOptions] = React.useState<{value: string, label: string}[]>([]);
+  const [standardCodeOptions, setStandardCodeOptions] = React.useState<{ value: string, label: string }[]>([]);
   const [isSearchingCodes, setIsSearchingCodes] = React.useState(false);
 
   const handleSearchStandardCodes = async (search: string) => {
@@ -113,7 +113,7 @@ export function GeneralInfoSection({
       } else if (!Array.isArray(data)) {
         data = res?.data?.standard_codes || [];
       }
-      
+
       const opts = Array.isArray(data) ? data.map((c: any) => ({
         value: c.id.toString(),
         label: `${c.code} - ${c.name}`
@@ -141,7 +141,7 @@ export function GeneralInfoSection({
     // Find the tax rate from catalogs
     if (!tax || tax === "0") return base;
     const selectedTax = catalogs.taxes?.find((t: any) => t.id.toString() === tax);
-    const rawRate = selectedTax?.rate ?? selectedTax?.percentage ?? 0;
+    const rawRate = selectedTax?.rate ?? selectedTax?.percentage ?? selectedTax?.code ?? 0;
     const rate = parseFloat(String(rawRate)) / 100;
     return base + base * rate;
   }, [basePrice, tax, catalogs.taxes]);
@@ -309,7 +309,7 @@ export function GeneralInfoSection({
             value={unitMeasureId?.toString()}
             onValueChange={(v) => onUnitMeasureIdChange(parseInt(v))}
             options={UNIT_OPTIONS.map((u: any) => ({ value: u.id.toString(), label: u.name }))}
-            placeholder="Buscar..."
+            placeholder="Buscar."
             searchPlaceholder="Buscar unidad..."
             emptyMessage="No se encontraron unidades."
             className={cn(baseInput, "w-full rounded-md", errors.unitMeasureId && "border-destructive focus:border-destructive focus:ring-destructive/40")}
@@ -357,7 +357,7 @@ export function GeneralInfoSection({
             options={standardCodeOptions}
             onSearchChange={handleSearchStandardCodes}
             loading={isSearchingCodes}
-            placeholder="Buscar..."
+            placeholder="Buscar."
             searchPlaceholder="Buscar código o descripción..."
             emptyMessage={isSearchingCodes ? "Buscando..." : "No se encontraron códigos."}
             className={cn(baseInput, "w-full rounded-md")}

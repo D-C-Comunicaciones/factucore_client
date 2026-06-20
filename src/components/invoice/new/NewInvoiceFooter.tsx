@@ -68,7 +68,7 @@ export function NewInvoiceFooter({
                             hover:bg-primary/90 transition-colors
                         "
                     >
-                        {loadingGuardar ? "Guardando..." : "Guardar"}
+                        {loadingGuardar ? "Guardando..." : "Guardar y Emitir"}
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
