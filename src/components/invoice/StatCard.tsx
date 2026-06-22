@@ -1,5 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
-import type { InvoiceStats } from "@/data/InvoiceMockData";
+import { LucideIcon } from "lucide-react";
+
+export interface InvoiceStats {
+  icon: LucideIcon;
+  label: string;
+  value: number | string;
+  iconBgColor?: string;
+  iconColor?: string;
+}
 
 interface StatCardProps {
   stat: InvoiceStats;

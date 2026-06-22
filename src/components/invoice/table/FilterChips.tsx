@@ -18,7 +18,7 @@ import type { InvoiceSummary } from "@/types/invoice";
    Constantes de etiquetas e íconos por columna
    ----------------------------------------------------------------------- */
 const filterLabels: Record<string, string> = {
-  customer: "Cliente",
+  contact: "Cliente",
   number: "Número",
   created_at: "Fecha de creación",
   payment_due_date: "Fecha de vencimiento",
@@ -30,7 +30,7 @@ const filterLabels: Record<string, string> = {
 };
 
 const filterIcons: Record<string, React.ReactNode> = {
-  customer: <Search className="w-4 h-4 mr-1 text-gray-400" />,
+  contact: <Search className="w-4 h-4 mr-1 text-gray-400" />,
   number: (
     <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
       <rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
@@ -107,24 +107,10 @@ export function FilterChips({
   if (columnFilters.length === 0) return null;
 
   function removeFilter(id: string) {
-    if (table.getColumn(id)) {
-      const col = table.getColumn(id);
-      if (col) {
-        col.setFilterValue(undefined);
-      }
-    }
     setColumnFilters(columnFilters.filter((f) => f.id !== id));
   }
 
   function removeAllFilters() {
-    columnFilters.forEach((f) => {
-      if (table.getColumn(f.id)) {
-        const col = table.getColumn(f.id);
-        if (col) {
-          col.setFilterValue("");
-        }
-      }
-    });
     setColumnFilters([]);
   }
 
@@ -176,7 +162,7 @@ export function FilterChips({
               {isDate && (
                 <DateFilterPopoverInline
                   filter={filter}
-                  setFilterValue={(val) => table.getColumn(filter.id)?.setFilterValue(val)}
+                  setFilterValue={(val) => setColumnFilters(columnFilters.map(f => f.id === filter.id ? { ...f, value: val } : f))}
                 />
               )}
 
@@ -202,7 +188,7 @@ export function FilterChips({
                           } else {
                             newValue = newValue.filter((v) => v !== opt);
                           }
-                          table.getColumn(filter.id)?.setFilterValue(newValue);
+                          setColumnFilters(columnFilters.map(f => f.id === filter.id ? { ...f, value: newValue } : f));
                         }}
                       />
                       {opt}
@@ -233,7 +219,7 @@ export function FilterChips({
                           } else {
                             newValue = newValue.filter((v) => v !== opt);
                           }
-                          table.getColumn(filter.id)?.setFilterValue(newValue);
+                          setColumnFilters(columnFilters.map(f => f.id === filter.id ? { ...f, value: newValue } : f));
                         }}
                       />
                       {opt}
@@ -249,7 +235,7 @@ export function FilterChips({
                     className="w-full border rounded px-2 py-1 text-xs"
                     placeholder="Número de factura"
                     value={filter.value as string}
-                    onChange={(e) => table.getColumn(filter.id)?.setFilterValue(e.target.value)}
+                    onChange={(e) => setColumnFilters(columnFilters.map(f => f.id === filter.id ? { ...f, value: e.target.value } : f))}
                   />
                 </div>
               )}

@@ -39,6 +39,7 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
     phone1, setPhone1,
     phone2, setPhone2,
     mobile, setMobile,
+    sendAccountStatement, setSendAccountStatement,
     associatedPersons, setAssociatedPersons,
     autocompleting,
     errors, setErrors
@@ -473,6 +474,35 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* 3. SECCIÓN: ESTADO DE CUENTA */}
+        <div className="border border-gray-200 bg-white rounded-xl overflow-hidden shadow-sm">
+          <div className="p-5 flex items-center justify-between bg-white">
+            <div className="flex-1 pr-4">
+              <span className="text-sm font-semibold text-slate-800 flex items-center gap-1">
+                Enviar estado de cuenta
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-slate-800 text-white border-slate-800">
+                    Enviaremos un correo mensual a este contacto con el resumen de sus saldos y movimientos.
+                  </TooltipContent>
+                </Tooltip>
+              </span>
+              <p className="text-xs text-slate-400 font-normal mt-0.5">Activa esta opción para notificar a tu cliente mensualmente</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={sendAccountStatement}
+                onChange={(e) => setSendAccountStatement(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
           </div>
         </div>
 

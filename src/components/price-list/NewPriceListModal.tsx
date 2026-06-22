@@ -26,7 +26,7 @@ import { showToast } from "@/components/sonner/CustomToaster";
 interface NewPriceListModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: { name: string; description?: string; type_price_list_id: number | string; percentage?: number }) => void;
+  onSave: (data: { id?: number | string; name: string; description?: string; type_price_list_id: number | string; percentage?: number }) => void;
 }
 
 export function NewPriceListModal({ open, onOpenChange, onSave }: NewPriceListModalProps) {

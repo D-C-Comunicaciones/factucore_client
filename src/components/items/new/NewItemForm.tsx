@@ -25,7 +25,7 @@ import { ItemImage } from "@/common/interfaces/images";
 
 interface NewItemFormProps {
   catalogs: Record<string, any>;
-  onSubmit: (payload: CreateItemPayload) => void;
+  onSubmit: (payload: CreateItemPayload, options?: any) => void;
   isSubmitting: boolean;
   initialData?: Partial<ItemResponse>;
 }
@@ -121,16 +121,49 @@ export function NewItemForm({ catalogs, onSubmit, isSubmitting, initialData }: N
     return true;
   };
 
+  const handleBackendError = (error: any) => {
+    const backendErrors = error.response?.data?.errors;
+    if (!backendErrors) return;
+
+    const newErrors: Record<string, string> = { ...errors };
+    const mapBackendErrorKey = (key: string): string => {
+      const map: Record<string, string> = {
+        'basic_info.name': 'name',
+        'basic_info.reference': 'reference',
+        'basic_info.barcode': 'barcode',
+        'basic_info.category_id': 'categoryId',
+        'basic_info.unit_measure_id': 'unitMeasureId',
+        'basic_info.type_item_identification_id': 'typeItemIdentificationId',
+        'basic_info.standard_code_id': 'standard_code_id',
+        'pricing.base_price': 'basePrice',
+        'pricing.total_price': 'totalPrice',
+        'pricing.default_cost_price': 'initialCost',
+        'inventory.initial_stock.warehouse_id': 'warehouseId',
+        'inventory.initial_stock.quantity': 'initialStock',
+        'inventory.initial_stock.minimum_stock': 'minimumStock',
+      };
+      return map[key] || key;
+    };
+
+    Object.entries(backendErrors).forEach(([key, messages]) => {
+      if (Array.isArray(messages) && messages.length > 0) {
+        newErrors[mapBackendErrorKey(key)] = messages[0];
+      }
+    });
+
+    setErrors(newErrors);
+  };
+
   function handleSave() {
     if (!validateForm()) return;
     const payload = buildPayload();
-    onSubmit(payload);
+    onSubmit(payload, { onError: handleBackendError });
   }
 
   function handleSaveAndCreate() {
     if (!validateForm()) return;
     const payload = buildPayload();
-    onSubmit(payload);
+    onSubmit(payload, { onError: handleBackendError });
     // Logic to reset form would go here or in a useEffect after success
   }
 

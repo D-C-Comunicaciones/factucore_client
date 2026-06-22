@@ -3,7 +3,8 @@
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { ArrowUp, ArrowDown, Printer } from "lucide-react";
+import { ArrowUp, ArrowDown, Printer, Pencil, Minus, Coins, Eye } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InvoicesService } from "@/lib/invoices";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { InvoiceSummary } from "@/types/invoice";
+import { showToast } from "@/components/sonner/CustomToaster";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 /* -----------------------------------------------------------------------
    Header de columna sortable reutilizable
@@ -57,22 +69,23 @@ function SortableHeader({
 /* -----------------------------------------------------------------------
    Badge de estado DIAN
    ----------------------------------------------------------------------- */
-function DianStatusBadge({ status }: { status: string }) {
-  const estado = (status || "").toLowerCase();
+export function DianStatusBadge({ status }: { status: any }) {
+  const estadoStr = typeof status === "string" ? status : (status?.name || "");
+  const estado = estadoStr.toLowerCase();
 
-  if (estado === "aprobada") {
+  if (estado === "aprobada" || estado === "approved" || estado === "aceptada") {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-gray-600 font-medium">
         <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
           <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
           <path d="M7 10.5l2 2 4-4" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        Aprobada
+        Aprobado
       </span>
     );
   }
 
-  if (estado === "no aprobada") {
+  if (estado === "no aprobada" || estado === "not_approved" || estado === "rechazada") {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-gray-600 font-medium">
         <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
@@ -80,36 +93,52 @@ function DianStatusBadge({ status }: { status: string }) {
           <line x1="7" y1="7" x2="13" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           <line x1="13" y1="7" x2="7" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
-        No aprobada
+        No aprobado
       </span>
     );
   }
 
-  if (estado === "pendiente") {
+  if (estado === "por emitir" || estado === "to_send" || !estado || estado === "pendiente" || estado === "no enviada") {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-gray-500 font-medium">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
-          <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
-          <path d="M10 6v4l2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        Pendiente
+        Por emitir
       </span>
     );
   }
 
-  return <span className="text-xs text-gray-500">{status}</span>;
+  return <span className="text-xs text-gray-500">{estadoStr || "Desconocido"}</span>;
 }
 
 /* -----------------------------------------------------------------------
    Badge de estado interno
    ----------------------------------------------------------------------- */
-function StatusBadge({ status }: { status: string }) {
-  const estado = (status || "").toLowerCase();
+function StatusBadge({ status }: { status: any }) {
+  const estadoStr = typeof status === "string" ? status : (status?.name || "");
+  const estado = estadoStr.toLowerCase();
 
-  if (estado === "enviada") {
+  if (estado === "enviada" || estado === "sent" || estado === "emitida") {
     return (
       <span className="inline-flex px-2 py-1 text-xs rounded-full font-medium bg-green-100 text-green-700">
-        Enviada
+        Emitida
+      </span>
+    );
+  }
+
+  if (estado === "draft" || estado === "borrador") {
+    return (
+      <span className="inline-flex px-2 py-1 text-xs rounded-full font-medium bg-gray-100 text-gray-700">
+        Borrador
+      </span>
+    );
+  }
+
+  if (estado === "saved" || estado === "guardada") {
+    return (
+      <span className="inline-flex px-2 py-1 text-xs rounded-full font-medium bg-yellow-100 text-yellow-800">
+        Guardada
       </span>
     );
   }
@@ -119,12 +148,13 @@ function StatusBadge({ status }: { status: string }) {
     parcial: "bg-yellow-100 text-yellow-700",
     pendiente: "bg-primary/10 text-primary",
     vencida: "bg-red-100 text-red-700",
+    anulada: "bg-red-100 text-red-700",
   };
 
   const style = styles[estado] ?? "bg-gray-100 text-gray-700";
   return (
     <span className={`inline-flex px-2 py-1 text-xs rounded-full font-medium ${style}`}>
-      {estado.charAt(0).toUpperCase() + estado.slice(1)}
+      {estadoStr ? estadoStr.charAt(0).toUpperCase() + estadoStr.slice(1) : "Desconocido"}
     </span>
   );
 }
@@ -133,49 +163,116 @@ function StatusBadge({ status }: { status: string }) {
    Celda de acciones (descarga PDF)
    ----------------------------------------------------------------------- */
 function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
+  const router = useRouter();
+  const [showAnularDialog, setShowAnularDialog] = React.useState(false);
+  const [isAnulando, setIsAnulando] = React.useState(false);
+
   const handleDownloadPDF = async () => {
     const url = InvoicesService.getPdfUrl(invoice.id, 1);
+    window.open(url, "_blank");
+  };
+
+  const handleEdit = () => {
+    console.log("Editar factura", invoice.id);
+  };
+
+  const handleAnular = async () => {
+    setIsAnulando(true);
     try {
-      const axios = (await import("axios")).default;
-      const response = await axios.get(url, {
-        responseType: "blob",
-        headers: { Accept: "application/pdf" },
-        withCredentials: true,
-      });
-      const blob = response.data;
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = `FEV_${invoice.number || invoice.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch {
-      alert("No se pudo descargar el PDF");
+      await InvoicesService.cancel(invoice.id);
+      showToast("Factura anulada correctamente", "success", "Éxito");
+      window.location.reload();
+    } catch (error: any) {
+      console.error("Error al anular la factura:", error);
+      const errorData = error.response?.data || error.data || error;
+      const errorMsg = errorData?.message || "No se pudo anular la factura";
+      showToast(errorMsg, "error", "Error");
+    } finally {
+      setIsAnulando(false);
+      setShowAnularDialog(false);
     }
   };
 
+  const handlePayment = () => {
+    console.log("Agregar pago a factura", invoice.id);
+  };
+
   return (
-    <div className="relative inline-block text-left">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-              <circle cx="10" cy="4.5" r="1.2" fill="currentColor" />
-              <circle cx="10" cy="10" r="1.2" fill="currentColor" />
-              <circle cx="10" cy="15.5" r="1.2" fill="currentColor" />
-            </svg>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" sideOffset={8} className="mt-2 min-w-[140px]">
-          <DropdownMenuItem onClick={handleDownloadPDF}>
-            <Printer className="w-4 h-4 mr-2" />
-            Imprimir
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <>
+      <div className="flex items-center justify-end gap-1">
+      <TooltipProvider delayDuration={0}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:!bg-primary/10 transition-colors" onClick={(e) => { e.stopPropagation(); handlePayment(e); }}>
+              <div className="flex items-center text-slate-700">
+                <span className="text-[10px] font-bold mt-0.5 mr-[1px]">$</span>
+                <Coins className="h-[15px] w-[15px]" strokeWidth={2.5} />
+              </div>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-[#1e293b] text-white border-none" side="top">
+            <p className="font-medium">Agregar pago</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      <div className="relative inline-block text-left">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 transition-colors text-slate-700 focus-visible:ring-1 focus-visible:ring-teal-500" onClick={(e) => e.stopPropagation()}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="h-5 w-5">
+                <circle cx="10" cy="4.5" r="1.2" fill="currentColor" />
+                <circle cx="10" cy="10" r="1.2" fill="currentColor" />
+                <circle cx="10" cy="15.5" r="1.2" fill="currentColor" />
+              </svg>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" sideOffset={8} className="mt-2 min-w-[140px]">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/invoices/${invoice.id}`); }} className="cursor-pointer">
+              <Eye className="w-4 h-4 mr-2 text-slate-700" />
+              Ver detalle
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDownloadPDF(); }} className="cursor-pointer">
+              <Printer className="w-4 h-4 mr-2 text-slate-700" />
+              Imprimir
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(); }} className="cursor-pointer">
+              <Pencil className="w-4 h-4 mr-2 text-slate-700" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowAnularDialog(true); }} className="cursor-pointer">
+              <Minus className="w-4 h-4 mr-2 text-slate-700" />
+              Anular
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      </div>
+
+      <AlertDialog open={showAnularDialog} onOpenChange={setShowAnularDialog}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro de que deseas anular esta factura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isAnulando}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={isAnulando}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAnular();
+              }}
+            >
+              {isAnulando ? "Anulando..." : "Anular factura"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -189,21 +286,46 @@ export function getColumns(
     {
       id: "select",
       header: ({ table }) => (
-        <Checkbox
+        <input
+          type="checkbox"
           checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
+            table.getRowModel().rows.length > 0 &&
+            table.getRowModel().rows.every(
+              row => row.getIsSelected()
+            )
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Seleccionar todo"
+          ref={(el) => {
+            if (!el) return;
+
+            const rows = table.getRowModel().rows;
+            const selected = rows.filter(
+              row => row.getIsSelected()
+            ).length;
+
+            el.indeterminate =
+              selected > 0 &&
+              selected < rows.length;
+          }}
+          onChange={(e) => {
+            const checked = e.target.checked;
+
+            table.getRowModel().rows.forEach(
+              row => row.toggleSelected(checked)
+            );
+          }}
         />
       ),
       cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Seleccionar fila"
-        />
+        <>
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={(e) => {
+              row.toggleSelected(e.target.checked);
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </>
       ),
       enableSorting: false,
       enableHiding: false,
@@ -218,11 +340,11 @@ export function getColumns(
       ),
     },
     {
-      accessorKey: "customer",
+      accessorKey: "contact",
       header: "Cliente",
       cell: ({ row }) => (
         <span className="text-xs text-gray-900 text-left">
-          {row.original.customer ?? "NO ESPECIFICADO"}
+          {row.original.contact ?? "NO ESPECIFICADO"}
         </span>
       ),
     },
@@ -239,7 +361,7 @@ export function getColumns(
       header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Vencimiento" /></div>,
       enableSorting: true,
       cell: ({ row }) => (
-        <span className="text-xs text-gray-600 text-center block">{row.original.payment_due_date ?? "-"}</span>
+        <span className="text-xs text-gray-600 text-center block">{row.original.payment_due_date || row.original.created_at || "-"}</span>
       ),
     },
     {

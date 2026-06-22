@@ -18,12 +18,12 @@ export default function InvoiceEditPage() {
     // El backend retorna un objeto con los datos de la factura
     const invoice: any = data && typeof data === 'object' ? data : undefined;
     // El formulario debe ser Partial<Invoice> y mapear los campos editables reales
-    const [form, setForm] = useState<Partial<Invoice>>({ customer_id: undefined, observation: "" });
+    const [form, setForm] = useState<Partial<Invoice>>({ contact_id: undefined, observation: "" });
 
     useEffect(() => {
         if (invoice) {
             setForm({
-                customer_id: invoice.customer_id ?? invoice.customer?.id,
+                contact_id: invoice.contact_id ?? invoice.customer?.id,
                 observation: invoice.observation ?? ""
             });
         }
@@ -55,7 +55,7 @@ export default function InvoiceEditPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await updateInvoice.mutateAsync({ id: id!, data: form });
+        await updateInvoice.mutateAsync({ id: id!, data: { ...form, invoice_status_id: 2 } });
         router.push(`/invoices/${id}`);
     };
 
@@ -66,9 +66,9 @@ export default function InvoiceEditPage() {
                 <div>
                     <label className="block text-sm font-medium mb-1">Cliente ID</label>
                     <input
-                        name="customer_id"
+                        name="contact_id"
                         type="number"
-                        value={form.customer_id ?? ""}
+                        value={form.contact_id ?? ""}
                         onChange={handleChange}
                         className="w-full border rounded px-3 py-2"
                     />

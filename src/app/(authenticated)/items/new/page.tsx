@@ -26,7 +26,7 @@ export default function NewItemPage() {
         {/* FORM */}
         <NewItemForm 
           catalogs={catalogs}
-          onSubmit={createItem}
+          onSubmit={(payload, options) => createItem(payload, options)}
           isSubmitting={isCreating}
         />
 

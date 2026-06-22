@@ -30,6 +30,8 @@ export function NewInvoiceOptions({
     setTipoDoc,
     showRemissionBar,
     setShowRemissionBar,
+    selectedSeller,
+    setSelectedSeller,
 }: {
     warehouseOptions: { value: string; label: string }[];
     priceListOptions: { value: string; label: string }[];
@@ -44,9 +46,9 @@ export function NewInvoiceOptions({
     setTipoDoc: (tipo: 'factura' | 'tiquete') => void;
     showRemissionBar: boolean;
     setShowRemissionBar: (show: boolean) => void;
+    selectedSeller?: string | null;
+    setSelectedSeller?: (id: string | null) => void;
 }) {
-    const [selectedSeller, setSelectedSeller] = useState<string>("");
-
     const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
     const [isPriceListModalOpen, setIsPriceListModalOpen] = useState(false);
     const [isSellerModalOpen, setIsSellerModalOpen] = useState(false);
@@ -197,8 +199,8 @@ export function NewInvoiceOptions({
                         </TooltipProvider>
                     </div>
                     <SearchableSelect
-                        value={selectedSeller}
-                        onValueChange={setSelectedSeller}
+                        value={selectedSeller || ""}
+                        onValueChange={setSelectedSeller as any}
                         options={sellerOptions}
                         placeholder="Seleccionar vendedor"
                         searchPlaceholder="Buscar vendedor..."

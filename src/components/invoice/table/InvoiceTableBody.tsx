@@ -64,7 +64,12 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
           {table.getRowModel().rows.length ? (
             /* Filas de datos */
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() ? "selected" : undefined}
+                className={`${row.getIsSelected() ? "bg-primary/5" : ""} cursor-pointer hover:bg-slate-50`}
+                onClick={() => router.push(`/invoices/${row.original.id}`)}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -98,7 +103,7 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
                     </div>
                     <button
                       type="button"
-                      className="mt-6 inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                      className="mt-6 inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 cursor-pointer"
                       onClick={() => router.push("/invoices/new")}
                     >
                       <Plus className="h-3.5 w-3.5" />

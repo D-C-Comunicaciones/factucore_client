@@ -14,12 +14,17 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { type ItemFormState } from "@/types/items";
 import { NewTaxRateModal } from "@/components/taxes/NewTaxRateModal";
+import { NewCategoryModal } from "@/components/category/NewCategoryModal";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FormattedInput } from "@/components/ui/formatted-input";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { catalogsApi } from "@/lib/catalogs";
+import { warehousesApi } from "@/lib/warehouses";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { queryClient } from "@/lib/queryClient";
 import { invalidateCatalog } from "@/hooks/useCatalogs";
 import { TaxRate, UnitMeasure } from "@/types/catalogs";
+import { NewWarehouseModal } from "@/components/warehouse/NewWarehouseModal";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -117,12 +122,10 @@ function MoneyInput({
   return (
     <div className="relative flex items-center">
       <span className="absolute left-3 text-muted-foreground text-sm">$</span>
-      <input
-        type="text"
-        inputMode="decimal"
-        placeholder={placeholder ?? "0.000"}
+      <FormattedInput
+        placeholder={placeholder ?? "0"}
         value={value}
-        onChange={handleChange}
+        onChange={(val) => onChange(val)}
         className={className}
       />
       {isError && (
@@ -140,8 +143,8 @@ interface NewItemModalProps {
   onClose: () => void;
   form: ItemFormState;
   setForm: React.Dispatch<React.SetStateAction<ItemFormState>>;
-  errors: Record<string, boolean>;
-  setErrors: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  errors: Record<string, string | boolean>;
+  setErrors: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   onSubmit: (e: React.FormEvent) => void;
   onAdvanced: () => void;
   isCreating?: boolean;
@@ -168,6 +171,8 @@ export function NewItemModal({
 }: NewItemModalProps) {
   const router = useRouter();
   const [isTaxModalOpen, setIsTaxModalOpen] = React.useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = React.useState(false);
+  const [isWarehouseModalOpen, setIsWarehouseModalOpen] = React.useState(false);
 
   const baseInput =
     "!bg-white !h-8 px-3 !py-0 text-sm border-[1px] border-foreground/20 shadow-none text-foreground transition-all focus:border-primary focus:ring-1 focus:ring-primary/40 flex items-center outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary leading-none";
@@ -257,6 +262,25 @@ export function NewItemModal({
 
 
 
+  const handleSaveWarehouse = async (data: { name: string; address: string; observations: string }) => {
+    try {
+      const response = await warehousesApi.createWarehouse(data);
+      
+      invalidateCatalog(queryClient, QUERY_KEYS.catalogs.warehouses());
+      
+      const created =
+        response?.data?.warehouse ??
+        response?.data ??
+        { id: Date.now(), name: data.name };
+        
+      set("bodega", created.name);
+      setIsWarehouseModalOpen(false);
+      showToast(`La bodega "${created.name}" fue creada exitosamente.`, "success");
+    } catch (error) {
+      showToast("Error al crear la bodega", "error");
+    }
+  };
+
   const labelFor = form.itemType === "producto" ? "producto" : form.itemType === "servicio" ? "servicio" : "combo";
 
   return (
@@ -326,9 +350,11 @@ export function NewItemModal({
                     <AlertCircle className="w-4 h-4 text-destructive absolute right-3 top-1/2 -translate-y-1/2" />
                   )}
                 </div>
-                {errors.name && (
-                  <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
-                )}
+                  {errors.name && typeof errors.name === "string" ? (
+                    <p className="text-[11px] text-destructive leading-none">{errors.name}</p>
+                  ) : errors.name ? (
+                    <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
+                  ) : null}
               </div>
 
               {/* Bodega + Categoría (Hidden for Servicio) */}
@@ -349,6 +375,15 @@ export function NewItemModal({
                       searchPlaceholder="Buscar bodega..."
                       emptyMessage="No hay bodegas disponibles."
                       className={cn(baseInput, "w-full rounded-md")}
+                      footer={
+                        <button
+                          type="button"
+                          onClick={() => setIsWarehouseModalOpen(true)}
+                          className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
+                        >
+                          + Nueva Bodega
+                        </button>
+                      }
                     />
                   </div>
 
@@ -377,6 +412,15 @@ export function NewItemModal({
                       searchPlaceholder="Buscar categoría..."
                       emptyMessage="No hay categorías disponibles."
                       className={cn(baseInput, "w-full rounded-md")}
+                      footer={
+                        <button
+                          type="button"
+                          onClick={() => setIsCategoryModalOpen(true)}
+                          className="w-full text-left px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-md transition-colors"
+                        >
+                          + Nueva Categoría
+                        </button>
+                      }
                     />
                   </div>
                 </div>
@@ -412,9 +456,11 @@ export function NewItemModal({
                     className={cn(baseInput, "w-full rounded-md", errors.unit && "border-destructive ring-destructive/20")}
                     errorIcon={errors.unit ? <AlertCircle className="w-4 h-4 text-destructive" /> : undefined}
                   />
-                  {errors.unit && (
+                  {errors.unit && typeof errors.unit === "string" ? (
+                    <p className="text-[11px] text-destructive leading-none">{errors.unit}</p>
+                  ) : errors.unit ? (
                     <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="space-y-1.5">
@@ -435,8 +481,11 @@ export function NewItemModal({
                     type="text"
                     value={form.reference || ""}
                     onChange={(e) => set("reference", e.target.value)}
-                    className={cn(baseInput, "w-full rounded-md")}
+                    className={cn(baseInput, "w-full rounded-md", errors.reference && "border-destructive ring-destructive/20")}
                   />
+                  {errors.reference && typeof errors.reference === "string" && (
+                    <p className="text-[11px] text-destructive leading-none">{errors.reference}</p>
+                  )}
                 </div>
               </div>
 
@@ -468,11 +517,15 @@ export function NewItemModal({
                         <AlertCircle className="w-4 h-4 text-destructive absolute right-3 top-1/2 -translate-y-1/2" />
                       )}
                     </div>
-                    {errors.initialQuantity && (
+                    {errors.initialQuantity && typeof errors.initialQuantity === "string" ? (
+                      <p className="text-[11px] text-destructive leading-none">
+                        {errors.initialQuantity}
+                      </p>
+                    ) : errors.initialQuantity ? (
                       <p className="text-[11px] text-destructive leading-none">
                         Este campo es obligatorio
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="space-y-1.5">
@@ -495,11 +548,15 @@ export function NewItemModal({
                         )}
                       />
                     </div>
-                    {errors.initialCost && (
+                    {errors.initialCost && typeof errors.initialCost === "string" ? (
+                      <p className="text-[11px] text-destructive leading-none">
+                        {errors.initialCost}
+                      </p>
+                    ) : errors.initialCost ? (
                       <p className="text-[11px] text-destructive leading-none">
                         Este campo es obligatorio
                       </p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               )}
@@ -565,9 +622,11 @@ export function NewItemModal({
                       <AlertCircle className="w-4 h-4 text-destructive absolute right-3 top-1/2 -translate-y-1/2" />
                     )}
                   </div>
-                  {errors.basePrice && (
+                  {errors.basePrice && typeof errors.basePrice === "string" ? (
+                    <p className="text-[11px] text-destructive leading-none">{errors.basePrice}</p>
+                  ) : errors.basePrice ? (
                     <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="h-8 flex items-center justify-center">
@@ -611,9 +670,11 @@ export function NewItemModal({
                       <AlertCircle className="w-4 h-4 text-destructive absolute right-3 top-1/2 -translate-y-1/2" />
                     )}
                   </div>
-                  {errors.totalPrice && (
+                  {errors.totalPrice && typeof errors.totalPrice === "string" ? (
+                    <p className="text-[11px] text-destructive leading-none">{errors.totalPrice}</p>
+                  ) : errors.totalPrice ? (
                     <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -686,6 +747,17 @@ export function NewItemModal({
           onOpenChange={setIsTaxModalOpen}
           onSave={handleSaveTaxRate}
           taxTypes={catalogs?.taxTypes || []}
+        />
+        <NewCategoryModal
+          open={isCategoryModalOpen}
+          onOpenChange={setIsCategoryModalOpen}
+          onCreated={(cat) => set("categoryId", String(cat.id))}
+        />
+        <NewWarehouseModal
+          open={isWarehouseModalOpen}
+          onOpenChange={setIsWarehouseModalOpen}
+          onSave={handleSaveWarehouse}
+          onCancel={() => setIsWarehouseModalOpen(false)}
         />
       </DialogContent >
     </Dialog >

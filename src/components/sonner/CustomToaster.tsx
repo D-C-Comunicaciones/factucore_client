@@ -32,7 +32,7 @@ const ToastIcon = ({ type }: { type: ToastType }) => {
   );
 };
 
-export const showToast = (message: string, type: ToastType = "info", title?: string) => {
+export const showToast = (message: string | React.ReactNode, type: ToastType = "info", title?: string) => {
   const defaultTitles = {
     success: "Éxito",
     error: "Error",

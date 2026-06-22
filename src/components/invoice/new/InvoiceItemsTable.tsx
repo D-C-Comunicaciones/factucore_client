@@ -1,6 +1,13 @@
 "use client";
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, AlertCircle } from "lucide-react";
+import { showToast } from "@/components/sonner/CustomToaster";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -48,23 +55,30 @@ function FormattedInput({ value, onChange, placeholder, className }: any) {
 
 function ItemRow({
   item,
+  index,
   invoiceBuilder,
   selectedWarehouseId,
   selectedPriceListId,
-  taxes
+  taxes,
+  errors
 }: {
   item: any;
+  index: number;
   invoiceBuilder: any;
   selectedWarehouseId: number | null;
   selectedPriceListId: number | null;
   taxes: any[];
+  errors?: Record<string, any>;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
 
+  const effectiveWarehouseId = item.item_id ? (item.selected_warehouse_id ?? selectedWarehouseId) : selectedWarehouseId;
+  const effectivePriceListId = item.item_id ? (item.selected_price_list_id ?? selectedPriceListId) : selectedPriceListId;
+
   const { data, isLoading } = useItems({
     search: searchQuery,
-    Warehouse_id: selectedWarehouseId ?? undefined,
-    price_list_id: selectedPriceListId ?? undefined,
+    warehouse_id: effectiveWarehouseId ?? undefined,
+    price_list_id: effectivePriceListId ?? undefined,
     per_page: 20
   } as any);
 
@@ -75,11 +89,28 @@ function ItemRow({
     rawItem: i
   }));
 
+  // Preserve the currently selected item so it doesn't disappear when filters change
+  if (item.item_id && !options.some(o => o.value === item.item_id.toString())) {
+    options.push({
+      value: item.item_id.toString(),
+      label: `${item.referencia ? item.referencia + ' - ' : ''}${item.item}`,
+      rawItem: { 
+        id: item.item_id, 
+        name: item.item, 
+        reference: item.referencia,
+        price: item.precio,
+        stock_quantity: item.stock_quantity,
+        is_inventoriable: item.is_inventoriable,
+        allow_negative_stock: item.allow_negative_stock,
+        warehouses: item.warehouses
+      } as any
+    });
+  }
+
   const handleItemSelect = (val: string) => {
     const selectedOption = options.find(o => o.value === val);
     if (selectedOption) {
       const ri = selectedOption.rawItem;
-      // Auto-fill row
       invoiceBuilder.updateItem(item.id, "item_id", ri.id);
       invoiceBuilder.updateItem(item.id, "standard_code", ri.standard_code || "");
       invoiceBuilder.updateItem(item.id, "item", ri.name);
@@ -87,8 +118,25 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "description", ri.description || "");
       invoiceBuilder.updateItem(item.id, "precio", ri.price || 0);
       invoiceBuilder.updateItem(item.id, "cantidad", 1);
+      invoiceBuilder.updateItem(item.id, "stock_quantity", ri.stock_quantity ?? null);
+      invoiceBuilder.updateItem(item.id, "is_inventoriable", ri.is_inventoriable ?? true);
+      invoiceBuilder.updateItem(item.id, "allow_negative_stock", ri.allow_negative_stock ?? false);
+      invoiceBuilder.updateItem(item.id, "selected_warehouse_id", selectedWarehouseId);
+      invoiceBuilder.updateItem(item.id, "selected_price_list_id", selectedPriceListId);
+      invoiceBuilder.updateItem(item.id, "warehouses", ri.warehouses);
 
-      // Tax auto-fill removed, defaults to "Sin impuesto"
+      // Extract minimum_stock and maximum_stock for the selected warehouse
+      const warehouseData = ri.warehouses?.find((w: any) => String(w.id) === String(selectedWarehouseId));
+      invoiceBuilder.updateItem(item.id, "minimum_stock", warehouseData?.minimum_stock);
+      invoiceBuilder.updateItem(item.id, "maximum_stock", warehouseData?.maximum_stock);
+
+      // Validate initial quantity
+      const shouldValidateInitial = (ri.is_inventoriable ?? true) && !(ri.allow_negative_stock ?? false);
+      const initialStock = ri.stock_quantity ?? 0;
+      if (shouldValidateInitial && initialStock < 1) {
+          showToast("El producto seleccionado no tiene stock disponible.", "warning");
+          invoiceBuilder.updateItem(item.id, "cantidad", 0);
+      }
     }
   };
 
@@ -116,18 +164,45 @@ function ItemRow({
 
   const inputClasses = "bg-white h-8 px-3 text-xs border border-foreground/20 shadow-none text-foreground hover:border-primary/50 focus:border-primary transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
+  const hasError = errors?.items === "empty_items" && !item.item_id;
+
+  const quantityBackendError = errors?.[`items.${index}.quantity`];
+  const isInvalidQuantity = (errors?.items === "invalid_quantity" && item.item_id && (!item.cantidad || item.cantidad <= 0)) || !!quantityBackendError;
+
+  const shouldValidateStock = item.is_inventoriable && !item.allow_negative_stock;
+  const currentStock = item.stock_quantity ?? 0;
+  
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newQty = Number(e.target.value);
+      if (shouldValidateStock && newQty > currentStock) {
+          if (currentStock === 0) {
+              showToast("Este producto está agotado.", "error");
+          } else {
+              showToast(`Stock insuficiente. Solo hay ${currentStock} unidades disponibles.`, "error");
+          }
+          invoiceBuilder.updateItem(item.id, "cantidad", currentStock > 0 ? currentStock : 0);
+      } else {
+          invoiceBuilder.updateItem(item.id, "cantidad", newQty);
+      }
+  };
+
+  const minStock = Number(item.minimum_stock);
+  const maxStock = Number(item.maximum_stock);
+  const isLowStock = shouldValidateStock && (minStock > 0 ? currentStock <= minStock : currentStock <= 5);
+  const isGoodStock = shouldValidateStock && (maxStock > 0 ? currentStock >= maxStock : currentStock >= 10);
+
   return (
-    <tr className="bg-white border-b border-border">
+    <tr className={`border-b border-border transition-colors ${hasError ? 'bg-destructive/5' : 'bg-white'}`}>
       <td className="px-2 py-2 w-48">
         <AsyncSearchableSelect
-          value={options.find(o => o.rawItem.name === item.item)?.value || ""}
+          value={item.item_id ? item.item_id.toString() : ""}
           onValueChange={handleItemSelect}
           options={options}
           loading={isLoading}
           onSearchChange={setSearchQuery}
           placeholder="Buscar ítem"
           searchPlaceholder="Nombre o ref..."
-          className="h-8 text-xs border-foreground/20 bg-white hover:border-primary/50 focus:border-primary focus-visible:border-primary cursor-pointer transition-colors shadow-none"
+          className={`h-8 text-xs bg-white hover:border-primary/50 focus:border-primary focus-visible:border-primary cursor-pointer transition-colors shadow-none ${hasError ? 'border-destructive !text-destructive' : 'border-foreground/20'}`}
           footer={
             <button
               type="button"
@@ -249,15 +324,34 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2 w-20">
-        <Input
-          type="number"
-          min={0}
-          onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
-          value={item.cantidad || ""}
-          onChange={(e) => invoiceBuilder.updateItem(item.id, "cantidad", Number(e.target.value))}
-          className={inputClasses}
-        />
+      <td className="px-2 py-2 w-24">
+        <div className="relative flex items-center">
+            <Input
+            type="number"
+            min={0}
+            onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
+            value={item.cantidad || ""}
+            onChange={handleQuantityChange}
+            className={`${inputClasses} w-full pr-8 ${isLowStock || isInvalidQuantity ? '!text-red-600 font-bold !border-red-500' : ''} ${isGoodStock && !isInvalidQuantity ? '!text-green-600 font-bold' : ''}`}
+            />
+            {(isLowStock || isInvalidQuantity) && (
+                <div className="absolute right-2 flex items-center">
+                    <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-red-600 text-white p-2 text-xs">
+                                {quantityBackendError ? quantityBackendError[0] || quantityBackendError : 
+                                 isInvalidQuantity ? "Cantidad inválida." :
+                                 currentStock === 0 ? "¡Este producto está agotado!" : 
+                                 `¡Stock bajo! Solo quedan ${currentStock} unidades.`}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
+            )}
+        </div>
       </td>
 
       <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap">
@@ -280,12 +374,14 @@ export function InvoiceItemsTable({
   invoiceBuilder,
   selectedWarehouseId,
   selectedPriceListId,
-  taxes
+  taxes,
+  errors
 }: {
   invoiceBuilder: any;
   selectedWarehouseId: number | null;
   selectedPriceListId: number | null;
   taxes: any[];
+  errors?: Record<string, any>;
 }) {
   return (
     <div className="overflow-x-auto w-full rounded-lg border border-border">
@@ -328,14 +424,16 @@ export function InvoiceItemsTable({
               </td>
             </tr>
           ) : (
-            invoiceBuilder.items.map((item: any) => (
+            invoiceBuilder.items.map((item: any, index: number) => (
               <ItemRow
                 key={item.id}
                 item={item}
+                index={index}
                 invoiceBuilder={invoiceBuilder}
                 selectedWarehouseId={selectedWarehouseId}
                 selectedPriceListId={selectedPriceListId}
                 taxes={taxes}
+                errors={errors}
               />
             ))
           )}

@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
+import { FormattedInput } from "@/components/ui/formatted-input";
 import { SectionCard } from "./SectionCard";
 import { catalogsApi } from "@/lib/catalogs";
 
@@ -333,7 +334,8 @@ export function GeneralInfoSection({
             </TooltipProvider>
           </label>
           <input type="text" value={reference} onChange={(e) => onReferenceChange(e.target.value)}
-            className={cn(baseInput, "pr-8")} />
+            className={cn(baseInput, "pr-8", errors.reference && "border-destructive focus:border-destructive focus:ring-destructive/40")} />
+          {errors.reference && <span className="text-destructive text-xs mt-1 block">{errors.reference}</span>}
         </div>
 
         {/* Código del producto o servicio */}
@@ -360,8 +362,9 @@ export function GeneralInfoSection({
             placeholder="Buscar."
             searchPlaceholder="Buscar código o descripción..."
             emptyMessage={isSearchingCodes ? "Buscando..." : "No se encontraron códigos."}
-            className={cn(baseInput, "w-full rounded-md")}
+            className={cn(baseInput, "w-full rounded-md", errors.typeItemIdentificationId && "border-destructive focus:border-destructive focus:ring-destructive/40")}
           />
+          {errors.typeItemIdentificationId && <span className="text-destructive text-xs mt-1 block">{errors.typeItemIdentificationId}</span>}
         </div>
 
         {/* Cantidad inicial (Solo Producto) */}
@@ -379,7 +382,8 @@ export function GeneralInfoSection({
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">Mínimo stock</label>
             <input type="text" value={minimumStock} onChange={handleNumericChange(onMinimumStockChange)}
-              className={cn(baseInput, "pr-8")} placeholder="0" />
+              className={cn(baseInput, "pr-8", errors.minimumStock && "border-destructive focus:border-destructive focus:ring-destructive/40")} placeholder="0" />
+            {errors.minimumStock && <span className="text-destructive text-xs mt-1 block">{errors.minimumStock}</span>}
           </div>
         )}
       </div>
@@ -393,12 +397,11 @@ export function GeneralInfoSection({
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-              <input
-                type="text"
-                placeholder="0.000"
+              <FormattedInput
+                placeholder="0"
                 value={basePrice}
-                onChange={handleNumericChange(onBasePriceChange)}
-                className={cn(baseInput, "w-full pl-7 pr-8", errors.basePrice && "border-destructive focus:border-destructive focus:ring-destructive/40")}
+                onChange={(val) => onBasePriceChange(val)}
+                className={cn(baseInput, "pl-7 w-full", errors.basePrice && "border-destructive focus:border-destructive focus:ring-destructive/40")}
               />
             </div>
             {errors.basePrice && <span className="text-destructive text-xs mt-1 block">{errors.basePrice}</span>}

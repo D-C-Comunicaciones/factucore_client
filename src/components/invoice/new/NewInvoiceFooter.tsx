@@ -9,12 +9,14 @@ import {
 
 export function NewInvoiceFooter({
     onNavigate,
-    guardarHandler,
+    onSaveAction,
     loadingGuardar,
+    onPreview,
 }: {
-    onNavigate: (view: string) => void;
-    guardarHandler?: () => void;
+    onNavigate: () => void;
+    onSaveAction: (action: "DRAFT" | "SEND" | "SEND_EMAIL" | "PRINT" | "CREATE_NEW") => void;
     loadingGuardar?: boolean;
+    onPreview?: () => void;
 }) {
     return (
         <div className="p-6">
@@ -23,7 +25,7 @@ export function NewInvoiceFooter({
                 {/* CANCELAR */}
                 <Button
                     variant="outline"
-                    onClick={() => onNavigate("facturas-venta")}
+                    onClick={onNavigate}
                     className="
                         px-6 py-2.5 rounded-lg font-medium
                         border border-border bg-white text-foreground
@@ -36,6 +38,7 @@ export function NewInvoiceFooter({
                 {/* VISTA PREVIA */}
                 <Button
                     variant="outline"
+                    onClick={onPreview}
                     className="
                         px-6 py-2.5 rounded-lg font-medium
                         border border-border bg-white text-foreground
@@ -48,6 +51,8 @@ export function NewInvoiceFooter({
                 {/* GUARDAR Y CREAR NUEVA */}
                 <Button
                     variant="outline"
+                    onClick={() => onSaveAction("CREATE_NEW")}
+                    disabled={loadingGuardar}
                     className="
                         px-6 py-2.5 rounded-lg font-medium
                         border border-border bg-white text-foreground
@@ -60,7 +65,7 @@ export function NewInvoiceFooter({
                 {/* GUARDAR SPLIT BUTTON */}
                 <div className="flex">
                     <Button
-                        onClick={guardarHandler}
+                        onClick={() => onSaveAction("SEND")}
                         disabled={loadingGuardar}
                         className="
                             px-6 py-2.5 rounded-r-none font-medium
@@ -85,13 +90,13 @@ export function NewInvoiceFooter({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 bg-white border border-border shadow-lg">
-                            <DropdownMenuItem className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
+                            <DropdownMenuItem onClick={() => onSaveAction("DRAFT")} className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
                                 Guardar como borrador
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
+                            <DropdownMenuItem onClick={() => onSaveAction("PRINT")} className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
                                 Guardar e imprimir
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
+                            <DropdownMenuItem onClick={() => onSaveAction("SEND_EMAIL")} className="cursor-pointer py-2 hover:bg-muted focus:bg-muted">
                                 Guardar y enviar por correo
                             </DropdownMenuItem>
                         </DropdownMenuContent>

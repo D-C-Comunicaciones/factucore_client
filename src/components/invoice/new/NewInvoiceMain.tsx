@@ -1,5 +1,5 @@
 "use client";
-import { Settings, HelpCircle, Plus, Trash2, Loader2, Search, X } from "lucide-react";
+import { Settings, HelpCircle, Plus, Trash2, Loader2, X, Clock, AlertCircle } from "lucide-react";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { Input } from "@/components/ui/input";
 import {
@@ -58,11 +58,9 @@ function FormattedInput({ value, onChange, placeholder, className }: any) {
 import { EditResolutionModal } from "@/components/invoice/new/EditResolutionModal";
 import { AddContactModal } from "@/components/contact/new/AddContactModal";
 import { QuickCreateItemModal } from "@/components/invoice/new/QuickCreateItemModal";
-import { PaymentBlock } from "@/components/invoice/new/PaymentBlock";
 import { type Resolution } from "@/lib/resolutions";
 import { ContactsService } from "@/lib/contacts";
 import { adquirerApi } from "@/lib/acquirers";
-import { toast } from "sonner";
 import { showToast, showToastWithAction } from "@/components/sonner/CustomToaster";
 
 export function NewInvoiceMain({
@@ -82,6 +80,7 @@ export function NewInvoiceMain({
     setFormState,
     showRemissionBar,
     setShowRemissionBar,
+    errors,
 }: {
     mainData: any;
     catalogData: any;
@@ -99,6 +98,7 @@ export function NewInvoiceMain({
     setFormState: React.Dispatch<React.SetStateAction<any>>;
     showRemissionBar?: boolean;
     setShowRemissionBar?: (show: boolean) => void;
+    errors?: Record<string, string>;
 }) {
     const catalogs = useCatalogs();
     const paymentTerms = catalogs?.paymentTerms || [];
@@ -122,6 +122,11 @@ export function NewInvoiceMain({
     const [fecha, setFecha] = useState<Date>(new Date());
     const [plazo, setPlazo] = useState<string>("0");
     const [vencimiento, setVencimiento] = useState<Date>(new Date());
+    const [currentTime, setCurrentTime] = useState<Date>(new Date());
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
     const [cliente, setCliente] = useState<string>("");
     const [medioPago, setMedioPago] = useState<string>("");
     const [docType, setDocType] = useState<string>("");
@@ -165,7 +170,7 @@ export function NewInvoiceMain({
     useEffect(() => {
         setFormState((prev: any) => ({
             ...prev,
-            customer_id: cliente ? Number(cliente) : null,
+            contact_id: cliente ? Number(cliente) : null,
             payment_form_id: formaPago ? Number(formaPago) : null,
             payment_method_id: medioPago ? Number(medioPago) : null,
         }));
@@ -557,36 +562,44 @@ export function NewInvoiceMain({
                                     </div>
                                 </div>
                             ) : (
-                                <SearchableSelect
-                                    value={cliente}
-                                    onValueChange={(val) => {
-                                        setCliente(val);
-                                        const selected = customersList.find(c => c.id.toString() === val);
-                                        if (selected) {
-                                            const name = selected.registration_name ||
-                                                `${selected.first_name || ""} ${selected.last_name || ""}`.trim() ||
-                                                selected.identification_number;
-                                            setDisplayName(name);
-                                            setEmail(selected.email || "");
-                                            setEmailAutoFilled(true);
-                                            setDocNumber(selected.identification_number || "");
-                                            if (selected.type_document_identification_id) {
-                                                setDocType(selected.type_document_identification_id.toString());
+                                <div className="w-full">
+                                    <SearchableSelect
+                                        value={cliente}
+                                        onValueChange={(val) => {
+                                            setCliente(val);
+                                            const selected = customersList.find(c => c.id.toString() === val);
+                                            if (selected) {
+                                                const name = selected.registration_name ||
+                                                    `${selected.first_name || ""} ${selected.last_name || ""}`.trim() ||
+                                                    selected.identification_number;
+                                                setDisplayName(name);
+                                                setEmail(selected.email || "");
+                                                setEmailAutoFilled(true);
+                                                setDocNumber(selected.identification_number || "");
+                                                if (selected.type_document_identification_id) {
+                                                    setDocType(selected.type_document_identification_id.toString());
+                                                }
+                                            } else {
+                                                setDisplayName("");
+                                                setEmail("");
+                                                setEmailAutoFilled(false);
+                                                setDocNumber("");
                                             }
-                                        } else {
-                                            setDisplayName("");
-                                            setEmail("");
-                                            setEmailAutoFilled(false);
-                                            setDocNumber("");
-                                        }
-                                    }}
-                                    options={customersList.map((c: any) => ({
-                                        value: c.id.toString(),
-                                        label: c.registration_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.identification_number
-                                    }))}
-                                    placeholder="Seleccionar cliente"
-                                    className="w-full text-foreground"
-                                />
+                                        }}
+                                        options={customersList.map((c: any) => ({
+                                            value: c.id.toString(),
+                                            label: c.registration_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.identification_number
+                                        }))}
+                                        placeholder="Seleccionar cliente"
+                                        className={cn("w-full text-foreground", errors?.contact_id && "border-destructive !text-destructive")}
+                                        errorIcon={errors?.contact_id ? <AlertCircle className="size-4 text-destructive" /> : undefined}
+                                    />
+                                    {errors?.contact_id && (
+                                        <div className="text-destructive text-sm mt-1">
+                                            {errors.contact_id}
+                                        </div>
+                                    )}
+                                </div>
                             )}
                             <TooltipProvider>
                                 <Tooltip>
@@ -625,6 +638,22 @@ export function NewInvoiceMain({
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
+                        </div>
+                    </div>
+
+                    {/* NUEVO CONTACTO */}
+                    <div className="flex items-center gap-3 mt-4">
+                        <div className="w-40 shrink-0"></div>
+                        <div className="flex-1 flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsAddContactModalOpen(true)}
+                                className="w-full text-primary hover:text-primary/80 text-sm font-medium flex justify-center items-center gap-1 transition-colors h-9 rounded-md hover:bg-muted cursor-pointer"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Nuevo contacto
+                            </button>
+                            <div className="w-6 shrink-0"></div> {/* Espaciador para alinear con el icono de ayuda del correo */}
                         </div>
                     </div>
                 </div>
@@ -686,13 +715,21 @@ export function NewInvoiceMain({
                                 Medio de pago <span className="text-primary">*</span>
                             </label>
                             <div className="flex-1 flex items-center gap-2">
-                                <SearchableSelect
-                                    value={medioPago}
-                                    onValueChange={setMedioPago}
-                                    options={mainData.paymentMethods || []}
-                                    placeholder="Seleccionar"
-                                    className="w-full text-foreground"
-                                />
+                                <div className="w-full">
+                                    <SearchableSelect
+                                        value={medioPago}
+                                        onValueChange={setMedioPago}
+                                        options={mainData.paymentMethods || []}
+                                        placeholder="Seleccionar"
+                                        className={cn("w-full text-foreground", errors?.payment_method_id && "border-destructive !text-destructive")}
+                                        errorIcon={errors?.payment_method_id ? <AlertCircle className="size-4 text-destructive" /> : undefined}
+                                    />
+                                    {errors?.payment_method_id && (
+                                        <div className="text-destructive text-sm mt-1">
+                                            {errors.payment_method_id}
+                                        </div>
+                                    )}
+                                </div>
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -742,8 +779,17 @@ export function NewInvoiceMain({
                                     Vencimiento <span className="text-primary">*</span>
                                 </label>
                                 <div className="flex-1 flex items-center gap-2">
-                                    <div className="flex-1">
-                                        <DatePickerSimple value={vencimiento} onChange={setVencimiento} />
+                                    <div className="flex-1 flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            disabled
+                                            value={vencimiento.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                            className="h-9 flex-1 w-full rounded-md border border-foreground/20 bg-muted/30 px-3 py-1 text-sm text-muted-foreground cursor-not-allowed text-center"
+                                        />
+                                        <div className="flex-1 flex justify-center items-center gap-1.5 px-3 py-1.5 h-9 rounded-md bg-primary/10 text-primary border border-primary/20 text-sm font-medium">
+                                            <Clock className="w-4 h-4" />
+                                            {currentTime.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
+                                        </div>
                                     </div>
                                     <TooltipProvider>
                                         <Tooltip>
@@ -760,18 +806,6 @@ export function NewInvoiceMain({
                         </>
                     )}
                 </div>
-            </div>
-
-            {/* NUEVO CONTACTO */}
-            <div className="flex justify-start mb-8 pl-[11rem]">
-                <button
-                    type="button"
-                    onClick={() => setIsAddContactModalOpen(true)}
-                    className="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    Nuevo contacto
-                </button>
             </div>
 
             {/* ITEMS */}
@@ -980,8 +1014,6 @@ export function NewInvoiceMain({
                     </div>
                 </div>
 
-                <PaymentBlock />
-
                 {/* Segunda fila: Términos y Notas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                     <div>
@@ -1046,7 +1078,7 @@ export function NewInvoiceMain({
                         <textarea
                             disabled
                             rows={2}
-                            value={activeResolution?.footer_text || ""}
+                            value={activeResolution?.resolution_text || ""}
                             placeholder="Visible en la impresión del documento"
                             className="w-full px-3 py-2 border border-foreground/20 rounded-lg text-sm text-foreground bg-muted/10 cursor-not-allowed resize-none"
                         />

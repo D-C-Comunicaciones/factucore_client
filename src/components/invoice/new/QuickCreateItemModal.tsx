@@ -183,6 +183,44 @@ export function QuickCreateItemModal({
     return true;
   };
 
+  const handleBackendError = (error: any) => {
+    const backendErrors = error.response?.data?.errors;
+    if (!backendErrors) return;
+
+    const newErrors: Record<string, string | boolean> = { ...basicErrors, ...advancedErrors };
+    const mapBackendErrorKey = (key: string): string => {
+      const map: Record<string, string> = {
+        'basic_info.name': 'name',
+        'basic_info.reference': 'reference',
+        'basic_info.barcode': 'barcode',
+        'basic_info.category_id': 'categoryId',
+        'basic_info.unit_measure_id': 'unit',
+        'basic_info.type_item_identification_id': 'typeItemIdentificationId',
+        'basic_info.standard_code_id': 'standard_code_id',
+        'pricing.base_price': 'basePrice',
+        'pricing.total_price': 'totalPrice',
+        'pricing.default_cost_price': 'initialCost',
+        'inventory.initial_stock.warehouse_id': 'bodega',
+        'inventory.initial_stock.quantity': 'initialQuantity',
+        'inventory.initial_stock.minimum_stock': 'minimumStock',
+      };
+      return map[key] || key;
+    };
+
+    let hasErrors = false;
+    Object.entries(backendErrors).forEach(([key, messages]) => {
+      if (Array.isArray(messages) && messages.length > 0) {
+        newErrors[mapBackendErrorKey(key)] = messages[0];
+        hasErrors = true;
+      }
+    });
+
+    if (hasErrors) {
+      setBasicErrors(newErrors as Record<string, boolean>);
+      setAdvancedErrors(newErrors as Record<string, string>);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateBasic()) return;
@@ -207,6 +245,7 @@ export function QuickCreateItemModal({
            const createdItem = resp?.data?.item || resp?.data?.data || resp?.data || resp;
            onCreated?.(createdItem);
          },
+         onError: handleBackendError,
        });
     } else {
        // Basic submit
@@ -253,6 +292,7 @@ export function QuickCreateItemModal({
            const createdItem = resp?.data?.item || resp?.data?.data || resp?.data || resp;
            onCreated?.(createdItem);
          },
+         onError: handleBackendError,
        });
     }
   };

@@ -183,6 +183,12 @@ export const catalogsApi = {
         );
     },
 
+    getBankAccounts: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/bank-accounts"
+        );
+    },
+
     getPaymentMethods: async (): Promise<ApiResponse<any>> => {
         return await apiClient.get<any>(
             "/catalogs/payment-methods"

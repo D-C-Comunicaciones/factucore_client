@@ -91,6 +91,11 @@ export const prefetchAllCatalogs = async (
         }),
 
         queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.bankAccounts(),
+            queryFn: catalogsApi.getBankAccounts,
+        }),
+
+        queryClient.prefetchQuery({
             queryKey: QUERY_KEYS.catalogs.paymentTerms(),
             queryFn: catalogsApi.getPaymentTerms,
         }),
@@ -218,6 +223,11 @@ export function useCatalogs() {
     const paymentMethodsQuery = useQuery({
         queryKey: QUERY_KEYS.catalogs.paymentMethods(),
         queryFn: catalogsApi.getPaymentMethods,
+    });
+
+    const bankAccountsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.bankAccounts(),
+        queryFn: catalogsApi.getBankAccounts,
     });
 
     const paymentTermsQuery = useQuery({
@@ -383,6 +393,13 @@ export function useCatalogs() {
             "data"
         ),
 
+        bankAccounts: extractArray(
+            bankAccountsQuery.data?.data,
+            "bank_accounts",
+            "bankAccounts",
+            "data"
+        ),
+
         paymentTerms: extractArray(
             paymentTermsQuery.data?.data,
             "payment_terms",
@@ -448,6 +465,7 @@ export function useCatalogs() {
             costAccountsQuery.isLoading ||
             paymentFormsQuery.isLoading ||
             paymentMethodsQuery.isLoading ||
+            bankAccountsQuery.isLoading ||
             paymentTermsQuery.isLoading ||
             receivableAccountsQuery.isLoading ||
             payableAccountsQuery.isLoading ||

@@ -25,7 +25,7 @@ export interface AllowanceCharge {
 export interface Invoice {
     id: number;
     numbering_range_id: number;
-    customer_id: number;
+    contact_id: number;
     payment_form_id: number;
     payment_method_id: number;
     type_operation_invoice: number;
@@ -44,6 +44,8 @@ export interface Invoice {
     invoice_lines: InvoiceLine[];
     allowance_charges?: AllowanceCharge[];
     withholding_taxes?: any[];
+    save_action?: string;
+    invoice_status_id?: number;
     // Otros campos según el endpoint
 }
 
@@ -92,7 +94,7 @@ export type InvoiceListData = {
 export interface InvoiceSummary {
     id: number;
     number: string;
-    customer: string;
+    contact: string;
     created_at: string;
     payment_due_date: string | null;
     total: string;
@@ -107,18 +109,19 @@ export interface InvoiceDetailResponse {
     code: number;
     status: "success" | "error";
     data: {
-        company: InvoiceCompany;
-        establishment: InvoiceEstablishment;
-        customer: InvoiceCustomer;
-        numbering_range: InvoiceNumberingRange;
-        billing_period: InvoiceBillingPeriod;
-        bill: InvoiceBill;
-        related_documents: any[];
-        items: InvoiceItem[];
-        allowance_charges: any[];
-        withholding_taxes: any[];
-        credit_notes: any[];
-        debit_notes: any[];
+        company?: InvoiceCompany;
+        establishment?: InvoiceEstablishment;
+        customer?: InvoiceCustomer;
+        numbering_range?: InvoiceNumberingRange;
+        billing_period?: InvoiceBillingPeriod;
+        bill?: InvoiceBill;
+        invoice?: any; // Añadido para el nuevo formato
+        related_documents?: any[];
+        items?: InvoiceItem[];
+        allowance_charges?: any[];
+        withholding_taxes?: any[];
+        credit_notes?: any[];
+        debit_notes?: any[];
     };
     dian?: InvoiceDian;
 }

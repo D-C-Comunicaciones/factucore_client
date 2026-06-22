@@ -39,11 +39,11 @@ export function CompanySummaryCard() {
 
       {/* Logo Factucore */}
       <div className="flex flex-col items-center justify-center flex-1 min-w-0">
-        <Image 
-          src="/img/factucore_logo_horizontal.png" 
-          alt="Factucore Logo" 
-          width={220} 
-          height={60} 
+        <Image
+          src="/img/factucore_logo_horizontal.png"
+          alt="Factucore Logo"
+          width={220}
+          height={60}
           className="object-contain"
         />
       </div>
@@ -64,7 +64,7 @@ export function CompanySummaryCard() {
       <div className="flex flex-col items-center text-center flex-1 min-w-0">
         <span className="text-muted-foreground text-xs font-medium uppercase mb-2">Plan Actual</span>
         <button className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-1.5 px-6 rounded transition-colors w-full max-w-[140px]">
-          CONSULTA
+          ILIMITADO
         </button>
       </div>
 

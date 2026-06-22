@@ -524,6 +524,9 @@ export interface ItemListResponse {
     updated_at?: string;
     standard_code?: string;
     tax_rates?: any[];
+    stock_quantity?: number;
+    is_inventoriable?: boolean;
+    allow_negative_stock?: boolean;
 }
 
 export interface GetItemByIdResponse {

@@ -19,6 +19,8 @@ export function ConfigurationGrid() {
         title="Facturación"
         description="Configura la información que se mostrará en tus facturas."
         links={[
+          { label: 'Certificado Digital', href: '/certificates' },
+          { label: 'Software', href: '/software' },
           { label: 'Términos de pago', href: '/configuration/terminos-pago' },
           { label: 'Numeraciones', href: '/resolutions' },
           { label: 'Configuración de documentos', href: '/configuration/configuracion-documentos' },

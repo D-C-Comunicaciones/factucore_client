@@ -47,7 +47,6 @@ function NewContactContent() {
     }
 
     setAutocompleting(true);
-    const searchToastId = toast.loading("Consultando identificación en la DIAN...");
 
     try {
       const docTypeId = docType ? Number(docType) : 1;
@@ -57,8 +56,6 @@ function NewContactContent() {
       });
 
       const acquirerData = (res as any)?.data?.acquirer || (res as any)?.acquirer || res?.data;
-
-      toast.dismiss(searchToastId);
 
       if (acquirerData && (acquirerData.found || acquirerData.receiver_name)) {
         const fullDianName = acquirerData.receiver_name || "";
@@ -76,7 +73,6 @@ function NewContactContent() {
       }
     } catch (err: any) {
       console.error("Error autocompleting:", err);
-      toast.dismiss(searchToastId);
       showToast(`Error al autocompletar: ${err.message || err}`, "error");
     } finally {
       setAutocompleting(false);

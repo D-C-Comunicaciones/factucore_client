@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { ContactsService } from "@/lib/contacts";
 import { adquirerApi } from "@/lib/acquirers";
@@ -83,13 +82,10 @@ function ModalContent({
     resetForm
   } = useContactForm();
 
-  // Reset and prefill
+  // Reset and prefill when modal opens
   useEffect(() => {
     if (isOpen) {
       resetForm();
-      if (catalogData?.typeDocumentIdentifications?.length > 0) {
-        setDocType(catalogData.typeDocumentIdentifications[0].id.toString());
-      }
       if (prefilledData) {
         if (prefilledData.docType) setDocType(prefilledData.docType);
         if (prefilledData.docNumber) setDocNumber(prefilledData.docNumber);
@@ -106,7 +102,18 @@ function ModalContent({
         }
       }
     }
-  }, [isOpen, prefilledData, catalogData, resetForm, setDocType, setDocNumber, setFirstName, setLastName, setEmail, setRegistrationName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, prefilledData]);
+
+  // Set default document type if none is selected
+  useEffect(() => {
+    if (isOpen && !docType && catalogData?.typeDocumentIdentifications?.length > 0) {
+      // Only set it if there's no prefilled data docType, otherwise it overwrites
+      if (!prefilledData?.docType) {
+        setDocType(catalogData.typeDocumentIdentifications[0].id.toString());
+      }
+    }
+  }, [isOpen, docType, catalogData, prefilledData, setDocType]);
 
   const splitDianName = (fullName: string) => {
     const parts = fullName.trim().split(/\s+/);
@@ -124,7 +131,6 @@ function ModalContent({
     }
 
     setAutocompleting(true);
-    const searchToastId = toast.loading("Consultando identificación en la DIAN...");
 
     try {
       const docTypeId = docType ? Number(docType) : 1;
@@ -135,7 +141,6 @@ function ModalContent({
 
       const acquirerData = (res as any)?.data?.acquirer || (res as any)?.acquirer || res?.data;
 
-      toast.dismiss(searchToastId);
 
       if (acquirerData && (acquirerData.found || acquirerData.receiver_name)) {
         const fullDianName = acquirerData.receiver_name || "";
@@ -153,7 +158,7 @@ function ModalContent({
       }
     } catch (err: any) {
       console.error("Error autocompleting:", err);
-      toast.dismiss(searchToastId);
+
       showToast(`Error al autocompletar: ${err.message || err}`, "error");
     } finally {
       setAutocompleting(false);

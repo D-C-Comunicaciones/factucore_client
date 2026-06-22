@@ -15,6 +15,10 @@ export interface InvoiceLine {
     taxObj: any | null; // e.g. { tax_id: 1, type: "percentage", rate: 19 }
     allowance_charges: any[];
     taxes: any[];
+    stock_quantity: number | null;
+    is_inventoriable: boolean;
+    allow_negative_stock: boolean;
+    selected_warehouse_id?: number | null;
 }
 
 export interface GlobalAdjustment {
@@ -55,7 +59,10 @@ export function useInvoiceBuilder() {
                 discountType: 'percentage',
                 taxObj: null,
                 allowance_charges: [],
-                taxes: []
+                taxes: [],
+                stock_quantity: null,
+                is_inventoriable: true,
+                allow_negative_stock: false
             }
         ]);
     };
@@ -204,16 +211,24 @@ export function useInvoiceBuilder() {
 
     // --- Final Payload Builder ---
     const buildPayload = (baseData: any) => {
-        const payload_lines = items.map(item => ({
-            item_id: item.item_id,
-            quantity: item.cantidad,
-            unit_price: item.precio,
-            description: item.description,
-            unit_measure_code: item.unit_measure_code,
-            standard_code: item.standard_code,
-            allowance_charges: item.allowance_charges,
-            taxes: item.taxes,
-        }));
+        const payload_lines = items.map(item => {
+            const linePayload: any = {
+                item_id: item.item_id,
+                name: item.item,
+                code_reference: item.referencia,
+                quantity: item.cantidad,
+                price_amount: item.precio,
+                description: item.description,
+                unit_measure_code: item.unit_measure_code,
+                allowance_charges: item.allowance_charges,
+                taxes: item.taxes,
+                warehouse_id: item.selected_warehouse_id
+            };
+            if (item.standard_code && item.standard_code.trim() !== '') {
+                linePayload.standard_code = item.standard_code;
+            }
+            return linePayload;
+        });
 
         const global_allowance_charges = globalAdjustments.map(adj => ({
             scope: 'global',
@@ -224,11 +239,27 @@ export function useInvoiceBuilder() {
             value: adj.value
         }));
 
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
         return {
             ...baseData,
-            invoice_lines: payload_lines,
+            type_operation_invoice: 1,
+            items: payload_lines,
             allowance_charges: global_allowance_charges,
+            billing_period: {
+                start_date: todayStr,
+                start_time: timeStr,
+                end_date: baseData.payment_form_id === 1 ? todayStr : (baseData.payment_due_date || todayStr),
+                end_time: timeStr
+            }
         };
+    };
+
+    const reset = () => {
+        setItems([]);
+        setGlobalAdjustments([]);
     };
 
     return {
@@ -243,6 +274,7 @@ export function useInvoiceBuilder() {
         removeGlobalAdjustment,
         updateGlobalAdjustment,
         totals,
-        buildPayload
+        buildPayload,
+        reset
     };
 }

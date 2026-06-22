@@ -21,7 +21,7 @@ const INVOICE_KEY = (id: number | string) => ["invoice", id] as const;
 export function useInvoicesList(options?: { params?: Record<string, any>; enabled?: boolean; fetchKey?: number }) {
 
     const paramsKey = JSON.stringify(options?.params ?? {});
-    const page = options?.params?.current_page ?? 1;
+    const page = options?.params?.page ?? options?.params?.current_page ?? 1;
     const perPage = options?.params?.per_page ?? 10;
     const fetchKey = options?.fetchKey ?? 0;
     const enabled = options?.enabled ?? true;
@@ -64,7 +64,7 @@ export function usePrefetchInvoiceDetail() {
                     throw new Error(res?.message || "Error al obtener factura");
                 }
 
-                return res.data;
+                return res;
             },
         });
 }
@@ -76,13 +76,14 @@ export function useInvoice(id: number | string, enabled = true) {
     return useQuery<InvoiceDetailResponse>({
         queryKey: INVOICE_KEY(id),
         queryFn: async () => {
-            const res = await InvoicesService.getById(id);
+            const res: any = await InvoicesService.getById(id);
 
             if (!res || res.status !== "success") {
                 throw new Error(res?.message || "Error al obtener factura");
             }
 
-            return res.data;
+            // res ya es InvoiceDetailResponse porque InvoicesService.getById devuelve apiClient.get(...) que extrae la data de axios
+            return res;
         },
         enabled: !!id && enabled,
     });
@@ -205,6 +206,39 @@ export function useUpdateInvoice() {
                 queryClient.invalidateQueries({
                     queryKey: INVOICE_KEY(vars.id),
                 });
+            }
+        },
+    });
+}
+
+// =========================
+// 📌 SEND TO DIAN
+// =========================
+export function useSendInvoice() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: number | string) => {
+            const res = await InvoicesService.sendInvoice(id);
+
+            if (!res || res.status !== "success") {
+                // If there are DIAN errors we can still return res, but maybe the API throws an error
+                // In this case, usually we let the component handle it or throw
+                if (res?.dian && res.dian.estado_documento === "NO APROBADA") {
+                    // Let's attach the response to the error so we can read it
+                    const err = new Error(res.dian.mensaje_dian || "La DIAN no aprobó la factura");
+                    (err as any).dian = res.dian;
+                    throw err;
+                }
+                throw new Error(res?.message || "Error al emitir factura");
+            }
+
+            return res;
+        },
+        onSettled: (_data, _error, id) => {
+            queryClient.invalidateQueries({ queryKey: INVOICES_KEY });
+            if (id) {
+                queryClient.invalidateQueries({ queryKey: INVOICE_KEY(id) });
             }
         },
     });

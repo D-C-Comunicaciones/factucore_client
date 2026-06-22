@@ -25,11 +25,16 @@ export default function InvoicesPage({ onNavigate }: FacturasVentaViewProps) {
 
     const debouncedSearch = useDebounce(search, 600);
 
-    /* ===================== BUILD PARAMS - ALWAYS DEFAULT PAGINATION ===================== */
+    // Reset pagination to page 1 when search or filters change
+    React.useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch, columnFilters]);
+
+    /* ===================== BUILD PARAMS - DEFAULT PAGINATION ===================== */
     const params = React.useMemo(() => {
         const obj: Record<string, any> = {
-            current_page: 1,
-            per_page: 10,
+            page: page,
+            per_page: perPage,
         };
 
         columnFilters.forEach(f => {
@@ -46,7 +51,7 @@ export default function InvoicesPage({ onNavigate }: FacturasVentaViewProps) {
         }
 
         return obj;
-    }, [columnFilters, debouncedSearch]);
+    }, [columnFilters, debouncedSearch, page, perPage]);
 
     const paramsKey = JSON.stringify(params);
 
@@ -60,7 +65,7 @@ export default function InvoicesPage({ onNavigate }: FacturasVentaViewProps) {
     }, [paramsKey]);
 
     /* ===================== FETCH ===================== */
-    const { data, isLoading, isFetching, isError, refetch } = useInvoicesList({ 
+    const { data, isLoading, isFetching, isError, refetch } = useInvoicesList({
         params,
         enabled: true,
         fetchKey
@@ -80,7 +85,10 @@ export default function InvoicesPage({ onNavigate }: FacturasVentaViewProps) {
     const pagination = data?.pagination ?? { current_page: 1, per_page: 10, total: 0, last_page: 1, from: 0, to: 0 };
 
     /* ===================== STATS ===================== */
-    const statSinEmision = invoices.filter(inv => inv.status_dian.toLowerCase() === 'no aprobada').length;
+    const statSinEmision = invoices.filter(inv => {
+        const statusStr = typeof inv.status_dian === 'string' ? inv.status_dian : ((inv.status_dian as any)?.name || '');
+        return statusStr.toLowerCase() === 'no aprobada';
+    }).length;
     const statSinEnvio = statSinEmision;
     const statEnProceso = invoices.filter(inv => Number(inv.pending_amount) > 0).length;
 

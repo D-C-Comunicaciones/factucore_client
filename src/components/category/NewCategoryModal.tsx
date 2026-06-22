@@ -194,8 +194,8 @@ export function NewCategoryModal({ open, onOpenChange, onCreated }: CategoryModa
             />
             <div
               className={`w-full flex-1 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 text-muted-foreground select-none cursor-pointer overflow-hidden relative transition-colors ${isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-border/50 bg-[#f8fafc] hover:bg-muted/50"
+                ? "border-primary bg-primary/5"
+                : "border-border/50 bg-[#f8fafc] hover:bg-muted/50"
                 }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}

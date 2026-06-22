@@ -91,15 +91,15 @@ export function InvoicePageHeader({ onNavigate }: InvoicePageHeaderProps) {
                   router.push("/invoices/new");
                   onNavigate?.("crear-manualmente");
                 }}
-                className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors"
+                className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer"
               >
-                <FileEdit className="w-4 h-4 mr-2 text-primary " />
+                <FileEdit className="w-4 h-4 mr-2 text-primary" />
                 Crear manualmente
               </DropdownMenuItem>
 
               <DropdownMenuItem
                 onClick={() => onNavigate?.('crear-desde-archivo')}
-                className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors"
+                className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer"
               >
                 <Upload className="w-4 h-4 mr-2 text-primary" />
                 Crear desde un archivo o imagen

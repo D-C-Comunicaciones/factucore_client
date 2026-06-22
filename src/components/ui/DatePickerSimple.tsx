@@ -44,7 +44,7 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
     const years = Array.from({ length: 20 }, (_, i) => 2010 + i);
 
     const inputClass =
-        "bg-white border border-gray-200 rounded-md h-10 px-3 text-sm text-foreground hover:bg-gray-50 focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors";
+        "flex h-9 w-full rounded-md border border-foreground/20 bg-white px-3 py-1 text-sm transition-colors hover:border-primary hover:bg-white focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50";
 
     React.useEffect(() => {
         if (open) {
@@ -212,7 +212,7 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
                             variant="ghost"
                             className="text-muted-foreground hover:bg-primary/10"
                             onClick={() => {
-                                setTempDate(date);
+                                setTempDate(date || new Date());
                                 setOpen(false);
                             }}
                         >

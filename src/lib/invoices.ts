@@ -1,6 +1,5 @@
 import { envs } from "@/config/env";
 import { apiClient } from "@/lib/api-client";
-import { ApiResponse } from "@/types/api";
 import type { Invoice, InvoiceDetailResponse, InvoiceFindAllSuccess } from "@/types/invoice";
 
 export class InvoicesService {
@@ -24,7 +23,7 @@ export class InvoicesService {
         // Ejemplo base:
         const {
             numbering_range_id,
-            customer_id,
+            contact_id,
             payment_form_id,
             payment_method_id,
             type_operation_invoice,
@@ -66,15 +65,15 @@ export class InvoicesService {
 
         return {
             numbering_range_id,
-            customer_id,
+            contact_id,
             payment_form_id,
             payment_method_id,
-            type_operation_invoice,
+            type_operation_invoice: type_operation_invoice ?? 1,
             payment_due_date,
             municipality_id,
             send_email,
             observation,
-            invoice_lines: lines,
+            items: lines,
             allowance_charges: globalAllowanceCharges,
             withholding_taxes,
             ...rest,
@@ -85,16 +84,21 @@ export class InvoicesService {
      * Guardar factura (borrador o sin emitir)
      */
     static async saveDraft(data: Partial<Invoice>) {
-        // El backend debe soportar guardar en estado editable
-        return apiClient.post<Invoice>("/invoices", { ...data, status: "draft" });
+        return apiClient.post<Invoice>("/invoices", data);
     }
 
     /**
-     * Emitir factura (enviar a la DIAN)
+     * Emitir factura a la DIAN directamente (POST /invoices/send)
+     */
+    static async sendDirect(data: Partial<Invoice>) {
+        return apiClient.post<Invoice>("/invoices/send", data);
+    }
+
+    /**
+     * Emitir factura ya guardada (enviar a la DIAN)
      */
     static async sendInvoice(id: number | string) {
-        // Llama al endpoint /send para emitir
-        return apiClient.post<Invoice>(`/invoices/${id}/send`);
+        return apiClient.post<Invoice>(`/invoices/send/${id}`);
     }
 
     static async create(data: Partial<Invoice>) {
@@ -102,13 +106,35 @@ export class InvoicesService {
         return this.saveDraft(data);
     }
 
+    /**
+     * Vista previa (Preflight) que devuelve el PDF en crudo sin guardar en BD
+     */
+    static async preflight(data: Partial<Invoice>) {
+        return apiClient.postBlob("/invoices/preflight", data);
+    }
+
     static async update(id: number | string, data: Partial<Invoice>) {
         return apiClient.patch<Invoice>(`/invoices/${id}`, data);
     }
 
+    static async cancel(id: number | string) {
+        return apiClient.post(`/invoices/${id}/cancel`);
+    }
+
     static getPdfUrl(id: number | string, template = 1) {
-        // Cambia aquí la URL base si tu backend cambia de host o puerto
         return `${envs.apiUrl}/invoices/${id}/downloads/pdf?template=${template}`;
+    }
+
+    static getPrintUrl(id: number | string, template = 1) {
+        return `${envs.apiUrl}/invoices/${id}/pdf/preview?template=${template}`;
+    }
+
+    static async downloadPdfBlob(id: number | string, template = 1) {
+        return apiClient.getBlob(`/invoices/${id}/downloads/pdf?template=${template}`);
+    }
+
+    static async printPdfBlob(id: number | string, template = 1) {
+        return apiClient.getBlob(`/invoices/${id}/pdf/preview?template=${template}`);
     }
 
     static getZipUrl(id: number | string, template = 1) {

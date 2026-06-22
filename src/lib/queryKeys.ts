@@ -122,6 +122,12 @@ export const QUERY_KEYS = {
                 "payment-methods",
             ] as const,
 
+        bankAccounts: () =>
+            [
+                "catalogs",
+                "bank-accounts",
+            ] as const,
+
         paymentTerms: () => ["catalogs", "payment-terms"] as const,
 
         receivableAccounts: () => ["catalogs", "receivable-accounts"] as const,

@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { AttributeModal } from "@/components/attribute/AttributeModal";
 import { WarehouseData, WarehouseModal } from "@/components/warehouse/WarehouseModal";
 import { NewPriceListModal } from "@/components/price-list/NewPriceListModal";
+import { FormattedInput } from "@/components/ui/formatted-input";
 
 interface WarehouseEntry extends WarehouseData {
   id: string;
@@ -891,36 +892,43 @@ export function AdvancedOptionsSection({
               </div>
               <div className="flex-1">
                 <label className="text-xs text-muted-foreground mb-1 block">Valor</label>
-                <input
-                  type="text"
-                  value={(() => {
-                    const formatMoney = (val: string | number) => {
-                      const num = parseFloat(String(val).replace(/[^0-9.-]/g, "")) || 0;
-                      return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(num);
-                    };
+                {pl.isPercentage ? (
+                  <input
+                    type="text"
+                    value={(() => {
+                      const formatMoney = (val: string | number) => {
+                        const num = parseFloat(String(val).replace(/[^0-9.-]/g, "")) || 0;
+                        return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(num);
+                      };
 
-                    if (pl.isPercentage) {
-                      const selectedList = catalogs?.priceLists?.find((c: any) => String(c.id) === pl.price_list_id);
-                      if (selectedList && selectedList.percentage !== null) {
-                        const baseVal = parseFloat(basePrice.replace(/[^0-9.]/g, "")) || 0;
-                        const percent = parseFloat(selectedList.percentage) || 0;
-                        const calculated = baseVal - (baseVal * (percent / 100));
-                        return calculated > 0 ? formatMoney(calculated) : "0";
+                      if (pl.isPercentage) {
+                        const selectedList = catalogs?.priceLists?.find((c: any) => String(c.id) === pl.price_list_id);
+                        if (selectedList && selectedList.percentage !== null) {
+                          const baseVal = parseFloat(basePrice.replace(/[^0-9.]/g, "")) || 0;
+                          const percent = parseFloat(selectedList.percentage) || 0;
+                          const calculated = baseVal - (baseVal * (percent / 100));
+                          return calculated > 0 ? formatMoney(calculated) : "0";
+                        }
+                        return "";
                       }
-                      return "";
-                    }
-                    return pl.value;
-                  })()}
-                  disabled={pl.isPercentage}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9.]/g, "");
-                    setPriceLists(priceLists.map(item =>
-                      item.id === pl.id ? { ...item, value: val } : item
-                    ));
-                  }}
-                  className={cn(baseInput, "pr-8 font-medium", pl.isPercentage ? "bg-white text-muted-foreground cursor-not-allowed border-border/50 shadow-sm" : "")}
-                  placeholder={pl.isPercentage ? "Valor automático" : "0"}
-                />
+                      return pl.value;
+                    })()}
+                    disabled={true}
+                    className={cn(baseInput, "pr-8 font-medium bg-white text-muted-foreground cursor-not-allowed border-border/50 shadow-sm")}
+                    placeholder="Valor automático"
+                  />
+                ) : (
+                  <FormattedInput
+                    value={pl.value}
+                    onChange={(val) => {
+                      setPriceLists(priceLists.map(item =>
+                        item.id === pl.id ? { ...item, value: val } : item
+                      ));
+                    }}
+                    className={cn(baseInput, "pr-8 font-medium")}
+                    placeholder="0"
+                  />
+                )}
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -979,10 +987,9 @@ export function AdvancedOptionsSection({
               {comboModeId === 2 && (
                 <div className="flex-1 animate-in fade-in zoom-in-95 duration-200">
                   <label className="text-xs text-muted-foreground mb-1 block">Costo manual</label>
-                  <input
-                    type="text"
+                  <FormattedInput
                     value={comboCostValue}
-                    onChange={(e) => setComboCostValue(e.target.value.replace(/[^0-9.]/g, ""))}
+                    onChange={(val) => setComboCostValue(val)}
                     className={baseInput}
                     placeholder="0"
                   />
@@ -1130,9 +1137,9 @@ export function AdvancedOptionsSection({
         onSave={(data) => {
           showToast(`La lista de precios "${data.name}" ha sido creada.`, "success");
           if (priceListTargetRow) {
-            const val = String(data.id);
+            const val = String(data.id || "");
             const isPercentage = data.percentage !== null && data.percentage !== undefined;
-            const listValue = isPercentage ? `${parseFloat(data.percentage)}%` : "0";
+            const listValue = isPercentage ? `${data.percentage}%` : "0";
 
             setPriceLists(priceLists.map(item =>
               item.id === priceListTargetRow 

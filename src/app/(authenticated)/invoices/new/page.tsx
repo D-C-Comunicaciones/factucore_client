@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { NewInvoiceFooter } from "@/components/invoice/new/NewInvoiceFooter";
 import { NewInvoiceHeader } from "@/components/invoice/new/NewInvoiceHeader";
-import { NewInvoiceInfo } from "@/components/invoice/new/NewInvoiceInfo";
+import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
 import { NewInvoiceMain } from "@/components/invoice/new/NewInvoiceMain";
 import { NewInvoiceOptions } from "@/components/invoice/new/NewInvoiceOptions";
 import { NewInvoicePayment } from "@/components/invoice/new/NewInvoicePayment";
+import { PreviewModal } from "@/components/invoice/new/PreviewModal";
 import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
 import { useInvoiceBuilder } from "@/hooks/invoices/useInvoiceBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
@@ -15,6 +16,8 @@ import { InvoicesService } from "@/lib/invoices";
 import { AuthService } from "@/lib/auth";
 import { useResolutions } from "@/hooks/useResolutions";
 import type { Resolution } from "@/lib/resolutions";
+
+import { showToast } from "@/components/sonner/CustomToaster";
 
 export default function NewInvoicePage() {
   const router = useRouter();
@@ -25,6 +28,7 @@ export default function NewInvoicePage() {
   const resolutionTypeFilter = tipoDoc === 'tiquete' ? 2 : 1; // 1=INVOICE, 2=POS
   const { resolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
   const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
+  const [errors, setErrors] = useState<Record<string, any>>({});
 
   // Set is_main resolution as default when resolutions load or tipoDoc changes
   useEffect(() => {
@@ -47,7 +51,8 @@ export default function NewInvoicePage() {
   const [showEmitirMenu, setShowEmitirMenu] = useState(false);
   const [formState, setFormState] = useState<any>({
     notes: "",
-    customer_id: null,
+    contact_id: null,
+    seller_id: null,
     payment_form_id: null,
     payment_method_id: null,
     payment_due_date: null
@@ -63,6 +68,7 @@ export default function NewInvoicePage() {
   const [showWarehouse, setShowWarehouse] = useState(true);
   const [showPriceList, setShowPriceList] = useState(true);
   const [showRemissionBar, setShowRemissionBar] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Initialize the builder hook
   const invoiceBuilder = useInvoiceBuilder();
@@ -98,6 +104,11 @@ export default function NewInvoicePage() {
     value: pf.id.toString(),
     label: pf.name
   })) || [];
+  
+  const bankAccounts = catalogData.bankAccounts?.map((ba: any) => ({
+    value: ba.id.toString(),
+    label: ba.name
+  })) || [];
 
   // Data para el main
   const mainData = {
@@ -119,40 +130,146 @@ export default function NewInvoicePage() {
     paymentForms,
   };
 
-  // Handler para guardar como borrador
-  const handleGuardar = async () => {
-    setLoadingGuardar(true);
-    try {
-      const payload = invoiceBuilder.buildPayload({
-        ...formState,
-        numbering_range_id: selectedResolutionId,
-      });
-      const res: any = await createInvoice.mutateAsync(payload);
-      const id = res?.id || res?.data?.id;
-      if (id) {
-        router.push(`/invoices/${id}`);
-      }
-    } finally {
-      setLoadingGuardar(false);
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // 1. Contacto
+    if (!formState.contact_id) {
+      newErrors.contact_id = "El contacto es requerido";
+      setErrors(newErrors);
+      showToast("El contacto es requerido", "error");
+      return false;
     }
+
+    // 2. Forma / Medio de pago
+    const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
+    const isContadoForm = !formState.payment_form_id || !selectedForm ||
+        selectedForm.label?.toLowerCase().includes("contado") ||
+        selectedForm.value?.toLowerCase() === "contado" ||
+        selectedForm.value === "1";
+
+    if (isContadoForm && !formState.payment_method_id) {
+      newErrors.payment_method_id = "El método de pago es requerido";
+      setErrors(newErrors);
+      showToast("El método de pago es requerido", "error");
+      return false;
+    }
+
+    // 3. Ítems
+    if (!invoiceBuilder.items || invoiceBuilder.items.length === 0) {
+      setErrors(newErrors);
+      showToast("Debe agregar al menos un ítem a la factura", "error");
+      return false;
+    } else {
+      const hasEmptyItems = invoiceBuilder.items.some((item: any) => !item.item_id);
+      if (hasEmptyItems) {
+        newErrors.items = "empty_items";
+        setErrors(newErrors);
+        showToast("Por favor selecciona un producto o servicio en todas las filas de ítems", "error");
+        return false;
+      }
+      const hasInvalidQuantity = invoiceBuilder.items.some((item: any) => item.item_id && (!item.cantidad || item.cantidad <= 0));
+      if (hasInvalidQuantity) {
+        newErrors.items = "invalid_quantity";
+        setErrors(newErrors);
+        showToast("Por favor ingrese una cantidad mayor a 0 en los productos seleccionados.", "error");
+        return false;
+      }
+    }
+
+    setErrors({});
+    return true;
   };
 
-  // Handler para emitir (guardar y luego enviar a la DIAN)
-  const handleEmitir = async () => {
-    setLoadingEmitir(true);
+  const handleSaveAction = async (actionType: "DRAFT" | "SEND" | "SEND_EMAIL" | "PRINT" | "CREATE_NEW") => {
+    if (!validateForm()) return;
+    setLoadingGuardar(true);
     try {
-      const payload = invoiceBuilder.buildPayload({
+      const basePayload = invoiceBuilder.buildPayload({
         ...formState,
         numbering_range_id: selectedResolutionId,
       });
-      const res: any = await createInvoice.mutateAsync(payload);
-      const id = res?.id || res?.data?.id;
-      if (id) {
-        await InvoicesService.sendInvoice(id);
+
+      if (formState.paymentData) {
+          basePayload.payments = [formState.paymentData];
+      }
+      delete basePayload.paymentData;
+      delete basePayload.comments;
+
+      if (!basePayload.seller_id || basePayload.seller_id === "") {
+        basePayload.seller_id = null;
+      } else {
+        basePayload.seller_id = Number(basePayload.seller_id);
+      }
+
+      if (actionType === "SEND") {
+        // Emitir directamente a la DIAN: POST /invoices/send (sin save_action)
+        const res: any = await InvoicesService.sendDirect(basePayload);
+        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        if (!id) throw new Error("No se pudo obtener el ID de la factura");
+        
+        if (res?.dian && res.dian.estado_documento === "NO APROBADA") {
+            const errorMsg = res.dian.mensaje_dian || "La factura se creó pero fue rechazada por la DIAN";
+            const details = res.dian.errors && res.dian.errors.length > 0 
+                ? res.dian.errors.map((e: any) => e.message).join(" | ") 
+                : "";
+            showToast(`${errorMsg}. ${details}`, "error");
+            router.push(`/invoices/${id}`);
+            return;
+        }
+
+        showToast("Factura emitida correctamente a la DIAN", "success");
+        router.push(`/invoices/${id}`);
+
+      } else if (actionType === "DRAFT") {
+        // Guardar como borrador: POST /invoices con save_action DRAFT
+        const payload = { ...basePayload, save_action: "DRAFT" };
+        const res: any = await createInvoice.mutateAsync(payload);
+        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        if (!id) throw new Error("No se pudo obtener el ID de la factura");
+        showToast("Borrador guardado correctamente", "success");
+        router.push(`/invoices/${id}`);
+
+      } else if (actionType === "CREATE_NEW") {
+        // Guardar y crear nueva: POST /invoices con save_action SAVED + limpiar form
+        const payload = { ...basePayload, save_action: "SAVED" };
+        await createInvoice.mutateAsync(payload);
+        showToast("Factura guardada correctamente", "success");
+        invoiceBuilder.reset();
+        setFormState({ notes: "", contact_id: null, payment_form_id: null, payment_method_id: null, payment_due_date: null });
+
+      } else if (actionType === "PRINT") {
+        const payload = { ...basePayload, save_action: "SAVED" };
+        const res: any = await createInvoice.mutateAsync(payload);
+        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        if (!id) throw new Error("No se pudo obtener el ID de la factura");
+        window.open(InvoicesService.getPdfUrl(id), "_blank");
+        router.push(`/invoices/${id}`);
+
+      } else if (actionType === "SEND_EMAIL") {
+        const payload = { ...basePayload, save_action: "SAVED", send_email: true };
+        const res: any = await createInvoice.mutateAsync(payload);
+        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        if (!id) throw new Error("No se pudo obtener el ID de la factura");
+        showToast("Factura guardada y enviada por correo", "success");
         router.push(`/invoices/${id}`);
       }
+
+    } catch (error: any) {
+      const backendErrors = error.response?.data?.errors;
+      if (backendErrors) {
+         setErrors(backendErrors);
+         if (backendErrors.inventory && Array.isArray(backendErrors.inventory) && backendErrors.inventory.length > 0) {
+             showToast(backendErrors.inventory[0], "error");
+         } else {
+             showToast("Se encontraron errores de validación en el formulario", "error");
+         }
+      } else {
+         showToast("Error al procesar la factura", "error");
+      }
+      console.error(error);
     } finally {
-      setLoadingEmitir(false);
+      setLoadingGuardar(false);
     }
   };
 
@@ -175,6 +292,8 @@ export default function NewInvoicePage() {
             setSelectedWarehouseId={setSelectedWarehouseId}
             selectedPriceListId={selectedPriceListId}
             setSelectedPriceListId={setSelectedPriceListId}
+            selectedSeller={formState.seller_id}
+            setSelectedSeller={(val) => setFormState({ ...formState, seller_id: val })}
             showWarehouse={showWarehouse}
             showPriceList={showPriceList}
             tipoDoc={tipoDoc}
@@ -199,16 +318,37 @@ export default function NewInvoicePage() {
             onNotesChange={(val: string) => setFormState((prev: any) => ({ ...prev, notes: val }))}
             showRemissionBar={showRemissionBar}
             setShowRemissionBar={setShowRemissionBar}
+            errors={errors}
           />
-          <NewInvoicePayment />
-          <NewInvoiceInfo />
+          <NewInvoicePayment 
+            paymentMethods={paymentMethods} 
+            bankAccounts={bankAccounts} 
+            paymentData={formState.paymentData}
+            onPaymentDataChange={(data) => setFormState({ ...formState, paymentData: data })}
+          />
+          <NewInvoiceComments 
+            comments={formState.comments || []}
+            setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
+          />
           <NewInvoiceFooter
-            onNavigate={() => { }}
-            guardarHandler={handleGuardar}
+            onNavigate={() => router.push("/invoices")}
+            onSaveAction={handleSaveAction}
             loadingGuardar={loadingGuardar}
+            onPreview={() => {
+              if (validateForm()) setShowPreviewModal(true);
+            }}
           />
         </div>
       </div>
+
+      <PreviewModal
+        open={showPreviewModal}
+        onOpenChange={setShowPreviewModal}
+        data={showPreviewModal ? invoiceBuilder.buildPayload({
+          ...formState,
+          numbering_range_id: selectedResolutionId,
+        }) : null}
+      />
     </div>
   );
 }
