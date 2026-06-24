@@ -58,9 +58,9 @@ export default function InvoiceDetailPage() {
     const customer = data.data.customer || templateData.customer || bill.contact || {};
     const items = data.data.items || snapshotInvoice.lines || bill.lines || [];
     const company = data.data.company || invoiceData?.company || templateData.supplier || {};
-    const dianStatus = bill.dian_rejection_reason ? "NO APROBADA" : (data.dian?.estado_documento || '');
+    const dianStatus = bill.dian_rejection_reason ? "NO APROBADA" : (bill.dian_response?.estado_documento || bill.dian_status?.name || data.dian?.estado_documento || '');
 
-    const isAccepted = dianStatus.toUpperCase() === "ACEPTADA";
+    const isAccepted = ["ACEPTADA", "PROCESADO CORRECTAMENTE", "APROBADA", "AUTORIZADA"].includes(dianStatus.toUpperCase());
     const canEdit = !isAccepted;
     const canEmit = !isAccepted;
 
@@ -68,7 +68,7 @@ export default function InvoiceDetailPage() {
         setIsSending(true);
         try {
             const res: any = await sendToDian.mutateAsync(bill.id);
-            if (res?.dian?.estado_documento === "NO APROBADA" || res?.dian?.errors?.length > 0) {
+            if (res?.dian?.estado_documento === "NO APROBADA") {
                 const errorMessages = res.dian.errors?.map((e: any) => e.message).join(" | ");
                 showToast(`Rechazado por DIAN: ${errorMessages || res.message || "Intente más tarde"}`, "error", "Rechazado por DIAN");
             } else {

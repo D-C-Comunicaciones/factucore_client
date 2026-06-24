@@ -30,6 +30,18 @@ export function InvoiceDetailDocument({
     const finalTaxes = Number(getNestedValue(bill, 'tax_total') || getNestedValue(bill, 'tax_totals') || bill.tax_amount || 0);
     const finalTotal = Number(getNestedValue(bill, 'payable_amount') || bill.total || 0);
 
+    const allDiscounts = bill.discounts || bill.invoice_snapshot?.template_data?.invoice?.discounts || [];
+    const allCharges = bill.charges || bill.invoice_snapshot?.template_data?.invoice?.charges || [];
+
+    const globalDiscounts = allDiscounts.filter((d: any) => !d.invoice_line_id && String(d.charge_indicator) !== "true");
+    const lineDiscountsTotal = allDiscounts.filter((d: any) => d.invoice_line_id && String(d.charge_indicator) !== "true").reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+
+    const globalCharges = allCharges.filter((c: any) => c.scope === 'global' || !c.line_id);
+    const globalDiscountsTotal = globalDiscounts.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+    const globalChargesTotal = globalCharges.reduce((sum: number, c: any) => sum + Number(c.calculated_amount || c.amount || c.value || 0), 0);
+
+    const grossSubtotal = finalSubtotal + lineDiscountsTotal;
+
 
     return (
         <div className="filter drop-shadow-sm">
@@ -163,7 +175,7 @@ export function InvoiceDetailDocument({
                                         </td>
                                         <td className="py-3 px-2">{itemRef}</td>
                                         <td className="py-3 px-2 text-right">$ {Number(itemPrice || 0).toLocaleString()}</td>
-                                        <td className="py-3 px-2 text-right">{Number(item.discount_rate || 0)} %</td>
+                                        <td className="py-3 px-2 text-right">$ {Number(item.discount_amount || 0).toLocaleString()}</td>
                                         <td className="py-3 px-2 text-right">{Number(taxRate)} %</td>
                                         <td className="py-3 px-2">{item.description || ''}</td>
                                         <td className="py-3 px-2 text-center">{Number(itemQty)}</td>
@@ -178,7 +190,7 @@ export function InvoiceDetailDocument({
                     </table>
                 </div>
 
-                {/* Signature and Subtotals */}
+                {/* Signature, Adjustments and Subtotals */}
                 <div className="flex justify-between text-slate-600 border-t border-slate-100 pt-8">
                     <div className="w-1/3 flex flex-col items-center justify-end">
                         <div className="h-20 w-32 bg-slate-100 rounded flex items-center justify-center text-slate-400 mb-2">
@@ -190,22 +202,88 @@ export function InvoiceDetailDocument({
                         </div>
                     </div>
 
-                    <div className="w-1/3 space-y-3 text-right">
-                        <div className="flex justify-between">
-                            <span className="text-slate-500">Subtotal</span>
-                            <span>$ {finalSubtotal.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-slate-500">Descuento</span>
-                            <span>-$ {finalDiscount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-slate-500">Impuestos</span>
-                            <span>$ {finalTaxes.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center font-bold text-slate-800 pt-3 border-t border-slate-200">
-                            <span className="text-xl font-normal text-slate-600">Total</span>
-                            <span className="text-2xl">$ {finalTotal.toLocaleString()}</span>
+                    <div className="w-1/3 space-y-6 text-right flex flex-col justify-end">
+                        {(globalDiscounts.length > 0 || globalCharges.length > 0) && (
+                            <div className="border border-slate-100 rounded-lg p-4 bg-slate-50 text-xs">
+                                <h4 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1 text-right">Ajustes Globales</h4>
+                                <div className="space-y-3 mt-2 text-left">
+                                    {globalDiscounts.length > 0 && (
+                                        <div>
+                                            <h5 className="font-semibold text-slate-600 text-[11px] uppercase tracking-wider mb-1">Descuentos</h5>
+                                            <div className="space-y-1">
+                                                {globalDiscounts.map((d: any, idx: number) => {
+                                                    const isPercent = d.percent || d.percentage;
+                                                    const typeStr = isPercent ? `Porcentual (${Number(isPercent)}%)` : 'Fijo';
+                                                    return (
+                                                        <div key={`d-${idx}`} className="flex justify-between gap-4 py-2 border-b border-slate-100 last:border-0 items-center">
+                                                            <div className="flex flex-col space-y-0.5 text-slate-600">
+                                                                <span className="truncate" title={d.reason}><strong className="text-slate-500 font-semibold">Motivo:</strong> {d.reason || 'Sin motivo'}</span>
+                                                                <span><strong className="text-slate-500 font-semibold">Tipo:</strong> {typeStr}</span>
+                                                            </div>
+                                                            <span className="font-medium text-red-500 shrink-0">-$ {Number(d.amount).toLocaleString()}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {globalCharges.length > 0 && (
+                                        <div>
+                                            <h5 className="font-semibold text-slate-600 text-[11px] uppercase tracking-wider mb-1">Recargos</h5>
+                                            <div className="space-y-1">
+                                                {globalCharges.map((c: any, idx: number) => {
+                                                    const isPercent = c.charge_type === 'percentage' || c.percentage_value || c.percent;
+                                                    const percentVal = c.percentage_value || c.percent;
+                                                    const typeStr = isPercent ? `Porcentual (${Number(percentVal)}%)` : 'Fijo';
+                                                    return (
+                                                        <div key={`c-${idx}`} className="flex justify-between gap-4 py-2 border-b border-slate-100 last:border-0 items-center">
+                                                            <div className="flex flex-col space-y-0.5 text-slate-600">
+                                                                <span className="truncate" title={c.reason}><strong className="text-slate-500 font-semibold">Motivo:</strong> {c.reason || 'Sin motivo'}</span>
+                                                                <span><strong className="text-slate-500 font-semibold">Tipo:</strong> {typeStr}</span>
+                                                            </div>
+                                                            <span className="font-medium text-slate-700 shrink-0">$ {Number(c.calculated_amount || c.amount || c.value).toLocaleString()}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
+                            <div className="flex justify-between">
+                                <span className="text-slate-500">Subtotal</span>
+                                <span>$ {grossSubtotal.toLocaleString()}</span>
+                            </div>
+                            {lineDiscountsTotal > 0 && (
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Descuentos en línea</span>
+                                    <span className="text-red-500">-$ {lineDiscountsTotal.toLocaleString()}</span>
+                                </div>
+                            )}
+                            {globalDiscountsTotal > 0 && (
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Descuentos Globales</span>
+                                    <span className="text-red-500">-$ {globalDiscountsTotal.toLocaleString()}</span>
+                                </div>
+                            )}
+                            {globalChargesTotal > 0 && (
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Recargos Globales</span>
+                                    <span>$ {globalChargesTotal.toLocaleString()}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between">
+                                <span className="text-slate-500">Impuestos en línea</span>
+                                <span>$ {finalTaxes.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center font-bold text-slate-800 pt-3 border-t border-slate-200">
+                                <span className="text-xl font-normal text-slate-600">Total</span>
+                                <span className="text-2xl">$ {finalTotal.toLocaleString()}</span>
+                            </div>
                         </div>
                     </div>
                 </div>

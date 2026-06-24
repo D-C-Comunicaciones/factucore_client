@@ -168,9 +168,40 @@ function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
   const [isAnulando, setIsAnulando] = React.useState(false);
 
   const handleDownloadPDF = async () => {
-    const url = InvoicesService.getPdfUrl(invoice.id, 1);
-    window.open(url, "_blank");
+    try {
+      showToast("Preparando documento...", "info");
+      const fileName = `Factura Electronica No. ${invoice.number || invoice.id}.pdf`;
+      sessionStorage.setItem(`print_invoice_${encodeURIComponent(fileName)}`, invoice.id.toString());
+      const url = `/print/${encodeURIComponent(fileName)}`;
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Error al preparar impresión:", error);
+      showToast("Error al cargar el documento", "error");
+    }
   };
+
+  const estadoDianStr = typeof invoice.status_dian === "string" ? invoice.status_dian : ((invoice.status_dian as any)?.name || "");
+  const estadoDian = estadoDianStr.toLowerCase();
+
+  const estadoStr = typeof invoice.status === "string" ? invoice.status : ((invoice.status as any)?.name || "");
+  const estado = estadoStr.toLowerCase();
+
+  const isDianAprobada = estadoDian === "aprobada" || estadoDian === "approved" || estadoDian === "aceptada";
+
+  // Disable Anular if approved by DIAN, or if status is 'cobrada', 'por cobrar', 'pendiente', 'vencida', 'parcial'
+  // Only allow if 'borrador', 'guardada' etc and not approved.
+  const isCobradaOPorCobrar = estado === "cobrada" || estado === "por cobrar" || estado === "pendiente" || estado === "vencida" || estado === "parcial";
+  const canAnular = (estado === "borrador" || estado === "draft" || estado === "guardada" || estado === "saved" || estado === "no electrónico") && !isDianAprobada && !isCobradaOPorCobrar;
+
+  const canEdit = !isDianAprobada && (
+    estado === "borrador" ||
+    estado === "draft" ||
+    estado === "guardada" ||
+    estado === "saved" ||
+    estadoDian === "no aprobada" ||
+    estadoDian === "rechazada" ||
+    estado === "no electrónico"
+  );
 
   const handleEdit = () => {
     console.log("Editar factura", invoice.id);
@@ -200,53 +231,69 @@ function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
   return (
     <>
       <div className="flex items-center justify-end gap-1">
-      <TooltipProvider delayDuration={0}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:!bg-primary/10 transition-colors" onClick={(e) => { e.stopPropagation(); handlePayment(e); }}>
-              <div className="flex items-center text-slate-700">
-                <span className="text-[10px] font-bold mt-0.5 mr-[1px]">$</span>
-                <Coins className="h-[15px] w-[15px]" strokeWidth={2.5} />
-              </div>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-[#1e293b] text-white border-none" side="top">
-            <p className="font-medium">Agregar pago</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 hover:!bg-primary/10 transition-colors" onClick={(e) => { e.stopPropagation(); handlePayment(); }}>
+                <div className="flex items-center text-slate-700">
+                  <span className="text-[10px] font-bold mt-0.5 mr-[1px]">$</span>
+                  <Coins className="h-[15px] w-[15px]" strokeWidth={2.5} />
+                </div>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-[#1e293b] text-white border-none" side="top">
+              <p className="font-medium">Agregar pago</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
-      <div className="relative inline-block text-left">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 transition-colors text-slate-700 focus-visible:ring-1 focus-visible:ring-teal-500" onClick={(e) => e.stopPropagation()}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-                <circle cx="10" cy="4.5" r="1.2" fill="currentColor" />
-                <circle cx="10" cy="10" r="1.2" fill="currentColor" />
-                <circle cx="10" cy="15.5" r="1.2" fill="currentColor" />
-              </svg>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" sideOffset={8} className="mt-2 min-w-[140px]">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/invoices/${invoice.id}`); }} className="cursor-pointer">
-              <Eye className="w-4 h-4 mr-2 text-slate-700" />
-              Ver detalle
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDownloadPDF(); }} className="cursor-pointer">
-              <Printer className="w-4 h-4 mr-2 text-slate-700" />
-              Imprimir
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(); }} className="cursor-pointer">
-              <Pencil className="w-4 h-4 mr-2 text-slate-700" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowAnularDialog(true); }} className="cursor-pointer">
-              <Minus className="w-4 h-4 mr-2 text-slate-700" />
-              Anular
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+        <div className="relative inline-block text-left">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 transition-colors text-slate-700 focus-visible:ring-1 focus-visible:ring-teal-500" onClick={(e) => e.stopPropagation()}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="h-5 w-5">
+                  <circle cx="10" cy="4.5" r="1.2" fill="currentColor" />
+                  <circle cx="10" cy="10" r="1.2" fill="currentColor" />
+                  <circle cx="10" cy="15.5" r="1.2" fill="currentColor" />
+                </svg>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={8} className="mt-2 min-w-[140px]">
+              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={() => router.push(`/invoices/${invoice.id}`)} className="cursor-pointer">
+                <Eye className="w-4 h-4 mr-2 text-slate-700" />
+                Ver detalle
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={() => handleDownloadPDF()} className="cursor-pointer">
+                <Printer className="w-4 h-4 mr-2 text-slate-700" />
+                Imprimir
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => e.stopPropagation()}
+                onSelect={(e) => {
+                  if (!canEdit) e.preventDefault();
+                  else handleEdit();
+                }}
+                className={`cursor-pointer ${!canEdit ? 'opacity-50 pointer-events-none' : ''}`}
+                disabled={!canEdit}
+              >
+                <Pencil className="w-4 h-4 mr-2 text-slate-700" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => e.stopPropagation()}
+                onSelect={(e) => {
+                  if (!canAnular) e.preventDefault();
+                  else setShowAnularDialog(true);
+                }}
+                className={`cursor-pointer ${!canAnular ? 'opacity-50 pointer-events-none' : ''}`}
+                disabled={!canAnular}
+              >
+                <Minus className="w-4 h-4 mr-2 text-slate-700" />
+                Anular
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <AlertDialog open={showAnularDialog} onOpenChange={setShowAnularDialog}>

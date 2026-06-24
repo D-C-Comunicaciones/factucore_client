@@ -214,7 +214,6 @@ export default function NewInvoicePage() {
                 ? res.dian.errors.map((e: any) => e.message).join(" | ") 
                 : "";
             showToast(`${errorMsg}. ${details}`, "error");
-            router.push(`/invoices/${id}`);
             return;
         }
 

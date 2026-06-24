@@ -66,12 +66,12 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
 
             <PopoverContent
                 align="start"
-                className="w-[320px] p-0 rounded-xl border border-border shadow-lg"
+                className="w-[260px] p-0 rounded-xl border border-border shadow-lg"
             >
-                <div className="p-2">
+                <div className="p-2 flex flex-col h-[390px]">
 
                     {/* HEADER */}
-                    <div className="flex items-center w-full px-2 mb-2">
+                    <div className="flex items-center w-full px-2 mb-2 shrink-0">
                         <button
                             onClick={() =>
                                 setTempDate(
@@ -92,7 +92,7 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
                                 className="flex items-center gap-1 text-sm font-medium px-2 py-1 rounded hover:bg-primary/10 transition-colors"
                             >
                                 {months[safeMonth.getMonth()]}
-                                {view === "month" ? <ChevronUp /> : <ChevronDown />}
+                                {view === "month" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                             </button>
 
                             <button
@@ -100,7 +100,7 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
                                 className="flex items-center gap-1 text-sm font-medium px-2 py-1 rounded hover:bg-primary/10 transition-colors"
                             >
                                 {safeMonth.getFullYear()}
-                                {view === "year" ? <ChevronUp /> : <ChevronDown />}
+                                {view === "year" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                             </button>
                         </div>
 
@@ -120,50 +120,53 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
                     </div>
 
                     {/* CALENDARIO */}
-                    <div className="pt-2 pb-0">
+                    <div className="flex-1 overflow-hidden relative">
                         {view === "default" && (
-                            <Calendar
-                                mode="single"
-                                selected={tempDate}
-                                onSelect={(val) => val && setTempDate(val)}
-                                locale={es}
-                                hideNavigation
-                                month={safeMonth}
-                                className="
-                                  w-full
-                                  [&_.rdp]:w-full
-                                  [&_.rdp-table]:w-full
-                                  [&_.rdp-cell]:p-0
+                            <div className="absolute inset-0 flex justify-center">
+                                <Calendar
+                                    mode="single"
+                                    selected={tempDate}
+                                    onSelect={(val) => val && setTempDate(val)}
+                                    locale={es}
+                                    hideNavigation
+                                    month={safeMonth}
+                                    className="
+                                      w-full
+                                      [&_.rdp]:w-full
+                                      [&_.rdp-table]:w-full
+                                      [&_.rdp-cell]:p-0
 
-                                  [&_button]:w-9
-                                  [&_button]:h-9
-                                  [&_button]:rounded-lg
-                                  [&_button]:transition-colors
+                                      [&_button]:w-8
+                                      [&_button]:h-8
+                                      [&_button]:rounded-lg
+                                      [&_button]:transition-colors
+                                      [&_button]:text-sm
 
-                                  /* hover SOLO para no seleccionados */
-                                  [&_button:not([data-selected]):hover]:bg-primary/10
-                                  [&_button:not([data-selected]):hover]:text-primary
+                                      /* hover SOLO para no seleccionados */
+                                      [&_button:not([data-selected]):hover]:bg-primary/10
+                                      [&_button:not([data-selected]):hover]:text-primary
 
-                                  /* seleccionado */
-                                  [&_[data-selected]]:bg-primary
-                                  [&_[data-selected]]:text-primary-foreground
-                                  [&_[data-selected]]:rounded-lg
+                                      /* seleccionado */
+                                      [&_[data-selected]]:bg-primary
+                                      [&_[data-selected]]:text-primary-foreground
+                                      [&_[data-selected]]:rounded-lg
 
-                                  /* 🔥 bloquear hover del seleccionado completamente */
-                                  [&_[data-selected]:hover]:bg-primary
-                                  [&_[data-selected]:hover]:text-primary-foreground
+                                      /* 🔥 bloquear hover del seleccionado completamente */
+                                      [&_[data-selected]:hover]:bg-primary
+                                      [&_[data-selected]:hover]:text-primary-foreground
 
-                                  /* quitar today */
-                                  [&_[data-today]]:bg-transparent
-                                  [&_[data-today]]:text-foreground
-                                  [&_[data-today]]:border-0
-                                "
-                            />
+                                      /* quitar today */
+                                      [&_[data-today]]:bg-transparent
+                                      [&_[data-today]]:text-foreground
+                                      [&_[data-today]]:border-0
+                                    "
+                                />
+                            </div>
                         )}
 
                         {/* MESES */}
                         {view === "month" && (
-                            <div className="grid grid-cols-3 gap-2 h-full overflow-y-auto p-2">
+                            <div className="absolute inset-0 grid grid-cols-3 gap-2 overflow-y-auto p-1 content-start">
                                 {months.map((m, i) => (
                                     <button
                                         key={i}
@@ -172,9 +175,9 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
                                             setView("default");
                                         }}
                                         className={cn(
-                                            "py-3 rounded-md text-sm transition-colors hover:bg-primary/10",
+                                            "py-2 rounded-md text-sm transition-colors hover:bg-primary/10",
                                             safeMonth.getMonth() === i &&
-                                            "bg-primary text-primary-foreground"
+                                            "bg-primary text-primary-foreground hover:bg-primary"
                                         )}
                                     >
                                         {m}
@@ -185,7 +188,7 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
 
                         {/* AÑOS */}
                         {view === "year" && (
-                            <div className="grid grid-cols-3 gap-2 h-full overflow-y-auto p-2">
+                            <div className="absolute inset-0 grid grid-cols-3 gap-2 overflow-y-auto p-1 content-start">
                                 {years.map((year) => (
                                     <button
                                         key={year}
@@ -194,9 +197,9 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
                                             setView("default");
                                         }}
                                         className={cn(
-                                            "py-3 rounded-md text-sm transition-colors hover:bg-primary/10",
+                                            "py-2 rounded-md text-sm transition-colors hover:bg-primary/10",
                                             safeMonth.getFullYear() === year &&
-                                            "bg-primary text-primary-foreground"
+                                            "bg-primary text-primary-foreground hover:bg-primary"
                                         )}
                                     >
                                         {year}
@@ -207,7 +210,7 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
                     </div>
 
                     {/* FOOTER */}
-                    <div className="flex justify-end items-center gap-3 mt-3 pt-3 border-t border-border">
+                    <div className="flex justify-end items-center gap-3 mt-3 pt-3 border-t border-border shrink-0">
                         <Button
                             variant="ghost"
                             className="text-muted-foreground hover:bg-primary/10"

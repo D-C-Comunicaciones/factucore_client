@@ -99,7 +99,7 @@ export default function AuthenticatedLayout({
             submenu: [
                 { icon: FileText, label: 'Factura de venta', path: '/invoices' },
                 { icon: FileText, label: 'Pagos recibidos', path: '/ingresos/pagos-recibidos' },
-                { icon: FileText, label: 'Devoluciones en venta', path: '/ingresos/devoluciones-venta' },
+                { icon: FileText, label: 'Devoluciones en venta', path: '/returns' },
                 { icon: FileText, label: 'Notas débito', path: '/ingresos/notas-debito' },
                 { icon: FileText, label: 'Cotizaciones', path: '/ingresos/cotizaciones' },
                 { icon: FileText, label: 'Remisiones', path: '/ingresos/remisiones' },

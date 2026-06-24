@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, UploadCloud, FileType2, KeyRound } from "lucide-react";
+import { Loader2, UploadCloud, FileType2, KeyRound, FileKey } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { certificatesApi } from "@/lib/certificates";
@@ -192,7 +192,7 @@ export function NewCertificateForm({ onSuccess, onCancel, hideCardStyles, extraF
               >
                 {file ? (
                   <>
-                    <FileType2 className="w-10 h-10 text-green-500" />
+                    <FileKey className="w-10 h-10 text-green-500" />
                     <span className="text-sm font-medium text-green-700">
                       {file.name}
                     </span>

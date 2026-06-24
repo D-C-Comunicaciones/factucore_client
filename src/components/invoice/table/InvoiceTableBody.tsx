@@ -67,14 +67,24 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() ? "selected" : undefined}
-                className={`${row.getIsSelected() ? "bg-primary/5" : ""} cursor-pointer hover:bg-slate-50`}
-                onClick={() => router.push(`/invoices/${row.original.id}`)}
+                className={`${row.getIsSelected() ? "bg-primary/5" : ""} hover:bg-slate-50`}
               >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const isClickable = cell.column.id !== "actions" && cell.column.id !== "select";
+                  return (
+                    <TableCell 
+                      key={cell.id}
+                      className={isClickable ? "cursor-pointer" : ""}
+                      onClick={() => {
+                        if (isClickable) {
+                          router.push(`/invoices/${row.original.id}`);
+                        }
+                      }}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))
           ) : loading ? (
