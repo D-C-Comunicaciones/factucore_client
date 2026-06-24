@@ -27,7 +27,10 @@ function NewContactContent() {
     comments,
     creating, setCreating,
     setAutocompleting,
+    typeOrganizationId, setTypeOrganizationId,
+    typeRegimeId, setTypeRegimeId,
     setFirstName, setLastName, setRegistrationName, setEmail,
+    typeLiabilityId,
     errors, setErrors
   } = useContactForm();
 
@@ -42,6 +45,7 @@ function NewContactContent() {
   const handleAutocomplete = async () => {
     const cleanNum = docNumber.trim();
     if (!cleanNum) {
+      setErrors((prev) => ({ ...prev, docNumber: "warning" }));
       showToast("Por favor ingrese un número de identificación", "warning");
       return;
     }
@@ -87,11 +91,22 @@ function NewContactContent() {
     const fullName = `${cleanFirstName} ${cleanLastName}`.trim();
     const finalRegistrationName = registrationName.trim() || fullName;
 
+    const selectedDocTypeObj = catalogData?.typeDocumentIdentifications?.find(
+      (d: any) => d.id.toString() === docType
+    );
+    const docTypeName = selectedDocTypeObj?.name?.toUpperCase() || "";
+    const isNit = docTypeName.includes("NIT") && !docTypeName.includes("OTRO PAIS");
+    const isForeignerNit = docTypeName.includes("NIT DE OTRO PAIS");
+    const useRegistrationName = (isNit || isForeignerNit) && typeOrganizationId !== "2";
+
     const newErrors = {
       docType: !docType,
       docNumber: !cleanNum,
-      firstName: !cleanFirstName && !registrationName.trim(),
-      lastName: !cleanLastName && !registrationName.trim()
+      firstName: !useRegistrationName && !cleanFirstName,
+      lastName: !useRegistrationName && !cleanLastName,
+      registrationName: useRegistrationName && !registrationName.trim(),
+      typeOrganizationId: isNit && !typeOrganizationId,
+      typeRegimeId: isNit && !typeRegimeId,
     };
 
     if (Object.values(newErrors).some(Boolean)) {
@@ -116,10 +131,13 @@ function NewContactContent() {
         last_name: cleanLastName || null,
         identification_number: Number(cleanNum) || cleanNum,
         type_document_identification_id: docType ? Number(docType) : null,
+        type_organization_id: isNit && typeOrganizationId ? Number(typeOrganizationId) : 2,
+        type_regime_id: isNit && typeRegimeId ? Number(typeRegimeId) : 2,
+        type_liability_id: isNit && typeLiabilityId ? Number(typeLiabilityId) : null,
         email: email.trim() || null,
         phone1: mobile.trim() || phone1.trim() || null,
         address: address.trim() || null,
-        type_contact_ids: typeContactIds.length > 0 ? typeContactIds : [1], // Default a cliente si no hay
+        type_contact_id: typeContactIds.length > 0 ? typeContactIds : null,
       };
 
       if (municipalityId) {
@@ -144,7 +162,14 @@ function NewContactContent() {
       }
     } catch (err: any) {
       console.error("Error creating contact:", err);
-      const msg = err?.response?.data?.message || err?.message || "Ocurrió un error al crear el contacto";
+      let msg = err?.response?.data?.message || err?.message || "Ocurrió un error al crear el contacto";
+      if (err?.response?.data?.errors) {
+        const errors = err.response.data.errors;
+        const firstError = Object.values(errors)[0];
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          msg = firstError[0] as string;
+        }
+      }
       showToast(`Error: ${msg}`, "error");
     } finally {
       setCreating(false);
@@ -159,11 +184,22 @@ function NewContactContent() {
     const fullName = `${cleanFirstName} ${cleanLastName}`.trim();
     const finalRegistrationName = registrationName.trim() || fullName;
 
+    const selectedDocTypeObj = catalogData?.typeDocumentIdentifications?.find(
+      (d: any) => d.id.toString() === docType
+    );
+    const docTypeName = selectedDocTypeObj?.name?.toUpperCase() || "";
+    const isNit = docTypeName.includes("NIT") && !docTypeName.includes("OTRO PAIS");
+    const isForeignerNit = docTypeName.includes("NIT DE OTRO PAIS");
+    const useRegistrationName = (isNit || isForeignerNit) && typeOrganizationId !== "2";
+
     const newErrors = {
       docType: !docType,
       docNumber: !cleanNum,
-      firstName: !cleanFirstName && !registrationName.trim(),
-      lastName: !cleanLastName && !registrationName.trim()
+      firstName: !useRegistrationName && !cleanFirstName,
+      lastName: !useRegistrationName && !cleanLastName,
+      registrationName: useRegistrationName && !registrationName.trim(),
+      typeOrganizationId: isNit && !typeOrganizationId,
+      typeRegimeId: isNit && !typeRegimeId,
     };
 
     if (Object.values(newErrors).some(Boolean)) {
@@ -188,6 +224,9 @@ function NewContactContent() {
         last_name: cleanLastName || null,
         identification_number: Number(cleanNum) || cleanNum,
         type_document_identification_id: docType ? Number(docType) : null,
+        type_organization_id: isNit && typeOrganizationId ? Number(typeOrganizationId) : 2,
+        type_regime_id: isNit && typeRegimeId ? Number(typeRegimeId) : 2,
+        type_liabilities: [5],
         email: email.trim() || null,
         phone1: mobile.trim() || phone1.trim() || null,
         address: address.trim() || null,

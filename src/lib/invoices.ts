@@ -133,6 +133,10 @@ export class InvoicesService {
         return apiClient.getBlob(`/invoices/${id}/downloads/pdf?template=${template}`);
     }
 
+    static async downloadXmlBlob(id: number | string) {
+        return apiClient.getBlob(`/invoices/${id}/downloads/xml`);
+    }
+
     static async printPdfBlob(id: number | string, template = 1) {
         return apiClient.getBlob(`/invoices/${id}/pdf/preview?template=${template}`);
     }

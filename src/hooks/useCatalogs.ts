@@ -115,6 +115,18 @@ export const prefetchAllCatalogs = async (
             queryFn: catalogsApi.getTypeDocumentIdentifications,
         }),
         queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.typeOrganizations(),
+            queryFn: catalogsApi.getTypeOrganizations,
+        }),
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.typeLiabilities(),
+            queryFn: catalogsApi.getTypeLiabilities,
+        }),
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.typeRegimes(),
+            queryFn: catalogsApi.getTypeRegimes,
+        }),
+        queryClient.prefetchQuery({
             queryKey: QUERY_KEYS.catalogs.countries(),
             queryFn: catalogsApi.getCountries,
         }),
@@ -248,6 +260,21 @@ export function useCatalogs() {
     const typeDocumentIdentificationsQuery = useQuery({
         queryKey: QUERY_KEYS.catalogs.typeDocumentIdentifications(),
         queryFn: catalogsApi.getTypeDocumentIdentifications,
+    });
+
+    const typeOrganizationsQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.typeOrganizations(),
+        queryFn: catalogsApi.getTypeOrganizations,
+    });
+
+    const typeLiabilitiesQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.typeLiabilities(),
+        queryFn: catalogsApi.getTypeLiabilities,
+    });
+
+    const typeRegimesQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.typeRegimes(),
+        queryFn: catalogsApi.getTypeRegimes,
     });
 
     const countriesQuery = useQuery({
@@ -430,6 +457,27 @@ export function useCatalogs() {
             "data"
         ),
 
+        typeOrganizations: extractArray(
+            typeOrganizationsQuery.data?.data,
+            "type_organizations",
+            "typeOrganizations",
+            "data"
+        ),
+
+        typeLiabilities: extractArray(
+            typeLiabilitiesQuery.data?.data,
+            "type_liabilities",
+            "typeLiabilities",
+            "data"
+        ),
+
+        typeRegimes: extractArray(
+            typeRegimesQuery.data?.data,
+            "type_regimes",
+            "typeRegimes",
+            "data"
+        ),
+
         municipalities: extractArray(
             municipalitiesQuery.data?.data,
             "municipalities",
@@ -470,6 +518,9 @@ export function useCatalogs() {
             receivableAccountsQuery.isLoading ||
             payableAccountsQuery.isLoading ||
             typeDocumentIdentificationsQuery.isLoading ||
+            typeOrganizationsQuery.isLoading ||
+            typeLiabilitiesQuery.isLoading ||
+            typeRegimesQuery.isLoading ||
             municipalitiesQuery.isLoading ||
             countriesQuery.isLoading ||
             typeResolutionsQuery.isLoading,

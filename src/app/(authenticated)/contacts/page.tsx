@@ -28,7 +28,7 @@ interface Contact {
   name: string;
   identification: string;
   phone: string;
-  type: 'customer' | 'provider';
+  type: 'customer' | 'provider' | 'both';
 }
 
 export default function ContactPage() {
@@ -71,12 +71,14 @@ export default function ContactPage() {
   const rawContacts = data?.contacts ?? data?.data ?? [];
   const contactsData = rawContacts.map((c: any) => {
     const isCustomer = c.type_contact_ids?.includes(1) || c.type_contacts?.some((tc: any) => tc.id === 1);
+    const isProvider = c.type_contact_ids?.includes(2) || c.type_contacts?.some((tc: any) => tc.id === 2);
+    
     return {
       id: c.id,
       name: c.registration_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.identification_number || "Sin nombre",
       identification: c.identification_number || "",
       phone: c.phone1 || c.phone2 || "",
-      type: isCustomer ? "customer" : "provider"
+      type: isCustomer && isProvider ? "both" : isProvider ? "provider" : "customer"
     };
   });
   const serverPagination = data?.pagination ?? data?.meta ?? {
@@ -92,7 +94,7 @@ export default function ContactPage() {
     console.log('Delete contact:', id);
   }, []);
 
-  const columns = React.useMemo(() => getContactColumns(handleDelete), [handleDelete]);
+  const columns = React.useMemo(() => getContactColumns(handleDelete, activeTab), [handleDelete, activeTab]);
 
   const table = useReactTable({
     data: contactsData,
@@ -193,7 +195,7 @@ export default function ContactPage() {
                 className="btn-base bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Nuevo contacto
+                {activeTab === 'customer' ? 'Nuevo cliente' : activeTab === 'provider' ? 'Nuevo proveedor' : 'Nuevo contacto'}
               </Button>
             </div>
           </div>
@@ -243,6 +245,7 @@ export default function ContactPage() {
             setPerPage={setPerPage}
             pagination={serverPagination}
             onDelete={handleDelete}
+            onAddContact={() => setIsModalOpen(true)}
           />
         </div>
 
@@ -252,6 +255,9 @@ export default function ContactPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         catalogData={catalogData}
+        prefilledData={{
+          contactTypes: activeTab === 'customer' ? ['cliente'] : activeTab === 'provider' ? ['proveedor'] : ['cliente']
+        }}
         onCustomerCreated={() => {
           refetch();
           setIsModalOpen(false);

@@ -30,7 +30,7 @@ interface Contact {
   name: string;
   identification: string;
   phone: string;
-  type: 'customer' | 'provider';
+  type: 'customer' | 'provider' | 'both';
 }
 
 interface ContactTableProps {
@@ -47,6 +47,7 @@ interface ContactTableProps {
   setPerPage: (n: number) => void;
   pagination: ServerPagination;
   onDelete: (id: number) => void;
+  onAddContact?: () => void;
 }
 
 type SelectionState = Record<string, boolean>;
@@ -65,6 +66,7 @@ export function ContactTable({
   setPerPage,
   pagination,
   onDelete,
+  onAddContact,
 }: ContactTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
@@ -118,14 +120,15 @@ export function ContactTable({
 
   const columns = React.useMemo(() => 
     getContactColumns(
-      onDelete, 
+      onDelete,
+      activeTab,
       toggleSelection, 
       toggleSelectAll,
       allSelected,
       someSelected,
       selection
     ), 
-    [onDelete, toggleSelection, toggleSelectAll, allSelected, someSelected, selection]
+    [onDelete, activeTab, toggleSelection, toggleSelectAll, allSelected, someSelected, selection]
   );
 
   const table = useReactTable({
@@ -227,6 +230,7 @@ export function ContactTable({
         onToggleSelection={toggleSelection}
         activeTab={activeTab}
         searchTerm={search}
+        onAddContact={onAddContact}
       />
 
       <ContactTablePagination

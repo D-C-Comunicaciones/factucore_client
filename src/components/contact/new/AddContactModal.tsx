@@ -27,6 +27,7 @@ interface PrefilledContactData {
   email?: string;
   registration_name?: string;
   showAutocompleteToast?: boolean;
+  contactTypes?: ("cliente" | "proveedor")[];
 }
 
 interface AddContactModalProps {
@@ -63,18 +64,26 @@ function ModalContent({
 
   const {
     mode, setMode,
-    contactTypes,
+    contactTypes, setContactTypes,
     docType, setDocType,
     docNumber, setDocNumber,
     firstName, setFirstName,
     lastName, setLastName,
     registrationName, setRegistrationName,
+    typeOrganizationId, setTypeOrganizationId,
+    typeRegimeId, setTypeRegimeId,
+    typeLiabilityId,
     municipalityId,
     address,
     country,
     city,
+    postalCode,
     email, setEmail,
-    phone1, mobile,
+    phone1, phone2, mobile,
+    commercialRegistration,
+    priceListId, paymentTermId, sellerId,
+    accountsReceivableAccountId, accountsPayableAccountId,
+    sendAccountStatement,
     autocompleting, setAutocompleting,
     creating, setCreating,
     comments,
@@ -93,6 +102,10 @@ function ModalContent({
         if (prefilledData.lastName !== undefined) setLastName(prefilledData.lastName);
         if (prefilledData.email !== undefined) setEmail(prefilledData.email);
         if (prefilledData.registration_name !== undefined) setRegistrationName(prefilledData.registration_name);
+        if (prefilledData.contactTypes && prefilledData.contactTypes.length > 0) {
+          setContactTypes(prefilledData.contactTypes);
+        }
+        
         if (prefilledData.showAutocompleteToast) {
           showToast(
             "Completamos la información con la identificación ingresada. Su verificación y uso correcto dependen de ti.",
@@ -126,6 +139,7 @@ function ModalContent({
   const handleAutocomplete = async () => {
     const cleanNum = docNumber.trim();
     if (!cleanNum) {
+      setErrors((prev) => ({ ...prev, docNumber: "warning" }));
       showToast("Por favor ingrese un número de identificación", "warning");
       return;
     }
@@ -170,11 +184,23 @@ function ModalContent({
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
 
+    const selectedDocTypeObj = catalogData?.typeDocumentIdentifications?.find(
+      (d: any) => d.id.toString() === docType
+    );
+    const docTypeName = selectedDocTypeObj?.name?.toUpperCase() || "";
+    const normalizedDocName = docTypeName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const isNit = normalizedDocName.includes("NIT") && !normalizedDocName.includes("OTRO PAIS");
+    const isForeignerNit = normalizedDocName.includes("NIT DE OTRO PAIS");
+    const useRegistrationName = (isNit || isForeignerNit) && typeOrganizationId !== "2";
+
     const newErrors: { [key: string]: boolean } = {
       docType: !docType,
       docNumber: !cleanNum,
-      firstName: !cleanFirstName && !registrationName.trim(),
-      lastName: !cleanLastName && !registrationName.trim()
+      firstName: !useRegistrationName && !cleanFirstName,
+      lastName: !useRegistrationName && !cleanLastName,
+      registrationName: useRegistrationName && !registrationName.trim(),
+      typeOrganizationId: isNit && !typeOrganizationId,
+      typeRegimeId: isNit && !typeRegimeId,
     };
 
     if (Object.values(newErrors).some(v => v)) {
@@ -184,45 +210,74 @@ function ModalContent({
     }
     setErrors({});
 
-    const fullName = `${cleanFirstName} ${cleanLastName}`.trim();
+    let finalFirstName = cleanFirstName;
+    let finalLastName = cleanLastName;
+
+    if (!finalFirstName && !finalLastName && registrationName.trim()) {
+      const parts = registrationName.trim().split(/\s+/);
+      if (parts.length === 1) {
+        finalFirstName = parts[0];
+      } else if (parts.length === 2) {
+        finalFirstName = parts[0];
+        finalLastName = parts[1];
+      } else if (parts.length === 3) {
+        finalFirstName = parts[0];
+        finalLastName = parts.slice(1).join(" ");
+      } else {
+        const mid = Math.ceil(parts.length / 2);
+        finalFirstName = parts.slice(0, mid).join(" ");
+        finalLastName = parts.slice(mid).join(" ");
+      }
+    }
+
+    const fullName = `${finalFirstName} ${finalLastName}`.trim();
     const finalRegistrationName = registrationName.trim() || fullName;
 
     setCreating(true);
     try {
-      const selectedDocTypeObj = catalogData?.typeDocumentIdentifications?.find(
-        (d: any) => d.id.toString() === docType
-      );
-      const docTypeName = selectedDocTypeObj?.name?.toUpperCase() || "";
       const docTypeCode = selectedDocTypeObj?.code?.toUpperCase() || "";
-      const isNit = docTypeName.includes("NIT") && !docTypeName.includes("OTRO PAIS");
+      const normalizedDocName = docTypeName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       const isForeigner =
         ["PP", "CE", "TE", "DIE"].some(
-          (code) => docTypeCode.includes(code) || docTypeName.includes(code)
+          (code) => docTypeCode.includes(code) || normalizedDocName.includes(code)
         ) ||
-        docTypeName.includes("NIT DE OTRO PAIS") || docTypeName.includes("PASAPORTE") ||
-        docTypeName.includes("EXTRANJER") || docTypeName.includes("DOCUMENTO DE IDENTIFICACIÓN EXTRANJERO");
+        isForeignerNit || normalizedDocName.includes("PASAPORTE") ||
+        normalizedDocName.includes("EXTRANJER") || normalizedDocName.includes("DOCUMENTO DE IDENTIFICACION EXTRANJERO");
 
       const dvValue = isNit && cleanNum ? validateVerificationDigit(cleanNum) : null;
 
-      const typeContactIds = [];
-      if (contactTypes.includes("cliente")) typeContactIds.push(1);
-      if (contactTypes.includes("proveedor")) typeContactIds.push(2);
+      const typeContactIds = contactTypes.map((c) => (c === "cliente" ? 1 : 2));
 
       const basePayload: any = {
         registration_name: finalRegistrationName,
-        first_name: cleanFirstName || null,
-        last_name: cleanLastName || null,
+        first_name: finalFirstName || null,
+        last_name: finalLastName || null,
         identification_number: Number(cleanNum) || cleanNum,
         verification_digit: dvValue !== null ? Number(dvValue) : null,
         type_document_identification_id: docType ? Number(docType) : null,
-        type_organization_id: isNit ? 1 : 2,
-        type_regime_id: isNit ? 1 : 2,
-        type_liabilities: [5],
         email: email.trim() || null,
-        phone1: mobile.trim() || phone1.trim() || null,
+        phone1: phone1.trim() || null,
+        phone2: phone2.trim() || null,
+        mobile: mobile.trim() || null,
         address: address.trim() || null,
-        type_contact_ids: typeContactIds,
+        type_contact_id: typeContactIds.length > 0 ? typeContactIds : null,
+        commercial_registration: commercialRegistration.trim() || null,
+        price_list_id: priceListId ? Number(priceListId) : null,
+        payment_term_id: paymentTermId ? Number(paymentTermId) : null,
+        seller_id: sellerId ? Number(sellerId) : null,
+        accounts_receivable_account_id: accountsReceivableAccountId ? Number(accountsReceivableAccountId) : null,
+        accounts_payable_account_id: accountsPayableAccountId ? Number(accountsPayableAccountId) : null,
+        send_account_statement: sendAccountStatement,
       };
+
+      if (!isForeignerNit) {
+        basePayload.postal_code = postalCode.trim() || null;
+        basePayload.type_organization_id = isNit && typeOrganizationId ? Number(typeOrganizationId) : 2;
+        basePayload.type_regime_id = isNit && typeRegimeId ? Number(typeRegimeId) : 2;
+        if (isNit && typeLiabilityId) {
+          basePayload.type_liability_id = Number(typeLiabilityId);
+        }
+      }
 
       if (comments && comments.length > 0) {
         basePayload.comments = comments.filter(c => c.comment.trim() !== "");
@@ -248,7 +303,16 @@ function ModalContent({
       }
     } catch (err: any) {
       console.error("Error creating contact:", err);
-      const msg = err?.response?.data?.message || err?.message || "Ocurrió un error al crear el contacto";
+      let msg = err?.response?.data?.message || err?.message || "Ocurrió un error al crear el contacto";
+      
+      if (err?.response?.data?.errors) {
+        const errors = err.response.data.errors;
+        const firstError = Object.values(errors)[0];
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          msg = firstError[0] as string;
+        }
+      }
+      
       showToast(`Error: ${msg}`, "error");
     } finally {
       setCreating(false);
@@ -289,6 +353,26 @@ function ModalContent({
               type="button"
               onClick={() => {
                 if (pathname === '/contacts') {
+                  const formDataToSave = {
+                    docType,
+                    docNumber,
+                    contactTypes,
+                    registrationName,
+                    firstName,
+                    lastName,
+                    email,
+                    phone1,
+                    phone2,
+                    mobile,
+                    address,
+                    typeOrganizationId,
+                    typeRegimeId,
+                    typeLiabilityId,
+                    postalCode,
+                    commercialRegistration
+                  };
+                  sessionStorage.setItem("contactFormDraft", JSON.stringify(formDataToSave));
+                  
                   onClose();
                   router.push('/contacts/new');
                 } else {

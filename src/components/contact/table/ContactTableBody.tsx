@@ -20,6 +20,7 @@ interface ContactTableBodyProps {
   onToggleSelection?: (id: number) => void;
   activeTab?: "all" | "customer" | "provider";
   searchTerm?: string;
+  onAddContact?: () => void;
 }
 
 export function ContactTableBody({
@@ -30,6 +31,7 @@ export function ContactTableBody({
   onToggleSelection,
   activeTab = "all",
   searchTerm = "",
+  onAddContact,
 }: ContactTableBodyProps) {
   const hasSearch = Boolean(searchTerm.trim());
   const showEmptyByTab = !hasSearch;
@@ -143,10 +145,11 @@ export function ContactTableBody({
                     </div>
                     <button
                       type="button"
-                      className="mt-6 inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                      onClick={onAddContact}
+                      className="mt-6 cursor-pointer inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      Nuevo contacto
+                      {activeTab === 'customer' ? 'Nuevo cliente' : activeTab === 'provider' ? 'Nuevo proveedor' : 'Nuevo contacto'}
                     </button>
                   </div>
                 ) : (

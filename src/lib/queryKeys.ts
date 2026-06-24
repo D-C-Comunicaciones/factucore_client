@@ -140,6 +140,24 @@ export const QUERY_KEYS = {
                 "type-document-identifications",
             ] as const,
 
+        typeOrganizations: () =>
+            [
+                "catalogs",
+                "type-organizations",
+            ] as const,
+
+        typeLiabilities: () =>
+            [
+                "catalogs",
+                "type-liabilities",
+            ] as const,
+
+        typeRegimes: () =>
+            [
+                "catalogs",
+                "type-regimes",
+            ] as const,
+
         municipalities: () =>
             [
                 "catalogs",

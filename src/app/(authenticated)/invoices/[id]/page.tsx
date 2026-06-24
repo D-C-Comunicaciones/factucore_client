@@ -12,6 +12,7 @@ import { InvoiceDetailDocument } from "@/components/invoice/details/InvoiceDetai
 import { InvoiceDetailExtraInfo } from "@/components/invoice/details/InvoiceDetailExtraInfo";
 import { InvoiceDetailTabs } from "@/components/invoice/details/InvoiceDetailTabs";
 import { InvoiceDetailSkeleton } from "@/components/invoice/details/InvoiceDetailSkeleton";
+import { InvoiceDianStatus } from "@/components/invoice/details/InvoiceDianStatus";
 import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -149,6 +150,12 @@ export default function InvoiceDetailPage() {
             />
 
             <InvoiceDetailSummary bill={bill} />
+
+            <InvoiceDianStatus 
+                bill={bill} 
+                company={company} 
+                dianStatus={dianStatus} 
+            />
 
             <InvoiceDetailDocument
                 bill={bill}

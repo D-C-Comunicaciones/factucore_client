@@ -18,7 +18,7 @@ export interface Contact {
   name: string;
   identification: string;
   phone: string;
-  type: "customer" | "provider";
+  type: "customer" | "provider" | "both";
 }
 
 /* -------------------- helpers -------------------- */
@@ -118,6 +118,7 @@ function ContactActionsCell({
 
 export function getContactColumns(
   onDelete: (id: number) => void,
+  activeTab: string = "all",
   onToggle?: (id: number) => void,
   onToggleAll?: () => void,
   allSelected?: boolean,
@@ -203,16 +204,26 @@ export function getContactColumns(
       accessorKey: "type",
       header: "Tipo",
       size: 120,
-      cell: ({ row }) => (
-        <span
-          className={`inline-flex px-2 py-0.5 text-xs rounded-full font-medium ${row.original.type === "customer"
-              ? "bg-primary/10 text-primary"
-              : "bg-secondary/20 text-foreground"
-            }`}
-        >
-          {row.original.type === "customer" ? "Cliente" : "Proveedor"}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const type = row.original.type;
+        const showCustomer = type === "customer" || type === "both";
+        const showProvider = type === "provider" || type === "both";
+
+        return (
+          <div className="flex gap-1 flex-wrap">
+            {showCustomer && (activeTab === "all" || activeTab === "customer") && (
+              <span className="inline-flex px-2 py-0.5 text-[10px] rounded-full font-medium bg-primary/10 text-primary uppercase">
+                Cliente
+              </span>
+            )}
+            {showProvider && (activeTab === "all" || activeTab === "provider") && (
+              <span className="inline-flex px-2 py-0.5 text-[10px] rounded-full font-medium bg-secondary/20 text-foreground uppercase">
+                Proveedor
+              </span>
+            )}
+          </div>
+        );
+      },
     },
 
     /* ACCIONES (MÁS GRANDE) */

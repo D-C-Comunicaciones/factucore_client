@@ -23,6 +23,24 @@ export const catalogsApi = {
         );
     },
 
+    getTypeOrganizations: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/type-organizations"
+        );
+    },
+
+    getTypeLiabilities: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/type-liabilities"
+        );
+    },
+
+    getTypeRegimes: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>(
+            "/catalogs/type-regimes"
+        );
+    },
+
     getTypeResolutions: async (): Promise<ApiResponse<any>> => {
         return await apiClient.get<any>(
             "/catalogs/type-resolutions"

@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { CheckCircle2, Loader2, Sparkles, AlertCircle, UploadCloud } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -19,10 +18,13 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
     docNumber, setDocNumber,
     firstName, setFirstName,
     lastName, setLastName,
-    phone1, setPhone1,
-    mobile, setMobile,
+    registrationName, setRegistrationName,
+    typeOrganizationId, setTypeOrganizationId,
+    typeRegimeId, setTypeRegimeId,
+    typeLiabilityId, setTypeLiabilityId,
     municipalityId, setMunicipalityId,
     address, setAddress,
+    postalCode, setPostalCode,
     country, setCountry,
     city, setCity,
     autocompleting,
@@ -49,18 +51,44 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
   );
   const docTypeName = selectedDocTypeObj?.name?.toUpperCase() || "";
   const docTypeCode = selectedDocTypeObj?.code?.toUpperCase() || "";
+  const normalizedDocName = docTypeName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  const isNit = docTypeName.includes("NIT") && !docTypeName.includes("OTRO PAIS");
+  const isNit = normalizedDocName.includes("NIT") && !normalizedDocName.includes("OTRO PAIS");
   const isForeigner =
     ["PP", "CE", "TE", "DIE"].some(
-      (code) => docTypeCode.includes(code) || docTypeName.includes(code)
+      (code) => docTypeCode.includes(code) || normalizedDocName.includes(code)
     ) ||
-    docTypeName.includes("NIT DE OTRO PAIS") ||
-    docTypeName.includes("PASAPORTE") ||
-    docTypeName.includes("EXTRANJER") ||
-    docTypeName.includes("DOCUMENTO DE IDENTIFICACIÓN EXTRANJERO");
+    normalizedDocName.includes("NIT DE OTRO PAIS") ||
+    normalizedDocName.includes("PASAPORTE") ||
+    normalizedDocName.includes("EXTRANJER") ||
+    normalizedDocName.includes("DOCUMENTO DE IDENTIFICACION EXTRANJERO");
+
+  const isForeignerNit = normalizedDocName.includes("NIT DE OTRO PAIS");
+
+  const useRegistrationName = (isNit || isForeignerNit) && typeOrganizationId !== "2";
 
   const dvValue = isNit && docNumber ? validateVerificationDigit(docNumber) : null;
+
+  const typeOrganizations = catalogData?.typeOrganizations?.map((o: any) => ({
+    value: o.id.toString(),
+    label: o.name,
+  })) || [
+      { value: "1", label: "Persona jurídica" },
+      { value: "2", label: "Persona natural" },
+    ];
+
+  const typeRegimes = catalogData?.typeRegimes?.map((r: any) => ({
+    value: r.id.toString(),
+    label: r.name,
+  })) || [
+      { value: "1", label: "Responsable de IVA" },
+      { value: "2", label: "No responsable de IVA" },
+    ];
+
+  const typeLiabilities = catalogData?.typeLiabilities?.map((l: any) => ({
+    value: l.id.toString(),
+    label: l.name,
+  })) || [];
 
   return (
     <div className="p-6 space-y-6">
@@ -124,11 +152,15 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
                 placeholder="Ej: 22950341"
                 value={docNumber}
                 onChange={(e) => { setDocNumber(e.target.value); setErrors(prev => ({ ...prev, docNumber: false })); }}
-                className={`bg-white ${errors.docNumber ? "border-red-500 pr-8" : "border-gray-300"}`}
+                className={`bg-white ${errors.docNumber === "warning" ? "border-orange-500 pr-8 focus-visible:ring-orange-500" : errors.docNumber ? "border-red-500 pr-8" : "border-gray-300"}`}
               />
-              {errors.docNumber && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+              {errors.docNumber === "warning" ? (
+                <AlertCircle className="w-4 h-4 text-orange-500 absolute right-3 top-1/2 -translate-y-1/2" />
+              ) : errors.docNumber ? (
+                <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />
+              ) : null}
             </div>
-            {errors.docNumber && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+            {errors.docNumber && errors.docNumber !== "warning" && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
           </div>
           {isNit && (
             <div className="space-y-1.5 w-12">
@@ -159,37 +191,110 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
           </div>
         </div>
 
-        {/* Names and Last names */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Names and Last names or Registration Name */}
+        {useRegistrationName && !isForeignerNit && (
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600">Nombres *</label>
+            <label className="text-xs font-semibold text-slate-600">Razón social o nombre completo *</label>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Ej: FABIOLA ESTHER"
-                value={firstName}
-                onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: false })); }}
-                className={`bg-white ${errors.firstName ? "border-red-500 pr-8" : "border-gray-300"}`}
+                placeholder="Razón social o nombre completo"
+                value={registrationName}
+                onChange={(e) => { setRegistrationName(e.target.value); setErrors(prev => ({ ...prev, registrationName: false })); }}
+                className={`bg-white ${errors.registrationName ? "border-red-500 pr-8" : "border-gray-300"}`}
               />
-              {errors.firstName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+              {errors.registrationName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
             </div>
-            {errors.firstName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+            {errors.registrationName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
           </div>
+        )}
+
+        {isForeignerNit && (
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600">Apellidos *</label>
+            <label className="text-xs font-semibold text-slate-600">Razón social o nombre completo *</label>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Ej: PALACIO SALGADO"
-                value={lastName}
-                onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: false })); }}
-                className={`bg-white ${errors.lastName ? "border-red-500 pr-8" : "border-gray-300"}`}
+                placeholder="Razón social o nombre completo"
+                value={registrationName}
+                onChange={(e) => { setRegistrationName(e.target.value); setErrors(prev => ({ ...prev, registrationName: false })); }}
+                className={`bg-white ${errors.registrationName ? "border-red-500 pr-8" : "border-gray-300"}`}
               />
-              {errors.lastName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+              {errors.registrationName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
             </div>
-            {errors.lastName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+            {errors.registrationName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
           </div>
-        </div>
+        )}
+
+        {!useRegistrationName && !isForeignerNit && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Nombres *</label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Ej: FABIOLA ESTHER"
+                  value={firstName}
+                  onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: false })); }}
+                  className={`bg-white ${errors.firstName ? "border-red-500 pr-8" : "border-gray-300"}`}
+                />
+                {errors.firstName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+              </div>
+              {errors.firstName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Apellidos *</label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Ej: PALACIO SALGADO"
+                  value={lastName}
+                  onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: false })); }}
+                  className={`bg-white ${errors.lastName ? "border-red-500 pr-8" : "border-gray-300"}`}
+                />
+                {errors.lastName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+              </div>
+              {errors.lastName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+            </div>
+          </div>
+        )}
+
+        {isNit && !isForeignerNit && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Tipo de persona *</label>
+              <SearchableSelect
+                value={typeOrganizationId}
+                onValueChange={(val) => { setTypeOrganizationId(val); setErrors(prev => ({ ...prev, typeOrganizationId: false })); }}
+                options={typeOrganizations}
+                placeholder="Seleccionar tipo de persona"
+                className={`w-full text-foreground ${errors.typeOrganizationId ? "border-red-500" : "border-gray-300"}`}
+              />
+              {errors.typeOrganizationId && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600 truncate" title="Responsabilidad tributaria *">Resp. tributaria *</label>
+              <SearchableSelect
+                value={typeRegimeId}
+                onValueChange={(val) => { setTypeRegimeId(val); setErrors(prev => ({ ...prev, typeRegimeId: false })); }}
+                options={typeRegimes}
+                placeholder="Seleccionar"
+                className={`w-full text-foreground ${errors.typeRegimeId ? "border-red-500" : "border-gray-300"}`}
+              />
+              {errors.typeRegimeId && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600 truncate" title="Responsabilidad fiscal">Resp. fiscal</label>
+              <SearchableSelect
+                value={typeLiabilityId}
+                onValueChange={(val) => { setTypeLiabilityId(val); setErrors(prev => ({ ...prev, typeLiabilityId: false })); }}
+                options={typeLiabilities}
+                placeholder="Seleccionar res. fiscal"
+                className="w-full text-foreground border-gray-300"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Foreigner location fields */}
         {isForeigner && (
@@ -218,27 +323,43 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
         )}
 
         {/* Municipality */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-600">Municipio / Departamento</label>
-          <SearchableSelect
-            value={municipalityId}
-            onValueChange={setMunicipalityId}
-            options={municipalities}
-            placeholder="Seleccionar municipio"
-            className="w-full text-foreground border-gray-300"
-          />
-        </div>
+        {!isForeigner && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600">Municipio / Departamento</label>
+            <SearchableSelect
+              value={municipalityId}
+              onValueChange={setMunicipalityId}
+              options={municipalities}
+              placeholder="Seleccionar municipio"
+              className="w-full text-foreground border-gray-300"
+            />
+          </div>
+        )}
 
-        {/* Address */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-600">Dirección</label>
-          <Input
-            type="text"
-            placeholder="Dirección del domicilio"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="bg-white border-gray-300"
-          />
+        {/* Address and Postal Code */}
+        <div className={`grid grid-cols-1 ${!isForeignerNit ? "md:grid-cols-[1fr_150px]" : ""} gap-4`}>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600">Dirección</label>
+            <Input
+              type="text"
+              placeholder="Dirección del domicilio"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="bg-white border-gray-300"
+            />
+          </div>
+          {!isForeignerNit && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Código postal</label>
+              <Input
+                type="text"
+                placeholder="Código"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                className="bg-white border-gray-300"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

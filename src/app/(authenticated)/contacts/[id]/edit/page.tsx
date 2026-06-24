@@ -119,7 +119,7 @@ function EditContactContent() {
         email: email.trim() || null,
         phone1: mobile.trim() || phone1.trim() || null,
         address: address.trim() || null,
-        type_contact_ids: typeContactIds.length > 0 ? typeContactIds : [1],
+        type_contact_id: typeContactIds.length > 0 ? typeContactIds : null,
       };
 
       if (municipalityId) {
@@ -135,7 +135,14 @@ function EditContactContent() {
       router.push(`/contacts/${id}`);
     } catch (err: any) {
       console.error("Error updating contact:", err);
-      const msg = err?.response?.data?.message || err?.message || "Ocurrió un error al actualizar el contacto";
+      let msg = err?.response?.data?.message || err?.message || "Ocurrió un error al actualizar el contacto";
+      if (err?.response?.data?.errors) {
+        const errors = err.response.data.errors;
+        const firstError = Object.values(errors)[0];
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          msg = firstError[0] as string;
+        }
+      }
       showToast(`Error: ${msg}`, "error");
     } finally {
       setCreating(false);

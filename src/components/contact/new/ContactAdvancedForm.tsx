@@ -30,6 +30,10 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
     docNumber, setDocNumber,
     firstName, setFirstName,
     lastName, setLastName,
+    registrationName, setRegistrationName,
+    typeOrganizationId, setTypeOrganizationId,
+    typeRegimeId, setTypeRegimeId,
+    typeLiabilityId, setTypeLiabilityId,
     municipalityId, setMunicipalityId,
     address, setAddress,
     postalCode, setPostalCode,
@@ -39,6 +43,7 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
     phone1, setPhone1,
     phone2, setPhone2,
     mobile, setMobile,
+    commercialRegistration, setCommercialRegistration,
     sendAccountStatement, setSendAccountStatement,
     associatedPersons, setAssociatedPersons,
     autocompleting,
@@ -136,18 +141,44 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
   );
   const docTypeName = selectedDocTypeObj?.name?.toUpperCase() || "";
   const docTypeCode = selectedDocTypeObj?.code?.toUpperCase() || "";
+  const normalizedDocName = docTypeName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  const isNit = docTypeName.includes("NIT") && !docTypeName.includes("OTRO PAIS");
+  const isNit = normalizedDocName.includes("NIT") && !normalizedDocName.includes("OTRO PAIS");
   const isForeigner =
     ["PP", "CE", "TE", "DIE"].some(
-      (code) => docTypeCode.includes(code) || docTypeName.includes(code)
+      (code) => docTypeCode.includes(code) || normalizedDocName.includes(code)
     ) ||
-    docTypeName.includes("NIT DE OTRO PAIS") ||
-    docTypeName.includes("PASAPORTE") ||
-    docTypeName.includes("EXTRANJER") ||
-    docTypeName.includes("DOCUMENTO DE IDENTIFICACIÓN EXTRANJERO");
+    normalizedDocName.includes("NIT DE OTRO PAIS") ||
+    normalizedDocName.includes("PASAPORTE") ||
+    normalizedDocName.includes("EXTRANJER") ||
+    normalizedDocName.includes("DOCUMENTO DE IDENTIFICACION EXTRANJERO");
+
+  const isForeignerNit = normalizedDocName.includes("NIT DE OTRO PAIS");
+
+  const useRegistrationName = (isNit || isForeignerNit) && typeOrganizationId !== "2";
 
   const dvValue = isNit && docNumber ? validateVerificationDigit(docNumber) : null;
+
+  const typeOrganizations = catalogData?.typeOrganizations?.map((o: any) => ({
+    value: o.id.toString(),
+    label: o.name,
+  })) || [
+      { value: "1", label: "Persona jurídica" },
+      { value: "2", label: "Persona natural" },
+    ];
+
+  const typeRegimes = catalogData?.typeRegimes?.map((r: any) => ({
+    value: r.id.toString(),
+    label: r.name,
+  })) || [
+      { value: "1", label: "Responsable de IVA" },
+      { value: "2", label: "No responsable de IVA" },
+    ];
+
+  const typeLiabilities = catalogData?.typeLiabilities?.map((l: any) => ({
+    value: l.id.toString(),
+    label: l.name,
+  })) || [];
 
   return (
     <TooltipProvider>
@@ -226,11 +257,15 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
                           placeholder="Ej: 1234567890"
                           value={docNumber}
                           onChange={(e) => { setDocNumber(e.target.value.replace(/\D/g, '')); setErrors(prev => ({ ...prev, docNumber: false })); }}
-                          className={errors.docNumber ? "border-red-500 pr-8" : "border-gray-300"}
+                          className={errors.docNumber === "warning" ? "border-orange-500 pr-8 focus-visible:ring-orange-500 bg-white" : errors.docNumber ? "border-red-500 pr-8 bg-white" : "border-gray-300 bg-white"}
                         />
-                        {errors.docNumber && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+                        {errors.docNumber === "warning" ? (
+                          <AlertCircle className="w-4 h-4 text-orange-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                        ) : errors.docNumber ? (
+                          <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                        ) : null}
                       </div>
-                      {errors.docNumber && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+                      {errors.docNumber && errors.docNumber !== "warning" && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
                     </div>
                     {isNit && docType && (
                       <div className="space-y-1.5 w-12 transition-all duration-300 ease-in-out">
@@ -243,51 +278,122 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
                         />
                       </div>
                     )}
-                    <div className={`space-y-1.5 transition-all duration-300 ease-in-out origin-right ${docType ? 'opacity-100 scale-100 w-auto' : 'opacity-0 scale-95 w-0 overflow-hidden pointer-events-none'}`}>
-                      <label className="text-xs font-semibold text-transparent block">.</label>
-                      <button
-                        type="button"
-                        onClick={onAutocomplete}
-                        disabled={autocompleting}
-                        className="bg-[#2a59d9]/90 text-white hover:bg-[#2a59d9] h-9 text-xs font-bold px-4 rounded-lg flex items-center justify-center gap-1 transition-all duration-300 ease-in-out border-none disabled:opacity-50 cursor-pointer"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Autocompletar
-                      </button>
-                    </div>
+                    {docType && (
+                      <div className="space-y-1.5 transition-all duration-300 ease-in-out origin-right opacity-100 scale-100 w-auto">
+                        <label className="text-xs font-semibold text-transparent block">.</label>
+                        <button
+                          type="button"
+                          onClick={onAutocomplete}
+                          disabled={autocompleting}
+                          className="bg-[#2a59d9]/90 text-white hover:bg-[#2a59d9] h-9 text-xs font-bold px-4 rounded-lg flex items-center justify-center gap-1 transition-all duration-300 ease-in-out border-none disabled:opacity-50 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Autocompletar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {useRegistrationName ? (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Nombres *</label>
+                    <label className="text-xs font-semibold text-slate-600">Razón social o nombre completo *</label>
                     <div className="relative">
                       <Input
                         type="text"
-                        placeholder="Nombres"
-                        value={firstName}
-                        onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: false })); }}
-                        className={errors.firstName ? "border-red-500 pr-8" : "border-gray-300"}
+                        placeholder="Razón social o nombre completo"
+                        value={registrationName}
+                        onChange={(e) => { setRegistrationName(e.target.value); setErrors(prev => ({ ...prev, registrationName: false })); }}
+                        className={errors.registrationName ? "border-red-500 pr-8" : "border-gray-300"}
                       />
-                      {errors.firstName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+                      {errors.registrationName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
                     </div>
-                    {errors.firstName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+                    {errors.registrationName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Apellidos *</label>
-                    <div className="relative">
-                      <Input
-                        type="text"
-                        placeholder="Apellidos"
-                        value={lastName}
-                        onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: false })); }}
-                        className={errors.lastName ? "border-red-500 pr-8" : "border-gray-300"}
-                      />
-                      {errors.lastName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">Nombres *</label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="Nombres"
+                          value={firstName}
+                          onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: false })); }}
+                          className={errors.firstName ? "border-red-500 pr-8" : "border-gray-300"}
+                        />
+                        {errors.firstName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+                      </div>
+                      {errors.firstName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
                     </div>
-                    {errors.lastName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">Apellidos *</label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="Apellidos"
+                          value={lastName}
+                          onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: false })); }}
+                          className={errors.lastName ? "border-red-500 pr-8" : "border-gray-300"}
+                        />
+                        {errors.lastName && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+                      </div>
+                      {errors.lastName && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {isNit && !isForeignerNit && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 truncate" title="Tipo de persona *">Tipo de persona *</label>
+                        <SearchableSelect
+                          value={typeOrganizationId}
+                          onValueChange={(val) => { setTypeOrganizationId(val); setErrors(prev => ({ ...prev, typeOrganizationId: false })); }}
+                          options={typeOrganizations}
+                          placeholder="Seleccionar"
+                          className={`w-full text-foreground ${errors.typeOrganizationId ? "border-red-500" : "border-gray-300"}`}
+                        />
+                        {errors.typeOrganizationId && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 truncate" title="Responsabilidad tributaria *">Resp. tributaria *</label>
+                        <SearchableSelect
+                          value={typeRegimeId}
+                          onValueChange={(val) => { setTypeRegimeId(val); setErrors(prev => ({ ...prev, typeRegimeId: false })); }}
+                          options={typeRegimes}
+                          placeholder="Seleccionar"
+                          className={`w-full text-foreground ${errors.typeRegimeId ? "border-red-500" : "border-gray-300"}`}
+                        />
+                        {errors.typeRegimeId && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 truncate" title="Responsabilidad fiscal">Resp. fiscal</label>
+                        <SearchableSelect
+                          value={typeLiabilityId}
+                          onValueChange={(val) => { setTypeLiabilityId(val); setErrors(prev => ({ ...prev, typeLiabilityId: false })); }}
+                          options={typeLiabilities}
+                          placeholder="Seleccionar"
+                          className={`w-full text-foreground ${errors.typeLiabilityId ? "border-red-500" : "border-gray-300"}`}
+                        />
+                        {errors.typeLiabilityId && <span className="text-red-500 text-[10px] mt-1 block">Este campo es obligatorio</span>}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 truncate" title="Matrícula mercantil">Matrícula mercantil</label>
+                        <Input
+                          type="text"
+                          placeholder="Opcional"
+                          value={commercialRegistration}
+                          onChange={(e) => setCommercialRegistration(e.target.value.replace(/\D/g, ''))}
+                          className="border-gray-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {isForeigner && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -314,18 +420,20 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
                   </div>
                 )}
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Municipio / Departamento</label>
-                  <SearchableSelect
-                    value={municipalityId}
-                    onValueChange={setMunicipalityId}
-                    options={municipalities}
-                    placeholder="Municipio"
-                    className="w-full text-foreground border-gray-300"
-                  />
-                </div>
+                {!isForeigner && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Municipio / Departamento</label>
+                    <SearchableSelect
+                      value={municipalityId}
+                      onValueChange={setMunicipalityId}
+                      options={municipalities}
+                      placeholder="Municipio"
+                      className="w-full text-foreground border-gray-300"
+                    />
+                  </div>
+                )}
 
-                <div className="grid grid-cols-[1fr_120px] gap-4">
+                <div className={`grid ${!isForeignerNit ? "grid-cols-[1fr_120px]" : "grid-cols-1"} gap-4`}>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
                       Dirección
@@ -346,16 +454,18 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
                       className="border-gray-300"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-600">Código postal</label>
-                    <Input
-                      type="text"
-                      placeholder="Código"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      className="border-gray-300"
-                    />
-                  </div>
+                  {!isForeignerNit && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600">Código postal</label>
+                      <Input
+                        type="text"
+                        placeholder="Código"
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                        className="border-gray-300"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -433,48 +543,48 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
                     className="bg-white border-gray-300"
                   />
                 </div>
-              </div>
+                
+                <div className="border border-gray-200 rounded-xl p-5 bg-white">
+                    <span className="text-sm font-semibold text-slate-800 block mb-1">Personas asociadas</span>
+                    <p className="text-xs text-slate-500 font-normal mb-4">
+                      Vincula los datos de personas relacionadas a este contacto y activa notificaciones de vencimiento para tus clientes. <span className="text-primary cursor-pointer hover:underline">Ver más</span>
+                    </p>
 
-              <div className="border border-gray-200 rounded-xl p-5 bg-white">
-                <span className="text-sm font-semibold text-slate-800 block mb-1">Personas asociadas</span>
-                <p className="text-xs text-slate-500 font-normal mb-4">
-                  Vincula los datos de personas relacionadas a este contacto y activa notificaciones de vencimiento para tus clientes. <span className="text-primary cursor-pointer hover:underline">Ver más</span>
-                </p>
-
-                {associatedPersons.length > 0 && (
-                  <div className="space-y-2 mb-4">
-                    {associatedPersons.map((p, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-transparent hover:border-gray-200 rounded-xl transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                            {p.first_name ? p.first_name.charAt(0).toUpperCase() : ""}
+                    {associatedPersons.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        {associatedPersons.map((p, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-transparent hover:border-gray-200 rounded-xl transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                                {p.first_name ? p.first_name.charAt(0).toUpperCase() : ""}
+                              </div>
+                              <span className="text-sm font-medium text-slate-700">{p.first_name} {p.last_name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button type="button" onClick={() => openEditPersonModal(idx)} className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button type="button" onClick={() => deletePerson(idx)} className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                          <span className="text-sm font-medium text-slate-700">{p.first_name} {p.last_name}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => openEditPersonModal(idx)} className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button type="button" onClick={() => deletePerson(idx)} className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
+                    )}
 
-                <button
-                  type="button"
-                  onClick={openNewPersonModal}
-                  className="py-1.5 px-3 bg-primary/10 text-primary hover:bg-primary/20 border border-transparent text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors w-fit"
-                >
-                  <Plus className="w-4 h-4" />
-                  Asociar persona
-                </button>
+                    <button
+                      type="button"
+                      onClick={openNewPersonModal}
+                      className="py-1.5 px-3 bg-primary/10 text-primary hover:bg-primary/20 border border-transparent text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors w-fit"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Asociar persona
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
         </div>
 
         {/* 3. SECCIÓN: ESTADO DE CUENTA */}
