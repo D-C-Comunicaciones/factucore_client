@@ -274,7 +274,7 @@ export function QuickCreateItemModal({
            default_cost_price: parseFloat(basicForm.initialCost) || 0,
            apply_to_variants: false,
            tax_rate_ids: taxRateIds,
-           price_lists: [{ id: 1, value: parseFloat(basicForm.totalPrice) || 0 }],
+           price_lists: [{ id: 1, value: parseFloat(basicForm.basePrice) || 0 }],
          },
          ...(basicForm.itemType === "producto" && {
            inventory: {

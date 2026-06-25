@@ -99,8 +99,23 @@ export interface InvoiceSummary {
     payment_due_date: string | null;
     total: string;
     pending_amount: number;
-    status_dian: string;
-    status: string;
+    status_dian: {
+        id: number;
+        code: string;
+        name: string;
+        description?: string;
+        created_at?: string | null;
+        updated_at?: string | null;
+    } | string;
+    status: {
+        id: number;
+        code: string;
+        name: string;
+        description?: string;
+        created_at?: string | null;
+        updated_at?: string | null;
+    } | string;
+    is_email_sent: boolean;
 }
 
 // Tipos para la respuesta de detalle de factura (según ejemplo real de backend)

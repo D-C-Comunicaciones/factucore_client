@@ -22,6 +22,7 @@ export function InvoiceDetailDocument({
             ? Number(bill.pending_amount)
             : Number(bill.payable_amount || bill.total || 0));
     const isCobrada = bill.is_paid || pendingAmount <= 0;
+    const isAccepted = ["ACEPTADA", "PROCESADO CORRECTAMENTE", "APROBADA", "AUTORIZADA"].includes((dianStatus || '').toUpperCase());
 
     const getNestedValue = (obj: any, key: string) => obj?.[key] ?? obj?.legal_monetary_total?.[key] ?? 0;
 
@@ -46,14 +47,14 @@ export function InvoiceDetailDocument({
     return (
         <div className="filter drop-shadow-sm">
             <div 
-                className="bg-white rounded-lg border border-slate-200 relative"
+                className="bg-white rounded-lg border border-slate-200 relative overflow-hidden"
                 style={{
                     clipPath: 'polygon(0 0, calc(100% - 40px) 0, 100% 40px, 100% 100%, 0 100%)'
                 }}
             >
                 {/* Status ribbon */}
-                <div className={`absolute top-6 -left-12 w-48 text-center text-white text-sm font-bold py-1 transform -rotate-45 shadow-md ${isCobrada ? 'bg-green-500' : 'bg-red-500'}`}>
-                    {isCobrada ? 'COBRADA' : 'POR COBRAR'}
+                <div className={`absolute top-6 -left-12 w-48 text-center text-white text-[11px] uppercase tracking-wide font-bold py-1.5 transform -rotate-45 shadow-md ${!isAccepted ? 'bg-orange-500' : (isCobrada ? 'bg-green-500' : 'bg-red-500')}`}>
+                    {!isAccepted ? 'NO FACTURADO' : (isCobrada ? 'COBRADA' : 'POR COBRAR')}
                 </div>
 
                 {/* Folded Corner Effect */}
@@ -85,7 +86,10 @@ export function InvoiceDetailDocument({
                     <div className="w-1/3 text-center flex flex-col items-center justify-center pt-2">
                         <h2 className="text-xl font-bold text-[#0F2843] uppercase">{company?.name || company?.company_name || company?.registration_name || ''}</h2>
                         <div className="text-slate-500 mt-1 text-sm font-medium">
-                            NIT: {company?.identification_number || company?.company_id || ''}-{(company?.company_dv || '')}
+                            NIT: {company?.identification_number || company?.company_id || ''}
+                            {(company?.verification_digit != null || company?.dv != null || company?.company_dv != null) &&
+                                `-${company?.verification_digit ?? company?.dv ?? company?.company_dv}`
+                            }
                         </div>
                         {company?.email && <div className="text-slate-500 text-sm mt-0.5">{company.email}</div>}
                     </div>
@@ -112,8 +116,24 @@ export function InvoiceDetailDocument({
                             </Link>
                         </div>
                         <div className="flex items-center">
-                            <span className="font-bold text-slate-700 w-48 shrink-0">Cédula de ciudadanía:</span>
-                            <span>{customer?.identification || customer?.company_id || customer?.identification_number || ''}</span>
+                            <span className="font-bold text-slate-700 w-48 shrink-0">
+                                {(() => {
+                                    const orgCode = customer?.type_organization?.code || bill?.contact?.type_organization_id || customer?.type_organization_id;
+                                    const isJuridica = String(orgCode) === "1";
+                                    
+                                    if (isJuridica) return "NIT";
+                                    
+                                    const docName = customer?.type_document_identification?.name || bill?.contact?.type_document_identification?.name;
+                                    return docName || "Cédula de ciudadanía";
+                                })()}:
+                            </span>
+                            <span>
+                                {customer?.identification || customer?.company_id || customer?.identification_number || ''}
+                                {(() => {
+                                    const dv = customer?.verification_digit ?? bill?.contact?.verification_digit;
+                                    return dv != null ? `-${dv}` : '';
+                                })()}
+                            </span>
                         </div>
                         <div className="flex items-center">
                             <span className="font-bold text-slate-700 w-48 shrink-0">Teléfono:</span>

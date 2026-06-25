@@ -26,7 +26,7 @@ export default function NewInvoicePage() {
   const { data: sellersData } = useSellersList();
   const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
   const resolutionTypeFilter = tipoDoc === 'tiquete' ? 2 : 1; // 1=INVOICE, 2=POS
-  const { resolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
+  const { resolutions, refetch: refetchResolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
   const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, any>>({});
 
@@ -104,7 +104,7 @@ export default function NewInvoicePage() {
     value: pf.id.toString(),
     label: pf.name
   })) || [];
-  
+
   const bankAccounts = catalogData.bankAccounts?.map((ba: any) => ({
     value: ba.id.toString(),
     label: ba.name
@@ -130,7 +130,13 @@ export default function NewInvoicePage() {
     paymentForms,
   };
 
-  const validateForm = () => {
+    const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
+    const isContadoForm = !formState.payment_form_id || !selectedForm ||
+      selectedForm.label?.toLowerCase().includes("contado") ||
+      selectedForm.value?.toLowerCase() === "contado" ||
+      selectedForm.value === "1";
+
+    const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     // 1. Contacto
@@ -142,17 +148,27 @@ export default function NewInvoicePage() {
     }
 
     // 2. Forma / Medio de pago
-    const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
-    const isContadoForm = !formState.payment_form_id || !selectedForm ||
-        selectedForm.label?.toLowerCase().includes("contado") ||
-        selectedForm.value?.toLowerCase() === "contado" ||
-        selectedForm.value === "1";
 
-    if (isContadoForm && !formState.payment_method_id) {
-      newErrors.payment_method_id = "El método de pago es requerido";
-      setErrors(newErrors);
-      showToast("El método de pago es requerido", "error");
-      return false;
+    if (isContadoForm) {
+      if (!formState.payment_method_id) {
+        newErrors.payment_method_id = "El método de pago es requerido";
+        setErrors(newErrors);
+        showToast("El método de pago es requerido", "error");
+        return false;
+      }
+    } else {
+      if (!formState.payment_term_id) {
+        newErrors.payment_term_id = "El plazo de pago es requerido";
+        setErrors(newErrors);
+        showToast("El plazo de pago es requerido para facturas a crédito", "error");
+        return false;
+      }
+      if (!formState.payment_due_date) {
+        newErrors.payment_due_date = "La fecha de vencimiento es requerida";
+        setErrors(newErrors);
+        showToast("La fecha de vencimiento es requerida para facturas a crédito", "error");
+        return false;
+      }
     }
 
     // 3. Ítems
@@ -175,6 +191,21 @@ export default function NewInvoicePage() {
         showToast("Por favor ingrese una cantidad mayor a 0 en los productos seleccionados.", "error");
         return false;
       }
+      
+      const outOfStockItem = invoiceBuilder.items.find((item: any) => {
+        if (item.is_inventoriable && !item.allow_negative_stock) {
+           const availableStock = item.stock_quantity || 0;
+           return item.cantidad > availableStock;
+        }
+        return false;
+      });
+
+      if (outOfStockItem) {
+        newErrors.items = "out_of_stock";
+        setErrors(newErrors);
+        showToast(`El producto "${outOfStockItem.item}" no tiene stock suficiente. Stock disponible: ${outOfStockItem.stock_quantity || 0}, Cantidad solicitada: ${outOfStockItem.cantidad}.`, "error");
+        return false;
+      }
     }
 
     setErrors({});
@@ -191,7 +222,7 @@ export default function NewInvoicePage() {
       });
 
       if (formState.paymentData) {
-          basePayload.payments = [formState.paymentData];
+        basePayload.payments = [formState.paymentData];
       }
       delete basePayload.paymentData;
       delete basePayload.comments;
@@ -202,22 +233,28 @@ export default function NewInvoicePage() {
         basePayload.seller_id = Number(basePayload.seller_id);
       }
 
+      if (isContadoForm) {
+        delete basePayload.payment_term_id;
+      } else {
+        delete basePayload.payment_method_id;
+      }
+
       if (actionType === "SEND") {
         // Emitir directamente a la DIAN: POST /invoices/send (sin save_action)
         const res: any = await InvoicesService.sendDirect(basePayload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
-        
+
         if (res?.dian && res.dian.estado_documento === "NO APROBADA") {
-            const errorMsg = res.dian.mensaje_dian || "La factura se creó pero fue rechazada por la DIAN";
-            const details = res.dian.errors && res.dian.errors.length > 0 
-                ? res.dian.errors.map((e: any) => e.message).join(" | ") 
-                : "";
-            showToast(`${errorMsg}. ${details}`, "error");
-            return;
+          const errorMsg = res.dian.mensaje_dian || "La factura se creó pero fue rechazada por la DIAN";
+          const details = res.dian.errors && res.dian.errors.length > 0
+            ? res.dian.errors.map((e: any) => e.message).join(" | ")
+            : "";
+          showToast(`${errorMsg}. ${details}`, "error");
+          return;
         }
 
-        showToast("Factura emitida correctamente a la DIAN", "success");
+        showToast("Factura validada correctamente por la DIAN", "success");
         router.push(`/invoices/${id}`);
 
       } else if (actionType === "DRAFT") {
@@ -235,6 +272,7 @@ export default function NewInvoicePage() {
         await createInvoice.mutateAsync(payload);
         showToast("Factura guardada correctamente", "success");
         invoiceBuilder.reset();
+        refetchResolutions();
         setFormState({ notes: "", contact_id: null, payment_form_id: null, payment_method_id: null, payment_due_date: null });
 
       } else if (actionType === "PRINT") {
@@ -257,14 +295,16 @@ export default function NewInvoicePage() {
     } catch (error: any) {
       const backendErrors = error.response?.data?.errors;
       if (backendErrors) {
-         setErrors(backendErrors);
-         if (backendErrors.inventory && Array.isArray(backendErrors.inventory) && backendErrors.inventory.length > 0) {
-             showToast(backendErrors.inventory[0], "error");
-         } else {
-             showToast("Se encontraron errores de validación en el formulario", "error");
-         }
+        setErrors(backendErrors);
+        if (backendErrors.prevalidation && Array.isArray(backendErrors.prevalidation) && backendErrors.prevalidation.length > 0) {
+          showToast(backendErrors.prevalidation[0], "error");
+        } else if (backendErrors.inventory && Array.isArray(backendErrors.inventory) && backendErrors.inventory.length > 0) {
+          showToast(backendErrors.inventory[0], "error");
+        } else {
+          showToast("Se encontraron errores de validación en el formulario", "error");
+        }
       } else {
-         showToast("Error al procesar la factura", "error");
+        showToast(error.response?.data?.message || "Error al procesar la factura", "error");
       }
       console.error(error);
     } finally {
@@ -311,6 +351,7 @@ export default function NewInvoicePage() {
             resolutions={resolutions || []}
             selectedResolutionId={selectedResolutionId}
             setSelectedResolutionId={setSelectedResolutionId}
+            onRefetchResolutions={refetchResolutions}
             formState={formState}
             setFormState={setFormState}
             notes={formState.notes}
@@ -319,13 +360,13 @@ export default function NewInvoicePage() {
             setShowRemissionBar={setShowRemissionBar}
             errors={errors}
           />
-          <NewInvoicePayment 
-            paymentMethods={paymentMethods} 
-            bankAccounts={bankAccounts} 
+          <NewInvoicePayment
+            paymentMethods={paymentMethods}
+            bankAccounts={bankAccounts}
             paymentData={formState.paymentData}
             onPaymentDataChange={(data) => setFormState({ ...formState, paymentData: data })}
           />
-          <NewInvoiceComments 
+          <NewInvoiceComments
             comments={formState.comments || []}
             setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
           />

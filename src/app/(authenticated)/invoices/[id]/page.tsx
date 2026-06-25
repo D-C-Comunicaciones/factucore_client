@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Loader2 } from "lucide-react";
 import { InvoicesService } from "@/lib/invoices";
+import { AuthService } from "@/lib/auth";
 
 import { InvoiceDetailHeader } from "@/components/invoice/details/InvoiceDetailHeader";
 import { InvoiceDetailSummary } from "@/components/invoice/details/InvoiceDetailSummary";
@@ -15,7 +16,7 @@ import { InvoiceDetailSkeleton } from "@/components/invoice/details/InvoiceDetai
 import { InvoiceDianStatus } from "@/components/invoice/details/InvoiceDianStatus";
 import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
 import { showToast } from "@/components/sonner/CustomToaster";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 export default function InvoiceDetailPage() {
     const params = useParams();
@@ -27,8 +28,6 @@ export default function InvoiceDetailPage() {
 
     const [isSending, setIsSending] = useState(false);
     const [comments, setComments] = useState<any[]>([]);
-    const [printPdfUrl, setPrintPdfUrl] = useState<string | null>(null);
-    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
     useEffect(() => {
         if (data?.message) {
@@ -39,9 +38,12 @@ export default function InvoiceDetailPage() {
     }, [data?.message, data?.status]);
 
     const invoiceData = data?.data?.invoice || data?.data?.bill;
+
+    // Cambiamos el title del documento
     useEffect(() => {
         if (invoiceData) {
-            document.title = `Factura de venta No ${invoiceData.prefix || ''}${invoiceData.number || invoiceData.id}`;
+            const pdfName = `Factura de venta No ${invoiceData.prefix || ''}${invoiceData.number || invoiceData.id}`;
+            document.title = pdfName;
         }
     }, [invoiceData]);
 
@@ -49,16 +51,25 @@ export default function InvoiceDetailPage() {
     if (isLoading) return <InvoiceDetailSkeleton />;
     if (isError || !data || !data.data) return <div className="py-10 text-center text-red-500">No se pudo cargar la factura</div>;
 
-
     if (!invoiceData) return <div className="py-10 text-center text-red-500">No se pudo cargar la factura</div>;
 
     const bill = invoiceData;
 
+    // Leer company guardada en localStorage al iniciar sesión (igual que en invoices/new)
+    const storedCompany = AuthService.getCompany<any>();
+
     const templateData = bill.invoice_snapshot?.template_data || {};
     const snapshotInvoice = templateData.invoice || {};
-    const customer = data.data.customer || templateData.customer || bill.contact || {};
-    const items = data.data.items || snapshotInvoice.lines || bill.lines || [];
-    const company = data.data.company || invoiceData?.company || templateData.supplier || {};
+    const customer = data.data?.customer || templateData.contact_snapshot || bill.contact || templateData.customer || {};
+    const items = data.data?.items || snapshotInvoice.lines || bill.lines || [];
+    // Merge company data: prefer API response but fill missing fields from localStorage
+    const apiCompany = data.data?.company || templateData.supplier_snapshot || invoiceData?.company || templateData.supplier || {};
+    const company = {
+        ...storedCompany,
+        ...apiCompany,
+        // Ensure verification_digit is always available from localStorage if not in API response
+        verification_digit: apiCompany?.verification_digit ?? apiCompany?.dv ?? storedCompany?.verification_digit ?? storedCompany?.dv,
+    };
     const dianStatus = bill.dian_rejection_reason ? "NO APROBADA" : (bill.dian_response?.estado_documento || bill.dian_status?.name || data.dian?.estado_documento || '');
 
     const isAccepted = ["ACEPTADA", "PROCESADO CORRECTAMENTE", "APROBADA", "AUTORIZADA"].includes(dianStatus.toUpperCase());
@@ -73,7 +84,7 @@ export default function InvoiceDetailPage() {
                 const errorMessages = res.dian.errors?.map((e: any) => e.message).join(" | ");
                 showToast(`Rechazado por DIAN: ${errorMessages || res.message || "Intente más tarde"}`, "error", "Rechazado por DIAN");
             } else {
-                showToast("Factura emitida correctamente a la DIAN", "success", "Éxito");
+                showToast("Factura validada correctamente por la DIAN", "success", "Éxito");
             }
         } catch (error: any) {
             const errorData = error.response?.data || error.data || error;
@@ -110,9 +121,46 @@ export default function InvoiceDetailPage() {
         try {
             showToast("Preparando documento para imprimir", "info");
             const blob = await InvoicesService.printPdfBlob(bill.id);
-            const url = window.URL.createObjectURL(blob) + "#toolbar=1&navpanes=1&scrollbar=1&view=FitH";
-            setPrintPdfUrl(url);
-            setIsPrintModalOpen(true);
+            const pdfName = `Factura de venta No. ${bill.prefix || ''}${bill.number || bill.id}`;
+            const file = new File([blob], pdfName + ".pdf", { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(file);
+
+            const iframe = document.createElement("iframe");
+            iframe.style.position = "absolute";
+            iframe.style.width = "0";
+            iframe.style.height = "0";
+            iframe.style.border = "none";
+            iframe.src = url;
+
+            iframe.onload = () => {
+                const originalTitle = document.title;
+                document.title = pdfName;
+
+                const win = iframe.contentWindow;
+                if (win) {
+                    win.onafterprint = () => {
+                        document.title = originalTitle;
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                        window.URL.revokeObjectURL(url);
+                    };
+
+                    setTimeout(() => {
+                        win.print();
+
+                        // Fallback cleanup just in case onafterprint doesn't fire
+                        setTimeout(() => {
+                            document.title = originalTitle;
+                            if (document.body.contains(iframe)) {
+                                document.body.removeChild(iframe);
+                            }
+                        }, 300000); // 5 minutos
+                    }, 100);
+                }
+            };
+
+            document.body.appendChild(iframe);
         } catch (error) {
             console.error("Error al preparar impresión:", error);
             showToast("No se pudo cargar el documento para imprimir", "error");
@@ -123,10 +171,13 @@ export default function InvoiceDetailPage() {
         try {
             showToast("Descargando documento", "info");
             const blob = await InvoicesService.downloadPdfBlob(bill.id);
-            const url = window.URL.createObjectURL(blob);
+            const pdfName = `Factura de venta No. ${bill.prefix || ''}${bill.number || bill.id}.pdf`;
+            const file = new File([blob], pdfName, { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(file);
+
             const a = document.createElement("a");
             a.href = url;
-            a.download = `Factura_${bill.prefix || ''}${bill.number || bill.id}.pdf`;
+            a.download = pdfName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -138,7 +189,7 @@ export default function InvoiceDetailPage() {
     };
 
     return (
-        <div className="max-w-[1200px] mx-auto py-8 px-4 space-y-6 text-sm text-slate-700">
+        <div className="max-w-[1200px] mx-auto py-8 px-4 space-y-6 text-sm text-slate-700 relative">
             <InvoiceDetailHeader
                 bill={bill}
                 canEdit={canEdit}
@@ -151,10 +202,10 @@ export default function InvoiceDetailPage() {
 
             <InvoiceDetailSummary bill={bill} />
 
-            <InvoiceDianStatus 
-                bill={bill} 
-                company={company} 
-                dianStatus={dianStatus} 
+            <InvoiceDianStatus
+                bill={bill}
+                company={company}
+                dianStatus={dianStatus}
             />
 
             <InvoiceDetailDocument
@@ -170,33 +221,6 @@ export default function InvoiceDetailPage() {
             <InvoiceDetailTabs />
 
             <NewInvoiceComments comments={comments} setComments={setComments} />
-
-            <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
-                <DialogContent className="max-w-5xl w-[90vw] h-[90vh] p-0 flex flex-col bg-white">
-                    <div className="p-4 border-b flex items-center justify-between bg-white z-10">
-                        <DialogTitle>Imprimir Factura</DialogTitle>
-                        <button 
-                            onClick={() => {
-                                const iframe = document.getElementById("pdf-iframe") as HTMLIFrameElement;
-                                iframe?.contentWindow?.print();
-                            }}
-                            className="h-9 px-4 bg-[#2b5deb] hover:bg-[#204bc2] text-white rounded-md text-sm font-medium transition-colors shadow-sm"
-                        >
-                            Imprimir documento
-                        </button>
-                    </div>
-                    <div className="flex-1 w-full h-full bg-slate-100">
-                        {printPdfUrl && (
-                            <iframe
-                                id="pdf-iframe"
-                                src={printPdfUrl}
-                                className="w-full h-full border-0"
-                                title="Imprimir PDF"
-                            />
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

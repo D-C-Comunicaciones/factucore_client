@@ -1,5 +1,5 @@
 "use client";
-import { Settings, HelpCircle, Plus, Trash2, Loader2, X, Clock, AlertCircle } from "lucide-react";
+import { Settings, HelpCircle, Plus, Trash2, Loader2, X, Clock, AlertCircle, RefreshCw } from "lucide-react";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { Input } from "@/components/ui/input";
 import {
@@ -81,6 +81,7 @@ export function NewInvoiceMain({
     showRemissionBar,
     setShowRemissionBar,
     errors,
+    onRefetchResolutions,
 }: {
     mainData: any;
     catalogData: any;
@@ -99,6 +100,7 @@ export function NewInvoiceMain({
     showRemissionBar?: boolean;
     setShowRemissionBar?: (show: boolean) => void;
     errors?: Record<string, string>;
+    onRefetchResolutions?: () => void;
 }) {
     const catalogs = useCatalogs();
     const paymentTerms = catalogs?.paymentTerms || [];
@@ -173,8 +175,9 @@ export function NewInvoiceMain({
             contact_id: cliente ? Number(cliente) : null,
             payment_form_id: formaPago ? Number(formaPago) : null,
             payment_method_id: medioPago ? Number(medioPago) : null,
+            payment_term_id: plazo ? Number(plazo) : null,
         }));
-    }, [cliente, formaPago, medioPago, setFormState]);
+    }, [cliente, formaPago, medioPago, plazo, setFormState]);
 
     // Sincronizar fecha de vencimiento
     useEffect(() => {
@@ -464,21 +467,33 @@ export function NewInvoiceMain({
                                 className="w-[160px] text-foreground"
                             />
                             <button
+                                type="button"
                                 className="p-1 rounded hover:bg-muted/40 transition"
                                 onClick={() => setIsResolutionModalOpen(true)}
+                                title="Configurar resolución"
                             >
                                 <Settings className="w-4 h-4 text-muted-foreground" />
                             </button>
                         </div>
-                        <div className="flex items-center gap-1 mt-1">
-                            <span className="text-sm text-muted-foreground">No.</span>
-                            {mainData.invoiceNumber ? (
-                                <span className="font-bold text-lg text-foreground">
-                                    {mainData.invoiceNumber}
-                                </span>
-                            ) : (
-                                <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
-                            )}
+                        <div className="flex items-center justify-end w-full gap-2 mt-1">
+                            <div className="flex items-center gap-1">
+                                <span className="text-sm text-muted-foreground">No.</span>
+                                {mainData.invoiceNumber ? (
+                                    <span className="font-bold text-lg text-foreground">
+                                        {mainData.invoiceNumber}
+                                    </span>
+                                ) : (
+                                    <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                className="p-1 rounded hover:bg-muted/40 transition"
+                                onClick={() => onRefetchResolutions?.()}
+                                title="Actualizar numeración"
+                            >
+                                <RefreshCw className="w-4 h-4 text-muted-foreground" />
+                            </button>
                         </div>
                     </div>
                 </div>

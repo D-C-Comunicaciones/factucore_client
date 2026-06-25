@@ -3,9 +3,9 @@ import { ItemResponse, CreateItemPayload } from "@/types/items";
 
 export function useItemForm(initialData?: Partial<ItemResponse>) {
     const [itemType, setItemType] = useState<"producto" | "servicio" | "combo">(
-        initialData?.basic_info?.type_item_id === 1 ? "producto" : 
-        initialData?.basic_info?.type_item_id === 2 ? "servicio" : 
-        initialData?.basic_info?.type_item_id === 3 ? "combo" : "producto"
+        initialData?.basic_info?.type_item_id === 1 ? "producto" :
+            initialData?.basic_info?.type_item_id === 2 ? "servicio" :
+                initialData?.basic_info?.type_item_id === 3 ? "combo" : "producto"
     );
     const [name, setName] = useState(initialData?.basic_info?.name || "");
     const [reference, setReference] = useState(initialData?.basic_info?.reference || "");
@@ -13,7 +13,7 @@ export function useItemForm(initialData?: Partial<ItemResponse>) {
     const [unitMeasureId, setUnitMeasureId] = useState<number | undefined>(initialData?.basic_info?.unit_measure_id);
     const [categoryId, setCategoryId] = useState<number | undefined>(initialData?.basic_info?.category_id ?? undefined);
     const [typeItemIdentificationId, setTypeItemIdentificationId] = useState<number | undefined>(initialData?.basic_info?.type_item_identification_id ?? undefined);
-    
+
     // Pricing
     const [basePrice, setBasePrice] = useState(initialData?.pricing?.base_price?.toString() || "");
     const [taxId, setTaxId] = useState<number | undefined>(initialData?.pricing?.tax_rate_ids?.[0] ?? undefined);
@@ -27,7 +27,7 @@ export function useItemForm(initialData?: Partial<ItemResponse>) {
 
     // Inventory
     const [hasVariants, setHasVariants] = useState(initialData?.basic_info?.has_variants ?? false);
-    
+
     const firstStock = initialData?.inventory?.inventory_stocks?.[0];
     const [warehouseId, setWarehouseId] = useState<number | undefined>(firstStock?.warehouse_id);
     const [isInventoriable, setIsInventoriable] = useState(initialData?.inventory?.is_inventoriable ?? true);
@@ -36,13 +36,13 @@ export function useItemForm(initialData?: Partial<ItemResponse>) {
     const [minimumStock, setMinimumStock] = useState(firstStock?.minimum_stock?.toString() || "");
 
     const [warehouses, setWarehouses] = useState<any[]>([
-        { 
-            id: "1", 
-            warehouse_id: warehouseId ?? 1, 
-            warehouse: "Principal", 
-            initialQty: firstStock?.stock_quantity?.toString() || "", 
-            minQty: firstStock?.minimum_stock?.toString() || "", 
-            maxQty: firstStock?.maximum_stock?.toString() || "" 
+        {
+            id: "1",
+            warehouse_id: warehouseId ?? 1,
+            warehouse: "Principal",
+            initialQty: firstStock?.stock_quantity?.toString() || "",
+            minQty: firstStock?.minimum_stock?.toString() || "",
+            maxQty: firstStock?.maximum_stock?.toString() || ""
         }
     ]);
 
@@ -59,10 +59,10 @@ export function useItemForm(initialData?: Partial<ItemResponse>) {
 
     // Variants, Combo Settings, Custom Fields...
     const [variants, setVariants] = useState<any[]>(initialData?.variants || []);
-    const [comboSettings, setComboSettings] = useState<any>(initialData?.combo_settings || { 
-        cost_calculation_mode_id: 1, 
-        cost_value: 0, 
-        components: [] 
+    const [comboSettings, setComboSettings] = useState<any>(initialData?.combo_settings || {
+        cost_calculation_mode_id: 1,
+        cost_value: 0,
+        components: []
     });
     const [customFields, setCustomFields] = useState<any[]>(initialData?.custom_fields || []);
     const [priceLists, setPriceLists] = useState<any[]>(initialData?.pricing?.price_lists || []);
@@ -72,19 +72,23 @@ export function useItemForm(initialData?: Partial<ItemResponse>) {
      */
     const buildPayload = useCallback(() => {
         const typeIdMap: Record<string, 1 | 2 | 3> = { "producto": 1, "servicio": 2, "combo": 3 };
-        
+
         // Determinar listas de precios a enviar
         let payloadPriceLists: any[] = [];
         const validPriceLists = priceLists.filter(pl => pl.price_list_id);
 
         if (validPriceLists.length > 0) {
+            const parsedBasePrice = parseFloat(basePrice) || 0;
+
             payloadPriceLists = validPriceLists.map((pl, index) => {
                 const item: any = { id: parseInt(pl.price_list_id) };
-                if (index === 0) {
-                    item.value = parseFloat(basePrice) || 0;
-                } else if (!pl.isPercentage && pl.value) {
-                    item.value = parseFloat(pl.value.toString().replace(/[^0-9.]/g, "")) || 0;
+
+                if (pl.isPercentage) {
+                    item.value = 0;
+                } else {
+                    item.value = parsedBasePrice;
                 }
+
                 return item;
             });
         }

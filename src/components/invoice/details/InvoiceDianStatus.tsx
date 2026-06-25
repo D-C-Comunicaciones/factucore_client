@@ -1,4 +1,4 @@
-import { Copy, Eye, CheckCircle2, FileJson } from "lucide-react";
+import { Copy, Eye, CheckCircle2, FileJson, XCircle } from "lucide-react";
 import { useState } from "react";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { InvoicesService } from "@/lib/invoices";
@@ -15,6 +15,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
 
     const cufe = bill.cufe || bill.invoice_snapshot?.template_data?.invoice?.cufe || bill.dian_response?.cufe || "";
     const isAccepted = ["ACEPTADA", "PROCESADO CORRECTAMENTE", "APROBADA", "AUTORIZADA", "APROBADO CON OBSERVACIONES"].includes((dianStatus || '').toUpperCase());
+    const isDianSuccess = isAccepted || bill?.dian_response?.status_code === '00';
 
     const handleCopyCufe = () => {
         if (!cufe) {
@@ -58,7 +59,22 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
     const formatDateTime = (dateStr: string) => {
         if (!dateStr) return { date: 'N/A', time: '' };
         try {
-            const date = new Date(dateStr);
+            let date: Date;
+            if (dateStr.includes('/')) {
+                // Handle DD/MM/YYYY HH:mm or DD/MM/YYYY format
+                const [datePart, timePart] = dateStr.split(' ');
+                const [day, month, year] = datePart.split('/');
+                date = new Date(`${year}-${month}-${day}T${timePart || '00:00:00'}`);
+            } else {
+                // Handle YYYY-MM-DD HH:mm:ss format
+                const parsedStr = dateStr.replace(' ', 'T');
+                date = new Date(parsedStr);
+            }
+            
+            if (isNaN(date.getTime())) {
+                return { date: 'N/A', time: '' };
+            }
+
             const day = date.getDate().toString().padStart(2, '0');
             const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
             const month = months[date.getMonth()];
@@ -73,7 +89,8 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
         }
     };
 
-    const createdTime = formatDateTime(bill.created_at);
+    const targetDate = bill.validated_at || bill.dian_last_checked_at || bill.submitted_to_dian_at || bill.created_at;
+    const createdTime = formatDateTime(targetDate);
 
     return (
         <TooltipProvider>
@@ -124,18 +141,68 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
 
                 {/* Timeline */}
                 <div className="relative mb-8">
-                    <div className="absolute top-3 left-[25%] right-[25%] h-0.5 bg-[#20c997]"></div>
-                    <div className="flex justify-around relative">
-                        <div className="flex flex-col items-center">
+                    <div className="absolute top-3 left-[10%] right-[10%] h-0.5 bg-slate-200">
+                        {/* Barra verde progresiva según estado. */}
+                        <div className="absolute top-0 left-0 h-0.5 bg-[#20c997] transition-all duration-500" style={{ width: isAccepted ? '100%' : '0%' }}></div>
+                    </div>
+                    <div className="flex justify-between relative">
+                        {/* 1. Estado DIAN */}
+                        <div className="flex flex-col items-center w-1/5">
                             <CheckCircle2 className="w-6 h-6 text-[#20c997] bg-white z-10" fill="currentColor" stroke="white" />
                             <span className="text-sm text-slate-800 mt-2 font-medium">Estado DIAN</span>
-                            <span className="text-[10px] font-bold text-amber-500 border border-amber-500 rounded-full px-3 py-0.5 mt-1 uppercase">
-                                {dianStatus || 'NO APROBADA'}
+                            <div className="h-4 mt-0.5"></div>
+                            <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase text-center whitespace-nowrap ${isDianSuccess ? 'text-[#20c997] border-[#20c997]' : 'text-amber-500 border-amber-500'}`}>
+                                {bill?.dian_response?.status_description || dianStatus || 'NO APROBADA'}
                             </span>
                         </div>
-                        <div className="flex flex-col items-center">
+                        {/* 2. Envío al cliente */}
+                        <div className="flex flex-col items-center w-1/5">
+                            {bill?.is_email_sent ? (
+                                <CheckCircle2 className="w-6 h-6 bg-white z-10 text-[#20c997]" fill="currentColor" stroke="white" />
+                            ) : (
+                                <XCircle className="w-6 h-6 bg-white z-10 text-red-500" fill="currentColor" stroke="white" />
+                            )}
+                            <span className="text-sm text-slate-800 mt-2 font-medium">Envío al cliente</span>
+                            <div className="h-4 mt-0.5 w-full flex justify-center">
+                                <span className="text-[10px] text-slate-400 truncate max-w-[120px]" title={bill?.contact?.email || ''}>{bill?.contact?.email || 'Sin correo'}</span>
+                            </div>
+                            <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase ${bill?.is_email_sent ? 'text-[#20c997] border-[#20c997]' : 'text-red-500 border-red-500'}`}>
+                                {bill?.is_email_sent ? 'ENVIADA' : 'NO ENVIADA'}
+                            </span>
+                        </div>
+                        {/* 3. RADIAN */}
+                        <div className="flex flex-col items-center w-1/5 text-center">
+                            <CheckCircle2 className="w-6 h-6 text-[#20c997] bg-white z-10" fill="currentColor" stroke="white" />
+                            <span className="text-sm text-slate-800 mt-2 font-medium">RADIAN</span>
+                            <div className="h-4 mt-0.5 w-full flex justify-center">
+                                {/* Subtext vacío para mantener alineación */}
+                            </div>
+                            <span className="text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase text-[#20c997] border-[#20c997]">
+                                ACEPTACIÓN TÁCITA
+                            </span>
+                        </div>
+                        {/* 4. Pago */}
+                        <div className="flex flex-col items-center w-1/5">
+                            {bill?.payments && bill.payments.length > 0 ? (
+                                <CheckCircle2 className="w-6 h-6 bg-white z-10 text-[#20c997]" fill="currentColor" stroke="white" />
+                            ) : (
+                                <XCircle className="w-6 h-6 bg-white z-10 text-red-500" fill="currentColor" stroke="white" />
+                            )}
+                            <span className="text-sm text-slate-800 mt-2 font-medium">Pago</span>
+                            <div className="h-4 mt-0.5 w-full flex justify-center">
+                                <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
+                                    {bill?.payments && bill.payments.length > 0 ? `${bill.payments[0].prefix || ''}${bill.payments[0].number || ''}` : 'Sin pagos'}
+                                </span>
+                            </div>
+                            <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase ${bill?.payments && bill.payments.length > 0 ? 'text-[#20c997] border-[#20c997]' : 'text-red-500 border-red-500'}`}>
+                                {bill?.payments && bill.payments.length > 0 ? 'COBRADA' : 'POR COBRAR'}
+                            </span>
+                        </div>
+                        {/* 5. Estado de factura */}
+                        <div className="flex flex-col items-center w-1/5">
                             <CheckCircle2 className={`w-6 h-6 bg-white z-10 ${isAccepted ? 'text-[#20c997]' : 'text-slate-300'}`} fill="currentColor" stroke="white" />
                             <span className="text-sm text-slate-800 mt-2 font-medium">Estado de factura</span>
+                            <div className="h-4 mt-0.5"></div>
                             <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase ${isAccepted ? 'text-[#20c997] border-[#20c997]' : 'text-slate-400 border-slate-300'}`}>
                                 {isAccepted ? 'FINALIZADA' : 'PENDIENTE'}
                             </span>
@@ -145,41 +212,67 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
 
                 {/* Expandable Details */}
                 {showDetails && (
-                    <div className="border-t border-slate-100 pt-6 pb-4 mt-4 grid grid-cols-2 gap-8 text-sm">
+                    <div className="border-t border-slate-100 pt-6 pb-4 mt-4 grid grid-cols-5 gap-4 text-sm px-2">
                         {/* Eventos DIAN */}
-                        <div>
-                            <div className="flex gap-4">
-                                <div className="flex flex-col items-center shrink-0 mt-1">
-                                    <span className="font-bold text-slate-800 text-xs">{createdTime.date}</span>
-                                    <span className="text-[10px] text-slate-400">{createdTime.time}</span>
-                                </div>
-                                <div>
-                                    <p className="font-medium text-slate-800 mb-2">La <span className="font-bold">factura de venta No. {bill.prefix || ''}{bill.number || bill.id}</span> fue {isAccepted ? 'aceptada' : 'procesada'} por la <span className="font-bold">DIAN</span></p>
-                                    
-                                    {(bill.dian_response?.dian_message || bill.dian_rejection_reason) && (
-                                        <div className="pl-4 border-l-[1.5px] border-slate-300 mt-2 relative">
-                                            <div className="absolute -left-[9px] top-1 bg-white">
-                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                                </svg>
-                                            </div>
-                                            <p className="text-slate-600 text-[13px] ml-2">{bill.dian_response?.dian_message || bill.dian_rejection_reason}</p>
+                        <div className="flex gap-3 items-start">
+                            <div className="flex flex-col items-center shrink-0 mt-0">
+                                <span className="font-bold text-slate-800 text-xs leading-none">{createdTime.date}</span>
+                                <span className="text-[10px] text-slate-400 mt-0.5">{createdTime.time}</span>
+                            </div>
+                            <div>
+                                <p className="font-medium text-slate-800 mb-2 leading-tight text-[12px]">La <span className="font-bold">factura de venta No. {bill.prefix || ''}{bill.number || bill.id}</span> fue {isAccepted ? 'aceptada' : 'procesada'} por la <span className="font-bold">DIAN</span></p>
+                                
+                                {(bill.dian_response?.dian_message || bill.dian_rejection_reason) && (
+                                    <div className="pl-3 border-l-[1.5px] border-slate-300 mt-2 relative">
+                                        <div className="absolute -left-[9px] top-0 bg-white">
+                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                            </svg>
                                         </div>
-                                    )}
-                                </div>
+                                        <p className="text-slate-600 text-[11px] ml-1 leading-tight">{bill.dian_response?.dian_message || bill.dian_rejection_reason}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        {/* Eventos Envío */}
+                        <div className="flex gap-3 items-start">
+                            <div className="flex flex-col items-center shrink-0 mt-0">
+                                <span className="font-bold text-slate-800 text-xs leading-none">{createdTime.date}</span>
+                                <span className="text-[10px] text-slate-400 mt-0.5">{createdTime.time}</span>
+                            </div>
+                            <div>
+                                <p className="text-slate-800 text-[12px] leading-tight">Correo abierto por el usuario.</p>
+                            </div>
+                        </div>
+                        {/* Eventos RADIAN */}
+                        <div className="flex gap-3 items-start">
+                            <div className="flex flex-col items-center shrink-0 mt-0">
+                                <span className="font-bold text-slate-800 text-xs leading-none">{formatDateTime(new Date().toISOString()).date}</span>
+                                <span className="text-[10px] text-slate-400 mt-0.5">{formatDateTime(new Date().toISOString()).time}</span>
+                            </div>
+                            <div>
+                                <p className="text-slate-800 text-[12px] leading-tight">Aceptación Tácita con fecha de hoy.</p>
+                            </div>
+                        </div>
+                        {/* Eventos Pago */}
+                        <div className="flex gap-3 items-start">
+                            <div className="flex flex-col items-center shrink-0 mt-0">
+                                <span className="font-bold text-slate-800 text-xs leading-none">{bill?.payments && bill.payments.length > 0 ? formatDateTime(bill.payments[0].created_at || new Date().toISOString()).date : createdTime.date}</span>
+                                <span className="text-[10px] text-slate-400 mt-0.5">{bill?.payments && bill.payments.length > 0 ? formatDateTime(bill.payments[0].created_at || new Date().toISOString()).time : createdTime.time}</span>
+                            </div>
+                            <div>
+                                <p className="text-slate-800 text-[12px] leading-tight">{bill?.payments && bill.payments.length > 0 ? 'El pago ha sido registrado exitosamente.' : 'Aún no se registran pagos para esta factura.'}</p>
                             </div>
                         </div>
                         {/* Eventos Factura */}
-                        <div>
-                            <div className="flex gap-4">
-                                <div className="flex flex-col items-center shrink-0 mt-1">
-                                    <span className="font-bold text-slate-800 text-xs">{createdTime.date}</span>
-                                    <span className="text-[10px] text-slate-400">{createdTime.time}</span>
-                                </div>
-                                <div>
-                                    <p className="text-slate-800 text-[13px]">La factura fue emitida a {bill.payment_term?.name || 'contado'}.</p>
-                                    <p className="text-slate-800 text-[13px]">Proceso finalizado.</p>
-                                </div>
+                        <div className="flex gap-3 items-start">
+                            <div className="flex flex-col items-center shrink-0 mt-0">
+                                <span className="font-bold text-slate-800 text-xs leading-none">{createdTime.date}</span>
+                                <span className="text-[10px] text-slate-400 mt-0.5">{createdTime.time}</span>
+                            </div>
+                            <div>
+                                <p className="text-slate-800 text-[12px] leading-tight">La factura fue emitida a {bill.payment_term?.name || 'contado'}.</p>
+                                <p className="text-slate-800 text-[12px] leading-tight mt-1">Proceso finalizado.</p>
                             </div>
                         </div>
                     </div>
