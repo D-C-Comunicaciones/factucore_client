@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle2, Loader2, Sparkles, AlertCircle, UploadCloud } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, AlertCircle, UploadCloud, HelpCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useContactForm } from "./ContactFormProvider";
 import { validateVerificationDigit } from "@/utils/validate-verification-digit";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 interface ContactBasicFormProps {
   catalogData: any;
@@ -27,6 +28,8 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
     postalCode, setPostalCode,
     country, setCountry,
     city, setCity,
+    email, setEmail,
+    phone1, setPhone1,
     autocompleting,
     errors, setErrors
   } = useContactForm();
@@ -55,12 +58,9 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
 
   const isNit = normalizedDocName.includes("NIT") && !normalizedDocName.includes("OTRO PAIS");
   const isForeigner =
-    ["PP", "CE", "TE", "DIE"].some(
-      (code) => docTypeCode.includes(code) || normalizedDocName.includes(code)
-    ) ||
     normalizedDocName.includes("NIT DE OTRO PAIS") ||
     normalizedDocName.includes("PASAPORTE") ||
-    normalizedDocName.includes("EXTRANJER") ||
+    normalizedDocName.includes("TARJETA DE EXTRANJER") ||
     normalizedDocName.includes("DOCUMENTO DE IDENTIFICACION EXTRANJERO");
 
   const isForeignerNit = normalizedDocName.includes("NIT DE OTRO PAIS");
@@ -149,7 +149,7 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Ej: 22950341"
+                placeholder="Ej: 123456789"
                 value={docNumber}
                 onChange={(e) => { setDocNumber(e.target.value); setErrors(prev => ({ ...prev, docNumber: false })); }}
                 className={`bg-white ${errors.docNumber === "warning" ? "border-orange-500 pr-8 focus-visible:ring-orange-500" : errors.docNumber ? "border-red-500 pr-8" : "border-gray-300"}`}
@@ -233,7 +233,7 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
               <div className="relative">
                 <Input
                   type="text"
-                  placeholder="Ej: FABIOLA ESTHER"
+                  placeholder="Ej: JUAN CARLOS"
                   value={firstName}
                   onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: false })); }}
                   className={`bg-white ${errors.firstName ? "border-red-500 pr-8" : "border-gray-300"}`}
@@ -247,7 +247,7 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
               <div className="relative">
                 <Input
                   type="text"
-                  placeholder="Ej: PALACIO SALGADO"
+                  placeholder="Ej: PEREZ GOMEZ"
                   value={lastName}
                   onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: false })); }}
                   className={`bg-white ${errors.lastName ? "border-red-500 pr-8" : "border-gray-300"}`}
@@ -321,6 +321,42 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
             </div>
           </div>
         )}
+
+        {/* Email and Phone 1 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+              Correo electrónico
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-[#2A2A2A] text-white text-xs px-3 py-2 border-none">
+                    <p className="max-w-[220px] text-center">Ingresa el correo donde tu contacto recibirá sus facturas.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </label>
+            <Input
+              type="email"
+              placeholder="Ej: correo@empresa.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-white border-gray-300"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600">Teléfono</label>
+            <Input
+              type="text"
+              placeholder="Teléfono fijo"
+              value={phone1}
+              onChange={(e) => setPhone1(e.target.value)}
+              className="bg-white border-gray-300"
+            />
+          </div>
+        </div>
 
         {/* Municipality */}
         {!isForeigner && (

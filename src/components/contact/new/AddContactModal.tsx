@@ -238,11 +238,8 @@ function ModalContent({
       const docTypeCode = selectedDocTypeObj?.code?.toUpperCase() || "";
       const normalizedDocName = docTypeName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       const isForeigner =
-        ["PP", "CE", "TE", "DIE"].some(
-          (code) => docTypeCode.includes(code) || normalizedDocName.includes(code)
-        ) ||
         isForeignerNit || normalizedDocName.includes("PASAPORTE") ||
-        normalizedDocName.includes("EXTRANJER") || normalizedDocName.includes("DOCUMENTO DE IDENTIFICACION EXTRANJERO");
+        normalizedDocName.includes("TARJETA DE EXTRANJER") || normalizedDocName.includes("DOCUMENTO DE IDENTIFICACION EXTRANJERO");
 
       const dvValue = isNit && cleanNum ? validateVerificationDigit(cleanNum) : null;
 

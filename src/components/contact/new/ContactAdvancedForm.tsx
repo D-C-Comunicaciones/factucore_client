@@ -145,12 +145,9 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
 
   const isNit = normalizedDocName.includes("NIT") && !normalizedDocName.includes("OTRO PAIS");
   const isForeigner =
-    ["PP", "CE", "TE", "DIE"].some(
-      (code) => docTypeCode.includes(code) || normalizedDocName.includes(code)
-    ) ||
     normalizedDocName.includes("NIT DE OTRO PAIS") ||
     normalizedDocName.includes("PASAPORTE") ||
-    normalizedDocName.includes("EXTRANJER") ||
+    normalizedDocName.includes("TARJETA DE EXTRANJER") ||
     normalizedDocName.includes("DOCUMENTO DE IDENTIFICACION EXTRANJERO");
 
   const isForeignerNit = normalizedDocName.includes("NIT DE OTRO PAIS");

@@ -904,8 +904,8 @@ export function NewInvoiceMain({
                                     <span className="text-sm font-medium flex-1 truncate">
                                         {adj.type === 'discount' ? 'Descuento' : 'Recargo'}: {adj.reason}
                                     </span>
-                                    <span className="text-sm font-bold w-20 text-right">
-                                        {adj.valueType === 'percentage' ? `${adj.value}%` : `$${adj.value.toFixed(2)}`}
+                                    <span className="text-sm font-bold min-w-[100px] text-right">
+                                        {adj.valueType === 'percentage' ? `${adj.value}%` : `$ ${Math.round(adj.value).toLocaleString("es-CO")}`}
                                     </span>
                                     <button onClick={() => invoiceBuilder.removeGlobalAdjustment(adj.id)} className="p-1.5 rounded hover:bg-destructive/10 transition">
                                         <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />

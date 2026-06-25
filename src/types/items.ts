@@ -527,6 +527,18 @@ export interface ItemListResponse {
     stock_quantity?: number;
     is_inventoriable?: boolean;
     allow_negative_stock?: boolean;
+    warehouses?: {
+        id: number;
+        name: string;
+        stock_quantity: number;
+        minimum_stock: number;
+        maximum_stock: number;
+    }[];
+    price_lists?: {
+        id: number;
+        name: string;
+        price: number;
+    }[];
 }
 
 export interface GetItemByIdResponse {

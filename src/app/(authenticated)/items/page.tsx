@@ -310,7 +310,7 @@ export default function ItemsPage() {
               id: 1,
               value:
                 parseFloat(
-                  form.totalPrice
+                  form.basePrice
                 ) || 0,
             },
           ],
@@ -375,7 +375,7 @@ export default function ItemsPage() {
               id: 1,
               value:
                 parseFloat(
-                  form.totalPrice
+                  form.basePrice
                 ) || 0,
             },
           ],
@@ -428,7 +428,7 @@ export default function ItemsPage() {
             id: 1,
             value:
               parseFloat(
-                form.totalPrice
+                form.basePrice
               ) || 0,
           },
         ],
