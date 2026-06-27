@@ -55,7 +55,7 @@ export default function InvoiceEditPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await updateInvoice.mutateAsync({ id: id!, data: { ...form, invoice_status_id: 2 } });
+        await updateInvoice.mutateAsync({ id: id!, data: { ...form, invoice_status_id: 2, type_operation_id: 1 } });
         router.push(`/invoices/${id}`);
     };
 

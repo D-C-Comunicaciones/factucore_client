@@ -23,11 +23,18 @@ export default function InvoiceDetailPage() {
     const router = useRouter();
     const id = params?.id;
     const enabled = typeof id === 'string' || typeof id === 'number';
-    const { data, isLoading, isError } = useInvoice(enabled ? id : "");
+    const { data, isLoading, isError, isFetching } = useInvoice(enabled ? id : "");
     const sendToDian = useSendInvoice();
 
     const [isSending, setIsSending] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [comments, setComments] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (!isFetching && isRefreshing) {
+            setIsRefreshing(false);
+        }
+    }, [isFetching, isRefreshing]);
 
     useEffect(() => {
         if (data?.message) {
@@ -48,7 +55,7 @@ export default function InvoiceDetailPage() {
     }, [invoiceData]);
 
     if (!enabled) return <div className="py-10 text-center text-red-500">ID de factura inválido</div>;
-    if (isLoading) return <InvoiceDetailSkeleton />;
+    if (isLoading || isRefreshing) return <InvoiceDetailSkeleton />;
     if (isError || !data || !data.data) return <div className="py-10 text-center text-red-500">No se pudo cargar la factura</div>;
 
     if (!invoiceData) return <div className="py-10 text-center text-red-500">No se pudo cargar la factura</div>;
@@ -114,6 +121,7 @@ export default function InvoiceDetailPage() {
             showToast(finalMessage, "error", "Rechazado por DIAN");
         } finally {
             setIsSending(false);
+            setIsRefreshing(true);
         }
     };
 

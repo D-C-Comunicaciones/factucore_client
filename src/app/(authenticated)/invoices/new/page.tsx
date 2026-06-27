@@ -220,6 +220,7 @@ export default function NewInvoicePage() {
         ...formState,
         numbering_range_id: selectedResolutionId,
       });
+      basePayload.type_operation_id = 1;
 
       if (formState.paymentData) {
         basePayload.payments = [formState.paymentData];

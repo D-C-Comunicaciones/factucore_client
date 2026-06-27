@@ -7,7 +7,7 @@ export interface InvoiceLine {
     item: string;
     description: string;
     referencia: string;
-    cantidad: number;
+    cantidad: number | '';
     unit_measure_code: string;
     precio: number;
     discountValue: number;
@@ -52,7 +52,7 @@ export function useInvoiceBuilder() {
                 item: '',
                 description: '',
                 referencia: '',
-                cantidad: 1,
+                cantidad: '',
                 unit_measure_code: '94', // default to piece/unit if needed
                 precio: 0,
                 discountValue: 0,

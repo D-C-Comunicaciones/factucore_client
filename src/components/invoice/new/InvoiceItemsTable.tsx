@@ -111,6 +111,9 @@ function ItemRow({
     const selectedOption = options.find(o => o.value === val);
     if (selectedOption) {
       const ri = selectedOption.rawItem;
+      const isService = ri.type_item_id === 2;
+      const isInventoriable = isService ? false : (ri.is_inventoriable ?? true);
+
       invoiceBuilder.updateItem(item.id, "item_id", ri.id);
       invoiceBuilder.updateItem(item.id, "standard_code", ri.standard_code || "");
       invoiceBuilder.updateItem(item.id, "item", ri.name);
@@ -119,7 +122,7 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "precio", ri.price || 0);
       invoiceBuilder.updateItem(item.id, "cantidad", 1);
       invoiceBuilder.updateItem(item.id, "stock_quantity", ri.stock_quantity ?? null);
-      invoiceBuilder.updateItem(item.id, "is_inventoriable", ri.is_inventoriable ?? true);
+      invoiceBuilder.updateItem(item.id, "is_inventoriable", isInventoriable);
       invoiceBuilder.updateItem(item.id, "allow_negative_stock", ri.allow_negative_stock ?? false);
       invoiceBuilder.updateItem(item.id, "selected_warehouse_id", selectedWarehouseId);
       invoiceBuilder.updateItem(item.id, "selected_price_list_id", selectedPriceListId);
@@ -131,7 +134,7 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "maximum_stock", warehouseData?.maximum_stock);
 
       // Validate initial quantity
-      const shouldValidateInitial = (ri.is_inventoriable ?? true) && !(ri.allow_negative_stock ?? false);
+      const shouldValidateInitial = isInventoriable && !(ri.allow_negative_stock ?? false);
       const initialStock = ri.stock_quantity ?? 0;
       if (shouldValidateInitial && initialStock < 1) {
           showToast("El producto seleccionado no tiene stock disponible.", "warning");
@@ -169,7 +172,7 @@ function ItemRow({
   const quantityBackendError = errors?.[`items.${index}.quantity`];
   const isInvalidQuantity = (errors?.items === "invalid_quantity" && item.item_id && (!item.cantidad || item.cantidad <= 0)) || !!quantityBackendError;
 
-  const shouldValidateStock = item.is_inventoriable && !item.allow_negative_stock;
+  const shouldValidateStock = !!item.item_id && item.is_inventoriable && !item.allow_negative_stock;
   const currentStock = item.stock_quantity ?? 0;
   
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {

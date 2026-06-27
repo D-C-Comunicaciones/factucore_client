@@ -108,15 +108,59 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
               <TableCell colSpan={columns.length} className="h-64 bg-white text-center align-middle">
                 {showNoDataMessage ? (
                   <div className="flex h-full flex-col items-center justify-center py-8">
-                    <div className="max-w-[520px] text-center text-[40px] font-semibold leading-tight text-primary">
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 48 48"
+                      fill="none"
+                      className="mb-4 text-gray-400"
+                    >
+                      <rect
+                        x="14"
+                        y="10"
+                        width="20"
+                        height="28"
+                        rx="2"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <rect
+                        x="19"
+                        y="18"
+                        width="10"
+                        height="2"
+                        rx="1"
+                        fill="currentColor"
+                      />
+                      <rect
+                        x="19"
+                        y="24"
+                        width="6"
+                        height="2"
+                        rx="1"
+                        fill="currentColor"
+                      />
+                      <rect
+                        x="19"
+                        y="30"
+                        width="10"
+                        height="2"
+                        rx="1"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <div className="text-center text-xl font-medium text-[#003B73]">
                       ¡Aún no tienes facturas!
+                    </div>
+                    <div className="mt-2 mb-6 text-center text-sm text-gray-500 max-w-md">
+                      Crea tu primera factura y empieza a tomar el control de tus ingresos.
                     </div>
                     <button
                       type="button"
-                      className="mt-6 inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                      className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
                       onClick={() => router.push("/invoices/new")}
                     >
-                      <Plus className="h-3.5 w-3.5" />
                       Crear primera factura
                     </button>
                   </div>

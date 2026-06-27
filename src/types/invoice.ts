@@ -29,6 +29,7 @@ export interface Invoice {
     payment_form_id: number;
     payment_method_id: number;
     type_operation_invoice: number;
+    type_operation_id?: number;
     payment_due_date: string;
     municipality_id: number;
     send_email: boolean;
