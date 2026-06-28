@@ -169,6 +169,8 @@ export const QUERY_KEYS = {
                 "catalogs",
                 "type-resolutions",
             ] as const,
+
+        withholdingRates: () => ["catalogs", "withholding-rates"] as const,
     },
 
     /* ====================================================================== */

@@ -41,7 +41,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                         }`}
                 >
                     <img
-                        src="/img/factucore_logo.png"
+                        src="/img/factucore_logo.webp"
                         alt="Factucore Logo"
                         className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-md"
                     />

@@ -147,7 +147,7 @@ export function InvoiceDetailDocument({
                         </div>
                         <div className="flex items-center">
                             <span className="font-bold text-slate-700 w-48 shrink-0">Vencimiento:</span>
-                            <span>{bill.payment_due_date || bill.created_at || ''}</span>
+                            <span>{bill.payment_due_date || bill.billing_reference?.payment_due_date || bill.created_at || ''}</span>
                         </div>
                         <div className="flex items-center">
                             <span className="font-bold text-slate-700 w-48 shrink-0">Plazo de pago:</span>

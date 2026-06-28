@@ -239,4 +239,8 @@ export const catalogsApi = {
     getPayableAccounts: async (): Promise<ApiResponse<any>> => {
         return await apiClient.get<any>("/catalogs/payable-accounts");
     },
+
+    getWithholdingRates: async (): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>("/catalogs/withholding-rates");
+    },
 };

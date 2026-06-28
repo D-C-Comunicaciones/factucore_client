@@ -134,6 +134,10 @@ export const prefetchAllCatalogs = async (
             queryKey: QUERY_KEYS.catalogs.typeResolutions(),
             queryFn: catalogsApi.getTypeResolutions,
         }),
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.withholdingRates(),
+            queryFn: catalogsApi.getWithholdingRates,
+        }),
     ]);
 };
 
@@ -292,6 +296,11 @@ export function useCatalogs() {
         queryKey: QUERY_KEYS.catalogs.municipalities(),
         queryFn: catalogsApi.getMunicipalities,
         staleTime: 1000 * 60 * 60, // 1 hour — this data rarely changes
+    });
+
+    const withholdingRatesQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.withholdingRates(),
+        queryFn: catalogsApi.getWithholdingRates,
     });
 
     /* ====================================================================== */
@@ -497,6 +506,13 @@ export function useCatalogs() {
             "data"
         ),
 
+        withholdingRates: extractArray(
+            withholdingRatesQuery.data?.data,
+            "withholding_rates",
+            "withholdingRates",
+            "data"
+        ),
+
         isLoading:
             warehousesQuery.isLoading ||
             categoriesQuery.isLoading ||
@@ -523,6 +539,7 @@ export function useCatalogs() {
             typeRegimesQuery.isLoading ||
             municipalitiesQuery.isLoading ||
             countriesQuery.isLoading ||
-            typeResolutionsQuery.isLoading,
+            typeResolutionsQuery.isLoading ||
+            withholdingRatesQuery.isLoading,
     };
 }

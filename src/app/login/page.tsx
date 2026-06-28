@@ -140,7 +140,7 @@ export default function LoginPage() {
 
             <div className="relative hidden md:block min-h-full">
               <Image
-                src="/img/login_img.png"
+                src="/img/login_img.webp"
                 alt="Login"
                 fill
                 priority

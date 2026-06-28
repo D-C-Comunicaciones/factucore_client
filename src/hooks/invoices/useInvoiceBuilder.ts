@@ -23,10 +23,11 @@ export interface InvoiceLine {
 
 export interface GlobalAdjustment {
     id: string;
-    type: 'discount' | 'charge';
-    valueType: 'percentage' | 'fixed';
+    type: 'discount' | 'charge' | 'withholding';
+    valueType: 'percentage' | 'fixed' | string; // string for withholding rate id
     value: number;
     reason: string;
+    withholdingData?: any; // optional data for withholding rendering
 }
 
 export interface SimulationTotals {
@@ -34,6 +35,7 @@ export interface SimulationTotals {
     lineDiscountsAmount: number;
     globalDiscountsAmount: number;
     globalChargesAmount: number;
+    withholdingsAmount: number;
     taxesAmount: number;
     total: number;
 }
@@ -107,7 +109,7 @@ export function useInvoiceBuilder() {
         }));
     };
 
-    const addGlobalAdjustment = (type: 'discount' | 'charge', valueType: 'percentage' | 'fixed', value: number, reason: string) => {
+    const addGlobalAdjustment = (type: 'discount' | 'charge' | 'withholding', valueType: 'percentage' | 'fixed' | string, value: number, reason: string, withholdingData?: any) => {
         setGlobalAdjustments(prev => [
             ...prev,
             {
@@ -115,7 +117,8 @@ export function useInvoiceBuilder() {
                 type,
                 valueType,
                 value,
-                reason: reason || (type === 'discount' ? 'Descuento global' : 'Recargo global')
+                reason: reason || (type === 'discount' ? 'Descuento global' : type === 'charge' ? 'Recargo global' : (withholdingData?.description || 'Retención')),
+                withholdingData
             }
         ]);
     };
@@ -183,26 +186,36 @@ export function useInvoiceBuilder() {
 
         let globalDiscountsAmount = 0;
         let globalChargesAmount = 0;
+        let withholdingsAmount = 0;
 
         globalAdjustments.forEach(adj => {
-            const val = Number(adj.value) || 0;
-            const amount = adj.valueType === 'percentage' ? netSubtotal * (val / 100) : val;
-            const safeAmount = isNaN(amount) ? 0 : amount;
-
-            if (adj.type === 'discount') {
-                globalDiscountsAmount += safeAmount;
+            if (adj.type === 'withholding') {
+                const percent = Number(adj.withholdingData?.code) || 0;
+                // Calculate withholding over netSubtotal automatically
+                const baseValue = netSubtotal;
+                const amount = baseValue * (percent / 100);
+                withholdingsAmount += isNaN(amount) ? 0 : amount;
             } else {
-                globalChargesAmount += safeAmount;
+                const val = Number(adj.value) || 0;
+                const amount = adj.valueType === 'percentage' ? netSubtotal * (val / 100) : val;
+                const safeAmount = isNaN(amount) ? 0 : amount;
+
+                if (adj.type === 'discount') {
+                    globalDiscountsAmount += safeAmount;
+                } else {
+                    globalChargesAmount += safeAmount;
+                }
             }
         });
 
-        const total = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount;
+        const total = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount - withholdingsAmount;
 
         return {
             subtotal: isNaN(grossSubtotal) ? 0 : grossSubtotal,
             lineDiscountsAmount: isNaN(lineDiscountsAmount) ? 0 : lineDiscountsAmount,
             globalDiscountsAmount: isNaN(globalDiscountsAmount) ? 0 : globalDiscountsAmount,
             globalChargesAmount: isNaN(globalChargesAmount) ? 0 : globalChargesAmount,
+            withholdingsAmount: isNaN(withholdingsAmount) ? 0 : withholdingsAmount,
             taxesAmount: isNaN(taxesAmount) ? 0 : taxesAmount,
             taxBreakdown,
             total: isNaN(total) ? 0 : total
@@ -230,14 +243,36 @@ export function useInvoiceBuilder() {
             return linePayload;
         });
 
-        const global_allowance_charges = globalAdjustments.map(adj => ({
-            scope: 'global',
-            value_type: adj.valueType,
-            reason: adj.reason,
-            reason_code: adj.type === 'charge' ? "01" : "00",
-            charge_indicator: adj.type === 'charge',
-            value: adj.value
-        }));
+        const global_allowance_charges = globalAdjustments
+            .filter(adj => adj.type !== 'withholding')
+            .map(adj => ({
+                scope: 'global',
+                value_type: adj.valueType,
+                reason: adj.reason,
+                reason_code: adj.type === 'charge' ? "01" : "00",
+                charge_indicator: adj.type === 'charge',
+                value: adj.value
+            }));
+
+        const netSubtotalForWithholding = items.reduce((sum, item) => {
+            const qty = Number(item.cantidad) || 0;
+            const price = Number(item.precio) || 0;
+            const discValue = Number(item.discountValue) || 0;
+            const lineBase = qty * price;
+            const lineDiscount = item.discountType === 'percentage' 
+                ? lineBase * (discValue / 100) 
+                : discValue;
+            return sum + (lineBase - lineDiscount);
+        }, 0);
+
+        const withholdings = globalAdjustments
+            .filter(adj => adj.type === 'withholding')
+            .map(adj => ({
+                withholding_id: Number(adj.valueType),
+                taxable_amount: netSubtotalForWithholding,
+                tax_amount: netSubtotalForWithholding * (Number(adj.withholdingData?.code || 0) / 100),
+                percent: Number(adj.withholdingData?.code || 0)
+            }));
 
         const now = new Date();
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -248,6 +283,7 @@ export function useInvoiceBuilder() {
             type_operation_invoice: 1,
             items: payload_lines,
             allowance_charges: global_allowance_charges,
+            withholdings,
             billing_period: {
                 start_date: todayStr,
                 start_time: timeStr,

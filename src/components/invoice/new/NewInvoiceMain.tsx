@@ -111,13 +111,13 @@ export function NewInvoiceMain({
     const selectItemClass =
         "rounded-lg cursor-pointer transition-colors hover:bg-muted hover:text-foreground focus:bg-muted data-[state=checked]:bg-muted/50";
 
-    const [globalAdjType, setGlobalAdjType] = useState<"discount" | "charge">("discount");
+    const [globalAdjType, setGlobalAdjType] = useState<"discount" | "charge" | "withholding">("discount");
     const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
     const [isQuickCreateItemModalOpen, setIsQuickCreateItemModalOpen] = useState(false);
     const [quickCreateItemTargetRow, setQuickCreateItemTargetRow] = useState<string | null>(null);
     const [prefilledContactData, setPrefilledContactData] = useState<any>(null);
-    const [globalAdjValueType, setGlobalAdjValueType] = useState<"percentage" | "fixed">("percentage");
+    const [globalAdjValueType, setGlobalAdjValueType] = useState<string>("percentage");
     const [globalAdjPercent, setGlobalAdjPercent] = useState<number>(0);
     const [globalAdjReason, setGlobalAdjReason] = useState<string>("");
     const [formaPago, setFormaPago] = useState<string>("");
@@ -414,8 +414,22 @@ export function NewInvoiceMain({
     }, [plazo, fecha, paymentTerms]);
 
     const handleAddGlobalAdjustment = () => {
-        if (globalAdjPercent <= 0) return;
-        invoiceBuilder.addGlobalAdjustment(globalAdjType, globalAdjValueType, globalAdjPercent, globalAdjReason);
+        if (globalAdjType !== 'withholding' && globalAdjPercent <= 0) return;
+        let withholdingData = undefined;
+        if (globalAdjType === 'withholding') {
+            const alreadyExists = invoiceBuilder.globalAdjustments.some((adj: any) => adj.type === 'withholding' && adj.valueType === globalAdjValueType);
+            if (alreadyExists) {
+                showToast("Esta retención ya ha sido agregada a la factura.", "warning");
+                return;
+            }
+
+            withholdingData = catalogs?.withholdingRates?.find((r: any) => r.id.toString() === globalAdjValueType);
+            if (!withholdingData) {
+                showToast("Por favor seleccione un tipo de retención", "warning");
+                return;
+            }
+        }
+        invoiceBuilder.addGlobalAdjustment(globalAdjType, globalAdjValueType, globalAdjPercent, globalAdjReason, withholdingData);
         setGlobalAdjPercent(0);
         setGlobalAdjReason("");
     };
@@ -851,28 +865,62 @@ export function NewInvoiceMain({
                     {/* Formulario a la izquierda */}
                     <div className="w-full md:w-1/3 space-y-4">
                         <div className="flex">
-                            <Select value={globalAdjType} onValueChange={(val: "discount" | "charge") => setGlobalAdjType(val)}>
+                            <Select value={globalAdjType} onValueChange={(val: "discount" | "charge" | "withholding") => {
+                                setGlobalAdjType(val);
+                                if (val === 'withholding') {
+                                    // Don't auto-select the first one, let it show the placeholder
+                                    setGlobalAdjValueType("");
+                                } else {
+                                    setGlobalAdjValueType("percentage");
+                                }
+                            }}>
                                 <SelectTrigger className="w-full bg-white h-9 border border-border rounded-r-none hover:bg-muted cursor-pointer transition-colors">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="discount" className="cursor-pointer hover:bg-muted focus:bg-muted">Descuento</SelectItem>
                                     <SelectItem value="charge" className="cursor-pointer hover:bg-muted focus:bg-muted">Recargo</SelectItem>
+                                    <SelectItem value="withholding" className="cursor-pointer hover:bg-muted focus:bg-muted">Retención</SelectItem>
                                 </SelectContent>
                             </Select>
 
-                            <Select value={globalAdjValueType} onValueChange={(val: "percentage" | "fixed") => setGlobalAdjValueType(val)}>
-                                <SelectTrigger className="w-20 bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted cursor-pointer transition-colors">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="percentage" className="cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
-                                    <SelectItem value="fixed" className="cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            {globalAdjType === 'withholding' ? (
+                                <Select value={globalAdjValueType} onValueChange={setGlobalAdjValueType}>
+                                    <SelectTrigger className="w-[260px] bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted cursor-pointer transition-colors truncate">
+                                        <SelectValue placeholder="Seleccionar" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {(() => {
+                                            const available = catalogs?.withholdingRates?.filter((rate: any) => {
+                                                return !invoiceBuilder.globalAdjustments.some((adj: any) => adj.type === 'withholding' && adj.valueType === rate.id.toString());
+                                            }) || [];
+
+                                            if (available.length === 0) {
+                                                return <div className="p-2 text-sm text-muted-foreground text-center">No hay más retenciones disponibles</div>;
+                                            }
+
+                                            return available.map((rate: any) => (
+                                                <SelectItem key={rate.id} value={rate.id.toString()} className="cursor-pointer hover:bg-muted focus:bg-muted">
+                                                    {rate.name}
+                                                </SelectItem>
+                                            ));
+                                        })()}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <Select value={globalAdjValueType} onValueChange={(val: "percentage" | "fixed") => setGlobalAdjValueType(val)}>
+                                    <SelectTrigger className="w-20 bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted cursor-pointer transition-colors">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="percentage" className="cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
+                                        <SelectItem value="fixed" className="cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
 
-                        {globalAdjValueType === 'percentage' ? (
+                        {globalAdjType === 'withholding' ? null : globalAdjValueType === 'percentage' ? (
                             <Input
                                 type="number"
                                 min={0}
@@ -902,7 +950,7 @@ export function NewInvoiceMain({
                             onClick={handleAddGlobalAdjustment}
                             className="w-full bg-primary text-primary-foreground px-4 h-9 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                         >
-                            Agregar ajuste
+                            {globalAdjType === 'discount' ? 'Agregar descuento' : globalAdjType === 'charge' ? 'Agregar recargo' : 'Agregar retención'}
                         </button>
                     </div>
 
@@ -914,19 +962,32 @@ export function NewInvoiceMain({
                                     No hay ajustes globales agregados.
                                 </div>
                             )}
-                            {invoiceBuilder.globalAdjustments.map((adj: any) => (
-                                <div key={adj.id} className="flex items-center gap-4 bg-muted/10 p-3 rounded-lg border border-border">
-                                    <span className="text-sm font-medium flex-1 truncate">
-                                        {adj.type === 'discount' ? 'Descuento' : 'Recargo'}: {adj.reason}
-                                    </span>
-                                    <span className="text-sm font-bold min-w-[100px] text-right">
-                                        {adj.valueType === 'percentage' ? `${adj.value}%` : `$ ${Math.round(adj.value).toLocaleString("es-CO")}`}
-                                    </span>
-                                    <button onClick={() => invoiceBuilder.removeGlobalAdjustment(adj.id)} className="p-1.5 rounded hover:bg-destructive/10 transition">
-                                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                                    </button>
-                                </div>
-                            ))}
+                            {invoiceBuilder.globalAdjustments.map((adj: any) => {
+                                const isWithholding = adj.type === 'withholding';
+                                const title = isWithholding ? adj.withholdingData?.name || '' : (adj.type === 'discount' ? 'Descuento' : 'Recargo');
+                                const reason = adj.reason ? (isWithholding ? ` - ${adj.reason}` : `: ${adj.reason}`) : "";
+
+                                // Recalculate based on net subtotal dynamically for UI display
+                                const netSubtotal = invoiceBuilder.totals.subtotal - invoiceBuilder.totals.lineDiscountsAmount;
+                                const calculated = isWithholding ? netSubtotal * (Number(adj.withholdingData?.code || 0) / 100) : 0;
+
+                                return (
+                                    <div key={adj.id} className="flex items-center gap-4 bg-muted/10 p-3 rounded-lg border border-border">
+                                        <span className="text-sm font-medium flex-1 truncate">
+                                            {title}{reason}
+                                        </span>
+                                        <span className="text-sm font-bold min-w-[100px] text-right">
+                                            {isWithholding
+                                                ? `-$ ${Math.round(calculated).toLocaleString("es-CO")}`
+                                                : (adj.valueType === 'percentage' ? `${adj.value}%` : `$ ${Math.round(adj.value).toLocaleString("es-CO")}`)
+                                            }
+                                        </span>
+                                        <button onClick={() => invoiceBuilder.removeGlobalAdjustment(adj.id)} className="p-1.5 rounded hover:bg-destructive/10 transition">
+                                            <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                                        </button>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -1021,6 +1082,17 @@ export function NewInvoiceMain({
                                 <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0)}</span>
                             </div>
                         ))}
+
+                        {invoiceBuilder.globalAdjustments.filter((adj: any) => adj.type === 'withholding').map((adj: any) => {
+                            const netSubtotal = invoiceBuilder.totals.subtotal - invoiceBuilder.totals.lineDiscountsAmount;
+                            const calculated = netSubtotal * (Number(adj.withholdingData?.code || 0) / 100);
+                            return (
+                                <div key={adj.id} className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">{adj.withholdingData?.name}</span>
+                                    <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(calculated || 0)}</span>
+                                </div>
+                            );
+                        })}
 
                         <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-2">
                             <span className="text-xl font-medium text-foreground">Total</span>

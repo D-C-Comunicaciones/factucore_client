@@ -40,7 +40,7 @@ export function CompanySummaryCard() {
       {/* Logo Factucore */}
       <div className="flex flex-col items-center justify-center flex-1 min-w-0">
         <Image
-          src="/img/factucore_logo_horizontal.png"
+          src="/img/factucore_logo_horizontal.webp"
           alt="Factucore Logo"
           width={220}
           height={60}
