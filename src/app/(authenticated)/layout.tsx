@@ -6,7 +6,11 @@ import { Sidebar } from '@/components/sidebar/Sidebar';
 import { Header } from '@/components/header/Header';
 import { useAuth } from '@/contexts/auth-context';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Home, FileText, ShoppingBag, Users, Package, Building2, BarChart3, CheckSquare, Settings, ArrowDownLeft, Inbox } from 'lucide-react';
+import {
+    Home, FileText, ShoppingBag, Users, Package,
+    Building2, BarChart3, CheckSquare, Settings,
+    ArrowDownLeft, Inbox, Tags, Layers, Warehouse, Sliders, ClipboardList, ListTree
+} from 'lucide-react';
 import type { SidebarMenuItem } from '@/components/sidebar/Sidebar';
 
 export default function AuthenticatedLayout({
@@ -14,10 +18,10 @@ export default function AuthenticatedLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading, user } = useAuth();
     const router = useRouter();
 
-    // Sidebar/Menu state
+    // STATE
     const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
     const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -26,14 +30,11 @@ export default function AuthenticatedLayout({
     const [isSidebarHovered, setIsSidebarHovered] = useState(false);
     const [windowWidth, setWindowWidth] = useState(0);
 
-    // Handlers
+    // HANDLERS
     const onToggleMenu = useCallback((menu: string) => {
-        setExpandedMenus((prev) => {
-            const isCurrentlyExpanded = prev[menu];
-            if (isCurrentlyExpanded) {
-                return { ...prev, [menu]: false };
-            }
-            return { [menu]: true };
+        setExpandedMenus(prev => {
+            const isOpen = prev[menu];
+            return { ...prev, [menu]: !isOpen };
         });
     }, []);
 
@@ -47,25 +48,26 @@ export default function AuthenticatedLayout({
     }, []);
 
     const onToggleCollapse = useCallback(() => {
-        setIsCollapsed((prev) => !prev);
+        setIsCollapsed(prev => !prev);
     }, []);
 
     const onToggleMobileMenu = useCallback(() => {
-        setIsMobileMenuOpen((prev) => !prev);
+        setIsMobileMenuOpen(prev => !prev);
     }, []);
 
     const onToggleUserMenu = useCallback(() => {
-        setShowUserMenu((prev) => !prev);
+        setShowUserMenu(prev => !prev);
     }, []);
 
     const onHoverChange = useCallback((isHovered: boolean) => {
         setIsSidebarHovered(isHovered);
     }, []);
 
-    // Manejar resize del window - DEBE ESTAR ANTES del early return
+    // RESIZE
     useEffect(() => {
         const handleResize = () => {
             setWindowWidth(window.innerWidth);
+
             if (window.innerWidth >= 1024 && isMobileMenuOpen) {
                 setIsMobileMenuOpen(false);
             }
@@ -76,21 +78,16 @@ export default function AuthenticatedLayout({
         return () => window.removeEventListener('resize', handleResize);
     }, [isMobileMenuOpen]);
 
-    // Auth check - DEBE ESTAR DESPUÉS de todos los otros hooks
+    // AUTH
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
             router.push('/login');
         }
     }, [isAuthenticated, isLoading, router]);
 
-    if (isLoading) {
-        return null;
-    }
-    if (!isAuthenticated) {
-        return null;
-    }
+    if (isLoading || !isAuthenticated) return null;
 
-    // Menú dinámico
+    // MENU
     const menuItems: SidebarMenuItem[] = [
         { icon: Home, label: 'Inicio', path: '/dashboard' },
         { icon: Inbox, label: 'Bandeja de entrada', path: '/bandeja' },
@@ -101,12 +98,11 @@ export default function AuthenticatedLayout({
             expandable: true,
             submenu: [
                 { icon: FileText, label: 'Factura de venta', path: '/invoices' },
-                { icon: FileText, label: 'Facturas de venta recurrentes', path: '/ingresos/facturas-recurrentes' },
-                { icon: FileText, label: 'Pagos recibidos', path: '/ingresos/pagos-recibidos' },
-                { icon: FileText, label: 'Devoluciones en ventas', path: '/ingresos/devoluciones' },
+                { icon: FileText, label: 'Pagos recibidos', path: '/payments' },
+                { icon: FileText, label: 'Devoluciones en venta', path: '/returns' },
                 { icon: FileText, label: 'Notas débito', path: '/ingresos/notas-debito' },
                 { icon: FileText, label: 'Cotizaciones', path: '/ingresos/cotizaciones' },
-                { icon: FileText, label: 'Remisiones', path: '/ingresos/remisiones' }
+                { icon: FileText, label: 'Remisiones', path: '/ingresos/remisiones' },
             ]
         },
         {
@@ -115,52 +111,51 @@ export default function AuthenticatedLayout({
             path: '/gastos',
             expandable: true,
             submenu: [
-                { icon: FileText, label: 'Facturas de compra', path: '/gastos/facturas-compra' },
-                { icon: FileText, label: 'Documento soporte', path: '/gastos/documento-soporte' },
-                { icon: FileText, label: 'Notas de ajuste', path: '/gastos/notas-ajuste' },
-                { icon: FileText, label: 'Pagos', path: '/gastos/pagos' },
-                { icon: FileText, label: 'Pagos recurrentes', path: '/gastos/pagos-recurrentes' },
-                { icon: FileText, label: 'Notas débito', path: '/gastos/notas-debito' },
-                { icon: FileText, label: 'Órdenes de compra', path: '/gastos/ordenes-compra' },
-                { icon: FileText, label: 'Recepción de comprobantes', path: '/gastos/recepcion-comprobantes' }
+                { icon: ShoppingBag, label: 'Facturas de compra', path: '/gastos/facturas-compra' },
+                { icon: ShoppingBag, label: 'Documento soporte', path: '/gastos/documento-soporte' },
+                { icon: ShoppingBag, label: 'Notas de ajuste', path: '/gastos/notas-ajuste' },
+                { icon: ShoppingBag, label: 'Pagos', path: '/gastos/pagos' },
+                { icon: ShoppingBag, label: 'Pagos recurrentes', path: '/gastos/pagos-recurrentes' },
+                { icon: ShoppingBag, label: 'Notas débito', path: '/gastos/notas-debito' },
+                { icon: ShoppingBag, label: 'Órdenes de compra', path: '/gastos/ordenes-compra' },
+                { icon: ShoppingBag, label: 'Recepción de comprobantes', path: '/gastos/recepcion-comprobantes' },
             ]
         },
-        { icon: Users, label: 'Contactos', path: '/contactos', expandable: true, submenu: [] },
+        { icon: Users, label: 'Contactos', path: '/contacts' },
         {
             icon: Package,
             label: 'Inventario',
             path: '/inventario',
             expandable: true,
             submenu: [
-                { icon: FileText, label: 'Ítems de venta', path: '/inventario/items-venta' },
-                { icon: FileText, label: 'Valor de inventario', path: '/inventario/valor' },
-                { icon: FileText, label: 'Ajustes de inventario', path: '/inventario/ajustes' },
-                { icon: FileText, label: 'Gestión de ítems', path: '/inventario/gestion-items' },
-                { icon: FileText, label: 'Listas de precios', path: '/inventario/listas-precios' },
-                { icon: FileText, label: 'Bodegas', path: '/inventario/bodegas' },
-                { icon: FileText, label: 'Categorías', path: '/inventario/categorias' },
-                { icon: FileText, label: 'Atributos', path: '/inventario/atributos' }
+                { icon: Package, label: 'Items de Venta', path: '/items' },
+                { icon: BarChart3, label: 'Valor de inventario', path: '/inventario/valor' },
+                { icon: Sliders, label: 'Ajustes de inventario', path: '/inventario/ajustes' },
+                { icon: ClipboardList, label: 'Gestión de items', path: '/inventario/gestion' },
+                { icon: Tags, label: 'Listas de precios', path: '/inventario/precios' },
+                { icon: Warehouse, label: 'Bodegas', path: '/inventario/bodegas' },
+                { icon: Layers, label: 'Categorías', path: '/inventario/categorias' },
+                { icon: ListTree, label: 'Atributos', path: '/inventario/atributos' },
             ]
         },
-        { icon: Building2, label: 'Bancos', path: '/bancos', expandable: true, submenu: [] },
-        { icon: FileText, label: 'Contabilidad', path: '/contabilidad', expandable: true, submenu: [] },
-        { icon: BarChart3, label: 'Reportes', path: '/reportes' },
-        { icon: CheckSquare, label: 'Mis tareas', path: '/tareas' },
-        { icon: Settings, label: 'Configuración', path: '/config' },
+        { icon: Building2, label: 'Bancos', path: '/bancos' },
+        { icon: FileText, label: 'Contabilidad', path: '/contabilidad' },
+        { icon: BarChart3, label: 'Reportes', path: '/reports' },
+        { icon: CheckSquare, label: 'Mis tareas', path: '/tasks' },
+        { icon: Settings, label: 'Configuración', path: '/configuration' },
     ];
 
-    // Responsive sidebar width
-    const sidebarWidth = (isCollapsed && !isSidebarHovered) ? 48 : 256;
-
-    // Responsive margin for main content
-    const mainStyle = {
-        marginLeft: windowWidth < 1024 ? 0 : sidebarWidth,
-        width: windowWidth < 1024 ? '100%' : `calc(100% - ${sidebarWidth}px)`,
-    };
+    // 👉 ANCHO REAL DEL SIDEBAR (UNA SOLA FUENTE DE VERDAD)
+    const sidebarWidth =
+        windowWidth < 1024
+            ? 0
+            : (isCollapsed && !isSidebarHovered ? 56 : 256);
 
     return (
         <TooltipProvider delayDuration={0}>
-            <div className="min-h-screen w-full bg-gray-100">
+            <div className="min-h-screen w-full bg-gray">
+
+                {/* SIDEBAR */}
                 <Sidebar
                     menuItems={menuItems}
                     expandedMenus={expandedMenus}
@@ -174,23 +169,23 @@ export default function AuthenticatedLayout({
                     onToggleMobileMenu={onToggleMobileMenu}
                     onHoverChange={onHoverChange}
                 />
-                <main
-                    className="flex flex-col min-h-screen transition-all duration-300"
-                    style={mainStyle}
+
+                {/* CONTENIDO */}
+                <div
+                    className="transition-all duration-300"
+                    style={{ marginLeft: sidebarWidth }}
                 >
                     <Header
                         showUserMenu={showUserMenu}
                         onToggleUserMenu={onToggleUserMenu}
                         onToggleSidebar={onToggleMobileMenu}
-                        isSidebarCollapsed={isCollapsed}
-                        onToggleSidebarCollapse={onToggleCollapse}
+                        userName={user?.name}
                     />
-                    <div className="flex flex-1 flex-col items-center px-2 md:px-4">
-                        <div className="w-full max-w-10xl rounded-xl p-4 md:p-8">
-                            {children}
-                        </div>
-                    </div>
-                </main>
+
+                    <main className="px-4 md:px-6 py-4 max-w-[1400px] mx-auto">
+                        {children}
+                    </main>
+                </div>
             </div>
         </TooltipProvider>
     );

@@ -25,21 +25,50 @@ export function MonthSelector({ selectedMonth, onMonthChange }: MonthSelectorPro
 
   return (
     <div className="relative">
+
+      {/* BOTÓN */}
       <button
         onClick={() => setShowMenu(!showMenu)}
-        className="bg-white px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 hover:border-gray-400 transition-colors flex items-center gap-2 min-w-[120px] justify-between text-gray-900"
+        className="
+          bg-background 
+          px-3 py-1.5 
+          rounded-full 
+          text-xs font-medium 
+          border border-border 
+          hover:bg-primary/10 
+          transition-colors 
+          flex items-center gap-2 
+          min-w-[120px] justify-between 
+          text-foreground
+        "
       >
         <span>{selectedLabel}</span>
-        <ChevronDown className="w-3.5 h-3.5 text-gray-600" />
+        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
       </button>
+
+      {/* DROPDOWN */}
       {showMenu && (
-        <div className="absolute left-0 mt-2 w-full bg-white rounded-lg shadow-xl border border-gray-200 z-20 overflow-hidden">
+        <div className="
+          absolute left-0 mt-2 w-full 
+          bg-popover 
+          text-popover-foreground
+          rounded-lg 
+          shadow-xl 
+          border border-border 
+          z-20 overflow-hidden
+        ">
           <div className="py-1">
             {monthOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleSelect(option)}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-gray-900"
+                className="
+                  w-full text-left px-3 py-2 text-xs 
+                  hover:bg-primary/10 
+                  hover:text-primary
+                  transition-colors 
+                  text-foreground
+                "
               >
                 {option.label}
               </button>
@@ -47,6 +76,7 @@ export function MonthSelector({ selectedMonth, onMonthChange }: MonthSelectorPro
           </div>
         </div>
       )}
+
     </div>
   );
 }

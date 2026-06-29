@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { Settings, HelpCircle, X, Plus, Info, ChevronDown } from 'lucide-react';
-import { InvoiceItemsTable } from './InvoiceItemsTable';
+"use client";
+
+import { useState } from "react";
+import { Settings, HelpCircle, X, Plus, Info, ChevronDown } from "lucide-react";
+import { InvoiceItemsTable } from "./new/InvoiceItemsTable";
 
 interface NewInvoiceViewProps {
   onNavigate: (view: string) => void;
@@ -18,360 +20,226 @@ interface InvoiceItem {
   total: number;
 }
 
-export function NewInvoiceView({ onNavigate }: NewInvoiceViewProps) {
+export function NewInvoicePage({ onNavigate }: NewInvoiceViewProps) {
   const [invoiceItems, setinvoiceItems] = useState<InvoiceItem[]>([
-    { id: 1, item: '', referencia: '', precio: '', descuento: '', impuesto: '', descripcion: '', cantidad: 0, total: 0 },
-    { id: 2, item: '', referencia: '', precio: '', descuento: '', impuesto: '', descripcion: '', cantidad: 0, total: 0 },
-    { id: 3, item: '', referencia: '', precio: '', descuento: '', impuesto: '', descripcion: '', cantidad: 0, total: 0 }
+    { id: 1, item: "", referencia: "", precio: "", descuento: "", impuesto: "", descripcion: "", cantidad: 0, total: 0 },
   ]);
+
   const [showEmitirMenu, setShowEmitirMenu] = useState(false);
 
   const handleAddItem = () => {
-    const newItem: InvoiceItem = {
-      id: invoiceItems.length + 1,
-      item: '',
-      referencia: '',
-      precio: '',
-      descuento: '',
-      impuesto: '',
-      descripcion: '',
-      cantidad: 0,
-      total: 0
-    };
-    setinvoiceItems([...invoiceItems, newItem]);
+    setinvoiceItems([
+      ...invoiceItems,
+      {
+        id: invoiceItems.length + 1,
+        item: "",
+        referencia: "",
+        precio: "",
+        descuento: "",
+        impuesto: "",
+        descripcion: "",
+        cantidad: 0,
+        total: 0,
+      },
+    ]);
   };
+
+  const inputClass =
+    "w-full h-[42px] px-3 py-2 rounded-lg text-sm border border-border bg-background focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40";
+
+  const buttonSecondary =
+    "px-4 py-2 rounded-lg text-sm font-medium border border-border bg-background hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors";
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+
+      {/* HEADER */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Nueva factura de venta electrónica</h1>
-        <div className="flex items-center gap-2">
-          <button className="px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-              <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-            </svg>
-            Personalizar opciones
-          </button>
-        </div>
+        <h1 className="text-2xl font-bold text-foreground">
+          Nueva factura de venta electrónica
+        </h1>
+
+        <button className={`${buttonSecondary} flex items-center gap-2`}>
+          <Settings className="w-4 h-4" />
+          Personalizar opciones
+        </button>
       </div>
 
-      {/* Tipo de documento y opciones */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <div className="sm:col-span-2 lg:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de documento
-            </label>
-            <div className="flex gap-2">
-              <button className="flex-1 h-[42px] px-3 py-2 bg-teal-500 text-white rounded-lg text-sm font-medium">
-                Factura de venta
-              </button>
-              <button className="flex-1 h-[42px] px-3 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-sm">
-                Tiquete
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bodega
-            </label>
-            <select className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>Principal</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-              Lista de precios
-              <HelpCircle className="w-3 h-3 text-gray-400" />
-            </label>
-            <select className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>General</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-              Vendedor
-              <HelpCircle className="w-3 h-3 text-gray-400" />
-            </label>
-            <input 
-              type="text"
-              placeholder="Buscar..."
-              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-              Orden de compra
-              <HelpCircle className="w-3 h-3 text-gray-400" />
-            </label>
-            <input 
-              type="text"
-              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-              Orden de entrega
-              <HelpCircle className="w-3 h-3 text-gray-400" />
-            </label>
-            <input 
-              type="text"
-              className="w-full h-[42px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
+      {/* FORM SUPERIOR */}
+      <div className="bg-background border border-border rounded-lg p-6 grid grid-cols-6 gap-4">
+
+        <div className="col-span-2">
+          <label className="text-sm font-medium text-foreground mb-2 block">
+            Tipo de documento
+          </label>
+
+          <div className="flex gap-2">
+            <button className="flex-1 h-[42px] bg-primary text-primary-foreground rounded-lg text-sm font-medium">
+              Factura de venta
+            </button>
+            {/*
+                        <button className={`flex-1 h-[42px] ${buttonSecondary}`}>
+                          Tiquete
+                        </button>
+                        */}
           </div>
         </div>
+
+        <select className={inputClass}>
+          <option>Principal</option>
+        </select>
+
+        <select className={inputClass}>
+          <option>General</option>
+        </select>
+
+        <input className={inputClass} placeholder="Buscar vendedor..." />
+        <input className={inputClass} placeholder="Orden compra" />
+        <input className={inputClass} placeholder="Orden entrega" />
       </div>
 
-      {/* Factura principal */}
-      <div className="bg-white rounded-lg border border-gray-200 p-8">
-        {/* Header de la factura */}
-        <div className="flex items-start justify-between mb-8">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <div className="text-gray-400 font-medium mb-1">Utilizar mi logo</div>
-            <div className="text-xs text-gray-400">176 × 51 pixeles</div>
+      {/* FACTURA */}
+      <div className="bg-background border border-border rounded-lg p-8 space-y-6">
+
+        {/* HEADER FACTURA */}
+        <div className="flex justify-between items-start">
+
+          <div className="border-2 border-dashed border-border rounded-lg p-8 text-center text-muted-foreground">
+            Logo
           </div>
-          
+
           <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">
-              LEONES PALACIO ANDRES FELIPE
+            <h2 className="font-bold text-lg text-foreground">
+              TU EMPRESA
             </h2>
-            <div className="text-sm text-gray-600">NIT: 1143263398</div>
-            <div className="text-sm text-gray-600">leones1997@live.com</div>
+            <p className="text-sm text-muted-foreground">NIT</p>
           </div>
-          
+
           <div className="text-right">
-            <div className="mb-2">
-              <select className="text-sm border-0 text-gray-600 focus:outline-none focus:ring-0">
-                <option>Factura electrónica</option>
-              </select>
-            </div>
+            <span className="text-sm text-muted-foreground">No.</span>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">No.</span>
-              <span className="font-bold text-lg">LTCH-2</span>
-              <button className="p-1 hover:bg-gray-100 rounded">
-                <Settings className="w-4 h-4 text-gray-400" />
+              <span className="font-bold text-lg text-foreground">
+                0001
+              </span>
+
+              <button className="p-1 rounded hover:bg-primary/10 transition-colors">
+                <Settings className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Información del cliente */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-8">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Documento <span className="text-red-500">*</span>
-            </label>
-            <div className="flex gap-2">
-              <select className="w-20 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                <option>CC</option>
-                <option>NIT</option>
-                <option>CE</option>
-              </select>
-              <input 
-                type="text"
-                placeholder="Buscar Nº de ID"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fecha <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input 
-                type="date"
-                defaultValue="2026-01-07"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded">
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
-              <button className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded">
-                <HelpCircle className="w-4 h-4 text-gray-400" />
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre o razón social <span className="text-red-500">*</span>
-            </label>
-            <input 
-              type="text"
-              placeholder="Seleccionar cliente"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Forma de pago <span className="text-red-500">*</span>
-            </label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>Contado</option>
-              <option>Crédito</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Correo
-            </label>
-            <input 
-              type="email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Medio de pago <span className="text-red-500">*</span>
-            </label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option>Seleccionar</option>
-              <option>Efectivo</option>
-              <option>Transferencia</option>
-              <option>Tarjeta</option>
-            </select>
-          </div>
+        {/* CLIENTE */}
+        <div className="grid grid-cols-2 gap-4">
+          <input className={inputClass} placeholder="Documento" />
+          <input className={inputClass} type="date" />
+
+          <input className={inputClass} placeholder="Cliente" />
+          <select className={inputClass}>
+            <option>Forma de pago</option>
+          </select>
+
+          <input className={inputClass} placeholder="Correo" />
+          <select className={inputClass}>
+            <option>Medio de pago</option>
+          </select>
         </div>
 
-        <button className="text-teal-600 hover:text-teal-700 text-sm font-medium flex items-center gap-1 mb-6">
+        {/* BOTON */}
+        <button className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors">
           <Plus className="w-4 h-4" />
           Nuevo contacto
         </button>
 
-        {/* Tabla de items */}
-        <InvoiceItemsTable items={invoiceItems} onAddItem={handleAddItem} />
+        {/* ITEMS */}
+        {/* <InvoiceItemsTable items={invoiceItems} onAddItem={handleAddItem} /> */}
 
-        {/* Sección inferior */}
-        <div className="grid grid-cols-2 gap-8">
-          {/* Izquierda - Firma y términos */}
-          <div className="space-y-6">
-            <button className="text-teal-600 hover:text-teal-700 text-sm font-medium flex items-center gap-1">
+        {/* FOOTER IZQ */}
+        <div className="grid grid-cols-2 gap-6">
+
+          <div className="space-y-4">
+
+            <button className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors">
               <Plus className="w-4 h-4" />
               Agregar remisión
-              <HelpCircle className="w-3 h-3 text-gray-400" />
             </button>
 
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <div className="text-gray-400 font-medium mb-1">Utilizar mi firma</div>
-              <div className="text-xs text-gray-400">176 × 51 pixeles</div>
-            </div>
+            <textarea className={`${inputClass} h-24`} placeholder="Términos..." />
+            <textarea className={`${inputClass} h-20`} placeholder="Notas..." />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                Términos y condiciones
-                <HelpCircle className="w-3 h-3 text-gray-400" />
-              </label>
-              <textarea 
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                defaultValue="Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el Art. 774 del código de comercio. Autorizo que en caso de incumplimiento de esta obligación sea reportado a las centrales de riesgo, se cobrarán intereses por mora..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                Notas
-                <HelpCircle className="w-3 h-3 text-gray-400" />
-              </label>
-              <textarea 
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-700 mb-2">Pie de factura</div>
-              <div className="text-xs text-gray-500">
-                Autorización de numeración de facturación Nº18764087804091 de 2025-01-27 Modalidad Factura Electrónica Desde Nº LTCH1 hasta LTCH100 con vigencia hasta 2027-01-27
-              </div>
+            <div className="bg-muted/40 p-4 rounded-lg text-sm text-muted-foreground">
+              Pie de factura
             </div>
           </div>
 
-          {/* Derecha - Totales */}
-          <div className="flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">$ 0</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">Descuento</span>
-                <span className="font-medium text-red-600">-$ 0</span>
-              </div>
-              <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
-                <span className="text-xl font-bold">Total</span>
-                <span className="text-2xl font-bold">$ 0</span>
-              </div>
+          {/* TOTALES */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Subtotal</span>
+              <span>$0</span>
+            </div>
+
+            <div className="flex justify-between text-sm text-destructive">
+              <span>Descuento</span>
+              <span>$0</span>
+            </div>
+
+            <div className="border-t border-border pt-2 flex justify-between font-bold text-lg text-foreground">
+              <span>Total</span>
+              <span>$0</span>
             </div>
           </div>
+
         </div>
       </div>
 
-      {/* Pago recibido */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="font-semibold text-lg mb-1">Pago recibido</h3>
-            <p className="text-sm text-gray-600">
-              Si te hicieron un pago asociado a esta venta puedes hacer aquí su registro.
-            </p>
-          </div>
-          <button className="text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1">
-            <Plus className="w-4 h-4" />
-            Agregar pago
+      {/* FOOTER BOTONES */}
+      <div className="bg-background border border-border rounded-lg p-6 flex justify-center gap-3">
+
+        <button
+          onClick={() => onNavigate("facturas-venta")}
+          className={buttonSecondary}
+        >
+          Cancelar
+        </button>
+
+        <button className={buttonSecondary}>Vista previa</button>
+
+        <button className={buttonSecondary}>
+          Emitir y crear nueva
+        </button>
+
+        <div className="relative">
+          <button
+            onClick={() => setShowEmitirMenu(!showEmitirMenu)}
+            className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+          >
+            Emitir
           </button>
+
+          {showEmitirMenu && (
+            <div className="absolute bottom-full right-0 mb-2 w-56 bg-background border border-border rounded-lg shadow-lg py-2">
+              <button className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors">
+                Guardar como borrador
+              </button>
+              <button className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors">
+                Emitir e imprimir
+              </button>
+            </div>
+          )}
         </div>
+
       </div>
 
-      {/* Mensaje informativo */}
-      <div className="bg-blue-50 rounded-lg border border-blue-200 p-6 flex items-start gap-4">
-        <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
-          <Info className="w-5 h-5 text-white" />
+      {/* ALERT */}
+      <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 flex gap-4">
+        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+          <Info className="w-5 h-5 text-primary-foreground" />
         </div>
-        <p className="text-sm text-gray-700">
+
+        <p className="text-sm text-muted-foreground">
           Guarda primero para poder agregar comentarios.
         </p>
-      </div>
-
-      {/* Footer con botones */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="text-xs text-gray-500 mb-4">
-          Los campos marcados con <span className="text-red-500">*</span> son obligatorios
-        </div>
-        <div className="flex items-center justify-center gap-3">
-          <button 
-            onClick={() => onNavigate('facturas-venta')}
-            className="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium transition-colors"
-          >
-            Cancelar
-          </button>
-          <button className="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium transition-colors">
-            Vista previa
-          </button>
-          <button className="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium transition-colors">
-            Emitir y crear nueva
-          </button>
-          <div className="relative">
-            <button 
-              onClick={() => setShowEmitirMenu(!showEmitirMenu)}
-              className="px-6 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              Emitir
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            {showEmitirMenu && (
-              <div className="absolute bottom-full right-0 mb-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                  Guardar como borrador
-                </button>
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 transition-colors">
-                  Emitir e imprimir
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

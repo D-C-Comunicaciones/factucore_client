@@ -1,12 +1,434 @@
 "use client";
-import { NewInvoiceView } from "@/components/invoice/NewInvoiceView";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { NewInvoiceFooter } from "@/components/invoice/new/NewInvoiceFooter";
+import { NewInvoiceHeader } from "@/components/invoice/new/NewInvoiceHeader";
+import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
+import { NewInvoiceMain } from "@/components/invoice/new/NewInvoiceMain";
+import { NewInvoiceOptions } from "@/components/invoice/new/NewInvoiceOptions";
+import { NewInvoicePayment } from "@/components/invoice/new/NewInvoicePayment";
+import { PreviewModal } from "@/components/invoice/new/PreviewModal";
+import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
+import { useInvoiceBuilder } from "@/hooks/invoices/useInvoiceBuilder";
+import { useCatalogs } from "@/hooks/useCatalogs";
+import { useSellersList } from "@/hooks/sellers/useSellers";
+import { InvoicesService } from "@/lib/invoices";
+import { AuthService } from "@/lib/auth";
+import { useResolutions } from "@/hooks/useResolutions";
+import type { Resolution } from "@/lib/resolutions";
 
-export default function NuevaFacturaPage() {
+import { showToast } from "@/components/sonner/CustomToaster";
+
+export default function NewInvoicePage() {
+  const router = useRouter();
+  const createInvoice = useCreateInvoice();
+  const catalogData = useCatalogs();
+  const { data: sellersData } = useSellersList();
+  const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
+  const resolutionTypeFilter = tipoDoc === 'tiquete' ? 2 : 1; // 1=INVOICE, 2=POS
+  const { resolutions, refetch: refetchResolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
+  const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
+  const [errors, setErrors] = useState<Record<string, any>>({});
+
+  // Set is_main resolution as default when resolutions load or tipoDoc changes
+  useEffect(() => {
+    if (resolutions.length > 0) {
+      const isValid = resolutions.some((r: Resolution) => r.id === selectedResolutionId);
+      if (!isValid) {
+        // Prefer is_main, fallback to first
+        const mainRes = resolutions.find((r: Resolution) => r.is_main) || resolutions[0];
+        setSelectedResolutionId(mainRes.id);
+      }
+    } else {
+      setSelectedResolutionId(null);
+    }
+  }, [resolutions]);
+
+  const activeResolution = resolutions.find((r: Resolution) => r.id === selectedResolutionId) || resolutions[0] || null;
+  // Leer company guardada en localStorage al iniciar sesión
+  const storedCompany = AuthService.getCompany<any>();
+
+  const [showEmitirMenu, setShowEmitirMenu] = useState(false);
+  const [formState, setFormState] = useState<any>({
+    notes: "",
+    contact_id: null,
+    seller_id: null,
+    payment_form_id: null,
+    payment_method_id: null,
+    payment_due_date: null
+  });
+  const [loadingEmitir, setLoadingEmitir] = useState(false);
+  const [loadingGuardar, setLoadingGuardar] = useState(false);
+
+  // Selected filters for items
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | null>(null);
+  const [selectedPriceListId, setSelectedPriceListId] = useState<number | null>(null);
+
+  // States for customizing visible fields
+  const [showWarehouse, setShowWarehouse] = useState(true);
+  const [showPriceList, setShowPriceList] = useState(true);
+  const [showRemissionBar, setShowRemissionBar] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  // Initialize the builder hook
+  const invoiceBuilder = useInvoiceBuilder();
+
+  // Set default warehouse and price list when catalogs load
+  useEffect(() => {
+    if (catalogData.warehouses?.length > 0 && !selectedWarehouseId) {
+      const defaultWh = catalogData.warehouses.find((w: any) => w.is_default) || catalogData.warehouses[0];
+      setSelectedWarehouseId(defaultWh.id);
+    }
+    if (catalogData.priceLists?.length > 0 && !selectedPriceListId) {
+      const defaultPl = catalogData.priceLists.find((pl: any) => pl.name === 'General') || catalogData.priceLists[0];
+      setSelectedPriceListId(defaultPl.id);
+    }
+  }, [catalogData.warehouses, catalogData.priceLists]);
+
+  const documentTypes = catalogData.typeDocumentIdentifications?.map((doc: any) => ({
+    value: doc.id.toString(),
+    label: doc.abbreviation
+  })) || [];
+
+  const warehouseOptions = catalogData.warehouses?.map((w: any) => ({ value: w.id.toString(), label: w.name })) || [];
+  const priceListOptions = catalogData.priceLists?.map((pl: any) => ({ value: pl.id.toString(), label: pl.name })) || [];
+
+  const sellersArray = Array.isArray(sellersData) ? sellersData : (sellersData?.data || []);
+  const sellerOptions = sellersArray.map((s: any) => ({ value: String(s.id), label: s.name }));
+
+  const paymentMethods = catalogData.paymentMethods?.map((pm: any) => ({
+    value: pm.id.toString(),
+    label: pm.name
+  })) || [];
+  const paymentForms = catalogData.paymentForms?.map((pf: any) => ({
+    value: pf.id.toString(),
+    label: pf.name
+  })) || [];
+
+  const bankAccounts = catalogData.bankAccounts?.map((ba: any) => ({
+    value: ba.id.toString(),
+    label: ba.name
+  })) || [];
+
+  // Data para el main
+  const mainData = {
+    logo: "/img/logo.png",
+    company: {
+      name: storedCompany?.company_name ?? "",
+      nit: storedCompany
+        ? `${storedCompany.identification_number}${storedCompany.verification_digit != null ? `-${storedCompany.verification_digit}` : ""}`
+        : "",
+      email: storedCompany?.email ?? "",
+    },
+    invoiceType: "Factura electrónica",
+    invoiceNumber: activeResolution ? `${activeResolution.prefix || ''}${((activeResolution.current_number ?? (activeResolution.from_number - 1)) + 1)}` : "",
+    documentTypes,
+    warehouseOptions,
+    priceListOptions,
+    sellerOptions,
+    paymentMethods,
+    paymentForms,
+  };
+
+    const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
+    const isContadoForm = !formState.payment_form_id || !selectedForm ||
+      selectedForm.label?.toLowerCase().includes("contado") ||
+      selectedForm.value?.toLowerCase() === "contado" ||
+      selectedForm.value === "1";
+
+    const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // 1. Contacto
+    if (!formState.contact_id) {
+      newErrors.contact_id = "El contacto es requerido";
+      setErrors(newErrors);
+      showToast("El contacto es requerido", "error");
+      return false;
+    }
+
+    // 2. Forma / Medio de pago
+
+    if (isContadoForm) {
+      if (!formState.payment_method_id) {
+        newErrors.payment_method_id = "El método de pago es requerido";
+        setErrors(newErrors);
+        showToast("El método de pago es requerido", "error");
+        return false;
+      }
+    } else {
+      if (!formState.payment_term_id) {
+        newErrors.payment_term_id = "El plazo de pago es requerido";
+        setErrors(newErrors);
+        showToast("El plazo de pago es requerido para facturas a crédito", "error");
+        return false;
+      }
+      if (!formState.payment_due_date) {
+        newErrors.payment_due_date = "La fecha de vencimiento es requerida";
+        setErrors(newErrors);
+        showToast("La fecha de vencimiento es requerida para facturas a crédito", "error");
+        return false;
+      }
+    }
+
+    // 3. Ítems
+    if (!invoiceBuilder.items || invoiceBuilder.items.length === 0) {
+      setErrors(newErrors);
+      showToast("Debe agregar al menos un ítem a la factura", "error");
+      return false;
+    } else {
+      const hasEmptyItems = invoiceBuilder.items.some((item: any) => !item.item_id);
+      if (hasEmptyItems) {
+        newErrors.items = "empty_items";
+        setErrors(newErrors);
+        showToast("Por favor selecciona un producto o servicio en todas las filas de ítems", "error");
+        return false;
+      }
+      const hasInvalidQuantity = invoiceBuilder.items.some((item: any) => item.item_id && (!item.cantidad || item.cantidad <= 0));
+      if (hasInvalidQuantity) {
+        newErrors.items = "invalid_quantity";
+        setErrors(newErrors);
+        showToast("Por favor ingrese una cantidad mayor a 0 en los productos seleccionados.", "error");
+        return false;
+      }
+      
+      const outOfStockItem = invoiceBuilder.items.find((item: any) => {
+        if (item.is_inventoriable && !item.allow_negative_stock) {
+           const availableStock = item.stock_quantity || 0;
+           return item.cantidad > availableStock;
+        }
+        return false;
+      });
+
+      if (outOfStockItem) {
+        newErrors.items = "out_of_stock";
+        setErrors(newErrors);
+        showToast(`El producto "${outOfStockItem.item}" no tiene stock suficiente. Stock disponible: ${outOfStockItem.stock_quantity || 0}, Cantidad solicitada: ${outOfStockItem.cantidad}.`, "error");
+        return false;
+      }
+    }
+
+    // 4. Pago
+    if (formState.paymentData) {
+      if (!formState.paymentData.resolution_id) {
+        newErrors.payment_resolution = "Requerido";
+      }
+      if (!formState.paymentData.payment_date) {
+        newErrors.payment_date = "Requerido";
+      }
+      if (!formState.paymentData.account_id) {
+        newErrors.payment_account = "Requerido";
+      }
+      if (!formState.paymentData.payment_method_id) {
+        newErrors.payment_method = "Requerido";
+      }
+      if (!formState.paymentData.amount || formState.paymentData.amount <= 0) {
+        newErrors.payment_amount = "Debe ser mayor a 0";
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showToast(
+        "Asegúrate de completar todos los campos marcados con * e intenta de nuevo.",
+        "error",
+        "Revisa los campos obligatorios"
+      );
+      return false;
+    }
+
+    setErrors({});
+    return true;
+  };
+
+  const handleSaveAction = async (actionType: "DRAFT" | "SEND" | "SEND_EMAIL" | "PRINT" | "CREATE_NEW") => {
+    if (!validateForm()) return;
+
+    if (formState.paymentData && Number(formState.paymentData.amount) > invoiceBuilder.totals.total) {
+      const maxAllowed = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(invoiceBuilder.totals.total);
+      showToast(`El pago que intenta registrar excede el valor facturado. El máximo que puede registrar es ${maxAllowed} (recargos, descuentos e impuestos incluidos, sin contar retenciones).`, "warning");
+      return;
+    }
+
+    setLoadingGuardar(true);
+    try {
+      const basePayload = invoiceBuilder.buildPayload({
+        ...formState,
+        numbering_range_id: selectedResolutionId,
+      });
+      basePayload.type_operation_id = 1;
+
+      if (formState.paymentData) {
+        basePayload.payments = [formState.paymentData];
+      } else {
+        delete basePayload.payments;
+      }
+      delete basePayload.paymentData;
+      delete basePayload.comments;
+
+      if (!basePayload.seller_id || basePayload.seller_id === "") {
+        basePayload.seller_id = null;
+      } else {
+        basePayload.seller_id = Number(basePayload.seller_id);
+      }
+
+      if (isContadoForm) {
+        delete basePayload.payment_term_id;
+      } else {
+        delete basePayload.payment_method_id;
+      }
+
+      if (actionType === "SEND") {
+        // Emitir directamente a la DIAN: POST /invoices/send (sin save_action)
+        const res: any = await InvoicesService.sendDirect(basePayload);
+        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        if (!id) throw new Error("No se pudo obtener el ID de la factura");
+
+        if (res?.dian && res.dian.estado_documento === "NO APROBADA") {
+          const errorMsg = res.dian.mensaje_dian || "La factura se creó pero fue rechazada por la DIAN";
+          const details = res.dian.errors && res.dian.errors.length > 0
+            ? res.dian.errors.map((e: any) => e.message).join(" | ")
+            : "";
+          showToast(`${errorMsg}. ${details}`, "error");
+          return;
+        }
+
+        showToast("Factura validada correctamente por la DIAN", "success");
+        router.push(`/invoices/${id}`);
+
+      } else if (actionType === "DRAFT") {
+        // Guardar como borrador: POST /invoices con save_action DRAFT
+        const payload = { ...basePayload, save_action: "DRAFT" };
+        const res: any = await createInvoice.mutateAsync(payload);
+        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        if (!id) throw new Error("No se pudo obtener el ID de la factura");
+        showToast("Borrador guardado correctamente", "success");
+        router.push(`/invoices/${id}`);
+
+      } else if (actionType === "CREATE_NEW") {
+        // Guardar y crear nueva: POST /invoices con save_action SAVED + limpiar form
+        const payload = { ...basePayload, save_action: "SAVED" };
+        await createInvoice.mutateAsync(payload);
+        showToast("Factura guardada correctamente", "success");
+        invoiceBuilder.reset();
+        refetchResolutions();
+        setFormState({ notes: "", contact_id: null, payment_form_id: null, payment_method_id: null, payment_due_date: null });
+
+      } else if (actionType === "PRINT") {
+        const payload = { ...basePayload, save_action: "SAVED" };
+        const res: any = await createInvoice.mutateAsync(payload);
+        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        if (!id) throw new Error("No se pudo obtener el ID de la factura");
+        window.open(InvoicesService.getPdfUrl(id), "_blank");
+        router.push(`/invoices/${id}`);
+
+      } else if (actionType === "SEND_EMAIL") {
+        const payload = { ...basePayload, save_action: "SAVED", send_email: true };
+        const res: any = await createInvoice.mutateAsync(payload);
+        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        if (!id) throw new Error("No se pudo obtener el ID de la factura");
+        showToast("Factura guardada y enviada por correo", "success");
+        router.push(`/invoices/${id}`);
+      }
+
+    } catch (error: any) {
+      const backendErrors = error.response?.data?.errors;
+      if (backendErrors) {
+        setErrors(backendErrors);
+        if (backendErrors.prevalidation && Array.isArray(backendErrors.prevalidation) && backendErrors.prevalidation.length > 0) {
+          showToast(backendErrors.prevalidation[0], "error");
+        } else if (backendErrors.inventory && Array.isArray(backendErrors.inventory) && backendErrors.inventory.length > 0) {
+          showToast(backendErrors.inventory[0], "error");
+        } else {
+          showToast("Se encontraron errores de validación en el formulario", "error");
+        }
+      } else {
+        showToast(error.response?.data?.message || "Error al procesar la factura", "error");
+      }
+      console.error(error);
+    } finally {
+      setLoadingGuardar(false);
+    }
+  };
+
   return (
-    <div className="w-full min-h-screen text-xs">
-      <div className="w-full max-w-[1200px] mx-auto px-6 md:px-8">
-        <NewInvoiceView onNavigate={() => {}} />
+    <div className="w-full min-h-screen">
+      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
+        <div className="space-y-6">
+          <NewInvoiceHeader
+            showWarehouse={showWarehouse}
+            setShowWarehouse={setShowWarehouse}
+            showPriceList={showPriceList}
+            setShowPriceList={setShowPriceList}
+            tipoDoc={tipoDoc}
+          />
+          <NewInvoiceOptions
+            warehouseOptions={warehouseOptions}
+            priceListOptions={priceListOptions}
+            sellerOptions={sellerOptions}
+            selectedWarehouseId={selectedWarehouseId}
+            setSelectedWarehouseId={setSelectedWarehouseId}
+            selectedPriceListId={selectedPriceListId}
+            setSelectedPriceListId={setSelectedPriceListId}
+            selectedSeller={formState.seller_id}
+            setSelectedSeller={(val) => setFormState({ ...formState, seller_id: val })}
+            showWarehouse={showWarehouse}
+            showPriceList={showPriceList}
+            tipoDoc={tipoDoc}
+            setTipoDoc={setTipoDoc}
+            showRemissionBar={showRemissionBar}
+            setShowRemissionBar={setShowRemissionBar}
+          />
+          <NewInvoiceMain
+            mainData={mainData}
+            catalogData={catalogData}
+            invoiceBuilder={invoiceBuilder}
+            selectedWarehouseId={selectedWarehouseId}
+            selectedPriceListId={selectedPriceListId}
+            taxes={catalogData.taxes}
+            activeResolution={activeResolution}
+            resolutions={resolutions || []}
+            selectedResolutionId={selectedResolutionId}
+            setSelectedResolutionId={setSelectedResolutionId}
+            onRefetchResolutions={refetchResolutions}
+            formState={formState}
+            setFormState={setFormState}
+            notes={formState.notes}
+            onNotesChange={(val: string) => setFormState((prev: any) => ({ ...prev, notes: val }))}
+            showRemissionBar={showRemissionBar}
+            setShowRemissionBar={setShowRemissionBar}
+            errors={errors}
+          />
+          <NewInvoicePayment
+            paymentMethods={paymentMethods}
+            bankAccounts={bankAccounts}
+            paymentData={formState.paymentData}
+            onPaymentDataChange={(data) => setFormState({ ...formState, paymentData: data })}
+            errors={errors}
+          />
+          <NewInvoiceComments
+            comments={formState.comments || []}
+            setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
+          />
+          <NewInvoiceFooter
+            onNavigate={() => router.push("/invoices")}
+            onSaveAction={handleSaveAction}
+            loadingGuardar={loadingGuardar}
+            onPreview={() => {
+              if (validateForm()) setShowPreviewModal(true);
+            }}
+          />
+        </div>
       </div>
+
+      <PreviewModal
+        open={showPreviewModal}
+        onOpenChange={setShowPreviewModal}
+        data={showPreviewModal ? invoiceBuilder.buildPayload({
+          ...formState,
+          numbering_range_id: selectedResolutionId,
+        }) : null}
+      />
     </div>
   );
 }

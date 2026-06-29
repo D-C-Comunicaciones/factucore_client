@@ -1,6 +1,7 @@
 export class AuthService {
     private static TOKEN_KEY = 'access_token'
     private static USER_KEY = 'auth_user'
+    private static COMPANY_KEY = 'auth_company'
 
     static setToken(token: string): void {
         if (typeof window !== 'undefined' && token) {
@@ -31,10 +32,31 @@ export class AuthService {
         return null
     }
 
+    static setCompany(company: unknown): void {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(this.COMPANY_KEY, JSON.stringify(company))
+        }
+    }
+
+    static getCompany<T = unknown>(): T | null {
+        if (typeof window !== 'undefined') {
+            const raw = localStorage.getItem(this.COMPANY_KEY)
+            return raw ? JSON.parse(raw) as T : null
+        }
+        return null
+    }
+
+    static removeCompany(): void {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(this.COMPANY_KEY)
+        }
+    }
+
     static removeToken(): void {
         if (typeof window !== 'undefined') {
             localStorage.removeItem(this.TOKEN_KEY)
             localStorage.removeItem(this.USER_KEY)
+            localStorage.removeItem(this.COMPANY_KEY)
 
             // Borra solo la cookie access_token
             document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`

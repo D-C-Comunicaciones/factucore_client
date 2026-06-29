@@ -6,9 +6,15 @@ import { CustomToaster } from '@/components/sonner/CustomToaster'
 import { AuthProvider } from '@/contexts/auth-context'
 import { ThemeProvider } from "@/components/ui/theme-provider"
 
+// 🔥 IMPORTA TU PROVIDER
+import { Providers } from '@/providers'
+
 export const metadata: Metadata = {
-    title: 'Facturación Electrónica - D&C IDEM COMUNICACIONES S.A.S.',
-    description: 'Created by D&C IDEM COMUNICACIONES S.A.S.',
+    title: {
+        template: '%s',
+        default: 'Factucore Software de Facturación',
+    },
+    description: 'Software de facturación electrónica para Colombia',
     generator: 'D&C IDEM COMUNICACIONES S.A.S.',
     icons: {
         icon: [
@@ -29,19 +35,27 @@ export default function RootLayout({
             <head>
                 <style>{`
                     html {
-                    font-family: ${GeistSans.style.fontFamily};
-                    --font-sans: ${GeistSans.variable};
-                    --font-mono: ${GeistMono.variable};
+                        font-family: ${GeistSans.style.fontFamily};
+                        --font-sans: ${GeistSans.variable};
+                        --font-mono: ${GeistMono.variable};
                     }
-        `}</style>
+                `}</style>
             </head>
             <body suppressHydrationWarning>
-                <AuthProvider>
-                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-                    {children}
-                    </ThemeProvider>
-                </AuthProvider>
-                <CustomToaster />
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="light"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    <Providers>
+                        <AuthProvider>
+                            {children}
+                        </AuthProvider>
+
+                        <CustomToaster />
+                    </Providers>
+                </ThemeProvider>
             </body>
         </html>
     )

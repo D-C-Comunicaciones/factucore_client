@@ -61,5 +61,13 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    (() => {
+      try {
+        return require("tailwindcss-animate");
+      } catch {
+        return undefined;
+      }
+    })()
+  ].filter(Boolean),
 } satisfies Config;

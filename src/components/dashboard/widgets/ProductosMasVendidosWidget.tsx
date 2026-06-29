@@ -18,7 +18,7 @@ interface ProductosMasVendidosWidgetProps {
 }
 
 export function ProductosMasVendidosWidget({ productos, total }: ProductosMasVendidosWidgetProps) {
-  const COLORS = ['#ef4444', '#3b82f6', '#6366f1', '#14b8a6', '#f59e0b'];
+  const COLORS = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-primary)', 'var(--color-ring)'];
 
   const chartData = productos.map((producto, index) => ({
     name: producto.nombre,
@@ -50,7 +50,7 @@ export function ProductosMasVendidosWidget({ productos, total }: ProductosMasVen
           </TooltipTrigger>
           <TooltipContent
             side="right"
-            className="bg-[#232B3A]/95 text-white text-[10px] font-medium shadow-lg px-2.5 py-1 rounded z-50 border-none"
+            className="bg-primary text-primary-foreground text-[10px] font-medium shadow-lg px-2.5 py-1 rounded z-50 border-none"
           >
             Identifica tus productos con mayor tendencia de venta en el periodo seleccionado.
           </TooltipContent>

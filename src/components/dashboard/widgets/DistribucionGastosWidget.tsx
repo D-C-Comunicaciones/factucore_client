@@ -18,6 +18,8 @@ interface DistribucionGastosWidgetProps {
 }
 
 export function DistribucionGastosWidget({ gastos, total }: DistribucionGastosWidgetProps) {
+  const COLORS = ['var(--color-chart-1)', 'var(--color-chart-2)', 'var(--color-chart-3)', 'var(--color-primary)', 'var(--color-ring)'];
+
   const chartData = gastos.map((gasto, index) => ({
     name: gasto.concepto,
     value: gasto.valor,
@@ -27,7 +29,7 @@ export function DistribucionGastosWidget({ gastos, total }: DistribucionGastosWi
   const chartConfig = gastos.reduce((acc, gasto, index) => {
     acc[`gasto-${index}`] = {
       label: gasto.concepto,
-      color: gasto.color,
+      color: COLORS[index % COLORS.length],
     };
     return acc;
   }, {} as ChartConfig);
@@ -48,7 +50,7 @@ export function DistribucionGastosWidget({ gastos, total }: DistribucionGastosWi
           </TooltipTrigger>
           <TooltipContent
             side="right"
-            className="bg-[#232B3A]/95 text-white text-[10px] font-medium shadow-lg px-2.5 py-1 rounded z-50 border-none"
+            className="bg-primary text-primary-foreground text-[10px] font-medium shadow-lg px-2.5 py-1 rounded z-50 border-none"
           >
             Conoce la participación de cada gasto en los gastos totales de tu negocio.
           </TooltipContent>
@@ -108,7 +110,7 @@ export function DistribucionGastosWidget({ gastos, total }: DistribucionGastosWi
                 <tr key={index} className="border-b border-gray-100">
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: gasto.color }}></div>
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
                       <span className="text-gray-600">{gasto.concepto}</span>
                     </div>
                   </td>
