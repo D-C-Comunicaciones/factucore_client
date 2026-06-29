@@ -12,6 +12,7 @@ export function InvoiceDetailSummary({ bill }: InvoiceDetailSummaryProps) {
     const cobrado = bill.collected !== undefined
         ? Number(bill.collected)
         : Math.max(0, total - pendingAmount);
+    const retenido = Number(bill.withholdings_total || 0);
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 flex flex-wrap gap-8 items-center justify-between">
@@ -21,7 +22,7 @@ export function InvoiceDetailSummary({ bill }: InvoiceDetailSummaryProps) {
             </div>
             <div>
                 <div className="text-slate-500 mb-1">Retenido</div>
-                <div className="text-xl font-semibold text-red-500">$ 0</div>
+                <div className="text-xl font-semibold text-red-500">$ {retenido.toLocaleString()}</div>
             </div>
             <div>
                 <div className="text-slate-500 mb-1">Cobrado</div>

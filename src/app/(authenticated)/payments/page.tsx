@@ -93,7 +93,7 @@ export default function PaymentsPage() {
             <div className="flex items-center gap-2">
               {/* Nuevo pago */}
               <Button
-                className="btn-base bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground focus:bg-primary/90 focus:text-primary-foreground ml-1"
+                className="btn-base bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground focus:bg-primary/90 focus:text-primary-foreground ml-1 cursor-pointer"
                 onClick={handleNewPayment}
               >
                 <Plus className="w-4 h-4 mr-1" />

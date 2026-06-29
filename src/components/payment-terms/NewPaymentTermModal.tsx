@@ -2,15 +2,8 @@
 
 import * as React from "react";
 import { Loader2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { PaymentTermsService } from "@/lib/payment-terms";
-import { invalidateCatalog } from "@/hooks/useCatalogs";
 import { queryClient } from "@/lib/queryClient";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { showToast } from "@/components/sonner/CustomToaster";
@@ -39,14 +32,17 @@ export function NewPaymentTermModal({ open, onOpenChange, onSave }: NewPaymentTe
       };
 
       const response = await PaymentTermsService.create(payload);
-      
+
       const created = response?.data?.payment_term || response?.data || payload;
 
       // Invalida la caché de términos de pago y espera
       await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.catalogs.paymentTerms() });
 
+      const message = response?.message || "Término de pago creado exitosamente";
+      showToast(message, "success");
+
       onSave(created);
-      
+
       setName("");
       setDays("");
       onOpenChange(false);

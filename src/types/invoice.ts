@@ -138,6 +138,8 @@ export interface InvoiceDetailResponse {
         withholding_taxes?: any[];
         credit_notes?: any[];
         debit_notes?: any[];
+        payments?: any[];
+        payments_received?: any[];
     };
     dian?: InvoiceDian;
 }
@@ -226,6 +228,8 @@ export interface InvoiceBill {
         name: string;
     };
     public_url: string | null;
+    payments?: any[];
+    payments_received?: any[];
 }
 
 export interface InvoiceItem {

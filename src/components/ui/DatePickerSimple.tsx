@@ -21,7 +21,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?: (date: Date) => void } = {}) {
+export function DatePickerSimple({ value, onChange, className }: { value?: Date, onChange?: (date: Date) => void, className?: string } = {}) {
     const [date, setDate] = React.useState<Date | undefined>(value);
     const [tempDate, setTempDate] = React.useState<Date>(value || new Date());
     const [open, setOpen] = React.useState(false);
@@ -56,7 +56,7 @@ export function DatePickerSimple({ value, onChange }: { value?: Date, onChange?:
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button variant="outline" className={cn(inputClass, "w-full justify-start font-normal", !date && "text-muted-foreground")}>
+                <Button variant="outline" className={cn(inputClass, "w-full justify-start font-normal", !date && "text-muted-foreground", className)}>
                     {date
                         ? format(date, "dd/MM/yyyy", { locale: es })
                         : "dd/mm/aaaa"}

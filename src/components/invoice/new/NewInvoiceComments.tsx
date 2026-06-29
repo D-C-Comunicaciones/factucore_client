@@ -39,6 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function NewInvoiceComments({ 
   comments, 
@@ -194,13 +195,44 @@ export function NewInvoiceComments({
         >
           Comentarios
         </button>
-        <button 
-          className={`py-3 text-sm font-medium border-b-2 flex items-center gap-1.5 transition-colors ${activeTab === 'reminders' ? 'border-primary text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          onClick={() => setActiveTab('reminders')}
-        >
-          Recordatorios
-          <HelpCircle className="w-3.5 h-3.5 text-primary" />
-        </button>
+        <div className="relative flex items-center">
+          <button 
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reminders' ? 'border-primary text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            onClick={() => setActiveTab('reminders')}
+          >
+            Recordatorios
+          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="ml-1.5 mb-0.5 text-primary hover:text-primary/80 transition-colors cursor-help">
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" align="center" sideOffset={8} className="w-[320px] p-0 rounded-xl overflow-hidden shadow-lg border-border">
+              <div className="bg-[#DFF5F2] p-4 flex justify-center items-center relative">
+                <div className="w-full max-w-[240px] bg-white rounded shadow-sm opacity-60 flex flex-col gap-2.5 p-3">
+                  <div className="w-1/2 h-2.5 bg-slate-200 rounded mb-1"></div>
+                  <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+                  <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+                  <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+                  <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+                </div>
+              </div>
+              <div className="p-4 bg-white">
+                <h4 className="font-bold text-slate-800 flex items-center gap-1.5 mb-1.5 text-base">
+                  Control total 📋 <span className="text-[#F59E0B]">⚡</span>
+                </h4>
+                <p className="text-sm text-slate-500 mb-5">Revisa y crea recordatorios en segundos.</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400 font-medium">2 de 2</span>
+                  <button className="bg-[#36B3A4] hover:bg-[#2C9C8F] text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                    Finalizar <span className="text-base leading-none">→</span>
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -429,7 +461,7 @@ export function NewInvoiceComments({
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deletingIndex !== null} onOpenChange={(open) => !open && setDeletingIndex(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px]" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Eliminar comentario</DialogTitle>
           </DialogHeader>

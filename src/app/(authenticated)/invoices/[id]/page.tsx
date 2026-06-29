@@ -226,7 +226,7 @@ export default function InvoiceDetailPage() {
 
             <InvoiceDetailExtraInfo bill={bill} />
 
-            <InvoiceDetailTabs />
+            <InvoiceDetailTabs payments={bill.payments || data.data?.payments || invoiceData?.payments || templateData?.payments || data.data?.payments_received || []} />
 
             <NewInvoiceComments comments={comments} setComments={setComments} />
         </div>

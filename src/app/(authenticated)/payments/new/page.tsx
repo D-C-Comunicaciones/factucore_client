@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { NewPaymentForm } from "@/components/payments/new/NewPaymentForm";
+import { PaymentTabs } from "@/components/payments/new/PaymentTabs";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
@@ -22,25 +23,54 @@ export default function NewPaymentPage() {
     other_incomes: [],
     retentions: []
   });
+  const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
 
   const handleSave = () => {
     // Validations
-    if (!formState.contact_id) {
-      showToast("El cliente es requerido", "error");
+    let errors: Record<string, boolean> = {};
+
+    if (!formState.bank_account_id) errors.bank_account_id = true;
+    if (!formState.payment_form_id) errors.payment_form_id = true;
+    if (!formState.payment_date) errors.payment_date = true;
+
+    let hasAmount = false;
+    let invoiceIdForPayload = null;
+    if (formState.income_type === "invoice_payment") {
+      const amounts = formState.receivedAmounts || {};
+      for (const invId in amounts) {
+        const val = Number(String(amounts[invId]).replace(/\D/g, ''));
+        if (val > 0) {
+          hasAmount = true;
+          invoiceIdForPayload = invId;
+          // We break here or just take the first one, or we can send all? 
+          // Requirements say "solo en la que quiero agregar pago. por lo que también debes enviar invoice_id..." 
+          break;
+        }
+      }
+      if (!hasAmount) errors.amounts = true;
+    }
+
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      if (errors.bank_account_id || errors.payment_form_id || errors.payment_date) {
+        showToast("Asegúrate de completar todos los campos marcados con *.", "error", "Revisa los campos obligatorios");
+      }
       return;
     }
-    if (!formState.bank_account_id) {
-      showToast("La cuenta bancaria es requerida", "error");
-      return;
-    }
-    if (!formState.payment_date) {
-      showToast("La fecha de pago es requerida", "error");
-      return;
-    }
-    if (!formState.payment_form_id) {
-      showToast("La forma de pago es requerida", "error");
-      return;
-    }
+
+    // Prepare payload
+    const payload = {
+      invoice_id: invoiceIdForPayload ? parseInt(invoiceIdForPayload) : null,
+      payment_type: formState.income_type === "invoice_payment" ? 1 : 2,
+      notes: formState.notes || "",
+      cost_center_id: formState.cost_center_id || null,
+      customer_id: formState.contact_id || null,
+      bank_account_id: formState.bank_account_id,
+      payment_date: formState.payment_date,
+      payment_form_id: formState.payment_form_id,
+    };
+    console.log("PAYLOAD:", payload);
 
     setLoadingGuardar(true);
     setTimeout(() => {
@@ -76,9 +106,10 @@ export default function NewPaymentPage() {
         </div>
 
         {/* MAIN FORM */}
-        <NewPaymentForm 
+        <NewPaymentForm
           formState={formState}
           setFormState={setFormState}
+          formErrors={formErrors}
         />
 
         {/* BOTTOM ACTIONS */}
@@ -98,21 +129,24 @@ export default function NewPaymentPage() {
             {loadingGuardar ? "Guardando..." : "Guardar"}
           </Button>
         </div>
+
+        {/* COMMENTS SECTION */}
+        <PaymentTabs />
       </div>
 
       {/* CANCEL MODAL */}
       <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
-            <DialogTitle>Cancelar registro</DialogTitle>
+            <DialogTitle>Cancelar Pago</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-slate-600">
               ¿Desea cancelar el registro de pago? Esta acción no podrá deshacerse y los datos digitados se perderán.
             </p>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsCancelModalOpen(false)} className="rounded-lg border-gray-300 font-medium text-slate-700 cursor-pointer">
+          <DialogFooter className="gap-3 sm:gap-3">
+            <Button variant="outline" onClick={() => setIsCancelModalOpen(false)} className="rounded-lg border border-gray-300 bg-white hover:bg-gray-100 font-medium text-slate-700 cursor-pointer">
               No, volver
             </Button>
             <Button variant="destructive" onClick={confirmCancel} className="rounded-lg bg-[#E11D48] hover:bg-[#BE123C] font-medium text-white cursor-pointer">

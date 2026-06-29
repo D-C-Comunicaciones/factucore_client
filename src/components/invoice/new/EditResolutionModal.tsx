@@ -68,11 +68,9 @@ export function EditResolutionModal({ isOpen, onClose, resolution }: EditResolut
     }
   };
 
-  // if (!resolution) return null;
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] bg-white">
+      <DialogContent className="sm:max-w-[425px] bg-white" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="text-primary font-normal">Editar numeración</DialogTitle>
         </DialogHeader>

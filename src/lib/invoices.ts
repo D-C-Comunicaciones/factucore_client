@@ -49,6 +49,7 @@ export class InvoicesService {
             if (line.taxes && line.taxes.length > 0) {
                 l.taxes = line.taxes.map((t: any) => ({
                     tax_id: t.tax_id,
+                    tax_rate_id: t.tax_rate_id,
                     type: t.type,
                     rate: t.rate,
                 }));

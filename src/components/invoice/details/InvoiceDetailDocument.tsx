@@ -1,5 +1,6 @@
 import { DianStatusBadge } from "@/components/invoice/table/columns";
 import Link from "next/link";
+import Image from "next/image";
 
 interface InvoiceDetailDocumentProps {
     bill: any;
@@ -76,9 +77,14 @@ export function InvoiceDetailDocument({
                 {/* Doc Header */}
                 <div className="flex justify-between items-start mb-10 border-b pb-8 border-slate-100">
                     {/* Logo */}
-                    <div className="w-1/3">
-                        <div className="bg-slate-200 w-64 h-24 rounded flex items-center justify-center text-slate-400">
-                            Logo de empresa
+                    <div className="w-1/3 pl-8">
+                        <div className="w-64 h-24 relative flex items-center justify-start">
+                            <Image 
+                                src="/img/factucore_logo.webp" 
+                                alt="Logo de empresa" 
+                                fill
+                                className="object-contain object-left"
+                            />
                         </div>
                     </div>
 
@@ -212,12 +218,11 @@ export function InvoiceDetailDocument({
 
                 {/* Signature, Adjustments and Subtotals */}
                 <div className="flex justify-between text-slate-600 border-t border-slate-100 pt-8">
-                    <div className="w-1/3 flex flex-col items-center justify-end">
-                        <div className="h-20 w-32 bg-slate-100 rounded flex items-center justify-center text-slate-400 mb-2">
-                            {/* Signature Image Placeholder */}
-                            <span className="text-xs">Firma</span>
+                    <div className="w-1/3 flex flex-col items-center justify-end pb-4">
+                        <div className="mb-2">
+                            <span className="font-semibold text-slate-700 uppercase">{bill.user?.name || 'Administrador'}</span>
                         </div>
-                        <div className="w-3/4 border-t border-slate-300 text-center pt-2 text-xs uppercase">
+                        <div className="w-3/4 border-t border-slate-300 text-center pt-2 text-[10px] uppercase text-slate-400">
                             ELABORADO POR
                         </div>
                     </div>
@@ -350,7 +355,7 @@ export function InvoiceDetailDocument({
                     <div className="w-1/2">
                         <h3 className="text-slate-500 mb-3 text-base">Notas</h3>
                         <p className="text-xs text-slate-400 leading-relaxed">
-                            {bill.notes || ''}
+                            {bill.billing_reference?.notes || bill.notes || ''}
                         </p>
                     </div>
                 </div>

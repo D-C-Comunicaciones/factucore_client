@@ -46,20 +46,22 @@ export function NewInvoicePayment({
     paymentMethods, 
     bankAccounts,
     paymentData,
-    onPaymentDataChange
+    onPaymentDataChange,
+    errors
 }: { 
     paymentMethods?: any[], 
     bankAccounts?: any[],
     paymentData?: any,
-    onPaymentDataChange?: (data: any) => void
+    onPaymentDataChange?: (data: any) => void,
+    errors?: Record<string, string>
 }) {
     const { resolutions: receiptResolutions } = useResolutions({ type_resolution: 5, is_active: true });
 
     const [showPayment, setShowPayment] = useState<boolean>(false);
     const [paymentNumeration, setPaymentNumeration] = useState<string>("");
-    const [paymentDate, setPaymentDate] = useState<Date>(new Date());
+    const [paymentDate, setPaymentDate] = useState<Date | undefined>(new Date());
     const [paymentAccount, setPaymentAccount] = useState<string>("");
-    const [paymentMethod, setPaymentMethod] = useState<string>("Efectivo");
+    const [paymentMethod, setPaymentMethod] = useState<string>("");
     const [paymentValue, setPaymentValue] = useState<number>(0);
 
     React.useEffect(() => {
@@ -121,55 +123,68 @@ export function NewInvoicePayment({
                 <div className="min-h-0">
                     <div className="border border-border/50 rounded-lg overflow-hidden">
                         <div className="grid grid-cols-5 gap-4 bg-[#f8fafc] px-4 py-3 border-b border-border/50">
-                            <span className="text-[13px] font-semibold text-slate-700">Numeración</span>
-                            <span className="text-[13px] font-semibold text-slate-700">Fecha</span>
-                            <span className="text-[13px] font-semibold text-slate-700">Cuenta bancaria</span>
-                            <span className="text-[13px] font-semibold text-slate-700">Método de pago</span>
-                            <span className="text-[13px] font-semibold text-slate-700">Valor</span>
+                            <span className="text-[13px] font-semibold text-slate-700">Numeración *</span>
+                            <span className="text-[13px] font-semibold text-slate-700">Fecha *</span>
+                            <span className="text-[13px] font-semibold text-slate-700">Cuenta bancaria *</span>
+                            <span className="text-[13px] font-semibold text-slate-700">Método de pago *</span>
+                            <span className="text-[13px] font-semibold text-slate-700">Valor *</span>
                         </div>
-                        <div className="grid grid-cols-5 gap-4 px-4 py-4 bg-white items-center">
-                            <div>
-                                <SearchableSelect
-                                    value={paymentNumeration}
-                                    onValueChange={setPaymentNumeration}
-                                    options={receiptResolutions?.map((r: any) => ({
-                                        value: r.id.toString(),
-                                        label: r.name || "Recibo de caja"
-                                    })) || []}
-                                    className="w-full"
-                                    placeholder="Seleccionar"
-                                />
+                        <div className="grid grid-cols-5 gap-4 px-4 py-4 bg-white items-start">
+                            <div className="flex flex-col gap-1">
+                                <div className={errors?.payment_resolution ? "border border-red-500 rounded-md" : ""}>
+                                    <SearchableSelect
+                                        value={paymentNumeration}
+                                        onValueChange={setPaymentNumeration}
+                                        options={receiptResolutions?.map((r: any) => ({
+                                            value: r.id.toString(),
+                                            label: r.name || "Recibo de caja"
+                                        })) || []}
+                                        className="w-full"
+                                        placeholder="Seleccionar"
+                                    />
+                                </div>
+                                {errors?.payment_resolution && <span className="text-xs text-red-500">{errors.payment_resolution}</span>}
                             </div>
-                            <div>
-                                <DatePickerSimple value={paymentDate} onChange={setPaymentDate} />
+                            <div className="flex flex-col gap-1">
+                                <div className={errors?.payment_date ? "border border-red-500 rounded-md" : ""}>
+                                    <DatePickerSimple value={paymentDate as any} onChange={setPaymentDate} />
+                                </div>
+                                {errors?.payment_date && <span className="text-xs text-red-500">{errors.payment_date}</span>}
                             </div>
-                            <div>
-                                <SearchableSelect
-                                    value={paymentAccount}
-                                    onValueChange={setPaymentAccount}
-                                    options={bankAccounts || []}
-                                    className="w-full"
-                                    placeholder="Seleccionar"
-                                />
+                            <div className="flex flex-col gap-1">
+                                <div className={errors?.payment_account ? "border border-red-500 rounded-md" : ""}>
+                                    <SearchableSelect
+                                        value={paymentAccount}
+                                        onValueChange={setPaymentAccount}
+                                        options={bankAccounts || []}
+                                        className="w-full"
+                                        placeholder="Seleccionar"
+                                    />
+                                </div>
+                                {errors?.payment_account && <span className="text-xs text-red-500">{errors.payment_account}</span>}
                             </div>
-                            <div>
-                                <SearchableSelect
-                                    value={paymentMethod}
-                                    onValueChange={setPaymentMethod}
-                                    options={paymentMethods || []}
-                                    className="w-full"
-                                    placeholder="Seleccionar"
-                                />
+                            <div className="flex flex-col gap-1">
+                                <div className={errors?.payment_method ? "border border-red-500 rounded-md" : ""}>
+                                    <SearchableSelect
+                                        value={paymentMethod}
+                                        onValueChange={setPaymentMethod}
+                                        options={paymentMethods || []}
+                                        className="w-full"
+                                        placeholder="Seleccionar"
+                                    />
+                                </div>
+                                {errors?.payment_method && <span className="text-xs text-red-500">{errors.payment_method}</span>}
                             </div>
-                            <div>
+                            <div className="flex flex-col gap-1">
                                 <div className="relative">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                                     <FormattedInput
                                         value={paymentValue}
                                         onChange={setPaymentValue}
-                                        className={`${inputClass} w-full pl-6`}
+                                        className={`${inputClass} w-full pl-6 ${errors?.payment_amount ? "border-red-500 focus-visible:ring-red-500/40" : ""}`}
                                     />
                                 </div>
+                                {errors?.payment_amount && <span className="text-xs text-red-500">{errors.payment_amount}</span>}
                             </div>
                         </div>
                     </div>

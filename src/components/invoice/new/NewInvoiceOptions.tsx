@@ -86,7 +86,7 @@ export function NewInvoiceOptions({
                     <div className="flex gap-1 bg-gray-50 p-1 border border-gray-200 rounded-lg h-[38px] items-center min-w-[210px]">
                         <button
                             onClick={() => setTipoDoc('factura')}
-                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold transition-all whitespace-nowrap px-3 ${
+                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 ${
                                 tipoDoc === 'factura'
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-transparent text-gray-500 hover:text-gray-900"
@@ -96,7 +96,7 @@ export function NewInvoiceOptions({
                         </button>
                         <button
                             onClick={() => setTipoDoc('tiquete')}
-                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold transition-all whitespace-nowrap px-3 ${
+                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 ${
                                 tipoDoc === 'tiquete'
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-transparent text-gray-500 hover:text-gray-900"
@@ -220,7 +220,7 @@ export function NewInvoiceOptions({
                 <div className="shrink-0 flex items-end h-[38px]">
                     <button 
                         onClick={() => setShowRemissionBar(!showRemissionBar)}
-                        className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors whitespace-nowrap h-full"
+                        className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors cursor-pointer whitespace-nowrap h-full"
                     >
                         <Plus className="w-4 h-4 shrink-0" />
                         Agregar remisión
@@ -258,7 +258,7 @@ export function NewInvoiceOptions({
                 open={isSellerModalOpen}
                 onOpenChange={setIsSellerModalOpen}
                 onSave={(data: any) => {
-                    if (data?.id) setSelectedSeller(String(data.id));
+                    if (data?.id) setSelectedSeller?.(String(data.id));
                 }}
             />
         </div>

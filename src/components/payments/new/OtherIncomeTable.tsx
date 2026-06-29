@@ -31,8 +31,8 @@ export function OtherIncomeTable({ formState, setFormState }: OtherIncomeTablePr
         <h3 className="text-sm font-bold text-foreground mb-1">Cuentas contables</h3>
         <p className="text-sm text-muted-foreground mb-4">Selecciona las cuentas contables que están relacionadas con este ingreso</p>
 
-        <div className="bg-muted/30 rounded-lg overflow-hidden border border-border">
-          <table className="w-full text-left text-sm">
+        <div className="bg-muted/30 rounded-lg overflow-x-auto border border-border">
+          <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="bg-muted/50 border-b border-border">
               <tr>
                 <th className="px-4 py-3 font-medium text-muted-foreground w-[35%]">Concepto</th>
@@ -55,12 +55,12 @@ export function OtherIncomeTable({ formState, setFormState }: OtherIncomeTablePr
                     />
                   </td>
                   <td className="p-2">
-                    <Input type="number" defaultValue={line.qty} className="h-9" />
+                    <Input type="number" defaultValue={line.qty} className="h-9" disabled={!line.concept} />
                   </td>
                   <td className="p-2">
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                      <Input type="text" defaultValue={line.value} className="h-9 pl-7" />
+                      <Input type="text" defaultValue={line.value} className="h-9 pl-7" disabled={!line.concept} />
                     </div>
                   </td>
                   <td className="p-2">
@@ -69,6 +69,7 @@ export function OtherIncomeTable({ formState, setFormState }: OtherIncomeTablePr
                       onValueChange={() => {}}
                       options={[]}
                       placeholder="Seleccionar"
+                      disabled={!line.concept}
                     />
                   </td>
                   <td className="p-2 text-right font-medium">

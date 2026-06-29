@@ -38,6 +38,7 @@ export interface SimulationTotals {
     withholdingsAmount: number;
     taxesAmount: number;
     total: number;
+    payableAmount: number;
 }
 
 export function useInvoiceBuilder() {
@@ -208,7 +209,8 @@ export function useInvoiceBuilder() {
             }
         });
 
-        const total = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount - withholdingsAmount;
+        const total = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount;
+        const payableAmount = total - withholdingsAmount;
 
         return {
             subtotal: isNaN(grossSubtotal) ? 0 : grossSubtotal,
@@ -218,7 +220,8 @@ export function useInvoiceBuilder() {
             withholdingsAmount: isNaN(withholdingsAmount) ? 0 : withholdingsAmount,
             taxesAmount: isNaN(taxesAmount) ? 0 : taxesAmount,
             taxBreakdown,
-            total: isNaN(total) ? 0 : total
+            total: isNaN(total) ? 0 : total,
+            payableAmount: isNaN(payableAmount) ? 0 : payableAmount
         };
     }, [items, globalAdjustments]);
 
@@ -268,10 +271,7 @@ export function useInvoiceBuilder() {
         const withholdings = globalAdjustments
             .filter(adj => adj.type === 'withholding')
             .map(adj => ({
-                withholding_id: Number(adj.valueType),
-                taxable_amount: netSubtotalForWithholding,
-                tax_amount: netSubtotalForWithholding * (Number(adj.withholdingData?.code || 0) / 100),
-                percent: Number(adj.withholdingData?.code || 0)
+                withholding_rate_id: Number(adj.valueType)
             }));
 
         const now = new Date();

@@ -58,6 +58,7 @@ function FormattedInput({ value, onChange, placeholder, className }: any) {
 import { EditResolutionModal } from "@/components/invoice/new/EditResolutionModal";
 import { AddContactModal } from "@/components/contact/new/AddContactModal";
 import { QuickCreateItemModal } from "@/components/invoice/new/QuickCreateItemModal";
+import { NewPaymentTermModal } from "@/components/payment-terms/NewPaymentTermModal";
 import { type Resolution } from "@/lib/resolutions";
 import { ContactsService } from "@/lib/contacts";
 import { adquirerApi } from "@/lib/acquirers";
@@ -115,6 +116,7 @@ export function NewInvoiceMain({
     const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
     const [isQuickCreateItemModalOpen, setIsQuickCreateItemModalOpen] = useState(false);
+    const [isNewPaymentTermModalOpen, setIsNewPaymentTermModalOpen] = useState(false);
     const [quickCreateItemTargetRow, setQuickCreateItemTargetRow] = useState<string | null>(null);
     const [prefilledContactData, setPrefilledContactData] = useState<any>(null);
     const [globalAdjValueType, setGlobalAdjValueType] = useState<string>("percentage");
@@ -781,13 +783,24 @@ export function NewInvoiceMain({
                                 <div className="flex-1 flex items-center gap-2">
                                     <SearchableSelect
                                         value={plazo}
-                                        onValueChange={setPlazo}
+                                        onValueChange={(val) => {
+                                            setPlazo(val);
+                                        }}
                                         options={paymentTerms?.map((pt: any) => ({
                                             value: pt.id.toString(),
                                             label: pt.name
                                         })) || []}
                                         placeholder="Seleccionar"
                                         className="w-full text-foreground"
+                                        footer={
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsNewPaymentTermModalOpen(true)}
+                                                className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-primary/5 rounded-md transition-colors"
+                                            >
+                                                + Nuevo plazo
+                                            </button>
+                                        }
                                     />
                                     <TooltipProvider>
                                         <Tooltip>
@@ -885,28 +898,27 @@ export function NewInvoiceMain({
                             </Select>
 
                             {globalAdjType === 'withholding' ? (
-                                <Select value={globalAdjValueType} onValueChange={setGlobalAdjValueType}>
-                                    <SelectTrigger className="w-[260px] bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted cursor-pointer transition-colors truncate">
-                                        <SelectValue placeholder="Seleccionar" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(() => {
-                                            const available = catalogs?.withholdingRates?.filter((rate: any) => {
-                                                return !invoiceBuilder.globalAdjustments.some((adj: any) => adj.type === 'withholding' && adj.valueType === rate.id.toString());
-                                            }) || [];
+                                (() => {
+                                    const available = catalogs?.withholdingRates?.filter((rate: any) => {
+                                        return !invoiceBuilder.globalAdjustments.some((adj: any) => adj.type === 'withholding' && adj.valueType === rate.id.toString());
+                                    }) || [];
+                                    
+                                    const options = available.map((rate: any) => ({
+                                        value: rate.id.toString(),
+                                        label: `${rate.name} (${rate.code}%)`
+                                    }));
 
-                                            if (available.length === 0) {
-                                                return <div className="p-2 text-sm text-muted-foreground text-center">No hay más retenciones disponibles</div>;
-                                            }
-
-                                            return available.map((rate: any) => (
-                                                <SelectItem key={rate.id} value={rate.id.toString()} className="cursor-pointer hover:bg-muted focus:bg-muted">
-                                                    {rate.name}
-                                                </SelectItem>
-                                            ));
-                                        })()}
-                                    </SelectContent>
-                                </Select>
+                                    return (
+                                        <SearchableSelect
+                                            value={globalAdjValueType}
+                                            onValueChange={setGlobalAdjValueType}
+                                            options={options}
+                                            placeholder="Seleccionar"
+                                            className="w-[260px] bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted cursor-pointer transition-colors"
+                                            emptyMessage={options.length === 0 ? "No hay más retenciones disponibles" : "No se encontraron resultados"}
+                                        />
+                                    );
+                                })()
                             ) : (
                                 <Select value={globalAdjValueType} onValueChange={(val: "percentage" | "fixed") => setGlobalAdjValueType(val)}>
                                     <SelectTrigger className="w-20 bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted cursor-pointer transition-colors">
@@ -1087,7 +1099,7 @@ export function NewInvoiceMain({
                             const netSubtotal = invoiceBuilder.totals.subtotal - invoiceBuilder.totals.lineDiscountsAmount;
                             const calculated = netSubtotal * (Number(adj.withholdingData?.code || 0) / 100);
                             return (
-                                <div key={adj.id} className="flex justify-between text-sm">
+                                <div key={adj.id} className="flex justify-between text-sm mt-2">
                                     <span className="text-muted-foreground">{adj.withholdingData?.name}</span>
                                     <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(calculated || 0)}</span>
                                 </div>
@@ -1096,7 +1108,7 @@ export function NewInvoiceMain({
 
                         <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-2">
                             <span className="text-xl font-medium text-foreground">Total</span>
-                            <span className="text-2xl font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.total || 0)}</span>
+                            <span className="text-2xl font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.payableAmount || 0)}</span>
                         </div>
                     </div>
                 </div>
@@ -1243,9 +1255,23 @@ export function NewInvoiceMain({
                         const price = parseFloat(createdItem.base_price) || parseFloat(createdItem.total_price) || parseFloat(createdItem.price) || 0;
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "precio", price);
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "cantidad", 1);
+                        
+                        // Fix for inventory tracking of newly created items (e.g. services)
+                        const isInventoriable = createdItem.type_item_id !== undefined ? createdItem.type_item_id === 1 : (createdItem.type_item?.name?.toLowerCase() === 'producto' || createdItem.type_item?.id === 1);
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "stock_quantity", createdItem.stock_quantity ?? null);
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "is_inventoriable", isInventoriable);
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "allow_negative_stock", createdItem.allow_negative_stock ?? false);
                         // Remove tax auto-fill to default to "Sin impuesto"
                     }
                     setQuickCreateItemTargetRow(null);
+                }}
+            />
+
+            <NewPaymentTermModal
+                open={isNewPaymentTermModalOpen}
+                onOpenChange={setIsNewPaymentTermModalOpen}
+                onSave={(newTerm) => {
+                    setPlazo(newTerm.id.toString());
                 }}
             />
         </div>

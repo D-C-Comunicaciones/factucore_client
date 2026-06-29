@@ -147,7 +147,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                     </div>
                     <div className="flex justify-between relative">
                         {/* 1. Estado DIAN */}
-                        <div className="flex flex-col items-center w-1/5">
+                        <div className="flex flex-col items-center flex-1">
                             <CheckCircle2 className="w-6 h-6 text-[#20c997] bg-white z-10" fill="currentColor" stroke="white" />
                             <span className="text-sm text-slate-800 mt-2 font-medium">Estado DIAN</span>
                             <div className="h-4 mt-0.5"></div>
@@ -155,8 +155,9 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                                 {bill?.dian_response?.status_description || dianStatus || 'NO APROBADA'}
                             </span>
                         </div>
+                        
                         {/* 2. Envío al cliente */}
-                        <div className="flex flex-col items-center w-1/5">
+                        <div className="flex flex-col items-center flex-1">
                             {bill?.is_email_sent ? (
                                 <CheckCircle2 className="w-6 h-6 bg-white z-10 text-[#20c997]" fill="currentColor" stroke="white" />
                             ) : (
@@ -170,43 +171,87 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                                 {bill?.is_email_sent ? 'ENVIADA' : 'NO ENVIADA'}
                             </span>
                         </div>
-                        {/* 3. RADIAN */}
-                        <div className="flex flex-col items-center w-1/5 text-center">
-                            <CheckCircle2 className="w-6 h-6 text-[#20c997] bg-white z-10" fill="currentColor" stroke="white" />
-                            <span className="text-sm text-slate-800 mt-2 font-medium">RADIAN</span>
-                            <div className="h-4 mt-0.5 w-full flex justify-center">
-                                {/* Subtext vacío para mantener alineación */}
-                            </div>
-                            <span className="text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase text-[#20c997] border-[#20c997]">
-                                ACEPTACIÓN TÁCITA
-                            </span>
-                        </div>
-                        {/* 4. Pago */}
-                        <div className="flex flex-col items-center w-1/5">
-                            {bill?.payments && bill.payments.length > 0 ? (
-                                <CheckCircle2 className="w-6 h-6 bg-white z-10 text-[#20c997]" fill="currentColor" stroke="white" />
-                            ) : (
-                                <XCircle className="w-6 h-6 bg-white z-10 text-red-500" fill="currentColor" stroke="white" />
-                            )}
-                            <span className="text-sm text-slate-800 mt-2 font-medium">Pago</span>
-                            <div className="h-4 mt-0.5 w-full flex justify-center">
-                                <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                                    {bill?.payments && bill.payments.length > 0 ? `${bill.payments[0].prefix || ''}${bill.payments[0].number || ''}` : 'Sin pagos'}
+
+                        {/* 3. RADIAN (Condicional) */}
+                        {bill?.radian?.has_events && (
+                            <div className="flex flex-col items-center flex-1 text-center">
+                                <CheckCircle2 className="w-6 h-6 text-[#20c997] bg-white z-10" fill="currentColor" stroke="white" />
+                                <span className="text-sm text-slate-800 mt-2 font-medium">RADIAN</span>
+                                <div className="h-4 mt-0.5 w-full flex justify-center">
+                                </div>
+                                <span className="text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase text-[#20c997] border-[#20c997]">
+                                    {bill?.radian?.latest_event?.name || 'EVENTO REGISTRADO'}
                                 </span>
                             </div>
-                            <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase ${bill?.payments && bill.payments.length > 0 ? 'text-[#20c997] border-[#20c997]' : 'text-red-500 border-red-500'}`}>
-                                {bill?.payments && bill.payments.length > 0 ? 'COBRADA' : 'POR COBRAR'}
-                            </span>
-                        </div>
+                        )}
+
+                        {/* 4. Pago */}
+                        {(bill?.payments && bill.payments.length > 0) && (
+                            <div className="flex flex-col items-center flex-1">
+                                {(() => {
+                                    const pendingAmount = Number(bill?.pending_amount || 0);
+                                    const isPaid = pendingAmount <= 0 || ['Pagada', 'Cobrada'].includes(bill?.payment_status || '') || ['Pagada', 'Cobrada'].includes(bill?.status?.name || '');
+                                    const hasPayments = true;
+                                    const isOverdue = bill?.payment_due_date && new Date(bill.payment_due_date) < new Date() && !isPaid;
+
+                                    let paymentStatusText = "POR PAGAR";
+                                    let Icon = isOverdue ? XCircle : CheckCircle2;
+                                    let colorClass = isOverdue ? "text-red-500 border-red-500" : "text-amber-500 border-amber-500";
+                                    let iconColorClass = isOverdue ? "text-red-500" : "text-slate-300";
+
+                                    if (isPaid) {
+                                        paymentStatusText = "COBRADA";
+                                        Icon = CheckCircle2;
+                                        colorClass = "text-[#20c997] border-[#20c997]";
+                                        iconColorClass = "text-[#20c997]";
+                                    } else {
+                                        paymentStatusText = "PAGO PARCIAL";
+                                        Icon = CheckCircle2;
+                                        colorClass = "text-blue-500 border-blue-500";
+                                        iconColorClass = "text-blue-500";
+                                    }
+
+                                    return (
+                                        <>
+                                            <Icon className={`w-6 h-6 bg-white z-10 ${iconColorClass}`} fill="currentColor" stroke="white" />
+                                            <span className="text-sm text-slate-800 mt-2 font-medium">Pago</span>
+                                            <div className="h-4 mt-0.5 w-full flex justify-center">
+                                                <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
+                                                    {bill.payments[0].prefix || ''}{bill.payments[0].number || ''}
+                                                </span>
+                                            </div>
+                                            <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase ${colorClass}`}>
+                                                {paymentStatusText}
+                                            </span>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
                         {/* 5. Estado de factura */}
-                        <div className="flex flex-col items-center w-1/5">
-                            <CheckCircle2 className={`w-6 h-6 bg-white z-10 ${isAccepted ? 'text-[#20c997]' : 'text-slate-300'}`} fill="currentColor" stroke="white" />
-                            <span className="text-sm text-slate-800 mt-2 font-medium">Estado de factura</span>
-                            <div className="h-4 mt-0.5"></div>
-                            <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase ${isAccepted ? 'text-[#20c997] border-[#20c997]' : 'text-slate-400 border-slate-300'}`}>
-                                {isAccepted ? 'FINALIZADA' : 'PENDIENTE'}
-                            </span>
-                        </div>
+                        {(bill?.payments && bill.payments.length > 0) && (
+                            <div className="flex flex-col items-center flex-1">
+                                {(() => {
+                                    const isCanceled = bill?.status?.name === 'Anulada' || bill?.status?.name === 'Cancelada' || bill?.invoice_status_id === 3;
+                                    const invoiceStatusText = isCanceled ? 'ANULADA' : (isAccepted ? 'FINALIZADA' : 'EMITIDA');
+                                    const statusColorClass = isCanceled ? 'text-red-500 border-red-500' : (isAccepted ? 'text-[#20c997] border-[#20c997]' : 'text-slate-400 border-slate-300');
+                                    const statusIconClass = isCanceled ? 'text-red-500' : (isAccepted ? 'text-[#20c997]' : 'text-slate-300');
+                                    const Icon = isCanceled ? XCircle : CheckCircle2;
+
+                                    return (
+                                        <>
+                                            <Icon className={`w-6 h-6 bg-white z-10 ${statusIconClass}`} fill="currentColor" stroke="white" />
+                                            <span className="text-sm text-slate-800 mt-2 font-medium">Estado de factura</span>
+                                            <div className="h-4 mt-0.5"></div>
+                                            <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase ${statusColorClass}`}>
+                                                {invoiceStatusText}
+                                            </span>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        )}
                     </div>
                 </div>
 

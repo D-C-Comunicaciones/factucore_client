@@ -144,7 +144,9 @@ function StatusBadge({ status }: { status: any }) {
   }
 
   const styles: Record<string, string> = {
-    cobrada: "bg-green-100 text-green-700",
+    "pagada": "bg-green-100 text-green-700",
+    "cobrada": "bg-green-100 text-green-700",
+    "por pagar": "bg-blue-100 text-blue-700",
     parcial: "bg-yellow-100 text-yellow-700",
     pendiente: "bg-primary/10 text-primary",
     vencida: "bg-red-100 text-red-700",
@@ -422,7 +424,7 @@ export function getColumns(
     },
     {
       accessorKey: "pending_amount",
-      header: () => <div className="text-right">Por cobrar</div>,
+      header: () => <div className="text-right">Por pagar</div>,
       cell: ({ row }) => (
         <div className="text-xs text-gray-900 text-right">
           $ {Number(row.original.pending_amount).toLocaleString()}

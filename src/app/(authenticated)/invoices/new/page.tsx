@@ -208,12 +208,48 @@ export default function NewInvoicePage() {
       }
     }
 
+    // 4. Pago
+    if (formState.paymentData) {
+      if (!formState.paymentData.resolution_id) {
+        newErrors.payment_resolution = "Requerido";
+      }
+      if (!formState.paymentData.payment_date) {
+        newErrors.payment_date = "Requerido";
+      }
+      if (!formState.paymentData.account_id) {
+        newErrors.payment_account = "Requerido";
+      }
+      if (!formState.paymentData.payment_method_id) {
+        newErrors.payment_method = "Requerido";
+      }
+      if (!formState.paymentData.amount || formState.paymentData.amount <= 0) {
+        newErrors.payment_amount = "Debe ser mayor a 0";
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showToast(
+        "Asegúrate de completar todos los campos marcados con * e intenta de nuevo.",
+        "error",
+        "Revisa los campos obligatorios"
+      );
+      return false;
+    }
+
     setErrors({});
     return true;
   };
 
   const handleSaveAction = async (actionType: "DRAFT" | "SEND" | "SEND_EMAIL" | "PRINT" | "CREATE_NEW") => {
     if (!validateForm()) return;
+
+    if (formState.paymentData && Number(formState.paymentData.amount) > invoiceBuilder.totals.total) {
+      const maxAllowed = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(invoiceBuilder.totals.total);
+      showToast(`El pago que intenta registrar excede el valor facturado. El máximo que puede registrar es ${maxAllowed} (recargos, descuentos e impuestos incluidos, sin contar retenciones).`, "warning");
+      return;
+    }
+
     setLoadingGuardar(true);
     try {
       const basePayload = invoiceBuilder.buildPayload({
@@ -224,6 +260,8 @@ export default function NewInvoicePage() {
 
       if (formState.paymentData) {
         basePayload.payments = [formState.paymentData];
+      } else {
+        delete basePayload.payments;
       }
       delete basePayload.paymentData;
       delete basePayload.comments;
@@ -366,6 +404,7 @@ export default function NewInvoicePage() {
             bankAccounts={bankAccounts}
             paymentData={formState.paymentData}
             onPaymentDataChange={(data) => setFormState({ ...formState, paymentData: data })}
+            errors={errors}
           />
           <NewInvoiceComments
             comments={formState.comments || []}

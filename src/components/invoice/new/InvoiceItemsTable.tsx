@@ -279,7 +279,7 @@ function ItemRow({
 
       <td className="px-2 py-2 w-32">
         <Select
-          value={item.taxObj?.tax_id?.toString() || "0"}
+          value={item.taxObj?.tax_rate_id?.toString() || item.taxObj?.tax_id?.toString() || "0"}
           onValueChange={(val) => {
             if (val === "0") {
               invoiceBuilder.updateItemTax(item.id, null);
@@ -291,7 +291,8 @@ function ItemRow({
                 const taxRate = Number(rawRate);
                 const normalizedName = `${tax.name || 'IVA'} (${isNaN(taxRate) ? 0 : taxRate}%)`;
                 invoiceBuilder.updateItemTax(item.id, {
-                  tax_id: tax.id,
+                  tax_rate_id: tax.id,
+                  tax_id: tax.tax_id || tax.id,
                   type: "percentage",
                   rate: isNaN(taxRate) ? 0 : taxRate,
                   name: normalizedName

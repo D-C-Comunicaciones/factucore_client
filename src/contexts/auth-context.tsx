@@ -122,10 +122,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             showToast("Inicio de sesión exitoso", "success")
             setShowSplash(true) // Splash will fade out after its animation; navigate once it's done
         } catch (error: any) {
-            if (error?.response) {
-                showToast(error?.response?.data?.message || "Credenciales inválidas", "error")
+            let errorMsg = "Credenciales inválidas o error de red";
+
+            if (error?.response?.data) {
+                const data = error.response.data;
+                errorMsg = data.message || errorMsg;
+
+                if (data.errors) {
+                    let parsedErrors = data.errors;
+                    if (typeof data.errors === "string") {
+                        try { parsedErrors = JSON.parse(data.errors); } 
+                        catch (e) { parsedErrors = null; }
+                    }
+                    if (parsedErrors && typeof parsedErrors === "object") {
+                        const errorValues = Object.values(parsedErrors).flat();
+                        if (errorValues.length > 0) {
+                            // Concatenar todos los errores específicos
+                            errorMsg = errorValues.join("\n");
+                        }
+                    }
+                }
+            } else if (error?.message) {
+                errorMsg = error.message;
+            } else if (typeof error === "string") {
+                errorMsg = error;
             }
-            throw error
+
+            console.error("Login error final:", errorMsg, error);
+            showToast(errorMsg, "error");
+            // Lanza un Error con el mensaje extraído para que la vista lo capture correctamente
+            throw new Error(errorMsg);
         }
     }
 

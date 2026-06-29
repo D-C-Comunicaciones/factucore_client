@@ -151,7 +151,7 @@ export function PaymentTableBody({
                         </div>
                         <Button 
                           variant="outline" 
-                          className="bg-white hover:bg-slate-50 text-foreground font-medium rounded-lg h-9 px-4 border border-border"
+                          className="bg-white hover:bg-slate-50 text-foreground font-medium rounded-lg h-9 px-4 border border-border cursor-pointer"
                           onClick={() => router.push("/payments/new")}
                         >
                           Nuevo pago recibido
