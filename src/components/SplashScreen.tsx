@@ -1,6 +1,6 @@
-"use client"
-
-import { useEffect, useState } from "react"
+"use client";
+import React, { useState, useEffect } from "react";
+import { FactucoreLogo } from "@/components/brand/FactucoreLogo";
 
 interface SplashScreenProps {
     onDone: () => void
@@ -40,10 +40,9 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                         : "opacity-0 scale-75 -rotate-12"
                         }`}
                 >
-                    <img
-                        src="/img/factucore_logo.webp"
-                        alt="Factucore Logo"
-                        className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-md"
+                    <FactucoreLogo
+                        variant="icon"
+                        className="w-16 h-16 md:w-20 md:h-20 drop-shadow-md"
                     />
                 </div>
 

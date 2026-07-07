@@ -1,6 +1,7 @@
 import { DianStatusBadge } from "@/components/invoice/table/columns";
 import Link from "next/link";
 import Image from "next/image";
+import { FactucoreLogo } from "@/components/brand/FactucoreLogo";
 
 interface InvoiceDetailDocumentProps {
     bill: any;
@@ -79,11 +80,10 @@ export function InvoiceDetailDocument({
                     {/* Logo */}
                     <div className="w-1/3 pl-8">
                         <div className="w-64 h-24 relative flex items-center justify-start">
-                            <Image 
-                                src="/img/factucore_logo.webp" 
+                            <FactucoreLogo 
+                                variant="horizontal"
                                 alt="Logo de empresa" 
-                                fill
-                                className="object-contain object-left"
+                                className="w-full h-full object-left"
                             />
                         </div>
                     </div>

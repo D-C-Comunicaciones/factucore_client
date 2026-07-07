@@ -9,7 +9,7 @@ import { NewInvoiceOptions } from "@/components/invoice/new/NewInvoiceOptions";
 import { NewInvoicePayment } from "@/components/invoice/new/NewInvoicePayment";
 import { PreviewModal } from "@/components/invoice/new/PreviewModal";
 import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
-import { useInvoiceBuilder } from "@/hooks/invoices/useInvoiceBuilder";
+import { useInvoiceBuilder, isIvaTax, isReteIVA } from "@/hooks/invoices/useInvoiceBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useSellersList } from "@/hooks/sellers/useSellers";
 import { InvoicesService } from "@/lib/invoices";
@@ -128,6 +128,7 @@ export default function NewInvoicePage() {
     sellerOptions,
     paymentMethods,
     paymentForms,
+    user: AuthService.getUser() as any,
   };
 
     const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
@@ -204,6 +205,27 @@ export default function NewInvoicePage() {
         newErrors.items = "out_of_stock";
         setErrors(newErrors);
         showToast(`El producto "${outOfStockItem.item}" no tiene stock suficiente. Stock disponible: ${outOfStockItem.stock_quantity || 0}, Cantidad solicitada: ${outOfStockItem.cantidad}.`, "error");
+        return false;
+      }
+
+      // Validación ReteIVA 1: no pueden coexistir ReteIVA Global + withholding por línea
+      const hasGlobalReteIVA = invoiceBuilder.globalAdjustments.some(
+        (adj: any) => adj.type === 'withholding' && isReteIVA(adj.withholdingData)
+      );
+      const hasLineReteIVA = invoiceBuilder.items.some((item: any) => item.withholding === true);
+      if (hasGlobalReteIVA && hasLineReteIVA) {
+        setErrors(newErrors);
+        showToast("La Retención de IVA no puede aplicarse simultáneamente de forma global y por línea.", "error");
+        return false;
+      }
+
+      // Validación ReteIVA 2: withholding=true en línea sin impuesto IVA
+      const lineWithholdingWithoutIVA = invoiceBuilder.items.find(
+        (item: any) => item.withholding === true && !isIvaTax(item.taxObj)
+      );
+      if (lineWithholdingWithoutIVA) {
+        setErrors(newErrors);
+        showToast("No es posible aplicar Retención de IVA sobre una línea que no tiene IVA.", "error");
         return false;
       }
     }
