@@ -19,16 +19,15 @@ export interface InvoiceLine {
     is_inventoriable: boolean;
     allow_negative_stock: boolean;
     selected_warehouse_id?: number | null;
-    withholding: boolean; // ReteIVA por línea
+    selected_warehouse_id?: number | null;
 }
 
 export interface GlobalAdjustment {
     id: string;
-    type: 'discount' | 'charge' | 'withholding';
-    valueType: 'percentage' | 'fixed' | string; // string for withholding rate id
+    type: 'discount' | 'charge';
+    valueType: 'percentage' | 'fixed';
     value: number;
     reason: string;
-    withholdingData?: any; // optional data for withholding rendering
 }
 
 export interface SimulationTotals {
@@ -36,9 +35,7 @@ export interface SimulationTotals {
     lineDiscountsAmount: number;
     globalDiscountsAmount: number;
     globalChargesAmount: number;
-    withholdingsAmount: number;
     taxesAmount: number;
-    reteIvaAmount: number;
     total: number;
     payableAmount: number;
 }
@@ -50,13 +47,7 @@ export function isIvaTax(taxObj: any): boolean {
     return name.toUpperCase().includes('IVA');
 }
 
-/** Returns true if the withholdingData represents ReteIVA */
-export function isReteIVA(withholdingData: any): boolean {
-    if (!withholdingData) return false;
-    if (withholdingData.withholding_id === 1) return true;
-    if (withholdingData.name && withholdingData.name.toUpperCase().includes('RETEIVA')) return true;
-    return false;
-}
+
 
 export function useInvoiceBuilder() {
     const [items, setItems] = useState<InvoiceLine[]>([]);
@@ -82,8 +73,7 @@ export function useInvoiceBuilder() {
                 taxes: [],
                 stock_quantity: null,
                 is_inventoriable: true,
-                allow_negative_stock: false,
-                withholding: false
+                allow_negative_stock: false
             }
         ]);
     };
@@ -122,25 +112,13 @@ export function useInvoiceBuilder() {
         setItems(prev => prev.map(item => {
             if (item.id === id) {
                 const taxes = taxObj ? [taxObj] : [];
-                // If the new tax is NOT IVA, automatically reset withholding to false
-                const newWithholding = isIvaTax(taxObj) ? item.withholding : false;
-                return { ...item, taxObj, taxes, withholding: newWithholding };
+                return { ...item, taxObj, taxes };
             }
             return item;
         }));
     };
 
-    /** Toggle ReteIVA por línea */
-    const updateItemWithholding = (id: string, value: boolean) => {
-        setItems(prev => prev.map(item => {
-            if (item.id === id) {
-                return { ...item, withholding: value };
-            }
-            return item;
-        }));
-    };
-
-    const addGlobalAdjustment = (type: 'discount' | 'charge' | 'withholding', valueType: 'percentage' | 'fixed' | string, value: number, reason: string, withholdingData?: any) => {
+    const addGlobalAdjustment = (type: 'discount' | 'charge', valueType: 'percentage' | 'fixed', value: number, reason: string) => {
         setGlobalAdjustments(prev => [
             ...prev,
             {
@@ -148,8 +126,7 @@ export function useInvoiceBuilder() {
                 type,
                 valueType,
                 value,
-                reason: reason || (type === 'discount' ? 'Descuento global' : type === 'charge' ? 'Recargo global' : (withholdingData?.description || 'Retención')),
-                withholdingData
+                reason: reason || (type === 'discount' ? 'Descuento global' : 'Recargo global')
             }
         ]);
     };
@@ -167,25 +144,12 @@ export function useInvoiceBuilder() {
         }));
     };
 
-    // --- Computed: whether any line has withholding = true ---
-    const hasLineWithholding = useMemo(() => {
-        return items.some(item => item.withholding === true);
-    }, [items]);
-
-    // --- Computed: whether any global adjustment is a ReteIVA ---
-    const hasGlobalReteIVA = useMemo(() => {
-        return globalAdjustments.some(
-            adj => adj.type === 'withholding' && isReteIVA(adj.withholdingData)
-        );
-    }, [globalAdjustments]);
-
     // --- Totals Simulation ---
     const totals = useMemo(() => {
         let grossSubtotal = 0;
         let netSubtotal = 0;
         let lineDiscountsAmount = 0;
         let taxesAmount = 0;
-        let reteIvaAmount = 0;
         let totalIvaAmount = 0;
         // Key: tax_id (string), Value: { name, amount }
         let taxBreakdown: Record<string, { name: string; amount: number }> = {};
@@ -220,9 +184,6 @@ export function useInvoiceBuilder() {
 
             if (isIvaTax(item.taxObj)) {
                 totalIvaAmount += safeTax;
-                if (item.withholding) {
-                    reteIvaAmount += safeTax * 0.15;
-                }
             }
 
             if (taxRate > 0 && safeTax > 0 && item.taxObj) {
@@ -238,46 +199,28 @@ export function useInvoiceBuilder() {
 
         let globalDiscountsAmount = 0;
         let globalChargesAmount = 0;
-        let withholdingsAmount = 0;
 
         globalAdjustments.forEach(adj => {
-            if (adj.type === 'withholding') {
-                if (isReteIVA(adj.withholdingData)) {
-                    const amount = totalIvaAmount * 0.15;
-                    reteIvaAmount += isNaN(amount) ? 0 : amount;
-                } else {
-                    const percent = Number(adj.withholdingData?.code) || 0;
-                    // Calculate withholding over netSubtotal automatically
-                    const baseValue = netSubtotal;
-                    const amount = baseValue * (percent / 100);
-                    withholdingsAmount += isNaN(amount) ? 0 : amount;
-                }
-            } else {
-                const val = Number(adj.value) || 0;
-                const amount = adj.valueType === 'percentage' ? netSubtotal * (val / 100) : val;
-                const safeAmount = isNaN(amount) ? 0 : amount;
+            const val = Number(adj.value) || 0;
+            const amount = adj.valueType === 'percentage' ? netSubtotal * (val / 100) : val;
+            const safeAmount = isNaN(amount) ? 0 : amount;
 
-                if (adj.type === 'discount') {
-                    globalDiscountsAmount += safeAmount;
-                } else {
-                    globalChargesAmount += safeAmount;
-                }
+            if (adj.type === 'discount') {
+                globalDiscountsAmount += safeAmount;
+            } else {
+                globalChargesAmount += safeAmount;
             }
         });
 
         const total = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount;
-        // Withholdings amount in total includes global other withholdings + reteIvaAmount
-        const finalWithholdings = withholdingsAmount + reteIvaAmount;
-        const payableAmount = total - finalWithholdings;
+        const payableAmount = total;
 
         return {
             subtotal: isNaN(grossSubtotal) ? 0 : grossSubtotal,
             lineDiscountsAmount: isNaN(lineDiscountsAmount) ? 0 : lineDiscountsAmount,
             globalDiscountsAmount: isNaN(globalDiscountsAmount) ? 0 : globalDiscountsAmount,
             globalChargesAmount: isNaN(globalChargesAmount) ? 0 : globalChargesAmount,
-            withholdingsAmount: isNaN(finalWithholdings) ? 0 : finalWithholdings,
             taxesAmount: isNaN(taxesAmount) ? 0 : taxesAmount,
-            reteIvaAmount: isNaN(reteIvaAmount) ? 0 : reteIvaAmount,
             taxBreakdown,
             total: isNaN(total) ? 0 : total,
             payableAmount: isNaN(payableAmount) ? 0 : payableAmount
@@ -297,8 +240,7 @@ export function useInvoiceBuilder() {
                 unit_measure_code: item.unit_measure_code,
                 allowance_charges: item.allowance_charges,
                 taxes: item.taxes,
-                warehouse_id: item.selected_warehouse_id,
-                withholding: item.withholding // always send explicitly
+                warehouse_id: item.selected_warehouse_id
             };
             if (item.standard_code && item.standard_code.trim() !== '') {
                 linePayload.standard_code = item.standard_code;
@@ -307,7 +249,6 @@ export function useInvoiceBuilder() {
         });
 
         const global_allowance_charges = globalAdjustments
-            .filter(adj => adj.type !== 'withholding')
             .map(adj => ({
                 scope: 'global',
                 value_type: adj.valueType,
@@ -315,12 +256,6 @@ export function useInvoiceBuilder() {
                 reason_code: adj.type === 'charge' ? "01" : "00",
                 charge_indicator: adj.type === 'charge',
                 value: adj.value
-            }));
-
-        const withholdings = globalAdjustments
-            .filter(adj => adj.type === 'withholding')
-            .map(adj => ({
-                withholding_rate_id: Number(adj.valueType)
             }));
 
         const now = new Date();
@@ -332,7 +267,6 @@ export function useInvoiceBuilder() {
             type_operation_invoice: 1,
             items: payload_lines,
             allowance_charges: global_allowance_charges,
-            withholdings,
             billing_period: {
                 start_date: todayStr,
                 start_time: timeStr,
@@ -355,13 +289,10 @@ export function useInvoiceBuilder() {
         updateItem,
         updateItemDiscount,
         updateItemTax,
-        updateItemWithholding,
         addGlobalAdjustment,
         removeGlobalAdjustment,
         updateGlobalAdjustment,
         totals,
-        hasLineWithholding,
-        hasGlobalReteIVA,
         buildPayload,
         reset
     };

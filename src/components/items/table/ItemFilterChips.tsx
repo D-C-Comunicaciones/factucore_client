@@ -301,7 +301,7 @@ export function ItemFilterChips({
       )}
 
       <button
-        className="ml-auto text-xs text-black font-medium px-2 py-1 rounded focus:outline-none hover:no-underline whitespace-nowrap shrink-0"
+        className="ml-auto text-xs text-black font-medium px-2 py-1 rounded focus:outline-none hover:bg-gray-100 cursor-pointer transition-colors whitespace-nowrap shrink-0"
         style={{ textDecoration: "none" }}
         onClick={removeAllFilters}
       >

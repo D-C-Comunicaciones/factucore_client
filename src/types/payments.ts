@@ -1,11 +1,13 @@
 export interface Payment {
     id: number;
     number: string;
-    client: string;
+    customer: string;
+    customer_id?: number;
+    contact_id?: number;
     created_at: string;
-    bank_account: string;
-    payment_status: "No conciliado" | "Conciliado" | "Anulado";
-    amount: number;
+    account_name: string;
+    payment_status: "No conciliado" | "Conciliado" | "Anulado" | string;
+    amount: number | string;
 }
 
 export interface PaymentListResponse {

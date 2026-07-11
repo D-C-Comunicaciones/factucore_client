@@ -1,45 +1,24 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2, MoreVertical, Printer, Ban, CheckCircle2, MoreHorizontal } from "lucide-react";
+import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Payment } from "@/types/payments";
 
 /* -----------------------------------------------------------------------
    Badge de estado de pago
 ------------------------------------------------------------------------ */
-function PaymentStatusBadge({
-  status,
-}: {
-  status: "No conciliado" | "Conciliado" | "Anulado";
-}) {
-  if (status === "Conciliado") {
-    return (
-      <span className="inline-flex px-2 py-0.5 text-xs rounded-full font-medium bg-emerald-100 text-emerald-700">
-        Conciliado
-      </span>
-    );
-  }
-  if (status === "No conciliado") {
-    return (
-      <span className="inline-flex px-2 py-0.5 text-xs rounded-full font-medium bg-amber-100 text-amber-700">
-        No conciliado
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex px-2 py-0.5 text-xs rounded-full font-medium bg-slate-100 text-slate-700">
-      Anulado
-    </span>
-  );
-}
+
 
 /* -----------------------------------------------------------------------
    Celda de acciones
@@ -56,59 +35,33 @@ function PaymentActionsCell({
   onDelete: (id: number) => void;
 }) {
   return (
-    <div className="flex items-center gap-0" data-no-row-select="true">
-      <TooltipProvider delayDuration={300}>
-        {/* Detalles */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 hover:bg-background"
-              onClick={() => onView(payment.id)}
-            >
-              <Eye className="w-3.5 h-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>Detalles</p>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Editar */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 hover:bg-background"
-              onClick={() => onEdit(payment.id)}
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>Editar</p>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Eliminar */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 hover:bg-background"
-              onClick={() => onDelete(payment.id)}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>Eliminar</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <div className="flex items-center justify-center gap-0 mr-2" data-no-row-select="true">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-500 hover:bg-slate-200 cursor-pointer">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-36 rounded-xl shadow-md border-gray-100 p-1">
+          <DropdownMenuItem onClick={() => onView(payment.id)} className="cursor-pointer text-[13px] text-slate-700 py-1.5 rounded-md hover:bg-slate-100">
+            <Printer className="mr-2 h-3.5 w-3.5" />
+            <span>Imprimir</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => {}} className="cursor-pointer text-[13px] text-slate-700 py-1.5 rounded-md hover:bg-slate-100">
+            <Ban className="mr-2 h-3.5 w-3.5" />
+            <span>Anular</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEdit(payment.id)} className="cursor-pointer text-[13px] text-slate-700 py-1.5 rounded-md hover:bg-slate-100">
+            <Pencil className="mr-2 h-3.5 w-3.5" />
+            <span>Editar</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-gray-100 my-1" />
+          <DropdownMenuItem onClick={() => onDelete(payment.id)} className="cursor-pointer text-[13px] text-red-600 hover:text-red-700 hover:bg-red-50 focus:text-red-700 focus:bg-red-50 py-1.5 rounded-md">
+            <Trash2 className="mr-2 h-3.5 w-3.5" />
+            <span>Eliminar</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
@@ -168,14 +121,25 @@ export function getPaymentColumns(
 
     /* CLIENTE */
     {
-      accessorKey: "client",
+      accessorKey: "customer",
       header: "Cliente",
       size: 180,
-      cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground">
-          {row.original.client}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const contactId = row.original.contact_id || row.original.customer_id;
+        return contactId ? (
+          <Link 
+            href={`/contacts/${contactId}`}
+            className="text-xs text-primary font-medium hover:underline cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {row.original.customer}
+          </Link>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            {row.original.customer}
+          </span>
+        );
+      },
     },
 
     /* FECHA DE CREACIÓN */
@@ -192,12 +156,12 @@ export function getPaymentColumns(
 
     /* CUENTA BANCARIA */
     {
-      accessorKey: "bank_account",
+      accessorKey: "account_name",
       header: "Cuenta bancaria",
       size: 160,
       cell: ({ row }) => (
         <span className="text-xs text-muted-foreground">
-          {row.original.bank_account}
+          {row.original.account_name}
         </span>
       ),
     },
@@ -227,8 +191,8 @@ export function getPaymentColumns(
     /* ACCIONES */
     {
       id: "actions",
-      header: "Acciones",
-      size: 100,
+      header: "",
+      size: 60,
       enableSorting: false,
       cell: ({ row }) => (
         <PaymentActionsCell

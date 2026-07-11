@@ -54,59 +54,7 @@ function FormattedInput({ value, onChange, placeholder, className }: any) {
   );
 }
 
-// ─── ReteIVA Toggle ──────────────────────────────────────────────────────────
-function WithholdingToggle({
-  enabled,
-  checked,
-  onChange,
-  disabledReason,
-}: {
-  enabled: boolean;
-  checked: boolean;
-  onChange: (val: boolean) => void;
-  disabledReason?: string;
-}) {
-  const toggle = (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={!enabled}
-      onClick={() => enabled && onChange(!checked)}
-      className={[
-        "relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-        enabled ? "cursor-pointer" : "cursor-not-allowed opacity-50",
-        checked
-          ? "bg-primary border-primary"
-          : "bg-muted border-border",
-      ].join(" ")}
-    >
-      <span
-        className={[
-          "pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ease-in-out mt-px",
-          checked ? "translate-x-[15px]" : "translate-x-[1px]",
-        ].join(" ")}
-      />
-    </button>
-  );
 
-  if (!enabled && disabledReason) {
-    return (
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">{toggle}</span>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="bg-zinc-800 text-white text-xs max-w-[200px] p-2 leading-snug">
-            {disabledReason}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  return toggle;
-}
 
 function ItemRow({
   item,
@@ -116,8 +64,6 @@ function ItemRow({
   selectedPriceListId,
   taxes,
   errors,
-  hasGlobalReteIVA,
-  hasAnyIvaTax,
 }: {
   item: any;
   index: number;
@@ -126,7 +72,6 @@ function ItemRow({
   selectedPriceListId: number | null;
   taxes: any[];
   errors?: Record<string, any>;
-  hasGlobalReteIVA: boolean;
   hasAnyIvaTax: boolean;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -253,12 +198,7 @@ function ItemRow({
   const isLowStock = shouldValidateStock && (minStock > 0 ? currentStock <= minStock : currentStock <= 5);
   const isGoodStock = shouldValidateStock && (maxStock > 0 ? currentStock >= maxStock : currentStock >= 10);
 
-  // ReteIVA toggle visibility & state
-  const lineHasIVA = isIvaTax(item.taxObj);
-  const withholdingEnabled = lineHasIVA && !hasGlobalReteIVA;
-  const withholdingDisabledReason = hasGlobalReteIVA
-    ? "Ya se aplicó ReteIVA de manera global. Elimínala si deseas aplicar ReteIVA en líneas."
-    : undefined;
+
 
   return (
     <tr className={`border-b border-border transition-colors ${hasError ? 'bg-destructive/5' : 'bg-white'}`}>
@@ -392,25 +332,7 @@ function ItemRow({
         </Select>
       </td>
 
-      {/* ReteIVA toggle — visible only when line has an IVA tax and no global ReteIVA, and cell rendered only if any item has IVA */}
-      {(hasAnyIvaTax && !hasGlobalReteIVA) && (
-        <td className="px-2 py-2 w-20 text-center">
-          {lineHasIVA && !hasGlobalReteIVA ? (
-            <div className="flex flex-col items-center gap-0.5">
-              <WithholdingToggle
-                enabled={true}
-                checked={item.withholding === true}
-                onChange={(val) => invoiceBuilder.updateItemWithholding(item.id, val)}
-              />
-              <span className={`text-[9px] font-semibold leading-none ${item.withholding ? 'text-primary' : 'text-muted-foreground'}`}>
-                {item.withholding ? 'SI' : 'NO'}
-              </span>
-            </div>
-          ) : (
-            <span className="text-muted-foreground/30 text-xs">—</span>
-          )}
-        </td>
-      )}
+
 
       <td className="px-2 py-2">
         <Input
@@ -473,14 +395,12 @@ export function InvoiceItemsTable({
   selectedPriceListId,
   taxes,
   errors,
-  hasGlobalReteIVA,
 }: {
   invoiceBuilder: any;
   selectedWarehouseId: number | null;
   selectedPriceListId: number | null;
   taxes: any[];
   errors?: Record<string, any>;
-  hasGlobalReteIVA?: boolean;
 }) {
   const hasAnyIvaTax = invoiceBuilder.items.some((item: any) => isIvaTax(item.taxObj));
 
@@ -495,7 +415,6 @@ export function InvoiceItemsTable({
               "Precio",
               "Desc",
               "Impuesto",
-              (hasAnyIvaTax && !hasGlobalReteIVA) ? "ReteIVA" : null,
               "Descripción",
               "Cant",
               "Total",
@@ -513,7 +432,7 @@ export function InvoiceItemsTable({
         <tbody>
           {invoiceBuilder.items.length === 0 ? (
             <tr>
-              <td colSpan={(hasAnyIvaTax && !hasGlobalReteIVA) ? 10 : 9} className="bg-white">
+              <td colSpan={9} className="bg-white">
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -536,7 +455,6 @@ export function InvoiceItemsTable({
                 selectedPriceListId={selectedPriceListId}
                 taxes={taxes}
                 errors={errors}
-                hasGlobalReteIVA={hasGlobalReteIVA ?? false}
                 hasAnyIvaTax={hasAnyIvaTax}
               />
             ))

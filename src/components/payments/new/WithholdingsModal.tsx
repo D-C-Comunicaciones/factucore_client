@@ -104,9 +104,9 @@ export function WithholdingsModal({ isOpen, onClose, invoice, initialWithholding
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                     <input
                       type="text"
-                      className="w-full h-9 pl-7 pr-3 text-sm rounded-md border border-gray-300 bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      readOnly
+                      className="w-full h-9 pl-7 pr-3 text-sm rounded-md border border-gray-300 bg-slate-50 text-slate-500 cursor-not-allowed focus-visible:outline-none"
                       value={w.base ? w.base.toLocaleString('es-CO') : ''}
-                      onChange={(e) => handleChange(i, "base", e.target.value.replace(/\D/g, ''))}
                     />
                   </div>
                 </div>
@@ -116,9 +116,9 @@ export function WithholdingsModal({ isOpen, onClose, invoice, initialWithholding
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                     <input
                       type="text"
-                      className="w-full h-9 pl-7 pr-3 text-sm rounded-md border border-gray-300 bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      readOnly
+                      className="w-full h-9 pl-7 pr-3 text-sm rounded-md border border-gray-300 bg-slate-50 text-slate-500 cursor-not-allowed focus-visible:outline-none"
                       value={w.amount ? w.amount.toLocaleString('es-CO') : ''}
-                      onChange={(e) => handleChange(i, "amount", e.target.value.replace(/\D/g, ''))}
                     />
                   </div>
                 </div>

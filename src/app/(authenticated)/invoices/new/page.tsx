@@ -3,13 +3,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { NewInvoiceFooter } from "@/components/invoice/new/NewInvoiceFooter";
 import { NewInvoiceHeader } from "@/components/invoice/new/NewInvoiceHeader";
-import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
+import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { NewInvoiceMain } from "@/components/invoice/new/NewInvoiceMain";
 import { NewInvoiceOptions } from "@/components/invoice/new/NewInvoiceOptions";
 import { NewInvoicePayment } from "@/components/invoice/new/NewInvoicePayment";
 import { PreviewModal } from "@/components/invoice/new/PreviewModal";
 import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
-import { useInvoiceBuilder, isIvaTax, isReteIVA } from "@/hooks/invoices/useInvoiceBuilder";
+import { useInvoiceBuilder, isIvaTax } from "@/hooks/invoices/useInvoiceBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useSellersList } from "@/hooks/sellers/useSellers";
 import { InvoicesService } from "@/lib/invoices";
@@ -208,26 +208,7 @@ export default function NewInvoicePage() {
         return false;
       }
 
-      // Validación ReteIVA 1: no pueden coexistir ReteIVA Global + withholding por línea
-      const hasGlobalReteIVA = invoiceBuilder.globalAdjustments.some(
-        (adj: any) => adj.type === 'withholding' && isReteIVA(adj.withholdingData)
-      );
-      const hasLineReteIVA = invoiceBuilder.items.some((item: any) => item.withholding === true);
-      if (hasGlobalReteIVA && hasLineReteIVA) {
-        setErrors(newErrors);
-        showToast("La Retención de IVA no puede aplicarse simultáneamente de forma global y por línea.", "error");
-        return false;
-      }
 
-      // Validación ReteIVA 2: withholding=true en línea sin impuesto IVA
-      const lineWithholdingWithoutIVA = invoiceBuilder.items.find(
-        (item: any) => item.withholding === true && !isIvaTax(item.taxObj)
-      );
-      if (lineWithholdingWithoutIVA) {
-        setErrors(newErrors);
-        showToast("No es posible aplicar Retención de IVA sobre una línea que no tiene IVA.", "error");
-        return false;
-      }
     }
 
     // 4. Pago
@@ -428,7 +409,7 @@ export default function NewInvoicePage() {
             onPaymentDataChange={(data) => setFormState({ ...formState, paymentData: data })}
             errors={errors}
           />
-          <NewInvoiceComments
+          <CommentsAndReminders
             comments={formState.comments || []}
             setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
           />

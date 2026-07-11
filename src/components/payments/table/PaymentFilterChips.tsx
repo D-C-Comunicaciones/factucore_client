@@ -14,18 +14,18 @@ import { ListOrdered, Users, Calendar, Landmark, CircleSlash, DollarSign } from 
 
 const filterLabels: Record<string, string> = {
   number: "Número",
-  client: "Cliente",
+  customer: "Cliente",
   created_at: "Fecha de creación",
-  bank_account: "Cuenta bancaria",
+  account_name: "Cuenta bancaria",
   payment_status: "Estado de pago",
   amount: "Monto",
 };
 
 export const paymentFilterOptions = [
   { value: "number", label: "Número", icon: ListOrdered },
-  { value: "client", label: "Cliente", icon: Users },
+  { value: "customer", label: "Cliente", icon: Users },
   { value: "created_at", label: "Fecha de creación", icon: Calendar },
-  { value: "bank_account", label: "Cuenta bancaria", icon: Landmark },
+  { value: "account_name", label: "Cuenta bancaria", icon: Landmark },
   { value: "payment_status", label: "Estado de pago", icon: CircleSlash },
   { value: "amount", label: "Monto", icon: DollarSign },
 ];
@@ -91,10 +91,10 @@ export function PaymentFilterChips({
   return (
     <div className="flex flex-nowrap items-center gap-2 px-4 py-2 border-t border-b border-gray-100 bg-white relative overflow-x-auto">
       {columnFilters.map((filter) => {
-        const isText = ["number", "client", "created_at"].includes(filter.id);
+        const isText = ["number", "customer", "created_at"].includes(filter.id);
         const isAmount = filter.id === "amount";
         const isStatus = filter.id === "payment_status";
-        const isBank = filter.id === "bank_account";
+        const isBank = filter.id === "account_name";
 
         const hasValue = filter.value !== undefined && filter.value !== "";
 
@@ -229,6 +229,7 @@ export function PaymentFilterChips({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" sideOffset={4} className="min-w-[180px] rounded-xl border-slate-200 shadow-xl bg-white">
+            <div className="px-3 py-2 text-xs text-muted-foreground font-semibold">Filtrar por</div>
             {paymentFilterOptions.map((opt) => {
               if (columnFilters.some((f) => f.id === opt.value)) return null;
               return (
@@ -250,7 +251,7 @@ export function PaymentFilterChips({
       )}
 
       <button
-        className="ml-auto text-xs text-black font-medium px-2 py-1 rounded focus:outline-none hover:no-underline whitespace-nowrap shrink-0"
+        className="ml-auto text-xs text-black font-medium px-2 py-1 rounded focus:outline-none hover:bg-gray-100 cursor-pointer transition-colors whitespace-nowrap shrink-0"
         style={{ textDecoration: "none" }}
         onClick={removeAllFilters}
       >

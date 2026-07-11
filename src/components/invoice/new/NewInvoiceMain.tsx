@@ -12,7 +12,6 @@ import {
 import { InvoiceItemsTable } from "@/components/invoice/new/InvoiceItemsTable";
 import { DatePickerSimple } from "@/components/ui/DatePickerSimple";
 import React, { useState, useEffect, useRef } from "react";
-import { isReteIVA } from "@/hooks/invoices/useInvoiceBuilder";
 import { cn } from "@/lib/utils";
 import {
     Tooltip,
@@ -125,7 +124,7 @@ export function NewInvoiceMain({
     const selectItemClass =
         "rounded-lg cursor-pointer transition-colors hover:bg-muted hover:text-foreground focus:bg-muted data-[state=checked]:bg-muted/50";
 
-    const [globalAdjType, setGlobalAdjType] = useState<"discount" | "charge" | "withholding">("discount");
+    const [globalAdjType, setGlobalAdjType] = useState<"discount" | "charge">("discount");
     const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
     const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
     const [isQuickCreateItemModalOpen, setIsQuickCreateItemModalOpen] = useState(false);
@@ -429,44 +428,11 @@ export function NewInvoiceMain({
         }
     }, [plazo, fecha, paymentTerms]);
 
-    // ── Exclusividad ReteIVA: si alguna línea activa withholding=true,
-    //    eliminar automáticamente cualquier ReteIVA Global que exista.
-    const prevHasLineWithholding = useRef(invoiceBuilder.hasLineWithholding);
-    useEffect(() => {
-        if (invoiceBuilder.hasLineWithholding && !prevHasLineWithholding.current) {
-            const reteIVAGlobal = invoiceBuilder.globalAdjustments.filter(
-                (adj: any) => adj.type === 'withholding' && isReteIVA(adj.withholdingData)
-            );
-            reteIVAGlobal.forEach((adj: any) => invoiceBuilder.removeGlobalAdjustment(adj.id));
-            if (reteIVAGlobal.length > 0) {
-                showToast("Se eliminó la ReteIVA Global porque se activó ReteIVA por línea.", "info");
-            }
-        }
-        prevHasLineWithholding.current = invoiceBuilder.hasLineWithholding;
-    }, [invoiceBuilder.hasLineWithholding]);
+
 
     const handleAddGlobalAdjustment = () => {
-        if (globalAdjType !== 'withholding' && globalAdjPercent <= 0) return;
-        let withholdingData = undefined;
-        if (globalAdjType === 'withholding') {
-            const alreadyExists = invoiceBuilder.globalAdjustments.some((adj: any) => adj.type === 'withholding' && adj.valueType === globalAdjValueType);
-            if (alreadyExists) {
-                showToast("Esta retención ya ha sido agregada a la factura.", "warning");
-                return;
-            }
-
-            // Filter available withholding rates: exclude ReteIVA if any line has withholding=true
-            const withholdingRates = invoiceBuilder.hasLineWithholding
-                ? catalogs?.withholdingRates?.filter((r: any) => !isReteIVA(r))
-                : catalogs?.withholdingRates;
-
-            withholdingData = withholdingRates?.find((r: any) => r.id.toString() === globalAdjValueType);
-            if (!withholdingData) {
-                showToast("Por favor seleccione un tipo de retención", "warning");
-                return;
-            }
-        }
-        invoiceBuilder.addGlobalAdjustment(globalAdjType, globalAdjValueType, globalAdjPercent, globalAdjReason, withholdingData);
+        if (globalAdjPercent <= 0) return;
+        invoiceBuilder.addGlobalAdjustment(globalAdjType, globalAdjValueType, globalAdjPercent, globalAdjReason);
         setGlobalAdjPercent(0);
         setGlobalAdjReason("");
     };
@@ -890,7 +856,6 @@ export function NewInvoiceMain({
                 selectedWarehouseId={selectedWarehouseId}
                 selectedPriceListId={selectedPriceListId}
                 taxes={taxes}
-                hasGlobalReteIVA={invoiceBuilder.hasGlobalReteIVA}
             />
 
             {/* AJUSTES GLOBALES */}
@@ -913,14 +878,9 @@ export function NewInvoiceMain({
                     {/* Formulario a la izquierda */}
                     <div className="w-full md:w-1/3 space-y-4">
                         <div className="flex">
-                            <Select value={globalAdjType} onValueChange={(val: "discount" | "charge" | "withholding") => {
+                            <Select value={globalAdjType} onValueChange={(val: "discount" | "charge") => {
                                 setGlobalAdjType(val);
-                                if (val === 'withholding') {
-                                    // Don't auto-select the first one, let it show the placeholder
-                                    setGlobalAdjValueType("");
-                                } else {
-                                    setGlobalAdjValueType("percentage");
-                                }
+                                setGlobalAdjValueType("percentage");
                             }}>
                                 <SelectTrigger className="w-full bg-white h-9 border border-border rounded-r-none hover:bg-muted hover:border-primary cursor-pointer transition-colors">
                                     <SelectValue />
@@ -928,49 +888,21 @@ export function NewInvoiceMain({
                                 <SelectContent>
                                     <SelectItem value="discount" className="cursor-pointer hover:bg-muted focus:bg-muted">Descuento</SelectItem>
                                     <SelectItem value="charge" className="cursor-pointer hover:bg-muted focus:bg-muted">Recargo</SelectItem>
-                                    <SelectItem value="withholding" className="cursor-pointer hover:bg-muted focus:bg-muted">Retención</SelectItem>
                                 </SelectContent>
                             </Select>
 
-                            {globalAdjType === 'withholding' ? (
-                                (() => {
-                                    const available = (catalogs?.withholdingRates || []).filter((rate: any) => {
-                                        // Exclude ReteIVA (withholding_id === 1) when any line has withholding=true
-                                        if (invoiceBuilder.hasLineWithholding && isReteIVA(rate)) return false;
-                                        // Exclude already-added rates
-                                        return !invoiceBuilder.globalAdjustments.some((adj: any) => adj.type === 'withholding' && adj.valueType === rate.id.toString());
-                                    });
-                                    
-                                    const options = available.map((rate: any) => ({
-                                        value: rate.id.toString(),
-                                        label: `${rate.name} (${rate.code}%)`
-                                    }));
-
-                                    return (
-                                        <SearchableSelect
-                                            value={globalAdjValueType}
-                                            onValueChange={setGlobalAdjValueType}
-                                            options={options}
-                                            placeholder="Seleccionar"
-                                            className="w-[260px] bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted hover:border-primary cursor-pointer transition-colors"
-                                            emptyMessage={options.length === 0 ? "No hay más retenciones disponibles" : "No se encontraron resultados"}
-                                        />
-                                    );
-                                })()
-                            ) : (
-                                <Select value={globalAdjValueType} onValueChange={(val: "percentage" | "fixed") => setGlobalAdjValueType(val)}>
-                                    <SelectTrigger className="w-20 bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted hover:border-primary cursor-pointer transition-colors">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="percentage" className="cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
-                                        <SelectItem value="fixed" className="cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
+                            <Select value={globalAdjValueType} onValueChange={(val: "percentage" | "fixed") => setGlobalAdjValueType(val)}>
+                                <SelectTrigger className="w-20 bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted hover:border-primary cursor-pointer transition-colors">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="percentage" className="cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
+                                    <SelectItem value="fixed" className="cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
-                        {globalAdjType === 'withholding' ? null : globalAdjValueType === 'percentage' ? (
+                        {globalAdjValueType === 'percentage' ? (
                             <Input
                                 type="number"
                                 min={0}
@@ -1000,7 +932,7 @@ export function NewInvoiceMain({
                             onClick={handleAddGlobalAdjustment}
                             className="w-full bg-primary text-primary-foreground px-4 h-9 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                         >
-                            {globalAdjType === 'discount' ? 'Agregar descuento' : globalAdjType === 'charge' ? 'Agregar recargo' : 'Agregar retención'}
+                            {globalAdjType === 'discount' ? 'Agregar descuento' : 'Agregar recargo'}
                         </button>
                     </div>
 
@@ -1013,15 +945,8 @@ export function NewInvoiceMain({
                                 </div>
                             )}
                             {invoiceBuilder.globalAdjustments.map((adj: any) => {
-                                const isWithholding = adj.type === 'withholding';
-                                const title = isWithholding ? adj.withholdingData?.name || '' : (adj.type === 'discount' ? 'Descuento' : 'Recargo');
-                                const reason = adj.reason ? (isWithholding ? ` - ${adj.reason}` : `: ${adj.reason}`) : "";
-
-                                // Recalculate based on net subtotal dynamically for UI display
-                                const netSubtotal = invoiceBuilder.totals.subtotal - invoiceBuilder.totals.lineDiscountsAmount;
-                                const calculated = isWithholding 
-                                    ? (isReteIVA(adj.withholdingData) ? invoiceBuilder.totals.reteIvaAmount : netSubtotal * (Number(adj.withholdingData?.code || 0) / 100))
-                                    : 0;
+                                const title = adj.type === 'discount' ? 'Descuento' : 'Recargo';
+                                const reason = adj.reason ? `: ${adj.reason}` : "";
 
                                 return (
                                     <div key={adj.id} className="flex items-center gap-4 bg-muted/10 p-3 rounded-lg border border-border">
@@ -1029,10 +954,7 @@ export function NewInvoiceMain({
                                             {title}{reason}
                                         </span>
                                         <span className="text-sm font-bold min-w-[100px] text-right">
-                                            {isWithholding
-                                                ? `-$ ${Math.round(calculated).toLocaleString("es-CO")}`
-                                                : (adj.valueType === 'percentage' ? `${adj.value}%` : `$ ${Math.round(adj.value).toLocaleString("es-CO")}`)
-                                            }
+                                            {adj.valueType === 'percentage' ? `${adj.value}%` : `$ ${Math.round(adj.value).toLocaleString("es-CO")}`}
                                         </span>
                                         <button onClick={() => invoiceBuilder.removeGlobalAdjustment(adj.id)} className="p-1.5 rounded hover:bg-destructive/10 transition cursor-pointer group">
                                             <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors" />
@@ -1136,23 +1058,7 @@ export function NewInvoiceMain({
                             </div>
                         ))}
 
-                        {invoiceBuilder.globalAdjustments.filter((adj: any) => adj.type === 'withholding' && !isReteIVA(adj.withholdingData)).map((adj: any) => {
-                            const netSubtotal = invoiceBuilder.totals.subtotal - invoiceBuilder.totals.lineDiscountsAmount;
-                            const calculated = netSubtotal * (Number(adj.withholdingData?.code || 0) / 100);
-                            return (
-                                <div key={adj.id} className="flex justify-between text-sm mt-2">
-                                    <span className="text-muted-foreground">{adj.withholdingData?.name}</span>
-                                    <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(calculated || 0)}</span>
-                                </div>
-                            );
-                        })}
 
-                        {invoiceBuilder.totals.reteIvaAmount > 0 && (
-                            <div className="flex justify-between text-sm mt-2">
-                                <span className="text-muted-foreground">ReteIVA 15%</span>
-                                <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.reteIvaAmount || 0)}</span>
-                            </div>
-                        )}
 
                         <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-2">
                             <span className="text-xl font-medium text-foreground">Total</span>
@@ -1329,7 +1235,7 @@ export function NewInvoiceMain({
                 open={isTaxModalOpen}
                 onOpenChange={setIsTaxModalOpen}
                 taxTypes={catalogs?.taxTypes || []}
-                onSave={(newTax) => {
+                onSave={async (newTax) => {
                     // El componente NewTaxRateModal actualiza el cache
                 }}
             />

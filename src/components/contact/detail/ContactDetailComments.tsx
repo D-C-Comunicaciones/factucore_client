@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
+import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 
 interface ContactDetailCommentsProps {
     contact: any;
@@ -13,7 +13,7 @@ export function ContactDetailComments({ contact }: ContactDetailCommentsProps) {
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <NewInvoiceComments comments={comments} setComments={setComments} />
+            <CommentsAndReminders comments={comments} setComments={setComments} />
         </div>
     );
 }

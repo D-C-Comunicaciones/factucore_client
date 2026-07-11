@@ -176,7 +176,7 @@ export function NewPaymentForm({ formState, setFormState, formErrors }: NewPayme
                   }}
                   className="w-full text-center text-primary text-sm font-medium p-2 hover:bg-primary/5 rounded-md transition-colors"
                 >
-                  Crear nuevo cliente
+                  + Crear nuevo cliente
                 </button>
               }
             />

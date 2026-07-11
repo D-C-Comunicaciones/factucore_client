@@ -66,7 +66,7 @@ export function InvoiceDetailTabs({ payments = [] }: { payments?: any[] }) {
                                         return (
                                             <tr key={p.id || idx} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                                 <td className="py-3.5 px-4">
-                                                    <span className="text-[#0e7490] font-medium underline cursor-pointer">{formattedDate}</span>
+                                                    <span className="text-primary font-medium underline cursor-pointer">{formattedDate}</span>
                                                 </td>
                                                 <td className="py-3.5 px-4 text-center text-slate-700 font-medium">{p.prefix != null ? `${p.prefix}${p.number}` : (p.number || p.id || '-')}</td>
                                                 <td className="py-3.5 px-4 text-center text-slate-700">{p.status || 'Abierto'}</td>

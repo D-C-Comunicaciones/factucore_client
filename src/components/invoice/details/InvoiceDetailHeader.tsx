@@ -101,7 +101,12 @@ export function InvoiceDetailHeader({
                 <Button variant="outline" size="sm" className={defaultBtnClass}>
                     <Share2 className="w-4 h-4 mr-2" /> Compartir
                 </Button>
-                <Button variant="outline" size="sm" className={defaultBtnClass}>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={defaultBtnClass}
+                    onClick={() => router.push(`/payments/new?customer_id=${bill?.customer_id || bill?.contact_id || ''}`)}
+                >
                     <Plus className="w-4 h-4 mr-2" /> Agregar pago
                 </Button>
                 

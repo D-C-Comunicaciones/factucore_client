@@ -14,7 +14,7 @@ import { InvoiceDetailExtraInfo } from "@/components/invoice/details/InvoiceDeta
 import { InvoiceDetailTabs } from "@/components/invoice/details/InvoiceDetailTabs";
 import { InvoiceDetailSkeleton } from "@/components/invoice/details/InvoiceDetailSkeleton";
 import { InvoiceDianStatus } from "@/components/invoice/details/InvoiceDianStatus";
-import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
+import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { showToast } from "@/components/sonner/CustomToaster";
 
 
@@ -228,7 +228,7 @@ export default function InvoiceDetailPage() {
 
             <InvoiceDetailTabs payments={bill.payments || data.data?.payments || invoiceData?.payments || templateData?.payments || data.data?.payments_received || []} />
 
-            <NewInvoiceComments comments={comments} setComments={setComments} />
+            <CommentsAndReminders comments={comments} setComments={setComments} />
         </div>
     );
 }

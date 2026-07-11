@@ -145,7 +145,7 @@ export function ReturnsTable() {
             </div>
             
             <button 
-              className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+              className="text-sm font-medium text-slate-700 hover:bg-slate-100 px-2 py-1 rounded cursor-pointer transition-colors"
               onClick={() => setActiveFilters([])}
             >
               Remover filtros
