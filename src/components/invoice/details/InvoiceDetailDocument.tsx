@@ -31,6 +31,7 @@ export function InvoiceDetailDocument({
     const finalDiscount = Number(getNestedValue(bill, 'discount_total') || bill.discount_amount || 0);
     const finalTaxes = Number(getNestedValue(bill, 'tax_total') || getNestedValue(bill, 'tax_totals') || bill.tax_amount || 0);
     const finalTotal = Number(getNestedValue(bill, 'payable_amount') || bill.total || 0);
+    const finalWithholdings = Number(getNestedValue(bill, 'withholdings_total') || 0);
 
     const allDiscounts = bill.discounts || bill.invoice_snapshot?.template_data?.invoice?.discounts || [];
     const allCharges = bill.charges || bill.invoice_snapshot?.template_data?.invoice?.charges || [];
@@ -43,6 +44,22 @@ export function InvoiceDetailDocument({
     const globalChargesTotal = globalCharges.reduce((sum: number, c: any) => sum + Number(c.calculated_amount || c.amount || c.value || 0), 0);
 
     const grossSubtotal = finalSubtotal + lineDiscountsTotal;
+
+    const withholdingsList = bill.withholdings_totals || bill.withholdings || bill.invoice_withholdings || bill.invoice_snapshot?.template_data?.invoice?.withholdings || [];
+    const groupedWithholdings = withholdingsList.reduce((acc: any, w: any) => {
+        const name = w.name || w.withholding_rate?.name || w.tax?.name || w.type_tax?.name || w.tax_name || w.type?.name || 'Retención';
+        const percent = Number(w.percent || w.percentage || w.tax_percent || w.withholding_rate?.rate || 0);
+        const amount = Number(w.withholding_amount || w.amount || w.tax_amount || w.value || 0);
+        const key = `${name}-${percent}`;
+        
+        if (!acc[key]) {
+            acc[key] = { name, percent, amount: 0 };
+        }
+        acc[key].amount += amount;
+        return acc;
+    }, {});
+    const withholdingsArray = Object.values(groupedWithholdings);
+
 
 
     return (
@@ -219,7 +236,15 @@ export function InvoiceDetailDocument({
                     <div className="flex justify-between text-slate-600 border-t border-slate-100 pt-8">
                         <div className="w-1/3 flex flex-col items-center justify-end pb-4">
                             <div className="mb-2">
-                                <span className="font-semibold text-slate-700 uppercase">{bill.user?.name || 'Administrador'}</span>
+                                <span 
+                                    className="text-slate-700" 
+                                    style={{ 
+                                        fontFamily: '"Great Vibes", cursive', 
+                                        fontSize: '30px' 
+                                    }}
+                                >
+                                    {bill.user?.name || 'Administrador'}
+                                </span>
                             </div>
                             <div className="w-3/4 border-t border-slate-300 text-center pt-2 text-[10px] uppercase text-slate-400">
                                 ELABORADO POR
@@ -308,9 +333,37 @@ export function InvoiceDetailDocument({
                                     <span className="text-xl font-normal text-slate-600">Total</span>
                                     <span className="text-2xl">$ {finalTotal.toLocaleString()}</span>
                                 </div>
+                                {withholdingsArray.length > 0 ? (
+                                    <>
+                                        <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                                            {(withholdingsArray as any[]).map((w: any, idx: number) => (
+                                                <div key={idx} className="flex justify-between">
+                                                    <span className="text-slate-500">{w.name} {w.percent > 0 ? `${w.percent}%` : ''}</span>
+                                                    <span className="text-red-500">-$ {w.amount.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-between font-bold text-slate-800 mt-2">
+                                            <span className="text-lg font-normal text-slate-600">Neto a pagar</span>
+                                            <span className="text-xl text-primary">$ {(finalTotal - finalWithholdings).toLocaleString()}</span>
+                                        </div>
+                                    </>
+                                ) : finalWithholdings > 0 && (
+                                    <>
+                                        <div className="flex justify-between mt-2 pt-2 border-t border-slate-100">
+                                            <span className="text-slate-500">Retenciones</span>
+                                            <span className="text-red-500">-$ {finalWithholdings.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between font-bold text-slate-800 mt-2">
+                                            <span className="text-lg font-normal text-slate-600">Neto a pagar</span>
+                                            <span className="text-xl text-primary">$ {(finalTotal - finalWithholdings).toLocaleString()}</span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
+
 
                     {/* Additional Info and Notes */}
                     <div className="flex justify-between mt-16 text-sm text-slate-600 gap-12">

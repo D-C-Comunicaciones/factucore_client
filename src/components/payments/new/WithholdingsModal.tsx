@@ -6,6 +6,7 @@ import { Plus, X } from "lucide-react";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { InvoiceSummary } from "@/types/invoice";
+import { showToast } from "@/components/sonner/CustomToaster";
 
 export interface WithholdingEntry {
   withholding_rate_id: number;
@@ -52,9 +53,27 @@ export function WithholdingsModal({ isOpen, onClose, invoice, initialWithholding
 
     if (field === "withholding_rate_id" || field === "base") {
       const rateId = field === "withholding_rate_id" ? Number(value) : newWithholdings[index].withholding_rate_id;
-      const base = field === "base" ? Number(value) : newWithholdings[index].base;
+      let base = field === "base" ? Number(value) : newWithholdings[index].base;
       const rateData = catalogs.withholdingRates?.find((r: any) => r.id === rateId);
+      
       if (rateData) {
+        const isReteIva = rateData.name?.toLowerCase().includes("iva");
+
+        if (field === "withholding_rate_id" && isReteIva) {
+          const totalIva = invoice?.total_iva || 0;
+          if (totalIva <= 0) {
+            showToast("No se puede aplicar retención de IVA a una operación comercial gravada sin IVA.", "error");
+            newWithholdings[index].withholding_rate_id = 0;
+            newWithholdings[index].base = Number(invoice?.pending_amount || 0);
+            newWithholdings[index].amount = 0;
+            setWithholdings(newWithholdings);
+            return;
+          } else {
+            base = totalIva;
+            newWithholdings[index].base = base;
+          }
+        }
+
         newWithholdings[index].amount = Math.round(base * (Number(rateData.code) / 100));
       }
     }

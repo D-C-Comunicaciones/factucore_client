@@ -143,9 +143,15 @@ export default function NewPaymentPage() {
 
     setLoadingGuardar(true);
     try {
-      await PaymentsService.create(payload);
+      const res: any = await PaymentsService.create(payload);
       showToast("Pagos registrados exitosamente", "success");
-      router.push("/payments");
+      
+      const paymentId = res?.data?.payment?.id || res?.data?.id || res?.data?.[0]?.id || res?.data?.payments?.[0]?.id || res?.id || res?.[0]?.id;
+      if (paymentId) {
+        router.push(`/payments/${paymentId}`);
+      } else {
+        router.push("/payments");
+      }
     } catch (error: any) {
       console.error(error);
       showToast(error.response?.data?.message || "Ocurrió un error al registrar los pagos", "error");

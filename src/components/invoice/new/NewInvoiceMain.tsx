@@ -65,6 +65,7 @@ import { type Resolution } from "@/lib/resolutions";
 import { ContactsService } from "@/lib/contacts";
 import { adquirerApi } from "@/lib/acquirers";
 import { showToast, showToastWithAction } from "@/components/sonner/CustomToaster";
+import { getSession } from "@/common/interfaces/session";
 
 export function NewInvoiceMain({
     mainData,
@@ -110,12 +111,10 @@ export function NewInvoiceMain({
 
     const [clientUser, setClientUser] = useState<any>(null);
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem('auth_user');
-            if (raw) {
-                setClientUser(JSON.parse(raw));
-            }
-        } catch (e) {}
+        const session = getSession();
+        if (session?.user) {
+            setClientUser(session.user);
+        }
     }, []);
 
     const inputClass =
@@ -185,14 +184,55 @@ export function NewInvoiceMain({
 
     // Sincronizar estados de pago y cliente con formState del padre
     useEffect(() => {
-        setFormState((prev: any) => ({
-            ...prev,
-            contact_id: cliente ? Number(cliente) : null,
-            payment_form_id: formaPago ? Number(formaPago) : null,
-            payment_method_id: medioPago ? Number(medioPago) : null,
-            payment_term_id: plazo ? Number(plazo) : null,
-        }));
-    }, [cliente, formaPago, medioPago, plazo, setFormState]);
+        let isMounted = true;
+        const syncContact = async () => {
+            if (cliente) {
+                try {
+                    const res = await ContactsService.getById(cliente);
+                    const fetchedCustomer = res.data?.contact || res.data?.data || res.data;
+                    if (isMounted) {
+                        setFormState((prev: any) => ({
+                            ...prev,
+                            contact_id: Number(cliente),
+                            customer: fetchedCustomer,
+                            payment_form_id: formaPago ? Number(formaPago) : null,
+                            payment_method_id: medioPago ? Number(medioPago) : null,
+                            payment_term_id: plazo ? Number(plazo) : null,
+                        }));
+                    }
+                } catch (e) {
+                    if (isMounted) {
+                        const fullCustomer = customersList.find((c: any) => c.id.toString() === cliente) || null;
+                        setFormState((prev: any) => ({
+                            ...prev,
+                            contact_id: Number(cliente),
+                            customer: fullCustomer,
+                            payment_form_id: formaPago ? Number(formaPago) : null,
+                            payment_method_id: medioPago ? Number(medioPago) : null,
+                            payment_term_id: plazo ? Number(plazo) : null,
+                        }));
+                    }
+                }
+            } else {
+                if (isMounted) {
+                    setFormState((prev: any) => ({
+                        ...prev,
+                        contact_id: null,
+                        customer: null,
+                        payment_form_id: formaPago ? Number(formaPago) : null,
+                        payment_method_id: medioPago ? Number(medioPago) : null,
+                        payment_term_id: plazo ? Number(plazo) : null,
+                    }));
+                }
+            }
+        };
+
+        syncContact();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [cliente, formaPago, medioPago, plazo, setFormState, customersList]);
 
     // Sincronizar fecha de vencimiento
     useEffect(() => {
@@ -447,7 +487,7 @@ export function NewInvoiceMain({
             {/* HEADER */}
             <div className="grid grid-cols-3 items-start mb-8">
                 <div className="border-2 border-dashed border-border rounded-lg p-4 text-center justify-self-start flex items-center justify-center min-w-[160px] min-h-[100px]">
-                    <FactucoreLogo 
+                    <FactucoreLogo
                         variant="icon"
                         className="max-h-[80px] w-auto"
                         alt="Logo de la empresa"
@@ -1000,7 +1040,7 @@ export function NewInvoiceMain({
                     {/* Firma */}
                     <div className="border-2 border-dashed border-border rounded-lg p-8 pb-4 bg-muted/5 w-full max-w-[280px] flex flex-col justify-end min-h-[120px]">
                         <div className="text-center font-medium text-foreground text-sm h-5">
-                            {clientUser?.user?.name || clientUser?.name || mainData?.user?.user?.name || mainData?.user?.name || "Usuario"}
+                            {clientUser?.name || mainData?.user?.name || "Usuario"}
                         </div>
                         <div className="border-t border-muted-foreground/30 my-2 w-full mx-auto"></div>
                         <div className="text-center text-xs text-muted-foreground">
@@ -1209,7 +1249,7 @@ export function NewInvoiceMain({
                         const price = parseFloat(createdItem.base_price) || parseFloat(createdItem.total_price) || parseFloat(createdItem.price) || 0;
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "precio", price);
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "cantidad", 1);
-                        
+
                         // Fix for inventory tracking of newly created items (e.g. services)
                         const isInventoriable = createdItem.type_item_id !== undefined ? createdItem.type_item_id === 1 : (createdItem.type_item?.name?.toLowerCase() === 'producto' || createdItem.type_item?.id === 1);
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "stock_quantity", createdItem.stock_quantity ?? null);

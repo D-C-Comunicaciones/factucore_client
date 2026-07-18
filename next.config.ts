@@ -25,13 +25,8 @@ const nextConfig: NextConfig = {
     ...getLocalIPs(),
     "localhost",
     "127.0.0.1",
-    "*.loca.lt",
-    "*.ngrok-free.dev",
-    "*.ngrok.io",
-    "*.ngrok-free.app",
-    "lemon-cups-dig.loca.lt",
-    "grab-grant-despite.ngrok-free.dev",
-  ],
+    "*.trycloudflare.com",
+  ]
 };
 
 export default nextConfig;

@@ -14,6 +14,7 @@ import { useCatalogs } from "@/hooks/useCatalogs";
 import { useSellersList } from "@/hooks/sellers/useSellers";
 import { InvoicesService } from "@/lib/invoices";
 import { AuthService } from "@/lib/auth";
+import { getSession } from "@/common/interfaces/session";
 import { useResolutions } from "@/hooks/useResolutions";
 import type { Resolution } from "@/lib/resolutions";
 
@@ -141,11 +142,30 @@ export default function NewInvoicePage() {
     const newErrors: Record<string, string> = {};
 
     // 1. Contacto
-    if (!formState.contact_id) {
+    if (!formState.customer) {
       newErrors.contact_id = "El contacto es requerido";
       setErrors(newErrors);
       showToast("El contacto es requerido", "error");
       return false;
+    } else {
+      const c = formState.customer;
+      const missing = [];
+      if (!c.identification_number) missing.push("Número de identificación");
+      if (c.type_document_identification?.code === "31" && (c.verification_digit === null || c.verification_digit === undefined)) missing.push("Dígito de verificación (NIT)");
+      if (c.type_organization?.code === "1" && !c.registration_name) missing.push("Razón social");
+      if (c.type_organization?.code === "2" && (!c.first_name || !c.last_name)) missing.push("Nombres y Apellidos");
+      if (!c.email) missing.push("Correo electrónico");
+      if (!c.type_document_identification) missing.push("Tipo de documento");
+      if (!c.type_organization) missing.push("Tipo de organización");
+      if (!c.type_regime) missing.push("Tipo de régimen");
+      if (!c.municipality || !c.municipality.department || !c.municipality.department.country) missing.push("Ubicación completa (Municipio, Depto, País)");
+
+      if (missing.length > 0) {
+        newErrors.contact_id = "Faltan datos requeridos del cliente";
+        setErrors(newErrors);
+        showToast(`Faltan datos en el cliente: ${missing.join(", ")}`, "error");
+        return false;
+      }
     }
 
     // 2. Forma / Medio de pago
@@ -260,6 +280,54 @@ export default function NewInvoicePage() {
         numbering_range_id: selectedResolutionId,
       });
       basePayload.type_operation_id = 1;
+      
+      const session = getSession();
+      if (session?.user?.id) {
+          basePayload.user_id = session.user.id;
+      }
+
+      if (basePayload.customer) {
+        const c = basePayload.customer;
+        basePayload.customer = {
+            id: c.id,
+            identification_number: c.identification_number,
+            verification_digit: c.verification_digit,
+            registration_name: c.registration_name,
+            first_name: c.first_name,
+            last_name: c.last_name,
+            address: c.address,
+            email: c.email,
+            phone1: c.phone1,
+            type_document_identification: c.type_document_identification ? {
+                code: c.type_document_identification.code,
+                name: c.type_document_identification.name
+            } : undefined,
+            type_organization: c.type_organization ? {
+                code: c.type_organization.code,
+                name: c.type_organization.name
+            } : undefined,
+            type_regime: c.type_regime ? {
+                code: c.type_regime.code,
+                name: c.type_regime.name
+            } : undefined,
+            type_liabilities: c.type_liabilities && c.type_liabilities.length > 0 ? c.type_liabilities.map((t: any) => ({
+                code: t.code,
+                name: t.name
+            })) : [{ code: "R-99-PN", name: "No aplica" }],
+            municipality: c.municipality ? {
+                code: c.municipality.code,
+                name: c.municipality.name,
+                department: c.municipality.department ? {
+                    code: c.municipality.department.code,
+                    name: c.municipality.department.name,
+                    country: c.municipality.department.country ? {
+                        code: c.municipality.department.country.code,
+                        name: c.municipality.department.country.name
+                    } : undefined
+                } : undefined
+            } : undefined
+        };
+      }
 
       if (formState.paymentData) {
         basePayload.payments = [formState.paymentData];
@@ -268,6 +336,7 @@ export default function NewInvoicePage() {
       }
       delete basePayload.paymentData;
       delete basePayload.comments;
+      delete basePayload.contact_id;
 
       if (!basePayload.seller_id || basePayload.seller_id === "") {
         basePayload.seller_id = null;

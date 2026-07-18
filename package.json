@@ -1,6 +1,6 @@
 {
-  "name": "facturacion-cliente",
-  "version": "0.1.0",
+  "name": "FactuCore App",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

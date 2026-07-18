@@ -17,6 +17,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useItems } from "@/hooks/items/useItems";
 import { isIvaTax } from "@/hooks/invoices/useInvoiceBuilder";
 
@@ -283,8 +284,8 @@ function ItemRow({
         </div>
       </td>
 
-      <td className="px-2 py-2 w-32">
-        <Select
+      <td className="px-2 py-2 w-48">
+        <SearchableSelect
           value={item.taxObj?.tax_rate_id?.toString() || item.taxObj?.tax_id?.toString() || "0"}
           onValueChange={(val) => {
             if (val === "new_tax") {
@@ -298,38 +299,31 @@ function ItemRow({
               const tax = taxes?.find((t: any) => t.id.toString() === val);
               if (tax) {
                 // Support multiple field names: code (from new tax API), rate (from item tax_rates), and percentage
-                const rawRate = tax.code ?? tax.rate ?? tax.percentage ?? 0;
-                const taxRate = Number(rawRate);
-                const normalizedName = `${tax.name || 'IVA'} (${isNaN(taxRate) ? 0 : taxRate}%)`;
-                invoiceBuilder.updateItemTax(item.id, {
+                const taxRateObj = {
                   tax_rate_id: tax.id,
-                  tax_id: tax.tax_id || tax.id,
-                  type: "percentage",
-                  rate: isNaN(taxRate) ? 0 : taxRate,
-                  name: normalizedName
-                });
+                  tax_id: tax.tax_id,
+                  name: tax.name,
+                  rate: parseFloat(tax.rate || tax.percentage || "0"),
+                  type: tax.type || 'percentage',
+                  description: tax.description || ""
+                };
+                invoiceBuilder.updateItemTax(item.id, taxRateObj);
               }
             }
           }}
-        >
-          <SelectTrigger className={`${inputClasses} hover:bg-muted cursor-pointer`}>
-            <SelectValue placeholder="Impuesto" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0" className="cursor-pointer hover:bg-muted focus:bg-muted">Sin impuesto</SelectItem>
-            {taxes?.map((t: any) => {
-              const rawRate = t.code ?? t.rate ?? t.percentage ?? 0;
-              const displayRate = Number(rawRate);
-              return (
-                <SelectItem key={t.id} value={t.id.toString()} className="cursor-pointer hover:bg-muted focus:bg-muted">
-                  {t.name} ({isNaN(displayRate) ? 0 : displayRate}%)
-                </SelectItem>
-              );
-            })}
-            <div className="h-px bg-border my-1" />
-            <SelectItem value="new_tax" className="cursor-pointer text-primary font-medium hover:bg-primary/5 focus:bg-primary/5">+ Nuevo impuesto</SelectItem>
-          </SelectContent>
-        </Select>
+          options={[
+            { value: "0", label: "Sin impuesto" },
+            ...(taxes || []).map((tax: any) => ({
+              value: tax.id.toString(),
+              label: `${tax.name} (${parseFloat(tax.rate || "0")}%)`
+            })),
+            { value: "new_tax", label: "+ Crear impuesto" }
+          ]}
+          placeholder="Sin impuesto"
+          searchPlaceholder="Buscar impuesto..."
+          emptyMessage="No se encontraron impuestos"
+          className={`h-8 text-xs bg-white shadow-none hover:border-primary/50 focus:border-primary transition-colors ${hasError ? 'border-destructive' : 'border-foreground/20'}`}
+        />
       </td>
 
 

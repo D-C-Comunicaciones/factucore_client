@@ -45,7 +45,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `Factura_${bill.prefix || ''}${bill.number || bill.id}.xml`;
+            a.download = `FEV_${bill.prefix || ''}${bill.number || bill.id}.xml`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -70,7 +70,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                 const parsedStr = dateStr.replace(' ', 'T');
                 date = new Date(parsedStr);
             }
-            
+
             if (isNaN(date.getTime())) {
                 return { date: 'N/A', time: '' };
             }
@@ -155,7 +155,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                                 {bill?.dian_response?.status_description || dianStatus || 'NO APROBADA'}
                             </span>
                         </div>
-                        
+
                         {/* 2. Envío al cliente */}
                         <div className="flex flex-col items-center flex-1">
                             {bill?.is_email_sent ? (
@@ -266,7 +266,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                             </div>
                             <div>
                                 <p className="font-medium text-slate-800 mb-2 leading-tight text-[12px]">La <span className="font-bold">factura de venta No. {bill.prefix || ''}{bill.number || bill.id}</span> fue {isAccepted ? 'aceptada' : 'procesada'} por la <span className="font-bold">DIAN</span></p>
-                                
+
                                 {(bill.dian_response?.dian_message || bill.dian_rejection_reason) && (
                                     <div className="pl-3 border-l-[1.5px] border-slate-300 mt-2 relative">
                                         <div className="absolute -left-[9px] top-0 bg-white">
@@ -324,7 +324,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                 )}
 
                 <div className="border-t border-slate-100 mt-4 pt-4 text-center">
-                    <button 
+                    <button
                         onClick={() => setShowDetails(!showDetails)}
                         className="text-[#20c997] hover:text-[#18a57a] text-[13px] font-medium transition-colors border-b border-transparent hover:border-[#18a57a]"
                     >

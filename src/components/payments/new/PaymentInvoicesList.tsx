@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { Info, PenLine, ChevronLeft, ChevronRight, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
 import { InvoicesService } from "@/lib/invoices";
 import { InvoiceSummary } from "@/types/invoice";
@@ -72,17 +73,28 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
   const [focusedInvoice, setFocusedInvoice] = useState<number | null>(null);
   const [editingWithholdingsFor, setEditingWithholdingsFor] = useState<number | null>(null);
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>, invoiceId: number, pendingAmount: number) => {
+  const getInvoiceWithholdingsTotal = (invoiceId: number) => {
+    if (!withholdings[invoiceId]) return 0;
+    return withholdings[invoiceId].reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0);
+  };
+
+  const getEffectivePendingAmount = (inv: any) => {
+    const pending = Number(inv.pending_amount || 0);
+    const withh = getInvoiceWithholdingsTotal(inv.id);
+    return Math.max(0, pending - withh);
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>, invoiceId: number, maxAmount: number) => {
     const rawValue = e.target.value.replace(/\D/g, '');
     if (!rawValue) {
       updateReceivedAmounts((prev: any) => ({ ...prev, [invoiceId]: '' }));
       return;
     }
     
-    const numValue = parseInt(rawValue, 10);
-    if (numValue > pendingAmount) {
-      showToast("El monto excede el saldo pendiente.", "warning", "Advertencia");
-      return;
+    let numValue = parseInt(rawValue, 10);
+    if (numValue > maxAmount) {
+      showToast("El monto excede el saldo pendiente menos retenciones.", "warning", "Advertencia");
+      numValue = maxAmount;
     }
     
     updateReceivedAmounts((prev: any) => ({
@@ -201,7 +213,15 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
             ) : (
               invoices.map((inv, index) => (
                 <TableRow key={inv.id} className="hover:bg-slate-50/50">
-                  <TableCell className="font-medium text-muted-foreground">{inv.number}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link 
+                      href={`/invoices/${inv.id}`} 
+                      target="_blank" 
+                      className="text-muted-foreground hover:bg-slate-100 hover:text-slate-900 px-2 py-1 rounded -ml-2 transition-colors cursor-pointer inline-block"
+                    >
+                      {inv.number}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {renderDueDate(inv.payment_due_date)}
                   </TableCell>
@@ -230,7 +250,7 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
                     </div>
                   </TableCell>
                   <TableCell className="text-center text-muted-foreground">
-                    $ {inv.pending_amount ? parseFloat(inv.pending_amount.toString()).toLocaleString('es-CO') : '0'}
+                    $ {getEffectivePendingAmount(inv).toLocaleString('es-CO')}
                   </TableCell>
                   <TableCell className="relative">
                     <div className="flex items-center justify-center relative">
@@ -246,8 +266,15 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
                                 focusedInvoice === inv.id ? "border-primary ring-1 ring-primary" : ""
                               )}
                               value={receivedAmounts[inv.id] || ''}
-                              onChange={(e) => handleAmountChange(e, inv.id, Number(inv.pending_amount || 0))}
-                              onFocus={() => setFocusedInvoice(inv.id)}
+                              onChange={(e) => handleAmountChange(e, inv.id, getEffectivePendingAmount(inv))}
+                              onFocus={() => {
+                                setFocusedInvoice(inv.id);
+                                const max = getEffectivePendingAmount(inv);
+                                updateReceivedAmounts((prev: any) => ({
+                                  ...prev,
+                                  [inv.id]: max.toLocaleString('es-CO')
+                                }));
+                              }}
                               onBlur={() => setFocusedInvoice(null)}
                             />
                             {formErrors?.amounts && (
@@ -268,14 +295,15 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
                           onCloseAutoFocus={(e) => e.preventDefault()}
                           onPointerDown={(e) => {
                             e.preventDefault();
+                            const max = getEffectivePendingAmount(inv);
                             updateReceivedAmounts((prev: any) => ({
                               ...prev,
-                              [inv.id]: Number(inv.pending_amount || 0).toLocaleString('es-CO')
+                              [inv.id]: max.toLocaleString('es-CO')
                             }));
                             setFocusedInvoice(null);
                           }}
                         >
-                          <div className="font-bold text-slate-800 text-[15px]">${Number(inv.pending_amount || 0).toLocaleString('es-CO')}</div>
+                          <div className="font-bold text-slate-800 text-[15px]">${getEffectivePendingAmount(inv).toLocaleString('es-CO')}</div>
                           <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">Restante por pagar</div>
                         </PopoverContent>
                       </Popover>
@@ -308,6 +336,18 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
               ...prev,
               [editingWithholdingsFor]: newWithholdings
             }));
+            
+            const inv = invoices.find(i => i.id === editingWithholdingsFor);
+            if (inv) {
+              const newWithhTotal = newWithholdings.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0);
+              const newMax = Math.max(0, Number(inv.pending_amount || 0) - newWithhTotal);
+              updateReceivedAmounts((prev: any) => {
+                if (prev[inv.id]) {
+                  return { ...prev, [inv.id]: newMax.toLocaleString('es-CO') };
+                }
+                return prev;
+              });
+            }
           }
         }}
       />

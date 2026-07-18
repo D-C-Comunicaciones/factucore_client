@@ -100,6 +100,7 @@ export interface InvoiceSummary {
     payment_due_date: string | null;
     total: string;
     pending_amount: number;
+    total_iva?: number;
     status_dian: {
         id: number;
         code: string;
