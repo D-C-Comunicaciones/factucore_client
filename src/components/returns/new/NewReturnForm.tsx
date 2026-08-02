@@ -1,12 +1,10 @@
 "use client";
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
-import { HelpCircle, Edit2, AlertCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { HelpCircle, Edit2, AlertCircle, Plus, Trash2, X, RefreshCw } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { DatePickerSimple } from '@/components/ui/DatePickerSimple';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { AuthService } from '@/lib/auth';
 import { ContactsService } from '@/lib/contacts';
@@ -14,17 +12,61 @@ import { CreditNotesService } from '@/lib/creditNotes';
 import { InvoicesService } from '@/lib/invoices';
 import { useResolutions } from '@/hooks/useResolutions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import { showToast } from '@/components/sonner/CustomToaster';
+import { DatePickerSimple } from '@/components/ui/DatePickerSimple';
+import { ChangeTypeModal } from '../modals/ChangeTypeModal';
+import { ChangeClientModal } from '../modals/ChangeClientModal';
+import { ExitFormModal } from '../modals/ExitFormModal';
 
 type FieldError = {
     cliente?: string;
     tipoNota?: string;
-    factura?: string;
+    facturas?: string;
+    lineas?: string;
 };
+
+interface SelectedInvoice {
+    uid: string;
+    invoiceId: string;
+    details: any | null;
+}
+
+interface AddedLine {
+    uid: string;
+    invoiceId: string;
+    productId: string;
+    name: string;
+    maxQuantity: number;
+    price: number;
+    taxes: any[];
+    discounts: any[];
+    charges: any[];
+    // user inputs
+    quantity: string;
+    newPrice?: string;
+    discount: { type: '%' | '$', value: string };
+    invoiceLineId?: number | string;
+}
+
+const createEmptyLine = (): AddedLine => ({
+    uid: crypto.randomUUID(), invoiceId: '', productId: '', name: '', maxQuantity: 0, price: 0, taxes: [], discounts: [], charges: [], quantity: '', newPrice: '', discount: { type: '%', value: '0' }
+});
 
 export function NewReturnForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialClientId = searchParams?.get('clientId');
+    const initialInvoiceId = searchParams?.get('invoiceId');
+    const [hasInitializedInvoice, setHasInitializedInvoice] = useState(false);
+
     const [docType, setDocType] = useState('nota-credito');
     const [pendingDocType, setPendingDocType] = useState<string | null>(null);
 
@@ -32,53 +74,124 @@ export function NewReturnForm() {
     const [clientId, setClientId] = useState<string>('');
     const [selectedType, setSelectedType] = useState<string>('');
     const [date, setDate] = useState<Date>(new Date());
-    const [selectedInvoice, setSelectedInvoice] = useState<string>('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const isDirty = selectedType !== '' || selectedInvoice !== '';
+    // Invoices state
+    const [selectedInvoices, setSelectedInvoices] = useState<SelectedInvoice[]>([
+        { uid: crypto.randomUUID(), invoiceId: '', details: null }
+    ]);
+
+    // Lines state
+    const [addedLines, setAddedLines] = useState<AddedLine[]>([
+        createEmptyLine()
+    ]);
+    const [globalDiscountPopoverOpen, setGlobalDiscountPopoverOpen] = useState(false);
+    const [globalDiscount, setGlobalDiscount] = useState<{ type: '%' | '$', value: string }>({ type: '%', value: '0' });
+    const [globalDiscounts, setGlobalDiscounts] = useState<any[]>([]);
+    const [globalSurcharges, setGlobalSurcharges] = useState<any[]>([]);
+    const [newGlobalDiscounts, setNewGlobalDiscounts] = useState<{ reason: string, type: '%' | '$', value: string }[]>([]);
+
+    // Form state for adding new global discounts in Type 3
+    const [newDiscountReason, setNewDiscountReason] = useState('');
+    const [newDiscountType, setNewDiscountType] = useState<'%' | '$'>('%');
+    const [newDiscountValue, setNewDiscountValue] = useState('');
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [reason, setReason] = useState('');
+    const [notes, setNotes] = useState('');
+    const [errors, setErrors] = useState<FieldError>({});
+
+    const [pendingType, setPendingType] = useState<string | null>(null);
+    const [pendingClientId, setPendingClientId] = useState<string | null>(null);
+    const [showExitModal, setShowExitModal] = useState(false);
+    const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+
+    const hasDataEntered = selectedInvoices.some(i => i.invoiceId !== '') || addedLines.some(l => l.productId !== '') || addedLines.some(l => Number(l.quantity) > 0);
+
+    const isDirty = selectedType !== '' || selectedInvoices.some(i => i.invoiceId !== '') || clientId !== '';
 
     useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (isDirty) {
-                e.preventDefault();
-                e.returnValue = '';
+        const handleLinkClick = (e: MouseEvent) => {
+            if (!isDirty) return;
+            const target = e.target as HTMLElement;
+            const anchor = target.closest('a');
+            if (anchor && anchor.href && !anchor.target) {
+                const currentUrl = new URL(window.location.href);
+                const anchorUrl = new URL(anchor.href, window.location.origin);
+                if (anchorUrl.origin === currentUrl.origin && anchorUrl.pathname !== currentUrl.pathname) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setPendingUrl(anchorUrl.pathname + anchorUrl.search + anchorUrl.hash);
+                    setShowExitModal(true);
+                }
             }
         };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+
+        document.addEventListener('click', handleLinkClick, true);
+        return () => {
+            document.removeEventListener('click', handleLinkClick, true);
+        };
     }, [isDirty]);
+
+    useEffect(() => {
+        if (initialClientId && !clientId) {
+            setClientId(initialClientId);
+        }
+    }, [initialClientId, clientId]);
 
     const handleDocTypeChange = (newDocType: string) => {
         if (newDocType === docType) return;
-        if (isDirty) {
+        if (hasDataEntered) {
             setPendingDocType(newDocType);
         } else {
             setDocType(newDocType);
+            setSelectedType('');
+            setClientId('');
         }
     };
 
-    // Invoice details state
-    const [invoiceDetails, setInvoiceDetails] = useState<any>(null);
-    const [loadingInvoiceDetails, setLoadingInvoiceDetails] = useState(false);
-    const [returnedQuantities, setReturnedQuantities] = useState<Record<number, string>>({});
+    const handleClientChange = (val: string) => {
+        if (val === clientId) return;
+        if (clientId && hasDataEntered) {
+            setPendingClientId(val);
+        } else {
+            setClientId(val);
+            setErrors(prev => ({ ...prev, cliente: undefined }));
+        }
+    };
 
-    // New states for different credit note types
-    const [lineDiscounts, setLineDiscounts] = useState<Record<number, { type: '%' | '$', value: string }>>({});
-    const [newPrices, setNewPrices] = useState<Record<number, string>>({});
-    const [customLines, setCustomLines] = useState<Array<{ id: string, productId: string, quantity: string, price: string, discount: { type: '%' | '$', value: string }, taxes: any[], name?: string }>>([]);
-    const [globalDiscountPopoverOpen, setGlobalDiscountPopoverOpen] = useState(false);
-    const [globalDiscount, setGlobalDiscount] = useState<{ type: '%' | '$', value: string }>({ type: '%', value: '0' });
+    const confirmClientChange = () => {
+        if (pendingClientId) {
+            setClientId(pendingClientId);
+            setErrors(prev => ({ ...prev, cliente: undefined }));
+        }
+        setPendingClientId(null);
+    };
 
-    const [reason, setReason] = useState('');
-    const [notes, setNotes] = useState('');
+    const handleTypeChange = (val: string) => {
+        if (val === selectedType) return;
+        if (selectedType && hasDataEntered) {
+            setPendingType(val);
+        } else {
+            setSelectedType(val);
+            setErrors(prev => ({ ...prev, tipoNota: undefined }));
+        }
+    };
+
+    const confirmTypeChange = () => {
+        if (pendingType) {
+            setSelectedType(pendingType);
+            setErrors(prev => ({ ...prev, tipoNota: undefined }));
+            if (pendingType === '5') {
+                setAddedLines([{ uid: crypto.randomUUID(), invoiceId: selectedInvoices[0]?.invoiceId || '', productId: '', name: '', maxQuantity: 0, price: 0, taxes: [], discounts: [], charges: [], quantity: '', discount: { type: '%', value: '0' } }]);
+            }
+        }
+        setPendingType(null);
+    };
 
     const formatCurrency = (val: number | string | undefined) => {
         if (!val && val !== 0) return '$0';
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(val));
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 20 }).format(Number(val));
     };
-
-    // Field errors (validation)
-    const [errors, setErrors] = useState<FieldError>({});
 
     // Company info
     const [companyName, setCompanyName] = useState('...');
@@ -103,16 +216,8 @@ export function NewReturnForm() {
     const [nextNumber, setNextNumber] = useState<string>('1');
     const [currentPrefix, setCurrentPrefix] = useState<string>('');
 
-    interface CreditInvoice { id: string; amount: string; invoiceId: string; }
-    interface RefundPayment { id: string; date: string; account: string; amount: string; }
-
-    const [creditInvoices, setCreditInvoices] = useState<CreditInvoice[]>([]);
-    const [refunds, setRefunds] = useState<RefundPayment[]>([]);
-
-
     const baseInput = "bg-white h-[34px] pl-3 pr-3 text-sm border border-foreground/20 shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none flex items-center w-full rounded-xl box-border";
 
-    // ── Load company info ──────────────────────────────────────────────────────
     useEffect(() => {
         const comp: any = AuthService.getCompany();
         if (comp) {
@@ -125,15 +230,17 @@ export function NewReturnForm() {
         }
     }, []);
 
-    // ── Load customers ─────────────────────────────────────────────────────────
     useEffect(() => {
         const loadCustomers = async () => {
             setLoadingCustomers(true);
             try {
                 const res = await ContactsService.list({ role: 'customer' });
-                let data = res?.data?.data || [];
-                if (!Array.isArray(data) && Array.isArray(res?.data)) data = res.data;
-                else if (!Array.isArray(data) && res?.data?.contacts && Array.isArray(res.data.contacts)) data = res.data.contacts;
+                let data: any[] = [];
+                if (res && res.data) {
+                    if (Array.isArray(res.data)) data = res.data;
+                    else if (res.data.data && Array.isArray(res.data.data)) data = res.data.data;
+                    else if (res.data.contacts && Array.isArray(res.data.contacts)) data = res.data.contacts;
+                }
                 setClientOptions(data.map((c: any) => ({
                     value: c.id.toString(),
                     label: c.registration_name || `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.identification_number,
@@ -147,7 +254,6 @@ export function NewReturnForm() {
         loadCustomers();
     }, []);
 
-    // ── Load credit note types from API ────────────────────────────────────────
     useEffect(() => {
         const loadTypes = async () => {
             setLoadingTypes(true);
@@ -159,7 +265,6 @@ export function NewReturnForm() {
                         label: t.name,
                     })));
                 } else {
-                    // Fallback estático si la API no devuelve datos
                     setCreditNoteTypes([
                         { value: "1", label: "Devolución parcial de los bienes y/o no aceptación parcial del servicio" },
                         { value: "2", label: "Anulación de factura" },
@@ -172,7 +277,6 @@ export function NewReturnForm() {
                 }
             } catch (e) {
                 console.error("Error al cargar tipos de nota crédito:", e);
-                // Fallback estático en caso de error
                 setCreditNoteTypes([
                     { value: "1", label: "Devolución parcial de los bienes y/o no aceptación parcial del servicio" },
                     { value: "2", label: "Anulación de factura" },
@@ -189,16 +293,17 @@ export function NewReturnForm() {
         loadTypes();
     }, []);
 
-    // ── Load invoices when customer is selected ────────────────────────────────
     useEffect(() => {
         if (!clientId) {
             setInvoiceOptions([]);
-            setSelectedInvoice('');
+            setSelectedInvoices([{ uid: crypto.randomUUID(), invoiceId: '', details: null }]);
+            setAddedLines([createEmptyLine()]);
             return;
         }
         const loadInvoices = async () => {
             setLoadingInvoices(true);
-            setSelectedInvoice('');
+            setSelectedInvoices([{ uid: crypto.randomUUID(), invoiceId: '', details: null }]);
+            setAddedLines([createEmptyLine()]);
             try {
                 const invoices = await CreditNotesService.listInvoicesByCustomer(clientId);
                 setInvoiceOptions(invoices.map((inv) => ({
@@ -215,79 +320,57 @@ export function NewReturnForm() {
         loadInvoices();
     }, [clientId]);
 
-    // ── Load invoice details when selected ─────────────────────────────────────
+    const { resolutions, refetch: refetchResolutions, isLoading: isLoadingResolutions } = useResolutions({ type_resolution: 3, is_active: true });
+
+    // Auto-populate lines for non-Otros types
     useEffect(() => {
-        if (!selectedInvoice) {
-            setInvoiceDetails(null);
-            setReturnedQuantities({});
-            return;
+        if (selectedType !== '5' && selectedInvoices.length > 0 && selectedInvoices[0].details) {
+            const details = selectedInvoices[0].details;
+            const lines = details.lines || details.items || [];
+
+            const newAddedLines = lines.map((item: any, idx: number) => {
+                const qty = Number(item.quantity || 1);
+                const price = Number(item.price_amount || item.price || 0);
+
+                // Find discounts and charges associated with this line
+                // discounts with charge_indicator=true are CHARGES duplicated in discounts array — skip them
+                const lineDiscounts = item.discounts?.filter((d: any) => !d.charge_indicator) || [];
+                // line charges
+                const lineCharges = item.charges || [];
+
+                return {
+                    uid: crypto.randomUUID(),
+                    invoiceId: selectedInvoices[0].invoiceId,
+                    productId: item.item_id || item.product_id || '',
+                    name: item.item_snapshot?.name || item.item?.name || item.name || item.description || "Producto",
+                    maxQuantity: qty,
+                    price: price,
+                    taxes: JSON.parse(JSON.stringify(item.taxes || [])),
+                    discounts: JSON.parse(JSON.stringify(lineDiscounts)),
+                    charges: JSON.parse(JSON.stringify(lineCharges)),
+                    quantity: (selectedType === '2' || selectedType === '3' || selectedType === '6' || selectedType === '7') ? qty.toString() : '',
+                    newPrice: '',
+                    discount: { type: '%', value: '0' },
+                    invoiceLineId: item.id || idx
+                };
+            });
+
+            setAddedLines(newAddedLines.length > 0 ? newAddedLines : [createEmptyLine()]);
+
+            const allDiscounts = details.discounts || [];
+            const allCharges = details.charges || [];
+
+            // Global discounts: charge_indicator=false AND invoice_line_id is null
+            const globDiscounts = allDiscounts.filter((d: any) =>
+                !d.charge_indicator && !d.invoice_line_id
+            );
+            // Global charges: charges with no line_id (scope=global)
+            const globCharges = allCharges.filter((c: any) => !c.line_id);
+
+            setGlobalDiscounts(JSON.parse(JSON.stringify(globDiscounts)));
+            setGlobalSurcharges(JSON.parse(JSON.stringify(globCharges)));
         }
-        const loadInvoiceDetails = async () => {
-            setLoadingInvoiceDetails(true);
-            try {
-                const res = await InvoicesService.getById(selectedInvoice);
-                const data = res?.data || res;
-                const invoiceData = (data as any)?.invoice || (data as any)?.data?.invoice || data;
-                setInvoiceDetails(invoiceData);
-
-                const lines = invoiceData.lines || invoiceData.items || [];
-                const initialQty: Record<number, string> = {};
-                lines.forEach((_: any, idx: number) => {
-                    initialQty[idx] = '';
-                });
-                setReturnedQuantities(initialQty);
-            } catch (e) {
-                console.error("Error al cargar detalles de la factura:", e);
-                setInvoiceDetails(null);
-            } finally {
-                setLoadingInvoiceDetails(false);
-            }
-        };
-        loadInvoiceDetails();
-    }, [selectedInvoice]);
-
-    // ── Update values based on selectedType ────────────────────────────────────
-    useEffect(() => {
-        if (!invoiceDetails) return;
-        const lines = invoiceDetails.lines || invoiceDetails.items || [];
-        const initialQty: Record<number, string> = {};
-        const initialDiscounts: Record<number, { type: '%' | '$', value: string }> = {};
-        const initialPrices: Record<number, string> = {};
-
-        lines.forEach((item: any, idx: number) => {
-            if (selectedType === '2' || selectedType === '3' || selectedType === '6' || selectedType === '7') {
-                // Anulación de factura or Rebaja/descuento: Quantity is max (full)
-                initialQty[idx] = Number(item.quantity || 1).toString();
-            } else {
-                initialQty[idx] = ''; // Wait for user input for Devolución parcial (1) or Ajuste de precio (4)
-            }
-            initialDiscounts[idx] = { type: '%', value: '0' };
-            initialPrices[idx] = ''; // For Ajuste de precio
-        });
-
-        setReturnedQuantities(initialQty);
-        setLineDiscounts(initialDiscounts);
-        setNewPrices(initialPrices);
-        setGlobalDiscount({ type: '%', value: '0' });
-
-        // Setup initial custom lines for 'Otros'
-        if (selectedType === '5') {
-            const initialCustomLines = lines.map((item: any, idx: number) => ({
-                id: Date.now().toString() + idx,
-                productId: item.item_id || item.product_id || '',
-                name: item.item_snapshot?.name || item.item?.name || item.name || item.description || "Producto",
-                quantity: Number(item.quantity || 1).toString(),
-                price: Number(item.price_amount || item.price || 0).toString(),
-                discount: { type: '%', value: '0' },
-                taxes: item.taxes || []
-            }));
-            setCustomLines(initialCustomLines);
-        }
-    }, [selectedType, invoiceDetails]);
-
-
-    // ── Resolutions ────────────────────────────────────────────────────────────
-    const { resolutions } = useResolutions({ type_resolution: 3, is_active: true });
+    }, [selectedType, selectedInvoices[0]?.details]);
 
     useEffect(() => {
         if (resolutions && resolutions.length > 0) {
@@ -300,7 +383,7 @@ export function NewReturnForm() {
                 return {
                     value: r.id.toString(),
                     label: displayName,
-                    next_consecutive: r.next_consecutive || r.initial_range || 1,
+                    next_consecutive: ((r.current_number ?? ((r.from_number || 1) - 1)) + 1),
                     prefix: r.prefix || '',
                     is_main: r.is_main,
                 };
@@ -311,6 +394,12 @@ export function NewReturnForm() {
                 setSelectedResolution(mainRes.value);
                 setNextNumber(mainRes.next_consecutive?.toString() || '1');
                 setCurrentPrefix(mainRes.prefix || '');
+            } else {
+                const currentRes = opts.find((o: any) => o.value === selectedResolution);
+                if (currentRes) {
+                    setNextNumber(currentRes.next_consecutive?.toString() || '1');
+                    setCurrentPrefix(currentRes.prefix || '');
+                }
             }
         }
     }, [resolutions]);
@@ -324,38 +413,309 @@ export function NewReturnForm() {
         }
     };
 
-    // ── Select invoice — validate tipo nota crédito first ─────────────────────
     const handleInvoiceSelectAttempt = () => {
         if (!selectedType) {
             setErrors(prev => ({ ...prev, tipoNota: 'Debes seleccionar un tipo de nota crédito' }));
         }
     };
 
-    // ── Validate & Save ────────────────────────────────────────────────────────
+    const handleInvoiceChange = async (uid: string, invoiceId: string) => {
+        if (!invoiceId) {
+            setSelectedInvoices(prev => prev.map(inv => inv.uid === uid ? { ...inv, invoiceId, details: null } : inv));
+            return;
+        }
+
+        try {
+            const res = await InvoicesService.getById(invoiceId);
+            const data = res?.data || res;
+            const invoiceData = (data as any)?.invoice || (data as any)?.data?.invoice || data;
+
+            setSelectedInvoices(prev => prev.map(inv => inv.uid === uid ? { ...inv, invoiceId, details: invoiceData } : inv));
+        } catch (e) {
+            console.error("Error al cargar detalles de la factura:", e);
+        }
+    };
+
+    useEffect(() => {
+        if (initialInvoiceId && invoiceOptions.length > 0 && !hasInitializedInvoice) {
+            setHasInitializedInvoice(true);
+            const uid = selectedInvoices[0]?.uid;
+            if (uid && selectedInvoices[0].invoiceId !== initialInvoiceId) {
+                handleInvoiceChange(uid, initialInvoiceId);
+            }
+        }
+    }, [initialInvoiceId, invoiceOptions, hasInitializedInvoice, selectedInvoices]);
+
+    const addInvoice = () => {
+        setSelectedInvoices([...selectedInvoices, { uid: crypto.randomUUID(), invoiceId: '', details: null }]);
+    };
+
+    const removeInvoice = (uid: string) => {
+        if (selectedInvoices.length <= 1) return;
+        setSelectedInvoices(prev => prev.filter(inv => inv.uid !== uid));
+
+        // Also remove any lines that belonged to this invoice
+        const removedInvoice = selectedInvoices.find(inv => inv.uid === uid);
+        if (removedInvoice && removedInvoice.invoiceId) {
+            setAddedLines(prev => prev.filter(line => line.invoiceId !== removedInvoice.invoiceId));
+            // Ensure at least 1 line exists
+            setAddedLines(prev => prev.length === 0 ? [createEmptyLine()] : prev);
+        }
+    };
+
+    // Calculate available products from ALL selected invoices
+    const availableProducts = useMemo(() => {
+        const products: any[] = [];
+        selectedInvoices.forEach(inv => {
+            if (inv.details) {
+                const lines = inv.details.lines || inv.details.items || [];
+                lines.forEach((line: any, idx: number) => {
+                    const lineId = line.id || `${inv.invoiceId}-${idx}`;
+                    products.push({
+                        ...line,
+                        _lineId: lineId, // unique within invoice
+                        _invoiceId: inv.invoiceId,
+                        _invoiceNumber: inv.details.number || (inv.details.prefix ? `${inv.details.prefix}${inv.details.number}` : inv.invoiceId)
+                    });
+                });
+            }
+        });
+        return products;
+    }, [selectedInvoices]);
+
+    const addLine = () => {
+        setAddedLines([...addedLines, createEmptyLine()]);
+    };
+
+    const removeLine = (uid: string) => {
+        if (addedLines.length <= 1) return;
+        setAddedLines(prev => prev.filter(l => l.uid !== uid));
+    };
+
+    const handleLineProductChange = (uid: string, value: string) => {
+        const [invoiceId, lineId] = value.split('___');
+        const prod = availableProducts.find(p => p._invoiceId === invoiceId && p._lineId.toString() === lineId);
+
+        if (prod) {
+            setAddedLines(prev => prev.map(l => {
+                if (l.uid === uid) {
+                    const price = Number(prod.price_amount || prod.price || 0);
+                    const qty = Number(prod.quantity || 1);
+                    // discounts with charge_indicator=true are CHARGES duplicated — skip them
+                    const lineDiscounts = prod.discounts?.filter((d: any) => !d.charge_indicator) || [];
+                    const lineCharges = prod.charges || [];
+
+                    return {
+                        ...l,
+                        invoiceId: prod._invoiceId,
+                        productId: prod.item_id || prod.product_id || '',
+                        name: prod.item_snapshot?.name || prod.item?.name || prod.name || prod.description || "Producto",
+                        maxQuantity: qty,
+                        price: price,
+                        taxes: JSON.parse(JSON.stringify(prod.taxes || [])),
+                        discounts: JSON.parse(JSON.stringify(lineDiscounts)),
+                        charges: JSON.parse(JSON.stringify(lineCharges)),
+                        quantity: (selectedType === '2' || selectedType === '3' || selectedType === '6' || selectedType === '7') ? qty.toString() : '',
+                        newPrice: '',
+                        discount: { type: '%', value: '0' },
+                        invoiceLineId: prod.id || Number(lineId.replace(`${invoiceId}-`, ''))
+                    };
+                }
+                return l;
+            }));
+        }
+    };
+
     const handleSave = async () => {
         const newErrors: FieldError = {};
         if (!clientId) newErrors.cliente = 'El cliente es obligatorio';
         if (!selectedType) newErrors.tipoNota = 'El tipo de nota crédito es obligatorio';
-        if (!selectedInvoice) newErrors.factura = 'La factura de venta asociada es obligatoria';
+
+        const validInvoices = selectedInvoices.filter(i => i.invoiceId);
+        if (validInvoices.length === 0) newErrors.facturas = 'Al menos una factura de venta asociada es obligatoria';
+
+        const validLines = addedLines.filter(l => l.invoiceId);
+        if (validLines.length === 0) newErrors.lineas = 'Debe agregar al menos una línea válida';
 
         setErrors(newErrors);
         if (Object.keys(newErrors).length > 0) return;
 
         setIsSubmitting(true);
         try {
-            const payload = {
-                contact_id: Number(clientId),
-                type_credit_note_id: Number(selectedType),
-                invoice_id: Number(selectedInvoice),
+            // Build customer object from selected invoice details
+            const firstInvoiceDetails = validInvoices[0]?.details;
+            const customerRaw = firstInvoiceDetails?.customer || firstInvoiceDetails?.contact || null;
+            const customerObj: Record<string, any> = customerRaw
+                ? {
+                    id: customerRaw.id ?? Number(clientId),
+                    identification_number: customerRaw.identification_number,
+                    registration_name: customerRaw.registration_name || customerRaw.name,
+                    type_document_identification: customerRaw.type_document_identification,
+                    type_organization: customerRaw.type_organization,
+                    type_regime: customerRaw.type_regime,
+                    type_liabilities: customerRaw.type_liabilities,
+                    municipality: customerRaw.municipality,
+                    address: customerRaw.address,
+                    email: customerRaw.email,
+                    phone1: customerRaw.phone1,
+                }
+                : { id: Number(clientId) };
+
+            const commonData = {
                 resolution_id: selectedResolution ? Number(selectedResolution) : null,
+                type_credit_note_id: Number(selectedType),
+                type_operation_credit_note_id: 1,
+                customer: customerObj,
                 date: date.toISOString().split('T')[0],
-                reason,
-                notes
+                type_currency_id: 35,
+                send_mail: true,
+                observation: reason,
+                note: notes,
             };
-            
-            await CreditNotesService.send(payload);
+
+            let hasTaxErrors = false;
+
+            const mapLineForPayload = (l: any) => {
+                let effectiveQty = Number(l.quantity || 0);
+                let effectivePrice = Number(l.price || 0);
+                let effectiveDescription = l.name || 'Ítem';
+
+                let effectiveTaxes = l.taxes || [];
+                let effectiveDiscounts = l.discounts || [];
+                let effectiveCharges = l.charges || [];
+
+                if (selectedType === '3' || selectedType === '6' || selectedType === '7') {
+                    // Treat as price reduction or global item
+                    const soldSubtotal = l.maxQuantity * l.price;
+                    effectiveQty = 1;
+                    effectivePrice = soldSubtotal; // Needs proper calc based on how discounts are reduced
+                    if (selectedType === '3') effectiveDescription = 'Descuento comercial (' + l.name + ')';
+                    if (selectedType === '6') effectiveDescription = 'Descuento por pronto pago (' + l.name + ')';
+                    if (selectedType === '7') effectiveDescription = 'Descuento por volumen de ventas (' + l.name + ')';
+                    // clear discounts/charges for these types
+                    effectiveDiscounts = [];
+                    effectiveCharges = [];
+                } else if (selectedType === '4') {
+                    const newP = Number(l.newPrice || 0);
+                    let diff = l.price - newP;
+                    if (diff < 0) diff = 0;
+
+                    effectiveQty = l.maxQuantity;
+                    effectivePrice = diff;
+                    effectiveDescription = 'Ajuste de precio: ' + l.name;
+                    effectiveDiscounts = [];
+                    effectiveCharges = [];
+                }
+
+                const invoiceDetails = validInvoices.find(i => i.invoiceId === l.invoiceId)?.details;
+                const snapshotTaxTotals = invoiceDetails?.invoice_snapshot?.template_data?.taxTotals || [];
+
+                const mappedTaxes = effectiveTaxes.map((t: any) => {
+                    const percent = Number(t.percent || t.rate || 0);
+                    const taxCodeToMatch = t.tax_code || String(t.tax_id || '');
+                    const fallbackName = snapshotTaxTotals.find((st: any) => st.tax_code === taxCodeToMatch)?.tax_name || '';
+                    const resolvedName = t.name || t.tax?.name || t.tax_name || fallbackName || '';
+                    if (!resolvedName) {
+                        hasTaxErrors = true;
+                    }
+                    return {
+                        tax_id: t.tax_id || t.id,
+                        type: t.type || 'percentage',
+                        rate: percent,
+                        tax_code: taxCodeToMatch,
+                        name: resolvedName,
+                        percent: percent
+                    };
+                });
+
+                return {
+                    description: effectiveDescription,
+                    quantity: effectiveQty,
+                    price: effectivePrice,
+                    item_snapshot: {
+                        id: l.productId,
+                        name: l.name,
+                    },
+                    taxes: mappedTaxes,
+                    discounts: effectiveDiscounts,
+                    charges: effectiveCharges,
+                };
+            };
+
+            let payload: any;
+
+            const globalPayloadData = {
+                global_discounts: globalDiscounts,
+                global_charges: globalSurcharges
+            };
+
+            if (selectedType === '5') {
+                const creditNotes = validInvoices.map(inv => {
+                    const invoiceLines = validLines.filter(l => l.invoiceId === inv.invoiceId);
+                    return {
+                        ...commonData,
+                        ...globalPayloadData,
+                        invoice_id: Number(inv.invoiceId),
+                        lines: invoiceLines.map(mapLineForPayload),
+                    };
+                }).filter(cn => cn.lines.length > 0);
+
+                payload = { credit_notes: creditNotes };
+            } else {
+                const firstInvoiceId = validInvoices.length > 0 ? Number(validInvoices[0].invoiceId) : null;
+
+                if (selectedType === '2') {
+                    // Para tipo 2 (Anulación de factura) se envía un payload simplificado
+                    const { customer, ...commonDataWithoutCustomer } = commonData;
+                    payload = {
+                        ...commonDataWithoutCustomer,
+                        invoice_id: firstInvoiceId,
+                    };
+                } else if (['3', '6', '7'].includes(selectedType)) {
+                    // Para tipos 3, 6 y 7 solo enviamos nuevos ajustes de descuentos
+                    const payloadLines = validLines.filter(l => Number(l.discount.value) > 0).map(l => ({
+                        invoice_line_id: l.invoiceLineId,
+                        discount: {
+                            type: l.discount.type === '%' ? 'percentage' : 'fixed',
+                            value: Number(l.discount.value)
+                        }
+                    }));
+                    payload = {
+                        ...commonData,
+                        invoice_id: firstInvoiceId,
+                        lines: payloadLines,
+                        global_discounts: newGlobalDiscounts.map(d => ({
+                            reason: d.reason,
+                            type: d.type === '%' ? 'percentage' : 'fixed',
+                            value: Number(d.value)
+                        }))
+                    };
+                } else {
+                    payload = {
+                        ...commonData,
+                        ...globalPayloadData,
+                        invoice_id: firstInvoiceId,
+                        lines: validLines.map(mapLineForPayload),
+                    };
+                }
+            }
+
+            if (selectedType !== '2' && hasTaxErrors) {
+                setErrors((prev: any) => ({ ...prev, lineas: 'Todos los impuestos en las líneas de la factura original deben tener un nombre válido para poder emitir la nota.' }));
+                setIsSubmitting(false);
+                return;
+            }
+
+            const response = await CreditNotesService.send(payload);
             showToast("Nota crédito guardada y enviada correctamente", "success", "Éxito");
-            router.push("/returns");
+
+            // Si retorna una sola nota crédito, ir al detalle. Si retorna arreglo (batch), ir a lista general
+            const singleNote = response?.credit_note || response?.creditNote || response?.data?.credit_note;
+            if (singleNote && !Array.isArray(singleNote) && singleNote.id) {
+                router.push(`/returns/${singleNote.id}`);
+            } else {
+                router.push("/returns");
+            }
         } catch (error: any) {
             console.error("Error guardando nota de crédito:", error);
             showToast(error?.response?.data?.message || error?.message || "Ocurrió un error al guardar la nota crédito", "error", "Error");
@@ -364,9 +724,106 @@ export function NewReturnForm() {
         }
     };
 
-    const isFormValid = !!clientId && !!selectedType && !!selectedInvoice;
+    const isFormValid = !!clientId && !!selectedType && selectedInvoices.some(i => i.invoiceId);
 
-    // ── Render ─────────────────────────────────────────────────────────────────
+    // Calc totals
+    let returnSubtotal = 0;
+    let lineDiscountsTotal = 0;
+    const returnTaxesMap: Record<string, { amount: number, name: string, percent: string }> = {};
+
+    addedLines.forEach((item) => {
+        if (!item.invoiceId) return;
+
+        let itemSubtotal = 0;
+        let taxBase = 0;
+        let discountAmount = 0;
+
+        if (selectedType === '5') {
+            const qty = Number(item.quantity) || 0;
+            itemSubtotal = qty * item.price;
+            const discountVal = Number(item.discount?.value) || 0;
+            discountAmount = item.discount?.type === '%' ? (itemSubtotal * discountVal) / 100 : discountVal;
+            taxBase = itemSubtotal - discountAmount;
+        } else {
+            const soldSubtotal = item.maxQuantity * item.price;
+
+            if (selectedType === '1' || selectedType === '2') {
+                const qty = Number(item.quantity) || 0;
+                itemSubtotal = qty * item.price; // Gross Subtotal
+                if (item.discounts && item.discounts.length > 0) {
+                    const originalDiscount = item.discounts.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0);
+                    discountAmount = item.maxQuantity > 0 ? (originalDiscount / item.maxQuantity) * qty : 0;
+                } else {
+                    discountAmount = 0;
+                }
+                taxBase = itemSubtotal - discountAmount;
+            } else if (selectedType === '3' || selectedType === '6' || selectedType === '7') {
+                const discVal = Number(item.discount.value) || 0;
+                discountAmount = item.discount.type === '%' ? (soldSubtotal * discVal) / 100 : discVal;
+                itemSubtotal = discountAmount;
+                taxBase = itemSubtotal;
+                discountAmount = 0;
+            } else if (selectedType === '4') {
+                const newP = Number(item.newPrice || 0);
+                itemSubtotal = (item.price - newP) * item.maxQuantity;
+                if (itemSubtotal < 0) itemSubtotal = 0;
+                taxBase = itemSubtotal;
+            }
+        }
+
+        returnSubtotal += itemSubtotal;
+        lineDiscountsTotal += discountAmount;
+
+        if (item.taxes && item.taxes.length > 0) {
+            item.taxes.forEach((t: any) => {
+                const percent = Number(t.percent || t.rate || 0);
+                const taxAmount = (taxBase * percent) / 100;
+                const key = `${t.name}-${percent}`;
+                if (!returnTaxesMap[key]) {
+                    returnTaxesMap[key] = { amount: 0, name: t.name, percent: Number(percent).toString() };
+                }
+                returnTaxesMap[key].amount += taxAmount;
+            });
+        }
+    });
+
+    let globalDiscountsTotal = 0;
+    if (!['3', '6', '7'].includes(selectedType)) {
+        globalDiscounts.forEach(d => {
+            globalDiscountsTotal += Number(d.calculated_amount || d.amount || d.value || 0);
+        });
+    }
+
+    let globalSurchargesTotal = 0;
+    if (!['3', '6', '7'].includes(selectedType)) {
+        globalSurcharges.forEach(s => {
+            globalSurchargesTotal += Number(s.calculated_amount || s.amount || s.value || 0);
+        });
+    }
+
+    let newGlobalDiscountsTotal = 0;
+    if (['3', '6', '7'].includes(selectedType)) {
+        let originalInvoiceSubtotal = 0;
+        addedLines.forEach(item => {
+            originalInvoiceSubtotal += item.maxQuantity * item.price;
+        });
+
+        newGlobalDiscounts.forEach(d => {
+            const val = Number(d.value) || 0;
+            if (d.type === '%') {
+                newGlobalDiscountsTotal += (originalInvoiceSubtotal * val) / 100;
+            } else {
+                newGlobalDiscountsTotal += val;
+            }
+        });
+    }
+
+    const taxesTotal = Object.values(returnTaxesMap).reduce((sum, t) => sum + t.amount, 0);
+    const returnTotal = ['3', '6', '7'].includes(selectedType)
+        ? returnSubtotal + newGlobalDiscountsTotal + taxesTotal
+        : returnSubtotal - lineDiscountsTotal - globalDiscountsTotal + globalSurchargesTotal + taxesTotal;
+
+
     return (
         <div className="w-full">
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
@@ -407,7 +864,18 @@ export function NewReturnForm() {
                             <span className="text-xs font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded">{companyNit}</span>
                         </div>
                         <div className="text-right flex flex-col items-end">
-                            <div className="text-lg font-bold text-slate-800 tracking-tight">No. {currentPrefix}{nextNumber}</div>
+                            <div className="flex items-center gap-2">
+                                <div className="text-lg font-bold text-slate-800 tracking-tight">No. {currentPrefix}{nextNumber}</div>
+                                <button
+                                    type="button"
+                                    className="p-1 rounded hover:bg-slate-100 transition"
+                                    onClick={() => refetchResolutions()}
+                                    title="Actualizar numeración"
+                                    disabled={isLoadingResolutions}
+                                >
+                                    <RefreshCw className={cn("w-4 h-4 text-slate-400", isLoadingResolutions && "animate-spin")} />
+                                </button>
+                            </div>
                             <div
                                 className="text-xs text-slate-500 flex items-center justify-end gap-1 cursor-pointer hover:bg-slate-100 p-1.5 rounded-md transition-colors w-fit mt-0.5"
                                 onClick={() => setIsNumerationModalOpen(true)}
@@ -427,10 +895,7 @@ export function NewReturnForm() {
                             </label>
                             <SearchableSelect
                                 value={clientId}
-                                onValueChange={(v) => {
-                                    setClientId(v);
-                                    setErrors(prev => ({ ...prev, cliente: undefined }));
-                                }}
+                                onValueChange={handleClientChange}
                                 options={clientOptions}
                                 placeholder={loadingCustomers ? "Cargando..." : "Seleccionar cliente"}
                                 searchPlaceholder="Buscar cliente..."
@@ -451,23 +916,10 @@ export function NewReturnForm() {
                                 <label className="block text-sm font-medium text-slate-700">
                                     Tipo de nota crédito <span className="text-primary">*</span>
                                 </label>
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <HelpCircle className="w-4 h-4 text-primary cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top" className="bg-[#1e293b] text-white p-3 max-w-xs text-xs font-normal border-0 leading-relaxed shadow-lg">
-                                            Indica el motivo por el cual vas a realizar la nota crédito a tu cliente.
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
                             </div>
                             <SearchableSelect
                                 value={selectedType}
-                                onValueChange={(v) => {
-                                    setSelectedType(v);
-                                    setErrors(prev => ({ ...prev, tipoNota: undefined }));
-                                }}
+                                onValueChange={handleTypeChange}
                                 options={creditNoteTypes}
                                 placeholder={loadingTypes ? "Cargando..." : "Seleccionar"}
                                 searchPlaceholder="Buscar tipo..."
@@ -491,585 +943,556 @@ export function NewReturnForm() {
                         </div>
                     </div>
 
-                    {/* Row 2: Factura asociada y Totales */}
-                    <div className={cn("grid gap-6", invoiceDetails ? "grid-cols-1 md:grid-cols-5" : "grid-cols-1 md:grid-cols-3")}>
-                        <div className={cn("space-y-2", invoiceDetails ? "md:col-span-1" : "md:col-span-1")}>
-                            <label className={cn(
-                                "block text-sm font-medium",
-                                clientId ? "text-slate-700" : "text-slate-400"
-                            )}>
-                                Factura de venta asociada <span className={clientId ? "text-primary" : "text-primary/50"}>*</span>
-                            </label>
-
-                            {/* Si no hay cliente o no hay tipo, mostrar tooltip de validación */}
-                            {!clientId ? (
-                                <div
-                                    className={cn(baseInput, "w-full rounded-md opacity-50 cursor-not-allowed")}
-                                    title="Selecciona un cliente primero"
-                                >
-                                    <span className="text-slate-400 text-sm">Buscar</span>
-                                </div>
-                            ) : !selectedType ? (
-                                <div className="relative">
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <div
-                                                    className={cn(baseInput, "w-full rounded-md opacity-60 cursor-not-allowed")}
-                                                    onClick={handleInvoiceSelectAttempt}
-                                                >
-                                                    <span className="text-slate-400 text-sm">Buscar</span>
-                                                </div>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="bottom" className="bg-[#1e293b] text-white p-2 text-xs border-0 shadow-lg">
-                                                Debes seleccionar un tipo de nota crédito
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-                            ) : (
-                                <SearchableSelect
-                                    value={selectedInvoice}
-                                    onValueChange={(v) => {
-                                        setSelectedInvoice(v);
-                                        setErrors(prev => ({ ...prev, factura: undefined }));
-                                    }}
-                                    options={invoiceOptions}
-                                    placeholder={loadingInvoices ? "Cargando..." : "Buscar"}
-                                    searchPlaceholder="Buscar factura..."
-                                    emptyMessage={
-                                        loadingInvoices
-                                            ? "Cargando..."
-                                            : "No se han encontrado facturas\nNo hay facturas abiertas para ese cliente"
-                                    }
-                                    className={cn(baseInput, "w-full rounded-md", errors.factura && "border-red-400")}
-                                />
-                            )}
-
-                            {errors.factura && (
-                                <p className="flex items-center gap-1 text-xs text-red-500 mt-1">
-                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                                    {errors.factura}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Summary Totals */}
-                        {invoiceDetails && (() => {
-                            // Logic similar to InvoiceDetailDocument / Payments
-                            const totalVenta = Number(invoiceDetails.total_payable_amount || invoiceDetails.total || invoiceDetails.bill?.total_payable_amount || invoiceDetails.bill?.total || 0);
-                            const pendingAmount = invoiceDetails.pending_to_collect !== undefined
-                                ? Number(invoiceDetails.pending_to_collect)
-                                : (invoiceDetails.pending_amount !== undefined
-                                    ? Number(invoiceDetails.pending_amount)
-                                    : (invoiceDetails.bill?.pending_to_collect !== undefined
-                                        ? Number(invoiceDetails.bill?.pending_to_collect)
-                                        : (invoiceDetails.bill?.pending_amount !== undefined
-                                            ? Number(invoiceDetails.bill?.pending_amount)
-                                            : totalVenta)));
-                            const retenciones = Number(invoiceDetails.withholdings_total || invoiceDetails.bill?.withholdings_total || 0);
-                            const cobrado = totalVenta - pendingAmount;
+                    {/* Facturas Asociadas */}
+                    <div className="space-y-6 mb-8 border-b border-slate-100 pb-8">
+                        {selectedInvoices.map((inv, index) => {
+                            const details = inv.details;
+                            let totalVenta = 0, pendingAmount = 0, retenciones = 0, cobrado = 0;
+                            if (details) {
+                                totalVenta = Number(details.total_payable_amount || details.total || details.bill?.total_payable_amount || details.bill?.total || 0);
+                                pendingAmount = details.pending_to_collect !== undefined
+                                    ? Number(details.pending_to_collect)
+                                    : (details.pending_amount !== undefined
+                                        ? Number(details.pending_amount)
+                                        : (details.bill?.pending_to_collect !== undefined
+                                            ? Number(details.bill?.pending_to_collect)
+                                            : (details.bill?.pending_amount !== undefined
+                                                ? Number(details.bill?.pending_amount)
+                                                : totalVenta)));
+                                retenciones = Number(details.withholdings_total || details.bill?.withholdings_total || 0);
+                                cobrado = totalVenta - pendingAmount;
+                            }
 
                             return (
-                                <>
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-slate-700">Total venta</label>
-                                        <div className="text-sm text-slate-600 h-[34px] flex items-center border-b border-slate-100">
-                                            {formatCurrency(totalVenta)}
+                                <div key={inv.uid} className="relative flex flex-col gap-4 p-4 pr-12 border border-slate-100 rounded-lg bg-slate-50/50">
+                                    {selectedInvoices.length > 1 && selectedType === '5' && (
+                                        <button type="button" onClick={() => removeInvoice(inv.uid)} className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded cursor-pointer transition-colors" title="Eliminar factura">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <div className={cn("grid gap-6", details ? "grid-cols-1 md:grid-cols-5" : "grid-cols-1 md:grid-cols-3")}>
+                                        <div className={cn("space-y-2", details ? "md:col-span-1" : "md:col-span-1")}>
+                                            <label className={cn("block text-sm font-medium", clientId ? "text-slate-700" : "text-slate-400")}>
+                                                Factura de venta asociada <span className={clientId ? "text-primary" : "text-primary/50"}>*</span>
+                                            </label>
+
+                                            {!clientId ? (
+                                                <div className={cn(baseInput, "w-full rounded-md opacity-50 cursor-not-allowed")} title="Selecciona un cliente primero">
+                                                    <span className="text-slate-400 text-sm">Buscar</span>
+                                                </div>
+                                            ) : (
+                                                <div onClick={() => { if (!selectedType) handleInvoiceSelectAttempt(); }}>
+                                                    <SearchableSelect
+                                                        value={inv.invoiceId}
+                                                        onValueChange={(v) => {
+                                                            if (!selectedType) {
+                                                                handleInvoiceSelectAttempt();
+                                                            }
+                                                            handleInvoiceChange(inv.uid, v);
+                                                            setErrors(prev => ({ ...prev, facturas: undefined }));
+                                                        }}
+                                                        options={invoiceOptions.filter(o => o.value === inv.invoiceId || !selectedInvoices.some(i => i.invoiceId === o.value))}
+                                                        placeholder={loadingInvoices ? "Cargando..." : "Buscar factura"}
+                                                        searchPlaceholder="Buscar..."
+                                                        emptyMessage={loadingInvoices ? "Cargando..." : "No hay facturas."}
+                                                        className={cn(baseInput, "w-full rounded-md", errors.facturas && "border-red-400")}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {details && selectedType && (
+                                            <>
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-slate-700">Total venta</label>
+                                                    <div className="text-sm text-slate-600 h-[34px] flex items-center border-b border-slate-200">{formatCurrency(totalVenta)}</div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-slate-700">Retenciones</label>
+                                                    <div className="text-sm text-slate-600 h-[34px] flex items-center border-b border-slate-200">{formatCurrency(retenciones)}</div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-slate-700">Cobrado</label>
+                                                    <div className="text-sm text-slate-600 h-[34px] flex items-center border-b border-slate-200">{formatCurrency(cobrado)}</div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-slate-700">Por cobrar</label>
+                                                    <div className="text-sm text-slate-600 h-[34px] flex items-center border-b border-slate-200">{formatCurrency(pendingAmount)}</div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-slate-700">Retenciones</label>
-                                        <div className="text-sm text-slate-600 h-[34px] flex items-center border-b border-slate-100">
-                                            {formatCurrency(retenciones)}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-slate-700">Cobrado</label>
-                                        <div className="text-sm text-slate-600 h-[34px] flex items-center border-b border-slate-100">
-                                            {formatCurrency(cobrado)}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-slate-700">Por cobrar</label>
-                                        <div className="text-sm text-slate-600 h-[34px] flex items-center border-b border-slate-100">
-                                            {formatCurrency(pendingAmount)}
-                                        </div>
-                                    </div>
-                                </>
+                                </div>
                             );
-                        })()}
+                        })}
+
+                        {errors.facturas && (
+                            <p className="flex items-center gap-1 text-xs text-red-500 mt-1">
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                {errors.facturas}
+                            </p>
+                        )}
+
+                        {selectedType === '5' && (
+                            <div className="flex">
+                                <button
+                                    type="button"
+                                    onClick={addInvoice}
+                                    className="flex items-center gap-1 text-sm font-medium text-primary hover:bg-slate-200 cursor-pointer rounded transition-colors py-2 px-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Agregar Factura
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Products Table */}
-                    {invoiceDetails && (() => {
-                        const lines = invoiceDetails.lines || invoiceDetails.items || [];
-                        let returnSubtotal = 0;
-                        const returnTaxesMap: Record<string, { amount: number, name: string, percent: string }> = {};
+                    {selectedInvoices.some(i => i.invoiceId) && selectedType && (
+                        <div className="mb-8 overflow-x-auto relative border-b border-gray-200">
+                            <Table className="[&_td]:border-b-0">
+                                <TableHeader>
+                                    <TableRow className="bg-gray-50/50">
+                                        <TableHead className="font-bold uppercase text-xs text-slate-900 border-l border-gray-200">ITEM</TableHead>
 
-                        // If it's type 5 "Otros", we iterate over customLines, else lines
-                        const iterableLines = selectedType === '5' ? customLines : lines;
+                                        {(selectedType === '1' || selectedType === '2') && (
+                                            <>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Cant. original</TableHead>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Cant. devuelta</TableHead>
+                                            </>
+                                        )}
+                                        {['3', '6', '7'].includes(selectedType) && (
+                                            <>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Cant. original</TableHead>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Subtotal unit.</TableHead>
+                                            </>
+                                        )}
+                                        {selectedType === '4' && (
+                                            <>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Cant. original</TableHead>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Precio original</TableHead>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Precio nuevo</TableHead>
+                                            </>
+                                        )}
+                                        {selectedType === '5' && (
+                                            <>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Cantidad</TableHead>
+                                                <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Precio</TableHead>
+                                            </>
+                                        )}
 
-                        iterableLines.forEach((item: any, idx: number) => {
-                            let itemSubtotal = 0;
-                            let taxBase = 0;
-                            let itemTaxes = item.taxes || [];
+                                        <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Descuento</TableHead>
+                                        <TableHead className="font-bold uppercase text-xs text-slate-900 text-center">Impuesto</TableHead>
 
-                            if (selectedType === '5') {
-                                // Otros
-                                const qty = Number(item.quantity) || 0;
-                                const price = Number(item.price) || 0;
-                                const discountVal = Number(item.discount?.value) || 0;
-                                const baseAmount = qty * price;
-                                const discountAmount = item.discount?.type === '%' ? (baseAmount * discountVal) / 100 : discountVal;
-                                itemSubtotal = baseAmount - discountAmount;
-                                taxBase = itemSubtotal;
-                            } else {
-                                const price = Number(item.price_amount || item.price || 0);
-                                const maxQty = Number(item.quantity || 0);
-                                const soldSubtotal = maxQty * price;
+                                        <TableHead className="font-bold uppercase text-xs text-slate-900 text-right border-r border-gray-200">
+                                            {selectedType === '5' ? 'Subtotal' : 'Monto devuelto'}
+                                        </TableHead>
+                                        {selectedType === '5' && <TableHead></TableHead>}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {addedLines.map((line) => {
+                                        let itemSubtotal = 0;
+                                        let taxBase = 0;
+                                        let discountAmount = 0;
+                                        let displayTotal = 0;
+                                        const soldSubtotal = line.maxQuantity * line.price;
 
-                                if (selectedType === '1' || selectedType === '2') {
-                                    const qty = Number(returnedQuantities[idx]) || 0;
-                                    itemSubtotal = qty * price;
-                                    taxBase = itemSubtotal;
-                                } else if (selectedType === '3' || selectedType === '6' || selectedType === '7') {
-                                    const disc = lineDiscounts[idx] || { type: '%', value: '0' };
-                                    const discVal = Number(disc.value) || 0;
-                                    const discountAmount = disc.type === '%' ? (soldSubtotal * discVal) / 100 : discVal;
-                                    itemSubtotal = discountAmount; // The discount is the amount returned
-                                    taxBase = itemSubtotal;
-                                } else if (selectedType === '4') {
-                                    const newPriceStr = newPrices[idx];
-                                    if (newPriceStr) {
-                                        const newP = Number(newPriceStr);
-                                        itemSubtotal = (price - newP) * maxQty;
-                                        if (itemSubtotal < 0) itemSubtotal = 0; // Just in case new price > old price? Usually returns positive diff
-                                        taxBase = itemSubtotal;
-                                    } else {
-                                        itemSubtotal = 0;
-                                        taxBase = 0;
-                                    }
-                                }
-                            }
-                            returnSubtotal += itemSubtotal;
+                                        if (selectedType === '1' || selectedType === '2') {
+                                            const qty = Number(line.quantity) || 0;
+                                            const grossSubtotal = qty * line.price;
+                                            if (line.discounts && line.discounts.length > 0) {
+                                                const originalDiscount = line.discounts.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0);
+                                                discountAmount = line.maxQuantity > 0 ? (originalDiscount / line.maxQuantity) * qty : 0;
+                                            }
+                                            taxBase = grossSubtotal - discountAmount;
+                                            itemSubtotal = grossSubtotal;
+                                        } else if (['3', '6', '7'].includes(selectedType)) {
+                                            const discVal = Number(line.discount.value) || 0;
+                                            discountAmount = line.discount.type === '%' ? (soldSubtotal * discVal) / 100 : discVal;
+                                            itemSubtotal = discountAmount;
+                                            taxBase = itemSubtotal;
+                                            discountAmount = 0;
+                                        } else if (selectedType === '4') {
+                                            const newP = Number(line.newPrice || 0);
+                                            itemSubtotal = (line.price - newP) * line.maxQuantity;
+                                            if (itemSubtotal < 0) itemSubtotal = 0;
+                                            taxBase = itemSubtotal;
+                                        } else if (selectedType === '5') {
+                                            const qty = Number(line.quantity) || 0;
+                                            const baseAmount = qty * line.price;
+                                            const discVal = Number(line.discount.value) || 0;
+                                            discountAmount = line.discount.type === '%' ? (baseAmount * discVal) / 100 : discVal;
+                                            itemSubtotal = baseAmount - discountAmount;
+                                            taxBase = itemSubtotal;
+                                        }
 
-                            if (itemTaxes.length > 0) {
-                                itemTaxes.forEach((t: any) => {
-                                    const percent = Number(t.percent || t.rate || 0);
-                                    const taxAmount = (taxBase * percent) / 100;
-                                    const key = `${t.name}-${percent}`;
-                                    if (!returnTaxesMap[key]) {
-                                        returnTaxesMap[key] = { amount: 0, name: t.name, percent: percent.toFixed(2) };
-                                    }
-                                    returnTaxesMap[key].amount += taxAmount;
-                                });
-                            }
-                        });
+                                        let taxesAmount = 0;
+                                        if (line.taxes && line.taxes.length > 0) {
+                                            line.taxes.forEach((t: any) => {
+                                                taxesAmount += (taxBase * Number(t.percent || t.rate || 0)) / 100;
+                                            });
+                                        }
+                                        displayTotal = taxBase + taxesAmount;
 
-                        const returnTotal = returnSubtotal + Object.values(returnTaxesMap).reduce((sum, t) => sum + t.amount, 0);
+                                        // Discount display calculation for read-only mode
+                                        let discountPercentDisplay = 0;
+                                        if (discountAmount > 0) {
+                                            const qty = Number(line.quantity) || 1;
+                                            const grossSubtotal = qty * line.price;
+                                            if (line.discounts && line.discounts.length > 0 && line.discounts[0].percent) {
+                                                discountPercentDisplay = Number(line.discounts[0].percent);
+                                            } else if (grossSubtotal > 0) {
+                                                discountPercentDisplay = (discountAmount / grossSubtotal) * 100;
+                                            }
+                                        }
 
-                        // --- RENDER HELPERS ---
-                        const renderTableHeaders = () => {
-                            if (selectedType === '1') {
-                                return (
-                                    <tr>
-                                        <th className="px-4 py-3 whitespace-nowrap">Productos</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Cantidad vendida</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap w-32">Cantidad devuelta</th>
-                                        <th className="px-4 py-3 text-right whitespace-nowrap">Precio</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Descuento</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Impuesto</th>
-                                        <th className="px-4 py-3 text-right whitespace-nowrap">Monto devuelto</th>
-                                    </tr>
-                                )
-                            }
-                            if (selectedType === '2') {
-                                return (
-                                    <tr>
-                                        <th className="px-4 py-3 whitespace-nowrap">Productos</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Subtotal</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Descuento</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Impuesto</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Cantidad</th>
-                                        <th className="px-4 py-3 text-right whitespace-nowrap">Monto devuelto</th>
-                                    </tr>
-                                )
-                            }
-                            if (['3', '6', '7'].includes(selectedType)) {
-                                return (
-                                    <tr>
-                                        <th className="px-4 py-3 whitespace-nowrap">Productos</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Subtotal unitario</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Cantidad</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Impuesto</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap w-48">Descuento</th>
-                                        <th className="px-4 py-3 text-right whitespace-nowrap">Monto devuelto</th>
-                                    </tr>
-                                )
-                            }
-                            if (selectedType === '4') {
-                                return (
-                                    <tr>
-                                        <th className="px-4 py-3 whitespace-nowrap">Productos</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Cantidad</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Precio original</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap w-40">Precio nuevo</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Impuesto</th>
-                                        <th className="px-4 py-3 text-right whitespace-nowrap">Monto devuelto</th>
-                                    </tr>
-                                )
-                            }
-                            if (selectedType === '5') {
-                                return (
-                                    <tr>
-                                        <th className="px-4 py-3 whitespace-nowrap w-8"></th>
-                                        <th className="px-4 py-3 whitespace-nowrap">Productos</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap w-32">Cantidad</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap w-40">Precio</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap w-48">Descuento</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Impuesto</th>
-                                        <th className="px-4 py-3 text-right whitespace-nowrap">Subtotal</th>
-                                    </tr>
-                                )
-                            }
-                            return null;
-                        };
+                                        const productOptions = availableProducts
+                                            .filter(p => !addedLines.some(l =>
+                                                l.uid !== line.uid &&
+                                                l.invoiceId === p._invoiceId &&
+                                                l.productId === (p.item_id || p.product_id)
+                                            ))
+                                            .map(p => ({
+                                                value: `${p._invoiceId}___${p._lineId}`,
+                                                label: `${p._invoiceNumber} - ${p.item_snapshot?.name || p.item?.name || p.name || p.description || 'Producto'}`
+                                            }));
 
-                        const renderTableRow = (item: any, idx: number) => {
-                            if (selectedType === '5') {
-                                // OTROS
-                                const qty = Number(item.quantity) || 0;
-                                const price = Number(item.price) || 0;
-                                const discVal = Number(item.discount?.value) || 0;
-                                const baseAmount = qty * price;
-                                const discountAmount = item.discount?.type === '%' ? (baseAmount * discVal) / 100 : discVal;
-                                const itemSubtotal = baseAmount - discountAmount;
-
-                                return (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-4 text-center">
-                                            <button type="button" onClick={() => setCustomLines(customLines.filter(l => l.id !== item.id))} className="text-slate-400 hover:text-red-500">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                            </button>
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <input type="text" value={item.name || ''} onChange={(e) => {
-                                                const newL = [...customLines];
-                                                newL[idx].name = e.target.value;
-                                                setCustomLines(newL);
-                                            }} className="w-full h-[34px] px-3 border rounded-md outline-none focus:border-primary" placeholder="Producto" />
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <input type="text" inputMode="numeric" value={item.quantity || ''} onChange={(e) => {
-                                                const newL = [...customLines];
-                                                newL[idx].quantity = e.target.value.replace(/[^0-9]/g, '');
-                                                setCustomLines(newL);
-                                            }} className="w-full h-[34px] px-3 text-center border rounded-md outline-none focus:border-primary" />
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <input type="text" inputMode="numeric" value={item.price || ''} onChange={(e) => {
-                                                const newL = [...customLines];
-                                                newL[idx].price = e.target.value.replace(/[^0-9]/g, '');
-                                                setCustomLines(newL);
-                                            }} className="w-full h-[34px] px-3 text-right border rounded-md outline-none focus:border-primary" />
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex border rounded-md h-[34px] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40">
-                                                <button type="button" onClick={() => {
-                                                    const newL = [...customLines];
-                                                    newL[idx].discount.type = newL[idx].discount.type === '%' ? '$' : '%';
-                                                    setCustomLines(newL);
-                                                }} className="px-2 border-r bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-medium w-8 text-center">{item.discount?.type}</button>
-                                                <input type="text" inputMode="numeric" value={item.discount?.value || ''} onChange={(e) => {
-                                                    const val = e.target.value.replace(/[^0-9]/g, '');
-                                                    const newL = [...customLines];
-                                                    newL[idx].discount.value = val;
-                                                    setCustomLines(newL);
-                                                }} className="flex-1 w-full px-2 outline-none text-right" placeholder="0" />
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 text-center text-slate-500 text-xs">
-                                            {/* Simplified taxes select - in a real app this would be a full dropdown */}
-                                            <Select value={item.taxes?.[0]?.percent?.toString() || '0'} onValueChange={(val) => {
-                                                const newL = [...customLines];
-                                                const rate = Number(val);
-                                                newL[idx].taxes = rate > 0 ? [{ name: 'IVA', percent: rate, rate: rate }] : [];
-                                                setCustomLines(newL);
-                                            }}>
-                                                <SelectTrigger className="w-full h-[34px] text-xs">
-                                                    <SelectValue placeholder="Impuesto" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="0" className="cursor-pointer text-xs">Sin impuestos</SelectItem>
-                                                    <SelectItem value="19" className="cursor-pointer text-xs">IVA (19.00%)</SelectItem>
-                                                    <SelectItem value="5" className="cursor-pointer text-xs">IVA (5.00%)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </td>
-                                        <td className="px-4 py-4 text-right text-slate-600 font-medium">{formatCurrency(itemSubtotal)}</td>
-                                    </tr>
-                                );
-                            }
-
-                            // Types 1-4 logic
-                            const productName = item.item_snapshot?.name || item.item?.name || item.name || item.description || "Producto";
-                            const maxQty = Number(item.quantity || 0);
-                            const price = Number(item.price_amount || item.price || 0);
-                            const soldSubtotal = maxQty * price;
-                            const taxStr = item.taxes?.length > 0
-                                ? item.taxes.map((t: any) => `${t.name} (${Number(t.percent || t.rate || 0).toFixed(2)}%)`).join(', ')
-                                : 'Sin impuestos';
-                            const origDiscount = item.discount_amount ? formatCurrency(item.discount_amount) : (item.discount || '0%');
-
-                            if (selectedType === '1') {
-                                // DEVOLUCIÓN PARCIAL
-                                const qtyDevueltaNum = Number(returnedQuantities[idx]) || 0;
-                                const isOver = qtyDevueltaNum > maxQty;
-                                const itemSubtotal = qtyDevueltaNum * price;
-                                return (
-                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-4 text-slate-600">{productName}</td>
-                                        <td className="px-4 py-4 text-center text-primary font-medium">{maxQty}</td>
-                                        <td className="px-4 py-4 text-center">
-                                            <div className="relative inline-block w-full">
-                                                <input
-                                                    type="text" inputMode="numeric"
-                                                    value={returnedQuantities[idx] || ''}
-                                                    onChange={(e) => setReturnedQuantities(prev => ({ ...prev, [idx]: e.target.value.replace(/[^0-9]/g, '') }))}
-                                                    className={cn("w-full h-[34px] px-3 text-center border rounded-md outline-none transition-colors",
-                                                        isOver ? "border-red-400 text-red-600 focus:border-red-500" : "border-slate-200 focus:border-primary"
+                                        return (
+                                            <tr key={line.uid} className="hover:bg-slate-50/50 transition-colors border-0 border-b-0">
+                                                <td className="px-4 py-4">
+                                                    {selectedType === '5' ? (
+                                                        <SearchableSelect
+                                                            value={line.invoiceId && line.productId ? `${line.invoiceId}___${availableProducts.find(p => p._invoiceId === line.invoiceId && (p.item_id || p.product_id) === line.productId)?._lineId}` : ''}
+                                                            onValueChange={(val) => handleLineProductChange(line.uid, val)}
+                                                            options={productOptions}
+                                                            placeholder="Seleccionar producto"
+                                                            emptyMessage="No hay productos disponibles"
+                                                            className={cn(baseInput, "w-full rounded-md", !line.productId && "border-red-400")}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full text-sm text-slate-700 truncate px-2" title={line.name}>
+                                                            {line.name}
+                                                        </div>
                                                     )}
-                                                />
-                                                {isOver && <AlertCircle className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />}
-                                            </div>
-                                            {isOver && <p className="text-[10px] text-red-500 text-left mt-1 leading-tight">Supera la cantidad<br />vendida</p>}
-                                        </td>
-                                        <td className="px-4 py-4 text-right text-slate-600">{formatCurrency(price)}</td>
-                                        <td className="px-4 py-4 text-center text-slate-600">{origDiscount}</td>
-                                        <td className="px-4 py-4 text-center text-slate-500 text-xs">{taxStr}</td>
-                                        <td className="px-4 py-4 text-right text-slate-600 font-medium">{formatCurrency(itemSubtotal)}</td>
-                                    </tr>
-                                );
-                            }
+                                                </td>
 
-                            if (selectedType === '2') {
-                                // ANULACIÓN DE FACTURA
-                                const itemSubtotal = maxQty * price;
-                                return (
-                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-4 text-slate-600">{productName}</td>
-                                        <td className="px-4 py-4 text-center text-slate-600">{formatCurrency(soldSubtotal)}</td>
-                                        <td className="px-4 py-4 text-center text-slate-600">{origDiscount}</td>
-                                        <td className="px-4 py-4 text-center text-slate-500 text-xs">{taxStr}</td>
-                                        <td className="px-4 py-4 text-center text-primary font-medium">{maxQty}</td>
-                                        <td className="px-4 py-4 text-right text-slate-600 font-medium">{formatCurrency(itemSubtotal)}</td>
-                                    </tr>
-                                );
-                            }
+                                                {/* Variables columns depending on type */}
+                                                {selectedType === '1' && (
+                                                    <>
+                                                        <td className="px-4 py-4 text-center text-slate-500">{line.maxQuantity}</td>
+                                                        <td className="px-4 py-4 text-center">
+                                                            <input type="text" inputMode="numeric" value={line.quantity} onChange={(e) => {
+                                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                if (Number(val) > line.maxQuantity) {
+                                                                    showToast('No puedes aplicar devolución a cantidades mayores a las facturadas.', 'error', 'Error');
+                                                                    return;
+                                                                }
+                                                                setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, quantity: val } : l));
+                                                            }} className={cn("w-full h-[34px] px-3 text-center border rounded-md outline-none focus:border-primary", (Number(line.quantity) > line.maxQuantity) && "border-red-500 text-red-500")} />
+                                                        </td>
+                                                    </>
+                                                )}
+                                                {selectedType === '2' && (
+                                                    <>
+                                                        <td className="px-4 py-4 text-center text-slate-500">{line.maxQuantity}</td>
+                                                        <td className="px-4 py-4 text-center text-slate-600 font-medium">{line.maxQuantity}</td>
+                                                    </>
+                                                )}
+                                                {['3', '6', '7'].includes(selectedType) && (
+                                                    <>
+                                                        <td className="px-4 py-4 text-center text-slate-500">{line.maxQuantity}</td>
+                                                        <td className="px-4 py-4 text-center text-slate-500">{formatCurrency(line.price)}</td>
+                                                    </>
+                                                )}
+                                                {selectedType === '4' && (
+                                                    <>
+                                                        <td className="px-4 py-4 text-center text-slate-500">{line.maxQuantity}</td>
+                                                        <td className="px-4 py-4 text-center text-slate-500">{formatCurrency(line.price)}</td>
+                                                        <td className="px-4 py-4 text-center">
+                                                            <input type="text" inputMode="numeric" value={line.newPrice || ''} onChange={(e) => {
+                                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, newPrice: val } : l));
+                                                            }} className="w-full h-[34px] px-3 text-right border rounded-md outline-none focus:border-primary" />
+                                                        </td>
+                                                    </>
+                                                )}
+                                                {selectedType === '5' && (
+                                                    <>
+                                                        <td className="px-4 py-4 text-center">
+                                                            <input type="text" inputMode="numeric" value={line.quantity} onChange={(e) => {
+                                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                if (line.maxQuantity > 0 && Number(val) > line.maxQuantity) {
+                                                                    showToast('No puedes aplicar devolución a cantidades mayores a las facturadas.', 'error', 'Error');
+                                                                    return;
+                                                                }
+                                                                setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, quantity: val } : l));
+                                                            }} className={cn("w-full h-[34px] px-3 text-center border rounded-md outline-none focus:border-primary", (line.maxQuantity > 0 && Number(line.quantity) > line.maxQuantity) && "border-red-500 text-red-500")} />
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center">
+                                                            <input type="text" inputMode="numeric" value={line.price || ''} onChange={(e) => {
+                                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, price: Number(val) } : l));
+                                                            }} className="w-full h-[34px] px-3 text-right border rounded-md outline-none focus:border-primary" />
+                                                        </td>
+                                                    </>
+                                                )}
 
-                            if (['3', '6', '7'].includes(selectedType)) {
-                                // DESCUENTOS
-                                const disc = lineDiscounts[idx] || { type: '%', value: '0' };
-                                const discVal = Number(disc.value) || 0;
-                                const discountAmount = disc.type === '%' ? (soldSubtotal * discVal) / 100 : discVal;
+                                                <td className="px-4 py-4">
+                                                    {['1', '2'].includes(selectedType) ? (
+                                                        <div className="flex justify-center text-slate-600">
+                                                            {discountAmount > 0 ? (
+                                                                <div className="flex items-center gap-1 whitespace-nowrap">
+                                                                    <span>{discountPercentDisplay % 1 !== 0 ? discountPercentDisplay.toFixed(2) : discountPercentDisplay}%</span>
+                                                                    <span className="text-slate-500 text-xs">({formatCurrency(discountAmount)})</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-slate-400">-</span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex border rounded-md h-[34px] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40">
+                                                            <button type="button" disabled={selectedType === '2'} onClick={() => {
+                                                                setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, discount: { ...l.discount, type: l.discount.type === '%' ? '$' : '%' } } : l));
+                                                            }} className="px-2 border-r bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-medium w-8 text-center">{line.discount.type}</button>
+                                                            <input type="text" inputMode="numeric" value={line.discount.value} disabled={selectedType === '2'} onChange={(e) => {
+                                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, discount: { ...l.discount, value: val } } : l));
+                                                            }} className="flex-1 w-full px-2 outline-none text-right" placeholder="0" />
+                                                        </div>
+                                                    )}
+                                                </td>
 
-                                return (
-                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-4 text-slate-600">{productName}</td>
-                                        <td className="px-4 py-4 text-center text-slate-600">{formatCurrency(soldSubtotal)}</td>
-                                        <td className="px-4 py-4 text-center text-primary font-medium">{maxQty}</td>
-                                        <td className="px-4 py-4 text-center text-slate-500 text-xs">{taxStr}</td>
-                                        <td className="px-4 py-4 text-center">
-                                            <div className="flex border rounded-md h-[34px] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40 max-w-[140px] mx-auto">
+                                                {/* Impuesto */}
+                                                <td className="px-4 py-4 text-center">
+                                                    {line.productId && (taxesAmount > 0 || (line.taxes && line.taxes.length > 0)) ? (
+                                                        <div className="flex items-center justify-center gap-1 whitespace-nowrap text-slate-600">
+                                                            {line.taxes && line.taxes.length > 0 ? line.taxes.map((t: any, i: number) => (
+                                                                <span key={i}>{t.name} {Number(t.percent || t.rate || 0)}%</span>
+                                                            )) : <span>IVA 0%</span>}
+                                                            <span className="text-slate-500 text-xs">({formatCurrency(taxesAmount)})</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-slate-400">-</span>
+                                                    )}
+                                                </td>
+
+                                                <td className="px-4 py-4 text-right text-slate-600 font-medium">
+                                                    {formatCurrency(displayTotal)}
+                                                </td>
+                                                {selectedType === '5' && (
+                                                    <td className="px-4 py-4 text-center">
+                                                        {addedLines.length > 1 && (
+                                                            <button type="button" onClick={() => removeLine(line.uid)} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded cursor-pointer transition-colors" title="Eliminar línea">
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                            {selectedType === '5' && (
+                                <div className="mt-4 px-4">
+                                    <button
+                                        type="button"
+                                        onClick={addLine}
+                                        className="flex items-center gap-1 text-sm font-medium text-primary hover:bg-slate-200 cursor-pointer rounded transition-colors py-2 px-2"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Agregar línea
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Resumen & Totales */}
+                    {selectedInvoices.some(i => i.invoiceId) && addedLines.length > 0 && (
+                        <div className="flex justify-between items-start pt-6 border-t border-slate-100">
+                            <div className="w-1/2 space-y-6">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-slate-700">Razón / Motivo <span className="text-primary">*</span></label>
+                                    <textarea
+                                        value={reason}
+                                        onChange={(e) => setReason(e.target.value)}
+                                        placeholder="Describe el motivo de la nota crédito..."
+                                        className="w-full h-24 p-3 text-sm border border-slate-200 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none resize-none transition-colors"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-slate-700">Notas adicionales (Opcional)</label>
+                                    <textarea
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder="Información visible en la impresión del documento."
+                                        className="w-full h-24 p-3 text-sm border border-slate-200 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none resize-none transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="w-[350px] space-y-4">
+                                {(globalDiscounts.length > 0 || globalSurcharges.length > 0) && (
+                                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                        <h3 className="text-sm font-bold text-slate-800 mb-4 pb-3 border-b border-slate-200/60 uppercase tracking-wide">
+                                            {['3', '6', '7'].includes(selectedType) ? 'Ajustes Globales Facturados' : 'Ajustes Globales'}
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {globalSurcharges.map((s, idx) => (
+                                                <div key={idx} className="space-y-1">
+                                                    <div className="flex justify-between text-xs text-slate-500 uppercase tracking-wide">
+                                                        <span>Cargos</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-slate-600">Motivo: {s.reason || s.description || 'Propina'} <br /><span className="text-xs text-slate-400">Tipo: {(s.charge_type === 'percentage' || s.percentage_value || s.percent) ? `Porcentual (${Number(s.percentage_value || s.percent)}%)` : (s.type || 'Fijo')}</span></span>
+                                                        {!['2', '3', '6', '7'].includes(selectedType) ? (
+                                                            <div className="flex items-center">
+                                                                <span className="mr-1 text-slate-500">$</span>
+                                                                <input type="text" inputMode="numeric" value={s.calculated_amount || s.amount || s.value || 0} onChange={(e) => {
+                                                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                    setGlobalSurcharges(prev => prev.map((item, i) => i === idx ? { ...item, amount: val, value: val, calculated_amount: val } : item));
+                                                                }} className="w-24 h-[28px] px-2 text-right border rounded-md outline-none focus:border-primary text-sm" />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="font-medium text-slate-700">{formatCurrency(s.calculated_amount || s.amount || s.value || 0)}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {globalDiscounts.map((d, idx) => (
+                                                <div key={idx} className="space-y-1">
+                                                    <div className="flex justify-between text-xs text-slate-500 uppercase tracking-wide">
+                                                        <span>Descuentos</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-slate-600">Motivo: {d.reason || d.description || 'Descuento global'} <br /><span className="text-xs text-slate-400">Tipo: {(d.percent || d.percentage) ? `Porcentual (${Number(d.percent || d.percentage)}%)` : (d.type || 'Fijo')}</span></span>
+                                                        {!['2', '3', '6', '7'].includes(selectedType) ? (
+                                                            <div className="flex items-center">
+                                                                <span className="mr-1 text-red-500">-$</span>
+                                                                <input type="text" inputMode="numeric" value={d.calculated_amount || d.amount || d.value || 0} disabled={selectedType === '2'} onChange={(e) => {
+                                                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                    setGlobalDiscounts(prev => prev.map((item, i) => i === idx ? { ...item, amount: val, value: val, calculated_amount: val } : item));
+                                                                }} className="w-24 h-[28px] px-2 text-right border rounded-md outline-none focus:border-primary text-sm text-red-500" />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="font-medium text-red-500">-{formatCurrency(d.calculated_amount || d.amount || d.value || 0)}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedType === '3' && (
+                                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                        <h3 className="text-sm font-bold text-slate-800 mb-4 pb-3 border-b border-slate-200/60 uppercase tracking-wide">Nuevos Descuentos Globales</h3>
+                                        <div className="space-y-4">
+                                            {newGlobalDiscounts.map((d, idx) => (
+                                                <div key={idx} className="flex justify-between items-start text-sm">
+                                                    <div>
+                                                        <span className="text-slate-600 font-medium">{d.reason}</span><br />
+                                                        <span className="text-xs text-slate-400">Tipo: {d.type === '%' ? 'Porcentual' : 'Fijo'}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium text-red-500">
+                                                            -{d.type === '%' ? d.value + '%' : formatCurrency(d.value)}
+                                                        </span>
+                                                        <button type="button" onClick={() => setNewGlobalDiscounts(prev => prev.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 transition-colors p-1" title="Eliminar">
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            <div className="pt-2 border-t border-slate-200/50 flex flex-col gap-2">
+                                                <input type="text" value={newDiscountReason} onChange={e => setNewDiscountReason(e.target.value)} placeholder="Motivo" className="w-full text-sm h-8 px-2 border rounded-md outline-none focus:border-primary" />
+                                                <div className="flex gap-2">
+                                                    <select value={newDiscountType} onChange={e => setNewDiscountType(e.target.value as '%' | '$')} className="text-sm border rounded-md outline-none focus:border-primary w-24 px-1">
+                                                        <option value="%">%</option>
+                                                        <option value="$">$</option>
+                                                    </select>
+                                                    <input type="text" inputMode="numeric" value={newDiscountValue} onChange={e => setNewDiscountValue(e.target.value.replace(/[^0-9]/g, ''))} placeholder="Valor" className="w-full text-sm h-8 px-2 border rounded-md outline-none focus:border-primary" />
+                                                </div>
                                                 <button type="button" onClick={() => {
-                                                    setLineDiscounts(prev => ({
-                                                        ...prev,
-                                                        [idx]: { ...prev[idx], type: prev[idx]?.type === '%' ? '$' : '%' }
-                                                    }));
-                                                }} className="px-2 border-r bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-medium w-8 text-center">{disc.type}</button>
-                                                <input type="text" inputMode="numeric" value={disc.value} onChange={(e) => {
-                                                    const val = e.target.value.replace(/[^0-9]/g, '');
-                                                    setLineDiscounts(prev => ({ ...prev, [idx]: { ...prev[idx], value: val } }));
-                                                }} className="flex-1 w-full px-2 outline-none text-right" placeholder="0" />
+                                                    if (!newDiscountReason || !newDiscountValue) return;
+                                                    setNewGlobalDiscounts(prev => [...prev, {
+                                                        reason: newDiscountReason,
+                                                        type: newDiscountType,
+                                                        value: newDiscountValue
+                                                    }]);
+                                                    setNewDiscountReason('');
+                                                    setNewDiscountValue('');
+                                                }} className="text-xs w-full py-1.5 mt-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md font-medium transition-colors cursor-pointer">
+                                                    Agregar
+                                                </button>
                                             </div>
-                                        </td>
-                                        <td className="px-4 py-4 text-right text-slate-600 font-medium">{formatCurrency(discountAmount)}</td>
-                                    </tr>
-                                );
-                            }
+                                        </div>
+                                    </div>
+                                )}
 
-                            if (selectedType === '4') {
-                                // AJUSTE DE PRECIO
-                                const newPriceStr = newPrices[idx];
-                                const isMissing = !newPriceStr;
-                                const diff = newPriceStr ? (price - Number(newPriceStr)) * maxQty : 0;
-                                const montoDevuelto = diff > 0 ? diff : 0;
-
-                                return (
-                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-4 text-slate-600">{productName}</td>
-                                        <td className="px-4 py-4 text-center text-primary font-medium">{maxQty}</td>
-                                        <td className="px-4 py-4 text-center text-slate-600">{formatCurrency(price)}</td>
-                                        <td className="px-4 py-4 text-center">
-                                            <div className="relative inline-block w-full max-w-[120px]">
-                                                <div className={cn("flex border rounded-md h-[34px] focus-within:border-primary transition-colors overflow-hidden", isMissing ? "border-red-400" : "border-slate-200")}>
-                                                    <span className="flex items-center px-2 bg-slate-50 border-r text-slate-500 text-xs">$</span>
-                                                    <input type="text" inputMode="numeric" value={newPriceStr || ''} onChange={(e) => {
-                                                        const val = e.target.value.replace(/[^0-9]/g, '');
-                                                        setNewPrices(prev => ({ ...prev, [idx]: val }));
-                                                    }} className={cn("flex-1 w-full px-2 outline-none text-right", isMissing && "text-red-600")} />
-                                                </div>
-                                                {isMissing && <AlertCircle className="absolute -right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />}
-                                            </div>
-                                            {isMissing && <p className="text-[10px] text-red-500 text-left mt-1 leading-tight max-w-[120px] mx-auto">Pendiente de diligenciar</p>}
-                                        </td>
-                                        <td className="px-4 py-4 text-center text-slate-500 text-xs">{taxStr}</td>
-                                        <td className="px-4 py-4 text-right text-slate-600 font-medium">{formatCurrency(montoDevuelto)}</td>
-                                    </tr>
-                                );
-                            }
-
-                            return null;
-                        };
-
-                        return (
-                            <>
-                                {['3', '6', '7'].includes(selectedType) && (
-                                    <div className="flex justify-end mb-3 mt-4 relative">
-                                        <button type="button" onClick={() => setGlobalDiscountPopoverOpen(!globalDiscountPopoverOpen)} className="px-4 py-1.5 text-sm font-medium border border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors">
-                                            Aplicar descuento a todo
-                                        </button>
-                                        {globalDiscountPopoverOpen && (
-                                            <div className="absolute top-full right-0 mt-2 p-4 bg-white border border-slate-200 rounded-xl shadow-xl z-10 w-72">
-                                                <h4 className="text-sm font-semibold text-slate-800 mb-1">Indica el descuento total de la venta</h4>
-                                                <p className="text-xs text-slate-500 mb-4">El valor se divide entre todos los productos</p>
-                                                <div className="flex border rounded-md h-[34px] focus-within:border-primary mb-3">
-                                                    <button type="button" onClick={() => {
-                                                        setGlobalDiscount(prev => ({ ...prev, type: prev.type === '%' ? '$' : '%' }));
-                                                    }} className="px-3 border-r bg-slate-50 text-slate-600 hover:bg-slate-100 text-sm font-medium w-10 text-center">{globalDiscount.type}</button>
-                                                    <input type="text" inputMode="numeric" value={globalDiscount.value} onChange={(e) => {
-                                                        const val = e.target.value.replace(/[^0-9]/g, '');
-                                                        setGlobalDiscount(prev => ({ ...prev, value: val }));
-                                                    }} className="flex-1 w-full px-3 outline-none text-right" placeholder="0" />
-                                                </div>
-                                                <div className="flex justify-end">
-                                                    <button type="button" onClick={() => {
-                                                        // Apply to all
-                                                        const gVal = Number(globalDiscount.value) || 0;
-                                                        const newDiscounts = { ...lineDiscounts };
-                                                        if (globalDiscount.type === '%') {
-                                                            lines.forEach((_: any, idx: number) => {
-                                                                newDiscounts[idx] = { type: '%', value: gVal.toString() };
-                                                            });
-                                                        } else {
-                                                            // Divide $ among all proportional to soldSubtotal
-                                                            const totalSold = lines.reduce((sum: number, item: any) => sum + (Number(item.quantity || 0) * Number(item.price_amount || item.price || 0)), 0);
-                                                            if (totalSold > 0) {
-                                                                lines.forEach((item: any, idx: number) => {
-                                                                    const soldSub = Number(item.quantity || 0) * Number(item.price_amount || item.price || 0);
-                                                                    const share = (soldSub / totalSold) * gVal;
-                                                                    newDiscounts[idx] = { type: '$', value: Math.round(share).toString() };
-                                                                });
-                                                            }
-                                                        }
-                                                        setLineDiscounts(newDiscounts);
-                                                        setGlobalDiscountPopoverOpen(false);
-                                                    }} className="px-4 py-1.5 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">
-                                                        Aplicar
-                                                    </button>
-                                                </div>
+                                <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                    <h3 className="text-sm font-bold text-slate-800 mb-4 pb-3 border-b border-slate-200/60 uppercase tracking-wide">Totales de la devolución</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500">Subtotal</span>
+                                            <span className="font-medium text-slate-700">{formatCurrency(returnSubtotal)}</span>
+                                        </div>
+                                        {lineDiscountsTotal > 0 && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Descuentos en línea</span>
+                                                <span className="font-medium text-red-500">-{formatCurrency(lineDiscountsTotal)}</span>
                                             </div>
                                         )}
-                                    </div>
-                                )}
-
-                                {selectedType === '5' && (
-                                    <div className="flex gap-4 mb-3 mt-4">
-                                        <button type="button" onClick={() => {
-                                            setCustomLines([...customLines, { id: Date.now().toString(), productId: '', quantity: '1', price: '0', discount: { type: '%', value: '0' }, taxes: [] }]);
-                                        }} className="text-primary text-sm font-medium hover:text-primary/80 flex items-center gap-1">
-                                            + Agregar línea
-                                        </button>
-                                    </div>
-                                )}
-
-                                <div className="mt-2 border border-slate-100 rounded-lg overflow-hidden">
-                                    <div className="overflow-x-auto min-h-[150px]">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="bg-slate-100 text-slate-700 font-normal border-b border-slate-200">
-                                                {renderTableHeaders()}
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {iterableLines.map((item: any, idx: number) => renderTableRow(item, idx))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    {/* Totales */}
-                                    <div className="p-6 bg-white flex flex-col items-end gap-3 border-t border-slate-100">
-                                        <div className="flex justify-between w-64 text-sm text-slate-500">
-                                            <span>Subtotal</span>
-                                            <span>{formatCurrency(returnSubtotal)}</span>
-                                        </div>
+                                        {globalSurchargesTotal > 0 && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Cargos Globales</span>
+                                                <span className="font-medium text-slate-700">{formatCurrency(globalSurchargesTotal)}</span>
+                                            </div>
+                                        )}
+                                        {globalDiscountsTotal > 0 && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Descuentos Globales</span>
+                                                <span className="font-medium text-red-500">-{formatCurrency(globalDiscountsTotal)}</span>
+                                            </div>
+                                        )}
+                                        {newGlobalDiscountsTotal > 0 && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Nuevos Descuentos Globales</span>
+                                                <span className="font-medium text-slate-700">{formatCurrency(newGlobalDiscountsTotal)}</span>
+                                            </div>
+                                        )}
                                         {Object.values(returnTaxesMap).map((tax, idx) => (
-                                            <div key={idx} className="flex justify-between w-64 text-sm text-slate-500">
-                                                <span>Devolución {tax.name} ({tax.percent}%)</span>
-                                                <span>{formatCurrency(tax.amount)}</span>
+                                            <div className="flex justify-between text-sm" key={idx}>
+                                                <span className="text-slate-500">Impuestos en línea ({tax.name} {tax.percent}%)</span>
+                                                <span className="font-medium text-slate-700">{formatCurrency(tax.amount)}</span>
                                             </div>
                                         ))}
-                                        <div className="flex justify-between w-64 text-base font-bold text-slate-800">
-                                            <span>Total devolución</span>
-                                            <span>{formatCurrency(returnTotal)}</span>
+                                        <div className="pt-3 mt-3 border-t border-slate-200 flex justify-between items-center">
+                                            <span className="text-base font-bold text-slate-800">Total a devolver</span>
+                                            <span className="text-xl font-bold text-slate-800">{formatCurrency(returnTotal)}</span>
                                         </div>
                                     </div>
                                 </div>
-
-
-                                {/* Text Areas */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-slate-700">Razón</label>
-                                        <textarea
-                                            value={reason}
-                                            onChange={(e) => setReason(e.target.value)}
-                                            placeholder="Incluye el motivo por el cual realizas la devolución."
-                                            className="w-full h-24 p-3 text-sm border border-slate-200 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none resize-none transition-colors"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 relative">
-                                        <div className="flex items-center gap-1">
-                                            <label className="block text-sm font-medium text-slate-700">Notas</label>
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <HelpCircle className="w-4 h-4 text-primary cursor-help" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="top" className="bg-[#1e293b] text-white p-2 text-xs font-normal border-0 shadow-lg">
-                                                        Información visible en la impresión del documento.
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </div>
-                                        <textarea
-                                            value={notes}
-                                            onChange={(e) => setNotes(e.target.value)}
-                                            placeholder="Información visible en la impresión del documento."
-                                            className="w-full h-24 p-3 text-sm border border-slate-200 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none resize-none transition-colors"
-                                        />
-                                    </div>
-                                </div>
-                            </>
-                        );
-                    })()}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Footer buttons */}
             <div className="mt-6 flex justify-end gap-3">
                 <button
                     type="button"
                     className="cursor-pointer px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
-                    onClick={() => router.push("/returns")}
+                    disabled={selectedType === '2'} onClick={() => {
+                        if (isDirty) {
+                            setShowExitModal(true);
+                        } else {
+                            router.push("/returns");
+                        }
+                    }}
                 >
                     Cancelar
                 </button>
@@ -1084,45 +1507,40 @@ export function NewReturnForm() {
                             : "bg-primary/40 text-primary-foreground cursor-not-allowed"
                     )}
                 >
-                    {isSubmitting ? (
-                        <>
-                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            Guardando...
-                        </>
-                    ) : "Guardar"}
+                    {isSubmitting ? "Guardando..." : "Guardar"}
                 </button>
             </div>
 
             <Dialog open={!!pendingDocType} onOpenChange={(open) => !open && setPendingDocType(null)}>
                 <DialogContent className="max-w-md p-6 overflow-hidden border-0 rounded-xl shadow-lg bg-white">
                     <DialogHeader className="flex flex-row items-center justify-between mb-2">
-                        <DialogTitle className="text-lg font-semibold text-slate-800">Cambiar de documento y reiniciar</DialogTitle>
+                        <DialogTitle className="text-lg font-semibold text-slate-800">Cambiar tipo de nota y reiniciar</DialogTitle>
                     </DialogHeader>
                     <div className="text-sm text-slate-600 mb-6">
-                        Ten en cuenta que si cambias el tipo de documento, vas a perder el progreso de los datos diligenciados en esta nota crédito.
+                        Ten en cuenta que si eliges otro tipo de nota crédito, vas a perder el progreso de los datos diligenciados en este documento.
                     </div>
                     <div className="flex justify-center gap-3">
                         <button
                             type="button"
                             onClick={() => setPendingDocType(null)}
-                            className="cursor-pointer px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
+                            className="cursor-pointer px-4 py-2 bg-white border border-[#2563eb] text-[#2563eb] rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
                         >
                             Seguir sin cambios
                         </button>
                         <button
                             type="button"
-                            onClick={() => {
+                            disabled={selectedType === '2'} onClick={() => {
                                 if (pendingDocType) {
                                     setDocType(pendingDocType);
                                     setClientId('');
                                     setSelectedType('');
-                                    setSelectedInvoice('');
+                                    setSelectedInvoices([{ uid: crypto.randomUUID(), invoiceId: '', details: null }]);
                                     setPendingDocType(null);
                                 }
                             }}
-                            className="cursor-pointer px-4 py-2 bg-[#2DD4BF] text-white rounded-lg text-sm font-medium hover:bg-[#2DD4BF]/90 transition-colors"
+                            className="cursor-pointer px-4 py-2 bg-[#2563eb] text-white rounded-lg text-sm font-medium hover:bg-[#1d4ed8] transition-colors"
                         >
-                            Cambiar documento
+                            Cambiar tipo de nota
                         </button>
                     </div>
                 </DialogContent>
@@ -1183,6 +1601,33 @@ export function NewReturnForm() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ChangeTypeModal
+                isOpen={!!pendingType}
+                onClose={() => setPendingType(null)}
+                onConfirm={confirmTypeChange}
+            />
+
+            <ChangeClientModal
+                isOpen={!!pendingClientId}
+                onClose={() => setPendingClientId(null)}
+                onConfirm={confirmClientChange}
+            />
+
+            <ExitFormModal
+                isOpen={showExitModal}
+                onClose={() => {
+                    setShowExitModal(false);
+                    setPendingUrl(null);
+                }}
+                onConfirm={() => {
+                    if (pendingUrl) {
+                        router.push(pendingUrl);
+                    } else {
+                        router.push("/returns");
+                    }
+                }}
+            />
         </div>
     );
 }

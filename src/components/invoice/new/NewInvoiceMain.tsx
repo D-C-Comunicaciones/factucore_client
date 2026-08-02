@@ -1,5 +1,6 @@
 "use client";
 import { Settings, HelpCircle, Plus, Trash2, Loader2, X, Clock, AlertCircle, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { Input } from "@/components/ui/input";
 import {
@@ -60,6 +61,7 @@ import { AddContactModal } from "@/components/contact/new/AddContactModal";
 import { QuickCreateItemModal } from "@/components/invoice/new/QuickCreateItemModal";
 import { NewPaymentTermModal } from "@/components/payment-terms/NewPaymentTermModal";
 import { FactucoreLogo } from "@/components/brand/FactucoreLogo";
+import { CompanyHeaderPdfStyle } from "@/components/shared/CompanyHeaderPdfStyle";
 import { NewTaxRateModal } from "@/components/taxes/NewTaxRateModal";
 import { type Resolution } from "@/lib/resolutions";
 import { ContactsService } from "@/lib/contacts";
@@ -107,6 +109,7 @@ export function NewInvoiceMain({
     onRefetchResolutions?: () => void;
 }) {
     const catalogs = useCatalogs();
+    const queryClient = useQueryClient();
     const paymentTerms = catalogs?.paymentTerms || [];
 
     const [clientUser, setClientUser] = useState<any>(null);
@@ -187,6 +190,19 @@ export function NewInvoiceMain({
         let isMounted = true;
         const syncContact = async () => {
             if (cliente) {
+                // Sincronización inmediata (optimista) para que el payload sea reactivo
+                const partialCustomer = customersList.find((c: any) => c.id.toString() === cliente) || null;
+                if (isMounted && partialCustomer) {
+                    setFormState((prev: any) => ({
+                        ...prev,
+                        contact_id: Number(cliente),
+                        customer: { ...prev.customer, ...partialCustomer }, // Mantener los datos previos si existen mientras carga
+                        payment_form_id: formaPago ? Number(formaPago) : null,
+                        payment_method_id: medioPago ? Number(medioPago) : null,
+                        payment_term_id: plazo ? Number(plazo) : null,
+                    }));
+                }
+
                 try {
                     const res = await ContactsService.getById(cliente);
                     const fetchedCustomer = res.data?.contact || res.data?.data || res.data;
@@ -494,37 +510,31 @@ export function NewInvoiceMain({
                     />
                 </div>
 
-                <div className="text-center">
-                    <h2 className="text-xl font-bold text-foreground mb-1">
-                        {mainData.company.name}
-                    </h2>
-                    <div className="text-sm text-muted-foreground">
-                        NIT: {mainData.company.nit}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                        {mainData.company.email}
-                    </div>
+                <div className="text-center pt-2">
+                    <CompanyHeaderPdfStyle />
                 </div>
 
                 <div className="text-right justify-self-end">
                     <div className="inline-flex flex-col items-end gap-1">
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">
-                            {activeResolution?.name || (activeResolution?.is_main ? "Numeración Principal" : "Numeración")}
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <SearchableSelect
-                                value={selectedResolutionId?.toString() || ""}
-                                onValueChange={(val) => setSelectedResolutionId?.(Number(val))}
-                                options={resolutions?.map((res) => ({
-                                    value: res.id.toString(),
-                                    label: res.prefix || res.prefix || `Resolución ${res.id}`
-                                })) || []}
-                                placeholder="Seleccionar"
-                                className="w-[160px] text-foreground"
-                            />
+                        <div className="grid grid-cols-[160px_auto] gap-x-2 gap-y-1 items-center">
+                            <span className="text-sm text-muted-foreground whitespace-nowrap text-center col-start-1">
+                                {activeResolution?.name || (activeResolution?.is_main ? "Numeración Principal" : "Numeración")}
+                            </span>
+                            <div className="col-start-1 row-start-2">
+                                <SearchableSelect
+                                    value={selectedResolutionId?.toString() || ""}
+                                    onValueChange={(val) => setSelectedResolutionId?.(Number(val))}
+                                    options={resolutions?.map((res) => ({
+                                        value: res.id.toString(),
+                                        label: res.prefix || res.prefix || `Resolución ${res.id}`
+                                    })) || []}
+                                    placeholder="Seleccionar"
+                                    className="w-full text-foreground"
+                                />
+                            </div>
                             <button
                                 type="button"
-                                className="p-1 rounded hover:bg-muted/40 transition"
+                                className="p-1 rounded hover:bg-muted/40 transition col-start-2 row-start-2"
                                 onClick={() => setIsResolutionModalOpen(true)}
                                 title="Configurar resolución"
                             >
@@ -927,7 +937,7 @@ export function NewInvoiceMain({
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="discount" className="cursor-pointer hover:bg-muted focus:bg-muted">Descuento</SelectItem>
-                                    <SelectItem value="charge" className="cursor-pointer hover:bg-muted focus:bg-muted">Recargo</SelectItem>
+                                    <SelectItem value="charge" className="cursor-pointer hover:bg-muted focus:bg-muted">Cargo</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -972,7 +982,7 @@ export function NewInvoiceMain({
                             onClick={handleAddGlobalAdjustment}
                             className="w-full bg-primary text-primary-foreground px-4 h-9 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                         >
-                            {globalAdjType === 'discount' ? 'Agregar descuento' : 'Agregar recargo'}
+                            {globalAdjType === 'discount' ? 'Agregar descuento' : 'Agregar cargo'}
                         </button>
                     </div>
 
@@ -985,7 +995,7 @@ export function NewInvoiceMain({
                                 </div>
                             )}
                             {invoiceBuilder.globalAdjustments.map((adj: any) => {
-                                const title = adj.type === 'discount' ? 'Descuento' : 'Recargo';
+                                const title = adj.type === 'discount' ? 'Descuento' : 'Cargo';
                                 const reason = adj.reason ? `: ${adj.reason}` : "";
 
                                 return (
@@ -1072,7 +1082,7 @@ export function NewInvoiceMain({
 
                         {invoiceBuilder.totals.lineDiscountsAmount > 0 && (
                             <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Descuento</span>
+                                <span className="text-muted-foreground">Descuentos en línea</span>
                                 <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.lineDiscountsAmount || 0)}</span>
                             </div>
                         )}
@@ -1086,7 +1096,7 @@ export function NewInvoiceMain({
 
                         {invoiceBuilder.totals.globalChargesAmount > 0 && (
                             <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Recargos Globales</span>
+                                <span className="text-muted-foreground">Cargos Globales</span>
                                 <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.globalChargesAmount || 0)}</span>
                             </div>
                         )}
@@ -1155,15 +1165,6 @@ export function NewInvoiceMain({
 
                 {/* Tercera fila: Notas adicionales y Pie de factura */}
                 <div className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-semibold text-foreground mb-1">
-                            Notas adicionales
-                        </label>
-                        <p className="text-xs text-muted-foreground mb-2">
-                            Agrega comentarios para aclarar datos adicionales de la factura de venta, serán visibles para tus clientes
-                        </p>
-                    </div>
-
                     <div className="opacity-50 pointer-events-none">
                         <label className="block text-sm font-medium text-muted-foreground mb-2">
                             Pie de factura
@@ -1255,7 +1256,26 @@ export function NewInvoiceMain({
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "stock_quantity", createdItem.stock_quantity ?? null);
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "is_inventoriable", isInventoriable);
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "allow_negative_stock", createdItem.allow_negative_stock ?? false);
-                        // Remove tax auto-fill to default to "Sin impuesto"
+
+                        // Auto-fill default tax
+                        let itemTaxes = createdItem.tax_rates || createdItem.pricing?.tax_rates;
+                        if (itemTaxes && itemTaxes.length > 0) {
+                            const defaultTax = itemTaxes[0];
+                            const taxRate = parseFloat(defaultTax.rate || defaultTax.percentage || "0");
+                            const taxName = defaultTax.name || defaultTax.tax?.name || "Impuesto";
+                            invoiceBuilder.updateItemTax(quickCreateItemTargetRow, {
+                                tax_rate_id: defaultTax.id || defaultTax.tax_rate_id,
+                                tax_id: defaultTax.tax_id,
+                                name: taxName,
+                                rate: taxRate,
+                                type: defaultTax.type || 'percentage',
+                                description: defaultTax.description || ""
+                            });
+                        } else {
+                            invoiceBuilder.updateItemTax(quickCreateItemTargetRow, null);
+                        }
+                        // Force refresh the items list in dropdowns
+                        queryClient.invalidateQueries({ queryKey: ["items"] });
                     }
                     setQuickCreateItemTargetRow(null);
                 }}

@@ -81,11 +81,13 @@ function ItemRow({
   const effectivePriceListId = item.item_id ? (item.selected_price_list_id ?? selectedPriceListId) : selectedPriceListId;
 
   const { data, isLoading } = useItems({
-    search: searchQuery,
-    warehouse_id: effectiveWarehouseId ?? undefined,
-    price_list_id: effectivePriceListId ?? undefined,
-    per_page: 20
-  } as any);
+    params: {
+      search: searchQuery,
+      warehouse_id: effectiveWarehouseId ?? undefined,
+      price_list_id: effectivePriceListId ?? undefined,
+      per_page: 20
+    }
+  });
 
   const itemsList = data?.data || [];
   const options = itemsList.map(i => ({
@@ -132,6 +134,20 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "selected_warehouse_id", selectedWarehouseId);
       invoiceBuilder.updateItem(item.id, "selected_price_list_id", selectedPriceListId);
       invoiceBuilder.updateItem(item.id, "warehouses", ri.warehouses);
+
+      if (ri.tax_rates && ri.tax_rates.length > 0) {
+        const defaultTax = ri.tax_rates[0];
+        invoiceBuilder.updateItemTax(item.id, {
+          tax_rate_id: defaultTax.tax_rate_id,
+          tax_id: defaultTax.tax_id,
+          name: defaultTax.name,
+          rate: parseFloat(defaultTax.rate || "0"),
+          type: defaultTax.type || 'percentage',
+          description: defaultTax.description || ""
+        });
+      } else {
+        invoiceBuilder.updateItemTax(item.id, null);
+      }
 
       // Extract minimum_stock and maximum_stock for the selected warehouse
       const warehouseData = ri.warehouses?.find((w: any) => String(w.id) === String(selectedWarehouseId));

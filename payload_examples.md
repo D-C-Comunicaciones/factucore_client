@@ -43,39 +43,37 @@ Se aplica cuando el cliente devuelve una cantidad específica de uno o más prod
 ---
 
 ## 2. Tipo 2: Anulación Completa de la Factura
-Se utiliza para anular la factura al 100%.
-- **Regla:** Se envían **todas las líneas originales con sus cantidades y precios exactos**. No se debe alterar nada.
+Se utiliza para anular la factura al 100%. Al utilizar el tipo de Nota Crédito **"Anulación de factura"** (`type_credit_note_id: 2`), ya no es necesario enviar los arreglos de líneas, clientes, descuentos o impuestos.
+El sistema buscará la factura original por su `invoice_id` y reconstruirá la nota crédito exactamente con sus mismos valores e importes.
 
 ```json
 {
-    "company_id": 1,
-    "customer_id": 15,
-    "resolution_id": 3,
-    "type_credit_note_id": 2,
-    "observation": "Anulación completa por error en la facturación.",
-    "references": [
-        {
-            "invoice_id": 25
-        }
-    ],
-    "lines": [
-        {
-            "credit_note_reference_index": 0,
-            "invoice_line_id": 155,
-            "quantity": 10,  // Cantidad total original
-            "price": 50000,  // Precio total original
-            "taxes": [{"tax_id": 1, "percent": 19}]
-        },
-        {
-            "credit_note_reference_index": 0,
-            "invoice_line_id": 156,
-            "quantity": 5,
-            "price": 20000,
-            "taxes": [{"tax_id": 1, "percent": 19}]
-        }
-    ]
+  "credit_notes": [
+    {
+      "resolution_id": 5,
+      "type_credit_note_id": 2,
+      "type_currency_id": 1,
+      "invoice_id": 10452,
+      "date": "2026-07-30",
+      "reason": "Anulación total por solicitud del cliente",
+      "notes": "Se anula la factura completamente debido a un error comercial.",
+      "send_mail": true
+    }
+  ]
 }
 ```
+
+### Explicación de los campos requeridos mínimos:
+- `resolution_id`: **Requerido**. ID de la resolución de numeración.
+- `type_credit_note_id`: **Requerido**. Debe ser `2` para invocar este comportamiento de anulación total.
+- `type_currency_id`: **Requerido**. ID de la moneda.
+- `invoice_id`: **Requerido**. ID de la factura original.
+- `date`: Opcional.
+- `reason` / `notes`: Opcional.
+- `send_mail`: Opcional.
+
+> [!NOTE]
+> **No envíes** los nodos `lines`, `customer`, `global_discounts`, `global_charges` ni impuestos. Cualquier dato enviado en esos arreglos será ignorado, ya que el sistema forzará una copia idéntica a nivel matemático de la factura origen referenciada en `invoice_id`.
 
 ---
 

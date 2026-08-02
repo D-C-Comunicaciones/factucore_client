@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // 🔥 Prefetch and cache all catalogs for the session
             prefetchAllCatalogs(queryClient);
 
-            showToast("Inicio de sesión exitoso", "success")
+            showToast(res.message || "Inicio de sesión exitoso", "success")
             setShowSplash(true) // Splash will fade out after its animation; navigate once it's done
         } catch (error: any) {
             let errorMsg = "Credenciales inválidas o error de red";
@@ -161,9 +161,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         pendingLogoutRef.current = true
         setShowSplash(true)
 
+        let logoutMsg = "Sesión cerrada"
         try {
-            await apiClient.post("/logout", {}, { withCredentials: true })
-        } catch { }
+            const res = await apiClient.post<any>("/logout", {}, { withCredentials: true })
+            if (res) {
+                logoutMsg = res.message || res.data?.message || "Sesión cerrada"
+            }
+        } catch (error: any) {
+            if (error?.response?.data?.message) {
+                logoutMsg = error.response.data.message;
+            }
+        }
         // Clear client-side session storage
         try {
             // Remove known session key
@@ -234,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Reset local user state — splash will call router.push('/login') via handleSplashDone
         setUser(null)
-        showToast("Sesión cerrada", "success")
+        showToast(logoutMsg, "success")
     }
 
     return (

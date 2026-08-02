@@ -22,7 +22,7 @@ export function CollapseButton({
           }}
           className={`
             p-2 rounded-lg hidden lg:flex ml-2
-            items-center justify-center
+            items-center justify-center cursor-pointer
             hover:bg-gray-100 transition-colors
             ${className}
           `}
@@ -40,9 +40,9 @@ export function CollapseButton({
       <TooltipContent
         side="bottom"
         className="
-      bg-foreground text-white
+      bg-gray-900 text-white
       text-xs font-semibold
-      shadow-lg px-3 py-1 rounded z-50 border-none
+      shadow-lg px-3 py-1 rounded z-50 border-none cursor-pointer
   "
       >
         {isCollapsed ? "Mostrar menú" : "Ocultar menú"}

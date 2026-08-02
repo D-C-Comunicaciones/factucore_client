@@ -62,7 +62,7 @@ export function NewInvoiceOptions({
                 status: 1
             });
             await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.catalogs.warehouses() });
-            
+
             const newWarehouse = res?.data?.warehouse || res?.data || res;
             if (newWarehouse?.id) {
                 setSelectedWarehouseId(Number(newWarehouse.id));
@@ -76,31 +76,29 @@ export function NewInvoiceOptions({
 
     return (
         <div className="bg-white rounded-lg border border-border p-4 md:p-6">
-            <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-wrap lg:flex-nowrap items-end gap-3">
 
                 {/* TIPO DOCUMENTO */}
-                <div className="shrink-0">
+                <div className="shrink-0 min-w-[190px]">
                     <label className="block text-sm font-medium text-foreground mb-2">
                         Tipo de documento
                     </label>
-                    <div className="flex gap-1 bg-gray-50 p-1 border border-gray-200 rounded-lg h-[38px] items-center min-w-[210px]">
+                    <div className="flex gap-1 bg-gray-50 p-1 border border-gray-200 rounded-lg h-[38px] items-center">
                         <button
                             onClick={() => setTipoDoc('factura')}
-                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 ${
-                                tipoDoc === 'factura'
+                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 ${tipoDoc === 'factura'
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-transparent text-gray-500 hover:text-gray-900"
-                            }`}
+                                }`}
                         >
                             Factura de venta
                         </button>
                         <button
                             onClick={() => setTipoDoc('tiquete')}
-                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 ${
-                                tipoDoc === 'tiquete'
+                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 ${tipoDoc === 'tiquete'
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-transparent text-gray-500 hover:text-gray-900"
-                            }`}
+                                }`}
                         >
                             Tiquete
                         </button>
@@ -109,7 +107,7 @@ export function NewInvoiceOptions({
 
                 {/* BODEGA */}
                 {showWarehouse && (
-                    <div className="shrink-0 min-w-[160px]">
+                    <div className="shrink-0 min-w-[140px] flex-1">
                         <div className="flex items-center gap-1 mb-2">
                             <label className="text-sm font-medium text-foreground">
                                 Bodega
@@ -146,7 +144,7 @@ export function NewInvoiceOptions({
 
                 {/* LISTA DE PRECIOS */}
                 {showPriceList && (
-                    <div className="shrink-0 min-w-[160px]">
+                    <div className="shrink-0 min-w-[140px] flex-1">
                         <div className="flex items-center gap-1 mb-2">
                             <label className="text-sm font-medium text-foreground">
                                 Lista de precios
@@ -182,7 +180,7 @@ export function NewInvoiceOptions({
                 )}
 
                 {/* VENDEDOR */}
-                <div className="shrink-0 min-w-[170px]">
+                <div className="shrink-0 min-w-[150px] flex-1">
                     <div className="flex items-center gap-1 mb-2">
                         <label className="text-sm font-medium text-foreground">
                             Vendedor
@@ -216,9 +214,9 @@ export function NewInvoiceOptions({
                     />
                 </div>
 
-                {/* AGREGAR REMISIÓN */}
-                <div className="shrink-0 flex items-end h-[38px]">
-                    <button 
+                {/* AGREGAR REMISIÓN Y ORDEN DE COMPRA */}
+                <div className="shrink-0 flex items-end h-[38px] gap-2">
+                    <button
                         onClick={() => setShowRemissionBar(!showRemissionBar)}
                         className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors cursor-pointer whitespace-nowrap h-full"
                     >
@@ -231,6 +229,24 @@ export function NewInvoiceOptions({
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
                                     Asocia una remisión existente a esta factura.
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </button>
+
+                    <button
+                        onClick={() => { }}
+                        className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors cursor-pointer whitespace-nowrap h-full"
+                    >
+                        <Plus className="w-4 h-4 shrink-0" />
+                        Agregar orden de compra
+                        <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <HelpCircle className="w-3.5 h-3.5 text-primary ml-0.5 shrink-0 cursor-help hover:text-primary/70 transition-colors" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
+                                    Asocia una orden de compra a esta factura.
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>

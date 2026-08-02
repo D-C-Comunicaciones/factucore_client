@@ -132,13 +132,13 @@ export default function NewInvoicePage() {
     user: AuthService.getUser() as any,
   };
 
-    const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
-    const isContadoForm = !formState.payment_form_id || !selectedForm ||
-      selectedForm.label?.toLowerCase().includes("contado") ||
-      selectedForm.value?.toLowerCase() === "contado" ||
-      selectedForm.value === "1";
+  const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
+  const isContadoForm = !formState.payment_form_id || !selectedForm ||
+    selectedForm.label?.toLowerCase().includes("contado") ||
+    selectedForm.value?.toLowerCase() === "contado" ||
+    selectedForm.value === "1";
 
-    const validateForm = () => {
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     // 1. Contacto
@@ -158,7 +158,7 @@ export default function NewInvoicePage() {
       if (!c.type_document_identification) missing.push("Tipo de documento");
       if (!c.type_organization) missing.push("Tipo de organización");
       if (!c.type_regime) missing.push("Tipo de régimen");
-      if (!c.municipality || !c.municipality.department || !c.municipality.department.country) missing.push("Ubicación completa (Municipio, Depto, País)");
+
 
       if (missing.length > 0) {
         newErrors.contact_id = "Faltan datos requeridos del cliente";
@@ -212,11 +212,11 @@ export default function NewInvoicePage() {
         showToast("Por favor ingrese una cantidad mayor a 0 en los productos seleccionados.", "error");
         return false;
       }
-      
+
       const outOfStockItem = invoiceBuilder.items.find((item: any) => {
         if (item.is_inventoriable && !item.allow_negative_stock) {
-           const availableStock = item.stock_quantity || 0;
-           return item.cantidad > availableStock;
+          const availableStock = item.stock_quantity || 0;
+          return item.cantidad > availableStock;
         }
         return false;
       });
@@ -269,90 +269,119 @@ export default function NewInvoicePage() {
 
     if (formState.paymentData && Number(formState.paymentData.amount) > invoiceBuilder.totals.total) {
       const maxAllowed = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(invoiceBuilder.totals.total);
-      showToast(`El pago que intenta registrar excede el valor facturado. El máximo que puede registrar es ${maxAllowed} (recargos, descuentos e impuestos incluidos, sin contar retenciones).`, "warning");
+      showToast(`El pago que intenta registrar excede el valor facturado. El máximo que puede registrar es ${maxAllowed} (cargos, descuentos e impuestos incluidos, sin contar retenciones).`, "warning");
       return;
     }
 
     setLoadingGuardar(true);
     try {
-      const basePayload = invoiceBuilder.buildPayload({
+      const rawPayload = invoiceBuilder.buildPayload({
         ...formState,
-        numbering_range_id: selectedResolutionId,
+        resolution_id: selectedResolutionId,
       });
-      basePayload.type_operation_id = 1;
-      
+
       const session = getSession();
       if (session?.user?.id) {
-          basePayload.user_id = session.user.id;
+        rawPayload.user_id = session.user.id;
       }
 
-      if (basePayload.customer) {
-        const c = basePayload.customer;
-        basePayload.customer = {
-            id: c.id,
-            identification_number: c.identification_number,
-            verification_digit: c.verification_digit,
-            registration_name: c.registration_name,
-            first_name: c.first_name,
-            last_name: c.last_name,
-            address: c.address,
-            email: c.email,
-            phone1: c.phone1,
-            type_document_identification: c.type_document_identification ? {
-                code: c.type_document_identification.code,
-                name: c.type_document_identification.name
-            } : undefined,
-            type_organization: c.type_organization ? {
-                code: c.type_organization.code,
-                name: c.type_organization.name
-            } : undefined,
-            type_regime: c.type_regime ? {
-                code: c.type_regime.code,
-                name: c.type_regime.name
-            } : undefined,
-            type_liabilities: c.type_liabilities && c.type_liabilities.length > 0 ? c.type_liabilities.map((t: any) => ({
-                code: t.code,
-                name: t.name
-            })) : [{ code: "R-99-PN", name: "No aplica" }],
-            municipality: c.municipality ? {
-                code: c.municipality.code,
-                name: c.municipality.name,
-                department: c.municipality.department ? {
-                    code: c.municipality.department.code,
-                    name: c.municipality.department.name,
-                    country: c.municipality.department.country ? {
-                        code: c.municipality.department.country.code,
-                        name: c.municipality.department.country.name
-                    } : undefined
-                } : undefined
+      if (rawPayload.customer) {
+        const c = rawPayload.customer;
+        rawPayload.customer = {
+          id: c.id,
+          identification_number: c.identification_number,
+          verification_digit: c.verification_digit,
+          registration_name: c.registration_name,
+          first_name: c.first_name,
+          last_name: c.last_name,
+          address: c.address,
+          email: c.email,
+          phone1: c.phone1,
+          type_document_identification: c.type_document_identification ? {
+            code: c.type_document_identification.code,
+            name: c.type_document_identification.name
+          } : undefined,
+          type_organization: c.type_organization ? {
+            code: c.type_organization.code,
+            name: c.type_organization.name
+          } : undefined,
+          type_regime: c.type_regime ? {
+            code: c.type_regime.code,
+            name: c.type_regime.name
+          } : undefined,
+          type_liabilities: c.type_liabilities && c.type_liabilities.length > 0 ? c.type_liabilities.map((t: any) => ({
+            code: t.code,
+            name: t.name
+          })) : [{ code: "R-99-PN", name: "No aplica" }],
+          municipality: c.municipality ? {
+            code: c.municipality.code,
+            name: c.municipality.name,
+            department: c.municipality.department ? {
+              code: c.municipality.department.code,
+              name: c.municipality.department.name,
+              country: c.municipality.department.country ? {
+                code: c.municipality.department.country.code,
+                name: c.municipality.department.country.name
+              } : undefined
             } : undefined
+          } : undefined
         };
       }
 
       if (formState.paymentData) {
-        basePayload.payments = [formState.paymentData];
-      } else {
-        delete basePayload.payments;
-      }
-      delete basePayload.paymentData;
-      delete basePayload.comments;
-      delete basePayload.contact_id;
-
-      if (!basePayload.seller_id || basePayload.seller_id === "") {
-        basePayload.seller_id = null;
-      } else {
-        basePayload.seller_id = Number(basePayload.seller_id);
+        rawPayload.payments = [formState.paymentData];
       }
 
-      if (isContadoForm) {
-        delete basePayload.payment_term_id;
-      } else {
-        delete basePayload.payment_method_id;
+      let sellerId: number | null = null;
+      if (rawPayload.seller_id && rawPayload.seller_id !== "") {
+        sellerId = Number(rawPayload.seller_id);
       }
+
+      const {
+        resolution_id,
+        payment_form_id,
+        payment_method_id,
+        payment_term_id,
+        payment_due_date,
+        user_id,
+        notes,
+        billing_period,
+        customer,
+        items,
+        allowance_charges,
+        seller_id,
+        ...restRaw
+      } = rawPayload;
+
+      // Ensure the payload is strictly ordered: single properties first, then objects/arrays
+      const finalPayload: any = {
+        resolution_id,
+        type_operation_invoice: 1,
+        type_currency_id: 35,
+        seller_id: sellerId,
+        payment_form_id,
+        payment_method_id,
+        payment_term_id: isContadoForm ? undefined : payment_term_id,
+        payment_due_date,
+        user_id,
+        notes: notes || "",
+        ...restRaw, // Include any other root properties (like type_document_id)
+        billing_period,
+        customer,
+        items,
+        allowance_charges,
+      };
+
+      if (rawPayload.payments) {
+        finalPayload.payments = rawPayload.payments;
+      }
+
+      // Remove undefined values cleanly
+      Object.keys(finalPayload).forEach(key => finalPayload[key] === undefined && delete finalPayload[key]);
 
       if (actionType === "SEND") {
         // Emitir directamente a la DIAN: POST /invoices/send (sin save_action)
-        const res: any = await InvoicesService.sendDirect(basePayload);
+        const res: any = await InvoicesService.sendDirect(finalPayload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
 
@@ -370,7 +399,7 @@ export default function NewInvoicePage() {
 
       } else if (actionType === "DRAFT") {
         // Guardar como borrador: POST /invoices con save_action DRAFT
-        const payload = { ...basePayload, save_action: "DRAFT" };
+        const payload = { ...finalPayload, save_action: "DRAFT" };
         const res: any = await createInvoice.mutateAsync(payload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
@@ -379,7 +408,7 @@ export default function NewInvoicePage() {
 
       } else if (actionType === "CREATE_NEW") {
         // Guardar y crear nueva: POST /invoices con save_action SAVED + limpiar form
-        const payload = { ...basePayload, save_action: "SAVED" };
+        const payload = { ...finalPayload, save_action: "SAVED" };
         await createInvoice.mutateAsync(payload);
         showToast("Factura guardada correctamente", "success");
         invoiceBuilder.reset();
@@ -387,7 +416,7 @@ export default function NewInvoicePage() {
         setFormState({ notes: "", contact_id: null, payment_form_id: null, payment_method_id: null, payment_due_date: null });
 
       } else if (actionType === "PRINT") {
-        const payload = { ...basePayload, save_action: "SAVED" };
+        const payload = { ...finalPayload, save_action: "SAVED" };
         const res: any = await createInvoice.mutateAsync(payload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
@@ -395,7 +424,7 @@ export default function NewInvoicePage() {
         router.push(`/invoices/${id}`);
 
       } else if (actionType === "SEND_EMAIL") {
-        const payload = { ...basePayload, save_action: "SAVED", send_email: true };
+        const payload = { ...finalPayload, save_action: "SAVED", send_email: true };
         const res: any = await createInvoice.mutateAsync(payload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
@@ -443,7 +472,7 @@ export default function NewInvoicePage() {
             selectedPriceListId={selectedPriceListId}
             setSelectedPriceListId={setSelectedPriceListId}
             selectedSeller={formState.seller_id}
-            setSelectedSeller={(val) => setFormState({ ...formState, seller_id: val })}
+            setSelectedSeller={(val) => setFormState((prev: any) => ({ ...prev, seller_id: val }))}
             showWarehouse={showWarehouse}
             showPriceList={showPriceList}
             tipoDoc={tipoDoc}
@@ -498,7 +527,7 @@ export default function NewInvoicePage() {
         onOpenChange={setShowPreviewModal}
         data={showPreviewModal ? invoiceBuilder.buildPayload({
           ...formState,
-          numbering_range_id: selectedResolutionId,
+          resolution_id: selectedResolutionId,
         }) : null}
       />
     </div>

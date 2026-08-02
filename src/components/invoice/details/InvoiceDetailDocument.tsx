@@ -1,6 +1,15 @@
 import { DianStatusBadge } from "@/components/invoice/table/columns";
 import Link from "next/link";
+import { CompanyHeaderPdfStyle } from "@/components/shared/CompanyHeaderPdfStyle";
 import { FactucoreLogo } from "@/components/brand/FactucoreLogo";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 interface InvoiceDetailDocumentProps {
     bill: any;
@@ -36,8 +45,13 @@ export function InvoiceDetailDocument({
     const allDiscounts = bill.discounts || bill.invoice_snapshot?.template_data?.invoice?.discounts || [];
     const allCharges = bill.charges || bill.invoice_snapshot?.template_data?.invoice?.charges || [];
 
-    const globalDiscounts = allDiscounts.filter((d: any) => !d.invoice_line_id && String(d.charge_indicator) !== "true");
-    const lineDiscountsTotal = allDiscounts.filter((d: any) => d.invoice_line_id && String(d.charge_indicator) !== "true").reduce((sum: number, d: any) => sum + Number(d.amount), 0);
+    const globalDiscounts = allDiscounts.filter((d: any) => String(d.charge_indicator) !== "true");
+
+    // Sumamos los descuentos de línea recorriendo los items, o usamos el fallback si es un formato antiguo
+    const lineDiscountsTotal = items.reduce((sum: number, item: any) => {
+        const itemDiscounts = item.discounts || [];
+        return sum + itemDiscounts.reduce((dSum: number, d: any) => dSum + Number(d.amount), 0);
+    }, 0) + (bill.invoice_snapshot?.template_data?.invoice?.discounts || []).filter((d: any) => d.invoice_line_id && String(d.charge_indicator) !== "true").reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
     const globalCharges = allCharges.filter((c: any) => c.scope === 'global' || !c.line_id);
     const globalDiscountsTotal = globalDiscounts.reduce((sum: number, d: any) => sum + Number(d.amount), 0);
@@ -51,7 +65,7 @@ export function InvoiceDetailDocument({
         const percent = Number(w.percent || w.percentage || w.tax_percent || w.withholding_rate?.rate || 0);
         const amount = Number(w.withholding_amount || w.amount || w.tax_amount || w.value || 0);
         const key = `${name}-${percent}`;
-        
+
         if (!acc[key]) {
             acc[key] = { name, percent, amount: 0 };
         }
@@ -105,15 +119,8 @@ export function InvoiceDetailDocument({
                         </div>
 
                         {/* Empresa (Centro) */}
-                        <div className="w-1/3 text-center flex flex-col items-center justify-center pt-2">
-                            <h2 className="text-xl font-bold text-[#0F2843] uppercase">{company?.name || company?.company_name || company?.registration_name || ''}</h2>
-                            <div className="text-slate-500 mt-1 text-sm font-medium">
-                                NIT: {company?.identification_number || company?.company_id || ''}
-                                {(company?.verification_digit != null || company?.dv != null || company?.company_dv != null) &&
-                                    `-${company?.verification_digit ?? company?.dv ?? company?.company_dv}`
-                                }
-                            </div>
-                            {company?.email && <div className="text-slate-500 text-sm mt-0.5">{company.email}</div>}
+                        <div className="w-1/3 pt-2 flex flex-col justify-center">
+                            <CompanyHeaderPdfStyle companyProp={company} />
                         </div>
 
                         {/* Factura No & DIAN (Derecha) */}
@@ -164,36 +171,36 @@ export function InvoiceDetailDocument({
                         </div>
                         <div className="space-y-2 border-b border-slate-100 pb-2">
                             <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Creación:</span>
+                                <span className="font-bold text-slate-700 w-32 shrink-0">Creación:</span>
                                 <span>{bill.created_at || ''}</span>
                             </div>
                             <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Vencimiento:</span>
+                                <span className="font-bold text-slate-700 w-32 shrink-0">Vencimiento:</span>
                                 <span>{bill.payment_due_date || bill.billing_reference?.payment_due_date || bill.created_at || ''}</span>
                             </div>
                             <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Plazo de pago:</span>
+                                <span className="font-bold text-slate-700 w-32 shrink-0">Plazo de pago:</span>
                                 <span>{bill.payment_term?.name || 'De contado'}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Items Table */}
-                    <div className="mb-10">
-                        <table className="w-full text-sm text-slate-600">
-                            <thead>
-                                <tr className="border-b-2 border-slate-100 text-slate-900 uppercase text-xs font-bold">
-                                    <th className="text-left py-3 px-2">ITEM</th>
-                                    <th className="text-left py-3 px-2">REFERENCIA</th>
-                                    <th className="text-right py-3 px-2">PRECIO</th>
-                                    <th className="text-right py-3 px-2">DESCUENTO</th>
-                                    <th className="text-right py-3 px-2">IMPUESTO</th>
-                                    <th className="text-left py-3 px-2">DESCRIPCIÓN</th>
-                                    <th className="text-center py-3 px-2">CANTIDAD</th>
-                                    <th className="text-right py-3 px-2">TOTAL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div className="mb-10 relative overflow-x-auto border-b border-gray-200">
+                        <Table className="[&_td]:border-b-0">
+                            <TableHeader>
+                                <TableRow className="bg-gray-50/50">
+                                    <TableHead className="text-slate-900 uppercase font-bold border-l border-gray-200">ITEM</TableHead>
+                                    <TableHead className="text-slate-900 uppercase font-bold">REFERENCIA</TableHead>
+                                    <TableHead className="text-slate-900 uppercase font-bold text-right">PRECIO</TableHead>
+                                    <TableHead className="text-slate-900 uppercase font-bold text-right">DESCUENTO</TableHead>
+                                    <TableHead className="text-slate-900 uppercase font-bold text-right">IMPUESTO</TableHead>
+                                    <TableHead className="text-slate-900 uppercase font-bold">DESCRIPCIÓN</TableHead>
+                                    <TableHead className="text-slate-900 uppercase font-bold text-center">CANTIDAD</TableHead>
+                                    <TableHead className="text-slate-900 uppercase font-bold text-right border-r border-gray-200">TOTAL</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {items.map((item: any, idx: number) => {
                                     // Soportar tanto item de BD como item del snapshot XML
                                     const itemName = item.name || item.item_name || item.item?.name || item.description;
@@ -203,10 +210,46 @@ export function InvoiceDetailDocument({
                                     const itemQty = item.quantity;
                                     const itemTotal = item.total || item.total_line || item.line_extension_amount;
                                     const taxRate = item.tax_rate || (item.tax_totals?.[0]?.percent) || (item.taxes?.[0]?.percent) || 0;
+                                    const lineTaxCode = item.tax_totals?.[0]?.tax_code || item.taxes?.[0]?.tax_code || '';
+                                    // Resolve tax name: line-level → snapshot line tax_totals → snapshot global taxTotals by tax_code
+                                    const snapshotTaxTotals = bill.invoice_snapshot?.template_data?.taxTotals || [];
+                                    const snapshotLineTaxes = bill.invoice_snapshot?.template_data?.lines?.find(
+                                        (_: any, i: number) => i === idx
+                                    )?.tax_totals || [];
+                                    const taxName =
+                                        item.tax_name ||
+                                        item.tax_totals?.[0]?.tax_name || item.tax_totals?.[0]?.name ||
+                                        item.taxes?.[0]?.name ||
+                                        item.taxes?.[0]?.tax?.name ||
+                                        snapshotLineTaxes.find((t: any) => t.tax_code === lineTaxCode)?.tax_name ||
+                                        snapshotTaxTotals.find((t: any) => t.tax_code === lineTaxCode)?.tax_name ||
+                                        '';
+
+                                    const taxNameStr = taxName || 'IVA';
+                                    
+                                    // Discount calculations
+                                    const discountAmount = item.discounts?.length
+                                        ? item.discounts.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0)
+                                        : Number(item.discount_amount || 0);
+                                    
+                                    const totalGross = Number(itemPrice || 0) * Number(itemQty || 1);
+                                    let discountPercent = 0;
+                                    if (item.discounts?.length > 0 && item.discounts[0].percent) {
+                                        discountPercent = Number(item.discounts[0].percent);
+                                    } else if (discountAmount > 0 && totalGross > 0) {
+                                        discountPercent = (discountAmount / totalGross) * 100;
+                                    }
+
+                                    // Tax calculations
+                                    const taxAmount = item.taxes?.length
+                                        ? item.taxes.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
+                                        : item.tax_totals?.length 
+                                            ? item.tax_totals.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
+                                            : Number(item.tax_amount || 0);
 
                                     return (
-                                        <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                            <td className="py-3 px-2">
+                                        <TableRow key={idx} className="hover:bg-transparent border-0 border-b-0">
+                                            <TableCell className="border-l border-gray-200">
                                                 {itemId ? (
                                                     <Link href={`/items/${itemId}`} className="text-slate-800 font-medium cursor-pointer hover:bg-slate-200 px-2 py-1 rounded -ml-2 transition-colors inline-block">
                                                         {itemName}
@@ -214,33 +257,57 @@ export function InvoiceDetailDocument({
                                                 ) : (
                                                     <span className="text-slate-800 font-medium">{itemName}</span>
                                                 )}
-                                            </td>
-                                            <td className="py-3 px-2">{itemRef}</td>
-                                            <td className="py-3 px-2 text-right">$ {Number(itemPrice || 0).toLocaleString()}</td>
-                                            <td className="py-3 px-2 text-right">$ {Number(item.discount_amount || 0).toLocaleString()}</td>
-                                            <td className="py-3 px-2 text-right">{Number(taxRate)} %</td>
-                                            <td className="py-3 px-2">{item.description || ''}</td>
-                                            <td className="py-3 px-2 text-center">{Number(itemQty)}</td>
-                                            <td className="py-3 px-2 text-right">$ {Number(itemTotal || 0).toLocaleString()}</td>
-                                        </tr>
+                                            </TableCell>
+                                            <TableCell>{itemRef}</TableCell>
+                                            <TableCell className="text-right">$ {Number(itemPrice || 0).toLocaleString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                {discountAmount > 0 ? (
+                                                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                                                        <span>{discountPercent % 1 !== 0 ? discountPercent.toFixed(2) : discountPercent}%</span>
+                                                        <span className="text-slate-500 text-xs">
+                                                            (${discountAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-slate-400">-</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {Number(taxRate) > 0 || taxAmount > 0 ? (
+                                                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                                                        <span>{taxNameStr} {Number(taxRate)}%</span>
+                                                        <span className="text-slate-500 text-xs">
+                                                            (${taxAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-slate-400">-</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>{item.description || ''}</TableCell>
+                                            <TableCell className="text-center">{Number(itemQty)}</TableCell>
+                                            <TableCell className="text-right border-r border-gray-200">$ {Number(itemTotal || 0).toLocaleString()}</TableCell>
+                                        </TableRow>
                                     );
                                 })}
                                 {items.length === 0 && (
-                                    <tr><td colSpan={8} className="py-6 text-center text-slate-400">No hay productos en esta factura</td></tr>
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableCell colSpan={8} className="h-24 text-center text-slate-400 border-l border-r border-gray-200">No hay productos en esta factura</TableCell>
+                                    </TableRow>
                                 )}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
 
                     {/* Signature, Adjustments and Subtotals */}
                     <div className="flex justify-between text-slate-600 border-t border-slate-100 pt-8">
                         <div className="w-1/3 flex flex-col items-center justify-end pb-4">
                             <div className="mb-2">
-                                <span 
-                                    className="text-slate-700" 
-                                    style={{ 
-                                        fontFamily: '"Great Vibes", cursive', 
-                                        fontSize: '30px' 
+                                <span
+                                    className="text-slate-700"
+                                    style={{
+                                        fontFamily: '"Great Vibes", cursive',
+                                        fontSize: '30px'
                                     }}
                                 >
                                     {bill.user?.name || 'Administrador'}
@@ -279,7 +346,7 @@ export function InvoiceDetailDocument({
 
                                         {globalCharges.length > 0 && (
                                             <div>
-                                                <h5 className="font-semibold text-slate-600 text-[11px] uppercase tracking-wider mb-1">Recargos</h5>
+                                                <h5 className="font-semibold text-slate-600 text-[11px] uppercase tracking-wider mb-1">Cargos</h5>
                                                 <div className="space-y-1">
                                                     {globalCharges.map((c: any, idx: number) => {
                                                         const isPercent = c.charge_type === 'percentage' || c.percentage_value || c.percent;
@@ -321,7 +388,7 @@ export function InvoiceDetailDocument({
                                 )}
                                 {globalChargesTotal > 0 && (
                                     <div className="flex justify-between">
-                                        <span className="text-slate-500">Recargos Globales</span>
+                                        <span className="text-slate-500">Cargos Globales</span>
                                         <span>$ {globalChargesTotal.toLocaleString()}</span>
                                     </div>
                                 )}
@@ -397,23 +464,25 @@ export function InvoiceDetailDocument({
 
                             {/* Términos y condiciones */}
                             <div>
-                                <h3 className="text-slate-500 mb-3 text-base">Términos y condiciones</h3>
-                                <p className="text-xs text-slate-400 leading-relaxed text-justify">
+                                <h3 className="text-black font-bold mb-3 text-base">Términos y condiciones</h3>
+                                <p className="text-xs text-black leading-relaxed text-justify">
                                     {bill.terms_and_conditions || 'Esta factura se asimila en todos sus efectos a una letra de cambio de conformidad con el Art. 774 del código de comercio. Autorizo que en caso de incumplimiento de esta obligación sea reportado a las centrales de riesgo, se cobraran intereses por mora.'}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="w-1/2">
-                            <h3 className="text-black font-bold mb-3 text-base">Notas</h3>
-                            <p className="text-xs text-black leading-relaxed">
-                                {bill.billing_reference?.notes || bill.notes || ''}
-                            </p>
+                        <div className="w-1/2 space-y-4">
+                            <div>
+                                <h3 className="text-black font-bold mb-2 text-xs uppercase">Notas:</h3>
+                                <div className="bg-gray-50 rounded-md p-3 text-xs text-black leading-relaxed min-h-[60px] border border-gray-200">
+                                    {bill.billing_reference?.notes || bill.notes || '—'}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     {/* Footer notes */}
-                    <div className="mt-10 pt-6 border-t border-slate-100 text-xs text-slate-400 text-center">
+                    <div className="mt-10 pt-6 border-t border-slate-100 text-xs text-black text-center">
                         <p>Resolución DIAN: {bill.resolution?.resolution_text || bill.resolution_text || ''}</p>
                     </div>
                 </div>

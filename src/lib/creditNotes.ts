@@ -111,4 +111,28 @@ export class CreditNotesService {
         });
         return (res as any)?.data || res;
     }
+
+    /**
+     * GET /credit-notes/{id}/pdf/preview
+     * Obtiene el PDF para imprimir (blob).
+     */
+    static async printPdfBlob(id: number | string): Promise<Blob> {
+        return apiClient.getBlob(`/credit-notes/${id}/pdf/preview`);
+    }
+
+    /**
+     * GET /credit-notes/{id}/pdf
+     * Descarga el PDF de la nota de crédito (blob).
+     */
+    static async downloadPdfBlob(id: number | string): Promise<Blob> {
+        return apiClient.getBlob(`/credit-notes/${id}/pdf`);
+    }
+
+    /**
+     * GET /credit-notes/{id}/xml
+     * Descarga el XML de la nota de crédito (blob).
+     */
+    static async downloadXmlBlob(id: number | string): Promise<Blob> {
+        return apiClient.getBlob(`/credit-notes/${id}/xml`);
+    }
 }

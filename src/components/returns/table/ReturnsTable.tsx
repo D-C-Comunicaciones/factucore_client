@@ -26,6 +26,7 @@ interface ReturnsTableProps {
   loading?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
+  items?: any[];
 }
 
 export function ReturnsTable({
@@ -41,6 +42,7 @@ export function ReturnsTable({
   loading = false,
   refreshing = false,
   onRefresh,
+  items = [],
 }: ReturnsTableProps) {
   const addFilter = (value: string) => {
     if (!activeFilters.includes(value)) {
@@ -55,7 +57,7 @@ export function ReturnsTable({
   const removeAllFilters = () => setActiveFilters([]);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 flex flex-col w-full h-full min-h-[500px]">
+    <div className="bg-white rounded-lg border border-gray-200">
 
       {/* ── TOOLBAR ── */}
       <ReturnsTableToolbar
@@ -74,7 +76,7 @@ export function ReturnsTable({
       />
 
       {/* ── BODY / EMPTY STATE ── */}
-      <ReturnsTableBody loading={loading} />
+      <ReturnsTableBody loading={loading} items={items} />
 
       {/* ── PAGINATION ── */}
       <ReturnsTablePagination

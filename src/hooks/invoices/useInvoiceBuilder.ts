@@ -19,7 +19,6 @@ export interface InvoiceLine {
     is_inventoriable: boolean;
     allow_negative_stock: boolean;
     selected_warehouse_id?: number | null;
-    selected_warehouse_id?: number | null;
 }
 
 export interface GlobalAdjustment {
@@ -126,7 +125,7 @@ export function useInvoiceBuilder() {
                 type,
                 valueType,
                 value,
-                reason: reason || (type === 'discount' ? 'Descuento global' : 'Recargo global')
+                reason: reason || (type === 'discount' ? 'Descuento global' : 'Cargo global')
             }
         ]);
     };
@@ -160,25 +159,25 @@ export function useInvoiceBuilder() {
             const discValue = Number(item.discountValue) || 0;
 
             const lineBase = qty * price;
-            const lineDiscount = item.discountType === 'percentage' 
-                ? lineBase * (discValue / 100) 
+            const lineDiscount = item.discountType === 'percentage'
+                ? lineBase * (discValue / 100)
                 : discValue;
-            
+
             const lineNet = lineBase - lineDiscount;
-            
+
             // Safeguard taxRate parsing
             let taxRate = 0;
             if (item.taxObj && item.taxObj.rate !== undefined && item.taxObj.rate !== null) {
                 taxRate = Number(item.taxObj.rate);
                 if (isNaN(taxRate)) taxRate = 0;
             }
-            
+
             const lineTax = lineNet * (taxRate / 100);
 
             grossSubtotal += (isNaN(lineBase) ? 0 : lineBase);
             netSubtotal += (isNaN(lineNet) ? 0 : lineNet);
             lineDiscountsAmount += (isNaN(lineDiscount) ? 0 : lineDiscount);
-            
+
             const safeTax = isNaN(lineTax) ? 0 : lineTax;
             taxesAmount += safeTax;
 
@@ -239,7 +238,11 @@ export function useInvoiceBuilder() {
                 description: item.description,
                 unit_measure_code: item.unit_measure_code,
                 allowance_charges: item.allowance_charges,
-                taxes: item.taxes,
+                taxes: item.taxes?.map((t: any) => ({
+                    ...t,
+                    tax_code: t.tax_code || t.code || (t.tax_id ? String(t.tax_id) : undefined),
+                    tax_name: t.tax_name || t.name,
+                })),
                 warehouse_id: item.selected_warehouse_id
             };
             if (item.standard_code && item.standard_code.trim() !== '') {
@@ -265,6 +268,7 @@ export function useInvoiceBuilder() {
         return {
             ...baseData,
             type_operation_invoice: 1,
+            send_mail: true,
             items: payload_lines,
             allowance_charges: global_allowance_charges,
             billing_period: {
