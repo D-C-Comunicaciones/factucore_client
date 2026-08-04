@@ -11,7 +11,7 @@ export function ConfigurationGrid() {
           { label: 'Empresa', href: '/configuration/empresa' },
           { label: 'Usuarios', href: '/configuration/usuarios' },
           { label: 'Mi perfil', href: '/configuration/perfil' },
-          { label: 'Centros de costos', href: '/configuration/centros-costos' },
+          { label: 'Centros de costos', href: '/cost-centers' },
           { label: 'Monedas', href: '/configuration/monedas' },
         ]}
       />

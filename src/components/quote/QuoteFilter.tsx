@@ -17,7 +17,7 @@ interface QuoteFilterProps {
 
 export const defaultFilterOptions: FilterOption[] = [
     {
-        label: "Fecha de creaciÃ³n",
+        label: "Fecha de creación",
         value: "created_at",
         icon: CalendarDays,
     },
@@ -42,7 +42,7 @@ export const defaultFilterOptions: FilterOption[] = [
         icon: BadgeCheck,
     },
     {
-        label: "NÃºmero de CotizaciÃ³n",
+        label: "Número de Cotización",
         value: "number",
         icon: ListOrdered,
     },

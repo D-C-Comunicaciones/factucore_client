@@ -1,58 +1,36 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { NewInvoiceFooter } from "@/components/invoice/new/NewInvoiceFooter";
-import { NewInvoiceHeader } from "@/components/invoice/new/NewInvoiceHeader";
+import { NewQuoteFooter } from "@/components/quote/new/NewQuoteFooter";
+import { NewQuoteHeader } from "@/components/quote/new/NewQuoteHeader";
 import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
-import { NewInvoiceMain } from "@/components/invoice/new/NewInvoiceMain";
-import { NewInvoiceOptions } from "@/components/invoice/new/NewInvoiceOptions";
-import { NewInvoicePayment } from "@/components/invoice/new/NewInvoicePayment";
+import { NewQuoteMain } from "@/components/quote/new/NewQuoteMain";
+import { NewQuoteOptions } from "@/components/quote/new/NewQuoteOptions";
+import { NewQuoteSettingsDrawer } from "@/components/quote/new/NewQuoteSettingsDrawer";
 import { PreviewModal } from "@/components/invoice/new/PreviewModal";
-import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
-import { useInvoiceBuilder, isIvaTax } from "@/hooks/invoices/useInvoiceBuilder";
+import { useCreateQuote } from "@/hooks/quotes/useQuotes";
+import { useQuoteBuilder, isIvaTax } from "@/hooks/quotes/useQuoteBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useSellersList } from "@/hooks/sellers/useSellers";
-import { InvoicesService } from "@/lib/invoices";
+import { QuotesService } from "@/lib/quotes";
 import { AuthService } from "@/lib/auth";
 import { getSession } from "@/common/interfaces/session";
 import { useResolutions } from "@/hooks/useResolutions";
 import type { Resolution } from "@/lib/resolutions";
-import { useQuery } from "@tanstack/react-query";
 import { costCentersApi } from "@/lib/costCenters";
+import { useQuery } from "@tanstack/react-query";
 
 import { showToast } from "@/components/sonner/CustomToaster";
 
-export default function NewInvoicePage() {
+export default function NewQuotePage() {
   const router = useRouter();
-  const createInvoice = useCreateInvoice();
+  const createInvoice = useCreateQuote();
   const catalogData = useCatalogs();
   const { data: sellersData } = useSellersList();
-  const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
-  const resolutionTypeFilter = tipoDoc === 'tiquete' ? 2 : 1; // 1=INVOICE, 2=POS
+  const resolutionTypeFilter = 7; // Quotes
   const { resolutions, refetch: refetchResolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
   const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, any>>({});
-  const [selectedCostCenter, setSelectedCostCenter] = useState<string | null>(null);
-
-  const { data: costCentersResp } = useQuery({
-    queryKey: ['costCenters', { is_active: true }],
-    queryFn: async () => await costCentersApi.getCostCenters({ is_active: true })
-  });
-  
-  const { data: costCentersSettingsResp } = useQuery({
-    queryKey: ['costCenterSettings', { type_document: 'invoice' }],
-    queryFn: async () => await costCentersApi.getSettings({ type_document: 'invoice' })
-  });
-
-  useEffect(() => {
-    if (costCentersSettingsResp?.data) {
-      const settings = Array.isArray(costCentersSettingsResp.data) ? costCentersSettingsResp.data : (costCentersSettingsResp.data.settings || []);
-      const invoiceSetting = settings.find((s: any) => s.document_type === 'invoice');
-      if (invoiceSetting?.default_cost_center_id && !selectedCostCenter) {
-        setSelectedCostCenter(invoiceSetting.default_cost_center_id.toString());
-      }
-    }
-  }, [costCentersSettingsResp]);
 
   // Set is_main resolution as default when resolutions load or tipoDoc changes
   useEffect(() => {
@@ -79,7 +57,8 @@ export default function NewInvoicePage() {
     seller_id: null,
     payment_form_id: null,
     payment_method_id: null,
-    payment_due_date: null
+    payment_due_date: null,
+    currency_id: "COP"
   });
   const [loadingEmitir, setLoadingEmitir] = useState(false);
   const [loadingGuardar, setLoadingGuardar] = useState(false);
@@ -95,7 +74,49 @@ export default function NewInvoicePage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Initialize the builder hook
-  const invoiceBuilder = useInvoiceBuilder();
+  const QuoteBuilder = useQuoteBuilder();
+
+  // Drawer and fixed fields state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [fixedFields, setFixedFields] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("quoteFixedFields");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return {
+      warehouse: false,
+      seller: false,
+      costCenter: false,
+      currency: false,
+      priceList: false,
+    };
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quoteFixedFields", JSON.stringify(fixedFields));
+    }
+  }, [fixedFields]);
+  const [selectedCurrency, setSelectedCurrency] = useState("COP");
+  const [selectedCostCenter, setSelectedCostCenter] = useState<string | null>(null);
+
+  const currencies = [{ value: "COP", label: "COP - Peso Colombiano" }];
+
+  const { data: costCentersResp } = useQuery({
+    queryKey: ['costCenters', { is_active: true }],
+    queryFn: async () => {
+      return await costCentersApi.getCostCenters({ is_active: true });
+    }
+  });
+  const costCentersData = Array.isArray(costCentersResp?.data?.['cost-centers']) 
+    ? costCentersResp?.data['cost-centers'] 
+    : (Array.isArray(costCentersResp?.data) ? costCentersResp.data : []);
+
+  const costCenters = costCentersData.map((cc: any) => ({ value: cc.id.toString(), label: cc.name, description: cc.description || "" }));
 
   // Set default warehouse and price list when catalogs load
   useEffect(() => {
@@ -120,10 +141,16 @@ export default function NewInvoicePage() {
   const sellersArray = Array.isArray(sellersData) ? sellersData : (sellersData?.data || []);
   const sellerOptions = sellersArray.map((s: any) => ({ value: String(s.id), label: s.name }));
 
-  const costCentersData = Array.isArray(costCentersResp?.data?.['cost-centers']) 
-    ? costCentersResp?.data['cost-centers'] 
-    : (Array.isArray(costCentersResp?.data) ? costCentersResp.data : []);
-  const costCenterOptions = costCentersData.map((cc: any) => ({ value: cc.id.toString(), label: cc.name, description: cc.description || "" }));
+  const currenciesOptions = catalogData.currencies?.map((c: any) => ({
+    value: c.code || String(c.id),
+    label: `${c.code} - ${c.name}`
+  })) || [];
+
+  const costCentersOptions = costCentersData.map((c: any) => ({
+    value: String(c.id),
+    label: c.name || String(c.id),
+    description: c.description || ""
+  }));
 
   const paymentMethods = catalogData.paymentMethods?.map((pm: any) => ({
     value: pm.id.toString(),
@@ -221,19 +248,19 @@ export default function NewInvoicePage() {
     }
 
     // 3. Ítems
-    if (!invoiceBuilder.items || invoiceBuilder.items.length === 0) {
+    if (!QuoteBuilder.items || QuoteBuilder.items.length === 0) {
       setErrors(newErrors);
       showToast("Debe agregar al menos un ítem a la factura", "error");
       return false;
     } else {
-      const hasEmptyItems = invoiceBuilder.items.some((item: any) => !item.item_id);
+      const hasEmptyItems = QuoteBuilder.items.some((item: any) => !item.item_id);
       if (hasEmptyItems) {
         newErrors.items = "empty_items";
         setErrors(newErrors);
         showToast("Por favor selecciona un producto o servicio en todas las filas de ítems", "error");
         return false;
       }
-      const hasInvalidQuantity = invoiceBuilder.items.some((item: any) => item.item_id && (!item.cantidad || item.cantidad <= 0));
+      const hasInvalidQuantity = QuoteBuilder.items.some((item: any) => item.item_id && (!item.cantidad || item.cantidad <= 0));
       if (hasInvalidQuantity) {
         newErrors.items = "invalid_quantity";
         setErrors(newErrors);
@@ -241,7 +268,7 @@ export default function NewInvoicePage() {
         return false;
       }
 
-      const outOfStockItem = invoiceBuilder.items.find((item: any) => {
+      const outOfStockItem = QuoteBuilder.items.find((item: any) => {
         if (item.is_inventoriable && !item.allow_negative_stock) {
           const availableStock = item.stock_quantity || 0;
           return item.cantidad > availableStock;
@@ -295,15 +322,15 @@ export default function NewInvoicePage() {
   const handleSaveAction = async (actionType: "DRAFT" | "SEND" | "SEND_EMAIL" | "PRINT" | "CREATE_NEW") => {
     if (!validateForm()) return;
 
-    if (formState.paymentData && Number(formState.paymentData.amount) > invoiceBuilder.totals.total) {
-      const maxAllowed = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(invoiceBuilder.totals.total);
+    if (formState.paymentData && Number(formState.paymentData.amount) > QuoteBuilder.totals.total) {
+      const maxAllowed = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(QuoteBuilder.totals.total);
       showToast(`El pago que intenta registrar excede el valor facturado. El máximo que puede registrar es ${maxAllowed} (cargos, descuentos e impuestos incluidos, sin contar retenciones).`, "warning");
       return;
     }
 
     setLoadingGuardar(true);
     try {
-      const rawPayload = invoiceBuilder.buildPayload({
+      const rawPayload = QuoteBuilder.buildPayload({
         ...formState,
         resolution_id: selectedResolutionId,
       });
@@ -387,7 +414,6 @@ export default function NewInvoicePage() {
         type_operation_invoice: 1,
         type_currency_id: 35,
         seller_id: sellerId,
-        cost_center_id: selectedCostCenter ? Number(selectedCostCenter) : undefined,
         payment_form_id,
         payment_method_id,
         payment_term_id: isContadoForm ? undefined : payment_term_id,
@@ -409,8 +435,8 @@ export default function NewInvoicePage() {
       Object.keys(finalPayload).forEach(key => finalPayload[key] === undefined && delete finalPayload[key]);
 
       if (actionType === "SEND") {
-        // Emitir directamente a la DIAN: POST /invoices/send (sin save_action)
-        const res: any = await InvoicesService.sendDirect(finalPayload);
+        // Emitir directamente a la DIAN: POST /quotes/send (sin save_action)
+        const res: any = await QuotesService.sendDirect(finalPayload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
 
@@ -424,23 +450,23 @@ export default function NewInvoicePage() {
         }
 
         showToast("Factura validada correctamente por la DIAN", "success");
-        router.push(`/invoices/${id}`);
+        router.push(`/quotes/${id}`);
 
       } else if (actionType === "DRAFT") {
-        // Guardar como borrador: POST /invoices con save_action DRAFT
+        // Guardar como borrador: POST /quotes con save_action DRAFT
         const payload = { ...finalPayload, save_action: "DRAFT" };
         const res: any = await createInvoice.mutateAsync(payload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
         showToast("Borrador guardado correctamente", "success");
-        router.push(`/invoices/${id}`);
+        router.push(`/quotes/${id}`);
 
       } else if (actionType === "CREATE_NEW") {
-        // Guardar y crear nueva: POST /invoices con save_action SAVED + limpiar form
+        // Guardar y crear nueva: POST /quotes con save_action SAVED + limpiar form
         const payload = { ...finalPayload, save_action: "SAVED" };
         await createInvoice.mutateAsync(payload);
         showToast("Factura guardada correctamente", "success");
-        invoiceBuilder.reset();
+        QuoteBuilder.reset();
         refetchResolutions();
         setFormState({ notes: "", contact_id: null, payment_form_id: null, payment_method_id: null, payment_due_date: null });
 
@@ -449,8 +475,8 @@ export default function NewInvoicePage() {
         const res: any = await createInvoice.mutateAsync(payload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
-        window.open(InvoicesService.getPdfUrl(id), "_blank");
-        router.push(`/invoices/${id}`);
+        window.open(QuotesService.getPdfUrl(id), "_blank");
+        router.push(`/quotes/${id}`);
 
       } else if (actionType === "SEND_EMAIL") {
         const payload = { ...finalPayload, save_action: "SAVED", send_email: true };
@@ -458,7 +484,7 @@ export default function NewInvoicePage() {
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
         showToast("Factura guardada y enviada por correo", "success");
-        router.push(`/invoices/${id}`);
+        router.push(`/quotes/${id}`);
       }
 
     } catch (error: any) {
@@ -485,37 +511,14 @@ export default function NewInvoicePage() {
     <div className="w-full min-h-screen">
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
         <div className="space-y-6">
-          <NewInvoiceHeader
-            showWarehouse={showWarehouse}
-            setShowWarehouse={setShowWarehouse}
-            showPriceList={showPriceList}
-            setShowPriceList={setShowPriceList}
-            tipoDoc={tipoDoc}
+          <NewQuoteHeader
+            onOpenDrawer={() => setIsDrawerOpen(true)}
           />
-          <NewInvoiceOptions
-            warehouseOptions={warehouseOptions}
-            priceListOptions={priceListOptions}
-            sellerOptions={sellerOptions}
-            selectedWarehouseId={selectedWarehouseId}
-            setSelectedWarehouseId={setSelectedWarehouseId}
-            selectedPriceListId={selectedPriceListId}
-            setSelectedPriceListId={setSelectedPriceListId}
-            selectedSeller={formState.seller_id}
-            setSelectedSeller={(val) => setFormState((prev: any) => ({ ...prev, seller_id: val }))}
-            showWarehouse={showWarehouse}
-            showPriceList={showPriceList}
-            tipoDoc={tipoDoc}
-            setTipoDoc={setTipoDoc}
-            showRemissionBar={showRemissionBar}
-            setShowRemissionBar={setShowRemissionBar}
-            costCenterOptions={costCenterOptions}
-            selectedCostCenter={selectedCostCenter}
-            setSelectedCostCenter={setSelectedCostCenter}
-          />
-          <NewInvoiceMain
+
+          <NewQuoteMain
             mainData={mainData}
             catalogData={catalogData}
-            invoiceBuilder={invoiceBuilder}
+            invoiceBuilder={QuoteBuilder}
             selectedWarehouseId={selectedWarehouseId}
             selectedPriceListId={selectedPriceListId}
             taxes={catalogData.taxes}
@@ -531,20 +534,43 @@ export default function NewInvoicePage() {
             showRemissionBar={showRemissionBar}
             setShowRemissionBar={setShowRemissionBar}
             errors={errors}
+            quoteOptionsComponent={
+              (fixedFields.warehouse || fixedFields.priceList || fixedFields.seller || fixedFields.costCenter || fixedFields.currency) ? (
+                <NewQuoteOptions
+                  warehouseOptions={warehouseOptions}
+                  priceListOptions={priceListOptions}
+                  sellerOptions={sellerOptions}
+                  selectedWarehouseId={selectedWarehouseId}
+                  setSelectedWarehouseId={setSelectedWarehouseId}
+                  selectedPriceListId={selectedPriceListId}
+                  setSelectedPriceListId={setSelectedPriceListId}
+                  showWarehouse={fixedFields.warehouse}
+                  showPriceList={fixedFields.priceList}
+                  showSeller={fixedFields.seller}
+                  showCurrency={fixedFields.currency}
+                  showCostCenter={fixedFields.costCenter}
+                  showRemissionBar={showRemissionBar}
+                  setShowRemissionBar={setShowRemissionBar}
+                  selectedSeller={formState.seller_id}
+                  setSelectedSeller={(val) => setFormState((prev: any) => ({ ...prev, seller_id: val }))}
+                  currencies={currenciesOptions}
+                  selectedCurrency={formState.currency_id}
+                  setSelectedCurrency={(val) => setFormState((prev: any) => ({ ...prev, currency_id: val }))}
+                  costCenters={costCentersOptions}
+                  selectedCostCenter={formState.cost_center_id}
+                  setSelectedCostCenter={(val) => setFormState((prev: any) => ({ ...prev, cost_center_id: val }))}
+                />
+              ) : null
+            }
           />
-          <NewInvoicePayment
-            paymentMethods={paymentMethods}
-            bankAccounts={bankAccounts}
-            paymentData={formState.paymentData}
-            onPaymentDataChange={(data) => setFormState({ ...formState, paymentData: data })}
-            errors={errors}
-          />
+
           <CommentsAndReminders
             comments={formState.comments || []}
             setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
+            requiresSaveFirst={true}
           />
-          <NewInvoiceFooter
-            onNavigate={() => router.push("/invoices")}
+          <NewQuoteFooter
+            onNavigate={() => router.push("/quotes")}
             onSaveAction={handleSaveAction}
             loadingGuardar={loadingGuardar}
             onPreview={() => {
@@ -557,10 +583,32 @@ export default function NewInvoicePage() {
       <PreviewModal
         open={showPreviewModal}
         onOpenChange={setShowPreviewModal}
-        data={showPreviewModal ? invoiceBuilder.buildPayload({
+        data={showPreviewModal ? QuoteBuilder.buildPayload({
           ...formState,
           resolution_id: selectedResolutionId,
         }) : null}
+      />
+
+      <NewQuoteSettingsDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        fixedFields={fixedFields}
+        setFixedFields={setFixedFields}
+        warehouseOptions={warehouseOptions}
+        selectedWarehouseId={selectedWarehouseId}
+        setSelectedWarehouseId={setSelectedWarehouseId}
+        sellerOptions={sellerOptions}
+        selectedSeller={formState.seller_id}
+        setSelectedSeller={(val) => setFormState((prev: any) => ({ ...prev, seller_id: val }))}
+        priceListOptions={priceListOptions}
+        selectedPriceListId={selectedPriceListId}
+        setSelectedPriceListId={setSelectedPriceListId}
+        currencies={currencies}
+        selectedCurrency={selectedCurrency}
+        setSelectedCurrency={setSelectedCurrency}
+        costCenters={costCenters}
+        selectedCostCenter={selectedCostCenter}
+        setSelectedCostCenter={setSelectedCostCenter}
       />
     </div>
   );

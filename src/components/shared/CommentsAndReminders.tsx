@@ -5,15 +5,18 @@ import { MessageCircle, Search, Sparkles, Bold, Italic, Underline, Strikethrough
 import { Button } from "@/components/ui/button";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { SaveBeforeCommentsWarning } from "./SaveBeforeCommentsWarning";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function CommentsAndReminders({
   comments,
-  setComments
+  setComments,
+  requiresSaveFirst = false
 }: {
   comments: any[],
-  setComments: (comments: any[]) => void
+  setComments: (comments: any[]) => void,
+  requiresSaveFirst?: boolean
 }) {
   const [activeTab, setActiveTab] = useState<"comments" | "reminders">("comments");
   const [newCommentHtml, setNewCommentHtml] = useState("");
@@ -146,6 +149,16 @@ export function CommentsAndReminders({
     if (!dateString) return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
     return new Date(dateString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
   };
+
+  if (requiresSaveFirst) {
+    return (
+      <div className="border border-gray-200 bg-white rounded-xl mb-8 shadow-sm">
+        <div className="px-6 py-12 flex items-center justify-center">
+          <SaveBeforeCommentsWarning />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border border-gray-200 bg-white rounded-xl overflow-hidden mb-8 shadow-sm">
@@ -355,6 +368,11 @@ export function CommentsAndReminders({
 
       {/* Input Area (only for comments) */}
       {activeTab === 'comments' && (
+        requiresSaveFirst ? (
+          <div className="px-6 pb-6 pt-2 bg-[#F8F9FB]">
+            <SaveBeforeCommentsWarning />
+          </div>
+        ) : (
         <div className="p-4 bg-white border-t border-gray-200">
           <div className="border border-primary rounded-xl p-3 focus-within:ring-1 focus-within:ring-primary/40 transition-shadow">
             <div
@@ -424,6 +442,7 @@ export function CommentsAndReminders({
             </div>
           </div>
         </div>
+        )
       )}
 
       {/* Delete Confirmation Modal */}

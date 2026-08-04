@@ -310,7 +310,7 @@ export function GeneralInfoSection({
             value={unitMeasureId?.toString()}
             onValueChange={(v) => onUnitMeasureIdChange(parseInt(v))}
             options={UNIT_OPTIONS.map((u: any) => ({ value: u.id.toString(), label: u.name }))}
-            placeholder="Buscar."
+            placeholder="Buscar"
             searchPlaceholder="Buscar unidad..."
             emptyMessage="No se encontraron unidades."
             className={cn(baseInput, "w-full rounded-md", errors.unitMeasureId && "border-destructive focus:border-destructive focus:ring-destructive/40")}
@@ -359,7 +359,7 @@ export function GeneralInfoSection({
             options={standardCodeOptions}
             onSearchChange={handleSearchStandardCodes}
             loading={isSearchingCodes}
-            placeholder="Buscar."
+            placeholder="Buscar"
             searchPlaceholder="Buscar código o descripción..."
             emptyMessage={isSearchingCodes ? "Buscando..." : "No se encontraron códigos."}
             className={cn(baseInput, "w-full rounded-md", errors.typeItemIdentificationId && "border-destructive focus:border-destructive focus:ring-destructive/40")}

@@ -494,322 +494,130 @@ export function NewInvoiceMain({
     };
 
     return (
-        <div className="relative bg-white rounded-lg border border-border p-8 overflow-hidden">
-            {/* Punta doblada (folded page corner) */}
-            <div className="absolute top-0 right-0 w-10 h-8 pointer-events-none overflow-hidden rounded-tr-lg">
-                <div className="absolute top-0 right-0 w-16 h-16 bg-[#F3F4F6] rotate-45 transform origin-top-right translate-x-8 -translate-y-8 border-l border-b border-gray-200/80 shadow-sm bg-gradient-to-br from-gray-50 via-gray-100 to-white"></div>
-            </div>
-
-            {/* HEADER */}
-            <div className="grid grid-cols-3 items-start mb-8">
-                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center justify-self-start flex items-center justify-center min-w-[160px] min-h-[100px]">
-                    <FactucoreLogo
-                        variant="icon"
-                        className="max-h-[80px] w-auto"
-                        alt="Logo de la empresa"
+        <div className="filter drop-shadow-sm">
+            <div
+                className="relative bg-white rounded-lg border border-border p-8 overflow-hidden"
+                style={{
+                    clipPath: 'polygon(0 0, calc(100% - 40px) 0, 100% 40px, 100% 100%, 0 100%)'
+                }}
+            >
+                {/* Folded Corner Effect */}
+                <div
+                    className="absolute top-0 right-0 w-10 h-10 pointer-events-none"
+                    style={{
+                        filter: 'drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.08))'
+                    }}
+                >
+                    <div
+                        className="w-full h-full bg-gradient-to-bl from-slate-200 via-slate-100 to-white border-l border-b border-slate-200/80"
+                        style={{
+                            clipPath: 'polygon(0 0, 0 100%, 100% 100%)'
+                        }}
                     />
                 </div>
 
-                <div className="text-center pt-2">
-                    <CompanyHeaderPdfStyle />
-                </div>
-
-                <div className="text-right justify-self-end">
-                    <div className="inline-flex flex-col items-end gap-1">
-                        <div className="grid grid-cols-[160px_auto] gap-x-2 gap-y-1 items-center">
-                            <span className="text-sm text-muted-foreground whitespace-nowrap text-center col-start-1">
-                                {activeResolution?.name || (activeResolution?.is_main ? "Numeración Principal" : "Numeración")}
-                            </span>
-                            <div className="col-start-1 row-start-2">
-                                <SearchableSelect
-                                    value={selectedResolutionId?.toString() || ""}
-                                    onValueChange={(val) => setSelectedResolutionId?.(Number(val))}
-                                    options={resolutions?.map((res) => ({
-                                        value: res.id.toString(),
-                                        label: res.prefix || res.prefix || `Resolución ${res.id}`
-                                    })) || []}
-                                    placeholder="Seleccionar"
-                                    className="w-full text-foreground"
-                                />
-                            </div>
-                            <button
-                                type="button"
-                                className="p-1 rounded hover:bg-muted/40 transition col-start-2 row-start-2"
-                                onClick={() => setIsResolutionModalOpen(true)}
-                                title="Configurar resolución"
-                            >
-                                <Settings className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                        </div>
-                        <div className="flex items-center justify-end w-full gap-2 mt-1">
-                            <div className="flex items-center gap-1">
-                                <span className="text-sm text-muted-foreground">No.</span>
-                                {mainData.invoiceNumber ? (
-                                    <span className="font-bold text-lg text-foreground">
-                                        {mainData.invoiceNumber}
-                                    </span>
-                                ) : (
-                                    <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                className="p-1 rounded hover:bg-muted/40 transition"
-                                onClick={() => onRefetchResolutions?.()}
-                                title="Actualizar numeración"
-                            >
-                                <RefreshCw className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* CLIENTE Y CONFIGURACIÓN */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-4 mb-2">
-                {/* Columna Izquierda */}
-                <div className="space-y-4">
-                    {/* DOCUMENTO */}
-                    <div className="flex items-center gap-3">
-                        <label className="text-sm font-medium text-foreground w-40 text-right shrink-0">
-                            Documento
-                        </label>
-                        <div className="flex-1 flex items-center gap-2">
-                            <div className="flex flex-1">
-                                <SearchableSelect
-                                    value={docType}
-                                    onValueChange={setDocType}
-                                    options={mainData.documentTypes}
-                                    placeholder="Tipo"
-                                    className={cn(inputClass, "w-28 rounded-r-none border-r-0 cursor-pointer")}
-                                />
-                                <div className="relative flex-1 flex">
-                                    <Input
-                                        placeholder="Buscar Nº de ID"
-                                        value={docNumber}
-                                        onChange={(e) => setDocNumber(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault();
-                                                handleSearchDocument();
-                                            }
-                                        }}
-                                        className={cn(inputClass, "rounded-l-none flex-1 pr-10")}
-                                    />
-                                    {searchingDocument && (
-                                        <div className="absolute right-0 top-0 h-9 w-9 flex items-center justify-center">
-                                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
-                                        Selecciona el tipo de documento e ingresa el número de identificación del cliente
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
+                {/* HEADER */}
+                <div className="grid grid-cols-3 items-start mb-8">
+                    <div className="border-2 border-dashed border-border rounded-lg p-4 text-center justify-self-start flex items-center justify-center min-w-[160px] min-h-[100px]">
+                        <FactucoreLogo
+                            variant="icon"
+                            className="max-h-[80px] w-auto"
+                            alt="Logo de la empresa"
+                        />
                     </div>
 
-                    {/* NOMBRE O RAZÓN SOCIAL */}
-                    <div className="flex items-center gap-3">
-                        <label className="text-sm font-medium text-foreground w-40 text-right shrink-0">
-                            Nombre o razón social <span className="text-primary">*</span>
-                        </label>
-                        <div className="flex-1 flex items-center gap-2">
-                            {displayName ? (
-                                // Show the auto-filled name as a read-only pill with a clear button
-                                <div className="flex-1 flex items-center gap-2">
-                                    <div className={cn(inputClass, "flex-1 flex items-center justify-between gap-2 bg-white")}>
-                                        <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setDisplayName("");
-                                                setCliente("");
-                                                setEmail("");
-                                                setEmailAutoFilled(false);
-                                                setDocNumber("");
-                                            }}
-                                            className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="w-full">
+                    <div className="text-center pt-2">
+                        <CompanyHeaderPdfStyle />
+                    </div>
+
+                    <div className="text-right justify-self-end">
+                        <div className="inline-flex flex-col items-end gap-1">
+                            <div className="grid grid-cols-[160px_auto] gap-x-2 gap-y-1 items-center">
+                                <span className="text-sm text-muted-foreground whitespace-nowrap text-center col-start-1">
+                                    {activeResolution?.name || (activeResolution?.is_main ? "Numeración Principal" : "Numeración")}
+                                </span>
+                                <div className="col-start-1 row-start-2">
                                     <SearchableSelect
-                                        value={cliente}
-                                        onValueChange={(val) => {
-                                            setCliente(val);
-                                            const selected = customersList.find(c => c.id.toString() === val);
-                                            if (selected) {
-                                                const name = selected.registration_name ||
-                                                    `${selected.first_name || ""} ${selected.last_name || ""}`.trim() ||
-                                                    selected.identification_number;
-                                                setDisplayName(name);
-                                                setEmail(selected.email || "");
-                                                setEmailAutoFilled(true);
-                                                setDocNumber(selected.identification_number || "");
-                                                if (selected.type_document_identification_id) {
-                                                    setDocType(selected.type_document_identification_id.toString());
-                                                }
-                                            } else {
-                                                setDisplayName("");
-                                                setEmail("");
-                                                setEmailAutoFilled(false);
-                                                setDocNumber("");
-                                            }
-                                        }}
-                                        options={customersList.map((c: any) => ({
-                                            value: c.id.toString(),
-                                            label: c.registration_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.identification_number
-                                        }))}
-                                        placeholder="Seleccionar cliente"
-                                        className={cn("w-full text-foreground", errors?.contact_id && "border-destructive !text-destructive")}
-                                        errorIcon={errors?.contact_id ? <AlertCircle className="size-4 text-destructive" /> : undefined}
+                                        value={selectedResolutionId?.toString() || ""}
+                                        onValueChange={(val) => setSelectedResolutionId?.(Number(val))}
+                                        options={resolutions?.map((res) => ({
+                                            value: res.id.toString(),
+                                            label: res.prefix || res.prefix || `Resolución ${res.id}`
+                                        })) || []}
+                                        placeholder="Seleccionar"
+                                        className="w-full text-foreground"
                                     />
-                                    {errors?.contact_id && (
-                                        <div className="text-destructive text-sm mt-1">
-                                            {errors.contact_id}
-                                        </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="p-1 rounded hover:bg-muted/40 transition col-start-2 row-start-2"
+                                    onClick={() => setIsResolutionModalOpen(true)}
+                                    title="Configurar resolución"
+                                >
+                                    <Settings className="w-4 h-4 text-muted-foreground" />
+                                </button>
+                            </div>
+                            <div className="flex items-center justify-end w-full gap-2 mt-1">
+                                <div className="flex items-center gap-1">
+                                    <span className="text-sm text-muted-foreground">No.</span>
+                                    {mainData.invoiceNumber ? (
+                                        <span className="font-bold text-lg text-foreground">
+                                            {mainData.invoiceNumber}
+                                        </span>
+                                    ) : (
+                                        <div className="h-6 w-24 bg-muted animate-pulse rounded-md" />
                                     )}
                                 </div>
-                            )}
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
-                                        Selecciona el cliente para el cual se emitirá esta factura
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                    </div>
-
-                    {/* CORREO */}
-                    <div className="flex items-center gap-3">
-                        <label className="text-sm font-medium text-foreground w-40 text-right shrink-0">
-                            Correo
-                        </label>
-                        <div className="flex-1 flex items-center gap-2">
-                            <Input
-                                type="email"
-                                placeholder="email@mail.com"
-                                value={email}
-                                readOnly={emailAutoFilled}
-                                onChange={(e) => !emailAutoFilled && setEmail(e.target.value)}
-                                className={cn(inputClass, "w-full", emailAutoFilled ? "bg-muted/20 cursor-default text-muted-foreground" : "")}
-                            />
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
-                                        Correo electrónico del cliente registrado para el envío de la factura electrónica
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                    </div>
-
-                    {/* NUEVO CONTACTO */}
-                    <div className="flex items-center gap-3 mt-4">
-                        <div className="w-40 shrink-0"></div>
-                        <div className="flex-1 flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setIsAddContactModalOpen(true)}
-                                className="w-full text-primary hover:text-primary/80 text-sm font-medium flex justify-center items-center gap-1 transition-colors h-9 rounded-md hover:bg-muted cursor-pointer"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Nuevo contacto
-                            </button>
-                            <div className="w-6 shrink-0"></div> {/* Espaciador para alinear con el icono de ayuda del correo */}
+                                <button
+                                    type="button"
+                                    className="p-1 rounded hover:bg-muted/40 transition"
+                                    onClick={() => onRefetchResolutions?.()}
+                                    title="Actualizar numeración"
+                                >
+                                    <RefreshCw className="w-4 h-4 text-muted-foreground" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Columna Derecha */}
-                <div className="space-y-4">
-                    {/* FECHA */}
-                    <div className="flex items-center gap-3">
-                        <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
-                            Fecha <span className="text-primary">*</span>
-                        </label>
-                        <div className="flex-1 flex items-center gap-2">
-                            <div className="flex-1">
-                                <DatePickerSimple value={fecha} onChange={setFecha} />
-                            </div>
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
-                                        Fecha en la que se emite la factura
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                    </div>
-
-                    {/* FORMA DE PAGO */}
-                    <div className="flex items-center gap-3">
-                        <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
-                            Forma de pago <span className="text-primary">*</span>
-                        </label>
-                        <div className="flex-1 flex items-center gap-2">
-                            <SearchableSelect
-                                value={formaPago}
-                                onValueChange={setFormaPago}
-                                options={mainData.paymentForms || []}
-                                placeholder="Forma de pago"
-                                className="w-full text-foreground"
-                            />
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
-                                        Elige si la transacción es de contado (pago inmediato) o a crédito (pago diferido)
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                    </div>
-
-                    {isContado ? (
+                {/* CLIENTE Y CONFIGURACIÓN */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-4 mb-2">
+                    {/* Columna Izquierda */}
+                    <div className="space-y-4">
+                        {/* DOCUMENTO */}
                         <div className="flex items-center gap-3">
-                            {/* MEDIO DE PAGO */}
-                            <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
-                                Medio de pago <span className="text-primary">*</span>
+                            <label className="text-sm font-medium text-foreground w-40 text-right shrink-0">
+                                Documento
                             </label>
                             <div className="flex-1 flex items-center gap-2">
-                                <div className="w-full">
+                                <div className="flex flex-1">
                                     <SearchableSelect
-                                        value={medioPago}
-                                        onValueChange={setMedioPago}
-                                        options={mainData.paymentMethods || []}
-                                        placeholder="Seleccionar"
-                                        className={cn("w-full text-foreground", errors?.payment_method_id && "border-destructive !text-destructive")}
-                                        errorIcon={errors?.payment_method_id ? <AlertCircle className="size-4 text-destructive" /> : undefined}
+                                        value={docType}
+                                        onValueChange={setDocType}
+                                        options={mainData.documentTypes}
+                                        placeholder="Tipo"
+                                        className={cn(inputClass, "w-28 rounded-r-none border-r-0 cursor-pointer")}
                                     />
-                                    {errors?.payment_method_id && (
-                                        <div className="text-destructive text-sm mt-1">
-                                            {errors.payment_method_id}
-                                        </div>
-                                    )}
+                                    <div className="relative flex-1 flex">
+                                        <Input
+                                            placeholder="Buscar Nº de ID"
+                                            value={docNumber}
+                                            onChange={(e) => setDocNumber(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    handleSearchDocument();
+                                                }
+                                            }}
+                                            className={cn(inputClass, "rounded-l-none flex-1 pr-10")}
+                                        />
+                                        {searchingDocument && (
+                                            <div className="absolute right-0 top-0 h-9 w-9 flex items-center justify-center">
+                                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <TooltipProvider>
                                     <Tooltip>
@@ -817,488 +625,707 @@ export function NewInvoiceMain({
                                             <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
                                         </TooltipTrigger>
                                         <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
-                                            Método utilizado por el cliente para saldar la factura (Efectivo, Consignación, etc.)
+                                            Selecciona el tipo de documento e ingresa el número de identificación del cliente
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
                             </div>
                         </div>
-                    ) : (
-                        <>
-                            {/* PLAZO DE PAGO */}
-                            <div className="flex items-center gap-3">
-                                <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
-                                    Plazo de pago
-                                </label>
-                                <div className="flex-1 flex items-center gap-2">
-                                    <SearchableSelect
-                                        value={plazo}
-                                        onValueChange={(val) => {
-                                            setPlazo(val);
-                                        }}
-                                        options={paymentTerms?.map((pt: any) => ({
-                                            value: pt.id.toString(),
-                                            label: pt.name
-                                        })) || []}
-                                        placeholder="Seleccionar"
-                                        className="w-full text-foreground"
-                                        footer={
+
+                        {/* NOMBRE O RAZÓN SOCIAL */}
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-foreground w-40 text-right shrink-0">
+                                Nombre o razón social <span className="text-primary">*</span>
+                            </label>
+                            <div className="flex-1 flex items-center gap-2">
+                                {displayName ? (
+                                    // Show the auto-filled name as a read-only pill with a clear button
+                                    <div className="flex-1 flex items-center gap-2">
+                                        <div className={cn(inputClass, "flex-1 flex items-center justify-between gap-2 bg-white")}>
+                                            <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
                                             <button
                                                 type="button"
-                                                onClick={() => setIsNewPaymentTermModalOpen(true)}
-                                                className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-primary/5 rounded-md transition-colors"
+                                                onClick={() => {
+                                                    setDisplayName("");
+                                                    setCliente("");
+                                                    setEmail("");
+                                                    setEmailAutoFilled(false);
+                                                    setDocNumber("");
+                                                }}
+                                                className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
                                             >
-                                                + Nuevo plazo
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                             </button>
-                                        }
-                                    />
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                                            </TooltipTrigger>
-                                            <TooltipContent className="bg-zinc-800 text-white p-2 text-xs max-w-xs">
-                                                Selecciona el tiempo máximo para el pago. Puedes agregar nuevos plazos <a href="#" className="underline">aquí</a>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-                            </div>
-
-                            {/* VENCIMIENTO */}
-                            <div className="flex items-center gap-3">
-                                <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
-                                    Vencimiento <span className="text-primary">*</span>
-                                </label>
-                                <div className="flex-1 flex items-center gap-2">
-                                    <div className="flex-1 flex items-center gap-2">
-                                        <input
-                                            type="text"
-                                            disabled
-                                            value={vencimiento.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}
-                                            className="h-9 flex-1 w-full rounded-md border border-foreground/20 bg-muted/30 px-3 py-1 text-sm text-muted-foreground cursor-not-allowed text-center"
-                                        />
-                                        <div className="flex-1 flex justify-center items-center gap-1.5 px-3 py-1.5 h-9 rounded-md bg-primary/10 text-primary border border-primary/20 text-sm font-medium">
-                                            <Clock className="w-4 h-4" />
-                                            {currentTime.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
                                         </div>
                                     </div>
+                                ) : (
+                                    <div className="w-full">
+                                        <SearchableSelect
+                                            value={cliente}
+                                            onValueChange={(val) => {
+                                                setCliente(val);
+                                                const selected = customersList.find(c => c.id.toString() === val);
+                                                if (selected) {
+                                                    const name = selected.registration_name ||
+                                                        `${selected.first_name || ""} ${selected.last_name || ""}`.trim() ||
+                                                        selected.identification_number;
+                                                    setDisplayName(name);
+                                                    setEmail(selected.email || "");
+                                                    setEmailAutoFilled(true);
+                                                    setDocNumber(selected.identification_number || "");
+                                                    if (selected.type_document_identification_id) {
+                                                        setDocType(selected.type_document_identification_id.toString());
+                                                    }
+                                                } else {
+                                                    setDisplayName("");
+                                                    setEmail("");
+                                                    setEmailAutoFilled(false);
+                                                    setDocNumber("");
+                                                }
+                                            }}
+                                            options={customersList.map((c: any) => ({
+                                                value: c.id.toString(),
+                                                label: c.registration_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.identification_number
+                                            }))}
+                                            placeholder="Seleccionar cliente"
+                                            className={cn("w-full text-foreground", errors?.contact_id && "border-destructive !text-destructive")}
+                                            errorIcon={errors?.contact_id ? <AlertCircle className="size-4 text-destructive" /> : undefined}
+                                        />
+                                        {errors?.contact_id && (
+                                            <div className="text-destructive text-sm mt-1">
+                                                {errors.contact_id}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
+                                            Selecciona el cliente para el cual se emitirá esta factura
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </div>
+
+                        {/* CORREO */}
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-foreground w-40 text-right shrink-0">
+                                Correo
+                            </label>
+                            <div className="flex-1 flex items-center gap-2">
+                                <Input
+                                    type="email"
+                                    placeholder="email@mail.com"
+                                    value={email}
+                                    readOnly={emailAutoFilled}
+                                    onChange={(e) => !emailAutoFilled && setEmail(e.target.value)}
+                                    className={cn(inputClass, "w-full", emailAutoFilled ? "bg-muted/20 cursor-default text-muted-foreground" : "")}
+                                />
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
+                                            Correo electrónico del cliente registrado para el envío de la factura electrónica
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </div>
+
+                        {/* NUEVO CONTACTO */}
+                        <div className="flex items-center gap-3 mt-4">
+                            <div className="w-40 shrink-0"></div>
+                            <div className="flex-1 flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddContactModalOpen(true)}
+                                    className="w-full text-primary hover:text-primary/80 text-sm font-medium flex justify-center items-center gap-1 transition-colors h-9 rounded-md hover:bg-muted cursor-pointer"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Nuevo contacto
+                                </button>
+                                <div className="w-6 shrink-0"></div> {/* Espaciador para alinear con el icono de ayuda del correo */}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Columna Derecha */}
+                    <div className="space-y-4">
+                        {/* FECHA */}
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
+                                Fecha <span className="text-primary">*</span>
+                            </label>
+                            <div className="flex-1 flex items-center gap-2">
+                                <div className="flex-1">
+                                    <DatePickerSimple value={fecha} onChange={setFecha} />
+                                </div>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
+                                            Fecha en la que se emite la factura
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </div>
+
+                        {/* FORMA DE PAGO */}
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
+                                Forma de pago <span className="text-primary">*</span>
+                            </label>
+                            <div className="flex-1 flex items-center gap-2">
+                                <SearchableSelect
+                                    value={formaPago}
+                                    onValueChange={setFormaPago}
+                                    options={mainData.paymentForms || []}
+                                    placeholder="Forma de pago"
+                                    className="w-full text-foreground"
+                                />
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
+                                            Elige si la transacción es de contado (pago inmediato) o a crédito (pago diferido)
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </div>
+
+                        {isContado ? (
+                            <div className="flex items-center gap-3">
+                                {/* MEDIO DE PAGO */}
+                                <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
+                                    Medio de pago <span className="text-primary">*</span>
+                                </label>
+                                <div className="flex-1 flex items-center gap-2">
+                                    <div className="w-full">
+                                        <SearchableSelect
+                                            value={medioPago}
+                                            onValueChange={setMedioPago}
+                                            options={mainData.paymentMethods || []}
+                                            placeholder="Seleccionar"
+                                            className={cn("w-full text-foreground", errors?.payment_method_id && "border-destructive !text-destructive")}
+                                            errorIcon={errors?.payment_method_id ? <AlertCircle className="size-4 text-destructive" /> : undefined}
+                                        />
+                                        {errors?.payment_method_id && (
+                                            <div className="text-destructive text-sm mt-1">
+                                                {errors.payment_method_id}
+                                            </div>
+                                        )}
+                                    </div>
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
                                             </TooltipTrigger>
-                                            <TooltipContent className="bg-zinc-800 text-white p-2 text-xs max-w-xs">
-                                                Fecha de vencimiento. Se calcula automáticamente si se define el plazo
+                                            <TooltipContent className="bg-zinc-800 text-white p-2 text-xs">
+                                                Método utilizado por el cliente para saldar la factura (Efectivo, Consignación, etc.)
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </div>
                             </div>
-                        </>
-                    )}
+                        ) : (
+                            <>
+                                {/* PLAZO DE PAGO */}
+                                <div className="flex items-center gap-3">
+                                    <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
+                                        Plazo de pago
+                                    </label>
+                                    <div className="flex-1 flex items-center gap-2">
+                                        <SearchableSelect
+                                            value={plazo}
+                                            onValueChange={(val) => {
+                                                setPlazo(val);
+                                            }}
+                                            options={paymentTerms?.map((pt: any) => ({
+                                                value: pt.id.toString(),
+                                                label: pt.name
+                                            })) || []}
+                                            placeholder="Seleccionar"
+                                            className="w-full text-foreground"
+                                            footer={
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsNewPaymentTermModalOpen(true)}
+                                                    className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-primary/5 rounded-md transition-colors"
+                                                >
+                                                    + Nuevo plazo
+                                                </button>
+                                            }
+                                        />
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-zinc-800 text-white p-2 text-xs max-w-xs">
+                                                    Selecciona el tiempo máximo para el pago. Puedes agregar nuevos plazos <a href="#" className="underline">aquí</a>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                </div>
+
+                                {/* VENCIMIENTO */}
+                                <div className="flex items-center gap-3">
+                                    <label className="text-sm font-medium text-foreground w-32 text-right shrink-0">
+                                        Vencimiento <span className="text-primary">*</span>
+                                    </label>
+                                    <div className="flex-1 flex items-center gap-2">
+                                        <div className="flex-1 flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                disabled
+                                                value={vencimiento.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                                className="h-9 flex-1 w-full rounded-md border border-foreground/20 bg-muted/30 px-3 py-1 text-sm text-muted-foreground cursor-not-allowed text-center"
+                                            />
+                                            <div className="flex-1 flex justify-center items-center gap-1.5 px-3 py-1.5 h-9 rounded-md bg-primary/10 text-primary border border-primary/20 text-sm font-medium">
+                                                <Clock className="w-4 h-4" />
+                                                {currentTime.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
+                                            </div>
+                                        </div>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-zinc-800 text-white p-2 text-xs max-w-xs">
+                                                    Fecha de vencimiento. Se calcula automáticamente si se define el plazo
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            {/* ITEMS */}
-            <InvoiceItemsTable
-                invoiceBuilder={invoiceBuilder}
-                selectedWarehouseId={selectedWarehouseId}
-                selectedPriceListId={selectedPriceListId}
-                taxes={taxes}
-            />
+                {/* ITEMS */}
+                <InvoiceItemsTable
+                    invoiceBuilder={invoiceBuilder}
+                    selectedWarehouseId={selectedWarehouseId}
+                    selectedPriceListId={selectedPriceListId}
+                    taxes={taxes}
+                />
 
-            {/* AJUSTES GLOBALES */}
-            <div className="mt-8 border-t border-border pt-6">
-                <div className="flex items-center gap-1.5 mb-4">
-                    <h3 className="text-sm font-semibold text-foreground">Ajustes Globales</h3>
-                    <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="bg-zinc-800 text-white p-2 text-xs max-w-[220px] leading-relaxed">
-                                Aplica un descuento o recargo al total de la factura. Puedes ingresar el valor en porcentaje (%) o como monto fijo ($) y agregar un motivo opcional.
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
+                {/* AJUSTES GLOBALES */}
+                <div className="mt-8 border-t border-border pt-6">
+                    <div className="flex items-center gap-1.5 mb-4">
+                        <h3 className="text-sm font-semibold text-foreground">Ajustes Globales</h3>
+                        <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="bg-zinc-800 text-white p-2 text-xs max-w-[220px] leading-relaxed">
+                                    Aplica un descuento o recargo al total de la factura. Puedes ingresar el valor en porcentaje (%) o como monto fijo ($) y agregar un motivo opcional.
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
 
-                <div className="flex flex-col md:flex-row gap-8">
-                    {/* Formulario a la izquierda */}
-                    <div className="w-full md:w-1/3 space-y-4">
-                        <div className="flex">
-                            <Select value={globalAdjType} onValueChange={(val: "discount" | "charge") => {
-                                setGlobalAdjType(val);
-                                setGlobalAdjValueType("percentage");
-                            }}>
-                                <SelectTrigger className="w-full bg-white h-9 border border-border rounded-r-none hover:bg-muted hover:border-primary cursor-pointer transition-colors">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="discount" className="cursor-pointer hover:bg-muted focus:bg-muted">Descuento</SelectItem>
-                                    <SelectItem value="charge" className="cursor-pointer hover:bg-muted focus:bg-muted">Cargo</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    <div className="flex flex-col md:flex-row gap-8">
+                        {/* Formulario a la izquierda */}
+                        <div className="w-full md:w-1/3 space-y-4">
+                            <div className="flex">
+                                <Select value={globalAdjType} onValueChange={(val: "discount" | "charge") => {
+                                    setGlobalAdjType(val);
+                                    setGlobalAdjValueType("percentage");
+                                }}>
+                                    <SelectTrigger className="w-full bg-white h-9 border border-border rounded-r-none hover:bg-muted hover:border-primary cursor-pointer transition-colors">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="discount" className="cursor-pointer hover:bg-muted focus:bg-muted">Descuento</SelectItem>
+                                        <SelectItem value="charge" className="cursor-pointer hover:bg-muted focus:bg-muted">Cargo</SelectItem>
+                                    </SelectContent>
+                                </Select>
 
-                            <Select value={globalAdjValueType} onValueChange={(val: "percentage" | "fixed") => setGlobalAdjValueType(val)}>
-                                <SelectTrigger className="w-20 bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted hover:border-primary cursor-pointer transition-colors">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="percentage" className="cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
-                                    <SelectItem value="fixed" className="cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                <Select value={globalAdjValueType} onValueChange={(val: "percentage" | "fixed") => setGlobalAdjValueType(val)}>
+                                    <SelectTrigger className="w-20 bg-white h-9 border border-border rounded-l-none border-l-0 hover:bg-muted hover:border-primary cursor-pointer transition-colors">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="percentage" className="cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
+                                        <SelectItem value="fixed" className="cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {globalAdjValueType === 'percentage' ? (
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
+                                    placeholder="Valor"
+                                    value={globalAdjPercent || ""}
+                                    onChange={(e) => setGlobalAdjPercent(Number(e.target.value))}
+                                    className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                            ) : (
+                                <FormattedInput
+                                    placeholder="Valor"
+                                    value={globalAdjPercent || 0}
+                                    onChange={(val: number) => setGlobalAdjPercent(val)}
+                                    className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                            )}
+
+                            <Input
+                                placeholder="Motivo"
+                                value={globalAdjReason}
+                                onChange={(e) => setGlobalAdjReason(e.target.value)}
+                                className="w-full bg-white h-9 border border-border"
+                            />
+
+                            <button
+                                onClick={handleAddGlobalAdjustment}
+                                className="w-full bg-primary text-primary-foreground px-4 h-9 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
+                            >
+                                {globalAdjType === 'discount' ? 'Agregar descuento' : 'Agregar cargo'}
+                            </button>
                         </div>
 
-                        {globalAdjValueType === 'percentage' ? (
-                            <Input
-                                type="number"
-                                min={0}
-                                onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
-                                placeholder="Valor"
-                                value={globalAdjPercent || ""}
-                                onChange={(e) => setGlobalAdjPercent(Number(e.target.value))}
-                                className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                        ) : (
-                            <FormattedInput
-                                placeholder="Valor"
-                                value={globalAdjPercent || 0}
-                                onChange={(val: number) => setGlobalAdjPercent(val)}
-                                className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                        )}
+                        {/* Lista a la derecha */}
+                        <div className="w-full md:w-2/3">
+                            <div className="max-h-48 overflow-y-auto pr-2 space-y-2">
+                                {invoiceBuilder.globalAdjustments.length === 0 && (
+                                    <div className="text-sm text-muted-foreground italic h-full min-h-32 flex items-center justify-center border border-dashed border-border rounded-lg p-6">
+                                        No hay ajustes globales agregados.
+                                    </div>
+                                )}
+                                {invoiceBuilder.globalAdjustments.map((adj: any) => {
+                                    const title = adj.type === 'discount' ? 'Descuento' : 'Cargo';
+                                    const reason = adj.reason ? `: ${adj.reason}` : "";
 
-                        <Input
-                            placeholder="Motivo"
-                            value={globalAdjReason}
-                            onChange={(e) => setGlobalAdjReason(e.target.value)}
-                            className="w-full bg-white h-9 border border-border"
-                        />
+                                    return (
+                                        <div key={adj.id} className="flex items-center gap-4 bg-muted/10 p-3 rounded-lg border border-border">
+                                            <span className="text-sm font-medium flex-1 truncate">
+                                                {title}{reason}
+                                            </span>
+                                            <span className="text-sm font-bold min-w-[100px] text-right">
+                                                {adj.valueType === 'percentage' ? `${adj.value}%` : `$ ${Math.round(adj.value).toLocaleString("es-CO")}`}
+                                            </span>
+                                            <button onClick={() => invoiceBuilder.removeGlobalAdjustment(adj.id)} className="p-1.5 rounded hover:bg-destructive/10 transition cursor-pointer group">
+                                                <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors" />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                        <button
-                            onClick={handleAddGlobalAdjustment}
-                            className="w-full bg-primary text-primary-foreground px-4 h-9 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-                        >
-                            {globalAdjType === 'discount' ? 'Agregar descuento' : 'Agregar cargo'}
+                {/* REMISIÓN BAR */}
+                <div className={cn(
+                    "overflow-hidden transition-all duration-300 ease-in-out",
+                    showRemissionBar ? "max-h-24 opacity-100 mt-6" : "max-h-0 opacity-0"
+                )}>
+                    <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-primary">Remisión</span>
+                            <div className="w-[240px]">
+                                <SearchableSelect
+                                    value={formState.remission_id || ""}
+                                    onValueChange={(val) => setFormState((prev: any) => ({ ...prev, remission_id: val }))}
+                                    options={[]}
+                                    placeholder="Buscar"
+                                    searchPlaceholder="Buscar remisión..."
+                                    className="w-full bg-white h-9"
+                                    emptyMessage={cliente ? "Sin resultados" : "Debe seleccionar primero un cliente para la factura"}
+                                />
+                            </div>
+                        </div>
+                        <button onClick={() => setShowRemissionBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors">
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
+                </div>
 
-                    {/* Lista a la derecha */}
-                    <div className="w-full md:w-2/3">
-                        <div className="max-h-48 overflow-y-auto pr-2 space-y-2">
-                            {invoiceBuilder.globalAdjustments.length === 0 && (
-                                <div className="text-sm text-muted-foreground italic h-full min-h-32 flex items-center justify-center border border-dashed border-border rounded-lg p-6">
-                                    No hay ajustes globales agregados.
+                {/* FOOTER & TOTALS */}
+                <div className="mt-8 border-t border-border pt-8">
+                    {/* Primera fila: Firma y Totales */}
+                    <div className="flex flex-col md:flex-row justify-between items-start mb-8">
+                        {/* Firma */}
+                        <div className="border-2 border-dashed border-border rounded-lg p-8 pb-4 bg-muted/5 w-full max-w-[280px] flex flex-col justify-end min-h-[120px]">
+                            <div className="text-center font-medium text-foreground text-sm h-5">
+                                {clientUser?.name || mainData?.user?.name || "Usuario"}
+                            </div>
+                            <div className="border-t border-muted-foreground/30 my-2 w-full mx-auto"></div>
+                            <div className="text-center text-xs text-muted-foreground">
+                                Elaborado por
+                            </div>
+                        </div>
+
+                        {/* Totales y Remisión */}
+                        <div className="w-full max-w-xs space-y-3 p-2 mt-6 md:mt-0">
+                            <div className="flex justify-end mb-4">
+                                <div className="flex items-center gap-1">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <HelpCircle className="w-3 h-3 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-white text-zinc-800 border border-border shadow-md p-3 text-xs">
+                                                Aprende a crear tus facturas <a href="#" className="underline font-medium">aquí</a>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap justify-end gap-3 mb-4">
+                                <button
+                                    onClick={() => setShowRemissionBar?.(!showRemissionBar)}
+                                    className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors cursor-pointer"
+                                >
+                                    <Plus className="w-4 h-4 shrink-0" />
+                                    Agregar remisión
+                                </button>
+                            </div>
+
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Subtotal</span>
+                                <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.subtotal || 0)}</span>
+                            </div>
+
+                            {invoiceBuilder.totals.lineDiscountsAmount > 0 && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Descuentos en línea</span>
+                                    <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.lineDiscountsAmount || 0)}</span>
                                 </div>
                             )}
-                            {invoiceBuilder.globalAdjustments.map((adj: any) => {
-                                const title = adj.type === 'discount' ? 'Descuento' : 'Cargo';
-                                const reason = adj.reason ? `: ${adj.reason}` : "";
 
-                                return (
-                                    <div key={adj.id} className="flex items-center gap-4 bg-muted/10 p-3 rounded-lg border border-border">
-                                        <span className="text-sm font-medium flex-1 truncate">
-                                            {title}{reason}
-                                        </span>
-                                        <span className="text-sm font-bold min-w-[100px] text-right">
-                                            {adj.valueType === 'percentage' ? `${adj.value}%` : `$ ${Math.round(adj.value).toLocaleString("es-CO")}`}
-                                        </span>
-                                        <button onClick={() => invoiceBuilder.removeGlobalAdjustment(adj.id)} className="p-1.5 rounded hover:bg-destructive/10 transition cursor-pointer group">
-                                            <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors" />
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-            </div>
+                            {invoiceBuilder.totals.globalDiscountsAmount > 0 && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Descuentos Globales</span>
+                                    <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.globalDiscountsAmount || 0)}</span>
+                                </div>
+                            )}
 
-            {/* REMISIÓN BAR */}
-            <div className={cn(
-                "overflow-hidden transition-all duration-300 ease-in-out",
-                showRemissionBar ? "max-h-24 opacity-100 mt-6" : "max-h-0 opacity-0"
-            )}>
-                <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-primary">Remisión</span>
-                        <div className="w-[240px]">
-                            <SearchableSelect
-                                value={formState.remission_id || ""}
-                                onValueChange={(val) => setFormState((prev: any) => ({ ...prev, remission_id: val }))}
-                                options={[]}
-                                placeholder="Buscar."
-                                searchPlaceholder="Buscar remisión..."
-                                className="w-full bg-white h-9"
-                                emptyMessage={cliente ? "Sin resultados" : "Debe seleccionar primero un cliente para la factura"}
-                            />
-                        </div>
-                    </div>
-                    <button onClick={() => setShowRemissionBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors">
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
+                            {invoiceBuilder.totals.globalChargesAmount > 0 && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Cargos Globales</span>
+                                    <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.globalChargesAmount || 0)}</span>
+                                </div>
+                            )}
 
-            {/* FOOTER & TOTALS */}
-            <div className="mt-8 border-t border-border pt-8">
-                {/* Primera fila: Firma y Totales */}
-                <div className="flex flex-col md:flex-row justify-between items-start mb-8">
-                    {/* Firma */}
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 pb-4 bg-muted/5 w-full max-w-[280px] flex flex-col justify-end min-h-[120px]">
-                        <div className="text-center font-medium text-foreground text-sm h-5">
-                            {clientUser?.name || mainData?.user?.name || "Usuario"}
-                        </div>
-                        <div className="border-t border-muted-foreground/30 my-2 w-full mx-auto"></div>
-                        <div className="text-center text-xs text-muted-foreground">
-                            Elaborado por
+                            {invoiceBuilder.totals.taxBreakdown && (Object.values(invoiceBuilder.totals.taxBreakdown) as { name: string; amount: number }[]).map(({ name, amount }) => (
+                                <div key={name} className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">{name}</span>
+                                    <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0)}</span>
+                                </div>
+                            ))}
+
+
+
+                            <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-2">
+                                <span className="text-xl font-medium text-foreground">Total</span>
+                                <span className="text-2xl font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.payableAmount || 0)}</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Totales y Remisión */}
-                    <div className="w-full max-w-xs space-y-3 p-2 mt-6 md:mt-0">
-                        <div className="flex justify-end mb-4">
-                            <div className="flex items-center gap-1">
+                    {/* Segunda fila: Términos y Notas */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-1">
+                                Términos y condiciones
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <HelpCircle className="w-3 h-3 text-primary cursor-help hover:text-primary/70 transition-colors" />
                                         </TooltipTrigger>
-                                        <TooltipContent className="bg-white text-zinc-800 border border-border shadow-md p-3 text-xs">
-                                            Aprende a crear tus facturas <a href="#" className="underline font-medium">aquí</a>
+                                        <TooltipContent className="max-w-[280px] bg-zinc-800 text-white p-3 text-xs leading-relaxed">
+                                            Define las condiciones que informarás a tus clientes sobre las ventas generadas. Para definir un texto por defecto haz <a href="#" className="underline font-medium">clic aquí</a>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
-                            </div>
+                            </label>
+                            <textarea
+                                readOnly
+                                rows={4}
+                                defaultValue="Este documento se asimila en todos sus efectos a una letra de cambio de conformidad con el Art. 774 del código de comercio. Autorizo que en caso de incumplimiento de esta obligación sea reportado a las centrales de riesgo, se cobraran intereses por mora."
+                                className="w-full px-3 py-2 border border-foreground/20 rounded-lg text-sm text-foreground bg-muted/10 cursor-default resize-none focus:outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-1">
+                                Notas
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <HelpCircle className="w-3 h-3 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-[280px] bg-zinc-800 text-white p-3 text-xs leading-relaxed">
+                                            Agrega información importante que tus clientes verán en esta factura. Para definir un texto por defecto haz <a href="#" className="underline font-medium">clic aquí</a>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </label>
+                            <textarea
+                                rows={4}
+                                value={notes ?? ""}
+                                onChange={(e) => onNotesChange?.(e.target.value)}
+                                className="w-full px-3 py-2 border border-foreground/20 rounded-lg text-sm text-foreground hover:bg-primary/10 focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors resize-none"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Tercera fila: Notas adicionales y Pie de factura */}
+                    <div className="space-y-6">
+                        <div className="opacity-50 pointer-events-none">
+                            <label className="block text-sm font-medium text-muted-foreground mb-2">
+                                Pie de factura
+                            </label>
+                            <textarea
+                                disabled
+                                rows={2}
+                                value={activeResolution?.resolution_text || ""}
+                                placeholder="Visible en la impresión del documento"
+                                className="w-full px-3 py-2 border border-foreground/20 rounded-lg text-sm text-foreground bg-muted/10 cursor-not-allowed resize-none"
+                            />
                         </div>
 
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Subtotal</span>
-                            <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.subtotal || 0)}</span>
-                        </div>
-
-                        {invoiceBuilder.totals.lineDiscountsAmount > 0 && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Descuentos en línea</span>
-                                <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.lineDiscountsAmount || 0)}</span>
-                            </div>
-                        )}
-
-                        {invoiceBuilder.totals.globalDiscountsAmount > 0 && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Descuentos Globales</span>
-                                <span className="font-medium text-destructive">-${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.globalDiscountsAmount || 0)}</span>
-                            </div>
-                        )}
-
-                        {invoiceBuilder.totals.globalChargesAmount > 0 && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Cargos Globales</span>
-                                <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.globalChargesAmount || 0)}</span>
-                            </div>
-                        )}
-
-                        {invoiceBuilder.totals.taxBreakdown && (Object.values(invoiceBuilder.totals.taxBreakdown) as { name: string; amount: number }[]).map(({ name, amount }) => (
-                            <div key={name} className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">{name}</span>
-                                <span className="font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0)}</span>
-                            </div>
-                        ))}
-
-
-
-                        <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-2">
-                            <span className="text-xl font-medium text-foreground">Total</span>
-                            <span className="text-2xl font-medium text-foreground">${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(invoiceBuilder.totals.payableAmount || 0)}</span>
+                        <div className="text-xs text-muted-foreground pt-4">
+                            Los campos marcados con <span className="text-primary">*</span> son obligatorios
                         </div>
                     </div>
                 </div>
 
-                {/* Segunda fila: Términos y Notas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <div>
-                        <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-1">
-                            Términos y condiciones
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <HelpCircle className="w-3 h-3 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-[280px] bg-zinc-800 text-white p-3 text-xs leading-relaxed">
-                                        Define las condiciones que informarás a tus clientes sobre las ventas generadas. Para definir un texto por defecto haz <a href="#" className="underline font-medium">clic aquí</a>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </label>
-                        <textarea
-                            readOnly
-                            rows={4}
-                            defaultValue="Este documento se asimila en todos sus efectos a una letra de cambio de conformidad con el Art. 774 del código de comercio. Autorizo que en caso de incumplimiento de esta obligación sea reportado a las centrales de riesgo, se cobraran intereses por mora."
-                            className="w-full px-3 py-2 border border-foreground/20 rounded-lg text-sm text-foreground bg-muted/10 cursor-default resize-none focus:outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-1">
-                            Notas
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <HelpCircle className="w-3 h-3 text-primary cursor-help hover:text-primary/70 transition-colors" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-[280px] bg-zinc-800 text-white p-3 text-xs leading-relaxed">
-                                        Agrega información importante que tus clientes verán en esta factura. Para definir un texto por defecto haz <a href="#" className="underline font-medium">clic aquí</a>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </label>
-                        <textarea
-                            rows={4}
-                            value={notes ?? ""}
-                            onChange={(e) => onNotesChange?.(e.target.value)}
-                            className="w-full px-3 py-2 border border-foreground/20 rounded-lg text-sm text-foreground hover:bg-primary/10 focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors resize-none"
-                        />
-                    </div>
-                </div>
+                {/* Resolution Edit Modal */}
+                <EditResolutionModal
+                    isOpen={isResolutionModalOpen}
+                    onClose={() => setIsResolutionModalOpen(false)}
+                    resolution={activeResolution || null}
+                />
 
-                {/* Tercera fila: Notas adicionales y Pie de factura */}
-                <div className="space-y-6">
-                    <div className="opacity-50 pointer-events-none">
-                        <label className="block text-sm font-medium text-muted-foreground mb-2">
-                            Pie de factura
-                        </label>
-                        <textarea
-                            disabled
-                            rows={2}
-                            value={activeResolution?.resolution_text || ""}
-                            placeholder="Visible en la impresión del documento"
-                            className="w-full px-3 py-2 border border-foreground/20 rounded-lg text-sm text-foreground bg-muted/10 cursor-not-allowed resize-none"
-                        />
-                    </div>
-
-                    <div className="text-xs text-muted-foreground pt-4">
-                        Los campos marcados con <span className="text-primary">*</span> son obligatorios
-                    </div>
-                </div>
-            </div>
-
-            {/* Resolution Edit Modal */}
-            <EditResolutionModal
-                isOpen={isResolutionModalOpen}
-                onClose={() => setIsResolutionModalOpen(false)}
-                resolution={activeResolution || null}
-            />
-
-            {/* Add Contact Modal (Simple / Advanced) */}
-            <AddContactModal
-                isOpen={isAddContactModalOpen}
-                onClose={() => {
-                    setIsAddContactModalOpen(false);
-                    setPrefilledContactData(null);
-                }}
-                prefilledData={prefilledContactData}
-                catalogData={catalogData}
-                onCustomerCreated={(respCustomer) => {
-                    const newCustomer = respCustomer?.customer || respCustomer?.data || respCustomer;
-                    if (!newCustomer) return;
-                    // Agregar a la lista local
-                    setCustomersList((prev) => [newCustomer, ...prev]);
-                    // Seleccionar cliente
-                    setCliente(newCustomer.id.toString());
-                    // Mostrar nombre en el formulario
-                    const name = newCustomer.registration_name ||
-                        `${newCustomer.first_name || ""} ${newCustomer.last_name || ""}`.trim() ||
-                        newCustomer.identification_number;
-                    setDisplayName(name);
-                    // Autocompletar datos en pantalla principal
-                    setEmail(newCustomer.email || "");
-                    setEmailAutoFilled(!!(newCustomer.email));
-                    setDocNumber(newCustomer.identification_number || "");
-                    if (newCustomer.type_document_identification_id) {
-                        setDocType(newCustomer.type_document_identification_id.toString());
-                    }
-                }}
-            />
-
-            {/* Hidden button to open item modal from table */}
-            <button
-                id="open-quick-item-modal"
-                className="hidden"
-                onClick={(e) => {
-                    const targetRowId = e.currentTarget.getAttribute('data-target-row');
-                    setQuickCreateItemTargetRow(targetRowId);
-                    setIsQuickCreateItemModalOpen(true);
-                }}
-            />
-
-            {/* Quick Create Item Modal */}
-            <QuickCreateItemModal
-                open={isQuickCreateItemModalOpen}
-                onClose={() => setIsQuickCreateItemModalOpen(false)}
-                catalogs={catalogs}
-                onCreated={(createdItem) => {
-                    if (createdItem && quickCreateItemTargetRow) {
-                        // Update item data into the specific row
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "item_id", createdItem.id);
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "standard_code", createdItem.standard_code || "");
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "item", createdItem.name);
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "referencia", createdItem.reference || "");
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "description", createdItem.description || "");
-
-                        const price = parseFloat(createdItem.base_price) || parseFloat(createdItem.total_price) || parseFloat(createdItem.price) || 0;
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "precio", price);
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "cantidad", 1);
-
-                        // Fix for inventory tracking of newly created items (e.g. services)
-                        const isInventoriable = createdItem.type_item_id !== undefined ? createdItem.type_item_id === 1 : (createdItem.type_item?.name?.toLowerCase() === 'producto' || createdItem.type_item?.id === 1);
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "stock_quantity", createdItem.stock_quantity ?? null);
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "is_inventoriable", isInventoriable);
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "allow_negative_stock", createdItem.allow_negative_stock ?? false);
-
-                        // Auto-fill default tax
-                        let itemTaxes = createdItem.tax_rates || createdItem.pricing?.tax_rates;
-                        if (itemTaxes && itemTaxes.length > 0) {
-                            const defaultTax = itemTaxes[0];
-                            const taxRate = parseFloat(defaultTax.rate || defaultTax.percentage || "0");
-                            const taxName = defaultTax.name || defaultTax.tax?.name || "Impuesto";
-                            invoiceBuilder.updateItemTax(quickCreateItemTargetRow, {
-                                tax_rate_id: defaultTax.id || defaultTax.tax_rate_id,
-                                tax_id: defaultTax.tax_id,
-                                name: taxName,
-                                rate: taxRate,
-                                type: defaultTax.type || 'percentage',
-                                description: defaultTax.description || ""
-                            });
-                        } else {
-                            invoiceBuilder.updateItemTax(quickCreateItemTargetRow, null);
+                {/* Add Contact Modal (Simple / Advanced) */}
+                <AddContactModal
+                    isOpen={isAddContactModalOpen}
+                    onClose={() => {
+                        setIsAddContactModalOpen(false);
+                        setPrefilledContactData(null);
+                    }}
+                    prefilledData={prefilledContactData}
+                    catalogData={catalogData}
+                    onCustomerCreated={(respCustomer) => {
+                        const newCustomer = respCustomer?.customer || respCustomer?.data || respCustomer;
+                        if (!newCustomer) return;
+                        // Agregar a la lista local
+                        setCustomersList((prev) => [newCustomer, ...prev]);
+                        // Seleccionar cliente
+                        setCliente(newCustomer.id.toString());
+                        // Mostrar nombre en el formulario
+                        const name = newCustomer.registration_name ||
+                            `${newCustomer.first_name || ""} ${newCustomer.last_name || ""}`.trim() ||
+                            newCustomer.identification_number;
+                        setDisplayName(name);
+                        // Autocompletar datos en pantalla principal
+                        setEmail(newCustomer.email || "");
+                        setEmailAutoFilled(!!(newCustomer.email));
+                        setDocNumber(newCustomer.identification_number || "");
+                        if (newCustomer.type_document_identification_id) {
+                            setDocType(newCustomer.type_document_identification_id.toString());
                         }
-                        // Force refresh the items list in dropdowns
-                        queryClient.invalidateQueries({ queryKey: ["items"] });
-                    }
-                    setQuickCreateItemTargetRow(null);
-                }}
-            />
+                    }}
+                />
 
-            <NewPaymentTermModal
-                open={isNewPaymentTermModalOpen}
-                onOpenChange={setIsNewPaymentTermModalOpen}
-                onSave={(newTerm) => {
-                    setPlazo(newTerm.id.toString());
-                }}
-            />
+                {/* Hidden button to open item modal from table */}
+                <button
+                    id="open-quick-item-modal"
+                    className="hidden"
+                    onClick={(e) => {
+                        const targetRowId = e.currentTarget.getAttribute('data-target-row');
+                        setQuickCreateItemTargetRow(targetRowId);
+                        setIsQuickCreateItemModalOpen(true);
+                    }}
+                />
 
-            <button id="open-new-tax-modal" className="hidden" onClick={() => setIsTaxModalOpen(true)} />
+                {/* Quick Create Item Modal */}
+                <QuickCreateItemModal
+                    open={isQuickCreateItemModalOpen}
+                    onClose={() => setIsQuickCreateItemModalOpen(false)}
+                    catalogs={catalogs}
+                    onCreated={(createdItem) => {
+                        if (createdItem && quickCreateItemTargetRow) {
+                            // Update item data into the specific row
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "item_id", createdItem.id);
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "standard_code", createdItem.standard_code || "");
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "item", createdItem.name);
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "referencia", createdItem.reference || "");
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "description", createdItem.description || "");
 
-            <NewTaxRateModal
-                open={isTaxModalOpen}
-                onOpenChange={setIsTaxModalOpen}
-                taxTypes={catalogs?.taxTypes || []}
-                onSave={async (newTax) => {
-                    // El componente NewTaxRateModal actualiza el cache
-                }}
-            />
+                            const price = parseFloat(createdItem.base_price) || parseFloat(createdItem.total_price) || parseFloat(createdItem.price) || 0;
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "precio", price);
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "cantidad", 1);
+
+                            // Fix for inventory tracking of newly created items (e.g. services)
+                            const isInventoriable = createdItem.type_item_id !== undefined ? createdItem.type_item_id === 1 : (createdItem.type_item?.name?.toLowerCase() === 'producto' || createdItem.type_item?.id === 1);
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "stock_quantity", createdItem.stock_quantity ?? null);
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "is_inventoriable", isInventoriable);
+                            invoiceBuilder.updateItem(quickCreateItemTargetRow, "allow_negative_stock", createdItem.allow_negative_stock ?? false);
+
+                            // Auto-fill default tax
+                            let itemTaxes = createdItem.tax_rates || createdItem.pricing?.tax_rates;
+                            if (itemTaxes && itemTaxes.length > 0) {
+                                const defaultTax = itemTaxes[0];
+                                const taxRate = parseFloat(defaultTax.rate || defaultTax.percentage || "0");
+                                const taxName = defaultTax.name || defaultTax.tax?.name || "Impuesto";
+                                invoiceBuilder.updateItemTax(quickCreateItemTargetRow, {
+                                    tax_rate_id: defaultTax.id || defaultTax.tax_rate_id,
+                                    tax_id: defaultTax.tax_id,
+                                    name: taxName,
+                                    rate: taxRate,
+                                    type: defaultTax.type || 'percentage',
+                                    description: defaultTax.description || ""
+                                });
+                            } else {
+                                invoiceBuilder.updateItemTax(quickCreateItemTargetRow, null);
+                            }
+                            // Force refresh the items list in dropdowns
+                            queryClient.invalidateQueries({ queryKey: ["items"] });
+                        }
+                        setQuickCreateItemTargetRow(null);
+                    }}
+                />
+
+                <NewPaymentTermModal
+                    open={isNewPaymentTermModalOpen}
+                    onOpenChange={setIsNewPaymentTermModalOpen}
+                    onSave={(newTerm) => {
+                        setPlazo(newTerm.id.toString());
+                    }}
+                />
+
+                <button id="open-new-tax-modal" className="hidden" onClick={() => setIsTaxModalOpen(true)} />
+
+                <NewTaxRateModal
+                    open={isTaxModalOpen}
+                    onOpenChange={setIsTaxModalOpen}
+                    taxTypes={catalogs?.taxTypes || []}
+                    onSave={async (newTax) => {
+                        // El componente NewTaxRateModal actualiza el cache
+                    }}
+                />
+            </div>
         </div>
     );
 }

@@ -265,14 +265,14 @@ export function NewItemModal({
   const handleSaveWarehouse = async (data: { name: string; address: string; observations: string }) => {
     try {
       const response = await warehousesApi.createWarehouse(data);
-      
+
       invalidateCatalog(queryClient, QUERY_KEYS.catalogs.warehouses());
-      
+
       const created =
         response?.data?.warehouse ??
         response?.data ??
         { id: Date.now(), name: data.name };
-        
+
       set("bodega", created.name);
       setIsWarehouseModalOpen(false);
       showToast(`La bodega "${created.name}" fue creada exitosamente.`, "success");
@@ -350,11 +350,11 @@ export function NewItemModal({
                     <AlertCircle className="w-4 h-4 text-destructive absolute right-3 top-1/2 -translate-y-1/2" />
                   )}
                 </div>
-                  {errors.name && typeof errors.name === "string" ? (
-                    <p className="text-[11px] text-destructive leading-none">{errors.name}</p>
-                  ) : errors.name ? (
-                    <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
-                  ) : null}
+                {errors.name && typeof errors.name === "string" ? (
+                  <p className="text-[11px] text-destructive leading-none">{errors.name}</p>
+                ) : errors.name ? (
+                  <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
+                ) : null}
               </div>
 
               {/* Bodega + Categoría (Hidden for Servicio) */}
@@ -450,7 +450,7 @@ export function NewItemModal({
                       if (errors.unit) setErrors(prev => ({ ...prev, unit: false }));
                     }}
                     options={(unitMeasures || []).map((unit: any) => ({ value: String(unit.id), label: unit.name }))}
-                    placeholder="Buscar."
+                    placeholder="Buscar"
                     searchPlaceholder="Buscar unidad..."
                     emptyMessage="No se encontraron unidades."
                     className={cn(baseInput, "w-full rounded-md", errors.unit && "border-destructive ring-destructive/20")}
@@ -586,7 +586,7 @@ export function NewItemModal({
                       { value: "1", label: "Producto Ejemplo 1" },
                       { value: "2", label: "Servicio Ejemplo 2" },
                     ]}
-                    placeholder="Buscar."
+                    placeholder="Buscar"
                     searchPlaceholder="Buscar código..."
                     emptyMessage="No se encontraron códigos."
                     className={cn(baseInput, "w-full rounded-md")}

@@ -1,6 +1,6 @@
-﻿import { envs } from "@/config/env";
+import { envs } from "@/config/env";
 import { apiClient } from "@/lib/api-client";
-import type { Quote, QuoteDetailResponse, QuoteFindAllSuccess } from "@/types/Quote";
+import type { Quote, QuoteDetailResponse, QuoteFindAllSuccess } from "@/types/quote";
 
 export class QuotesService {
     static async list(params?: Record<string, any>) {

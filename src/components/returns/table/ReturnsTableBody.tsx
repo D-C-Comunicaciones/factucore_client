@@ -4,7 +4,6 @@ import * as React from "react";
 import { FileText, MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format-currency";
-import dayjs from "dayjs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -101,7 +100,7 @@ function ReturnRow({ item }: { item: any }) {
       </TableCell>
       <TableCell className="text-gray-600">
         {item.issue_date && item.issue_date.includes("-") 
-            ? dayjs(item.issue_date).format("DD/MM/YYYY") 
+            ? item.issue_date.split("T")[0].split(" ")[0].split("-").reverse().join("/") 
             : (item.issue_date || "—")}
       </TableCell>
       <TableCell className="text-gray-800 font-medium">

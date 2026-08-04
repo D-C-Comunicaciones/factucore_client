@@ -993,7 +993,7 @@ export function NewReturnForm() {
                                                         }}
                                                         options={invoiceOptions.filter(o => o.value === inv.invoiceId || !selectedInvoices.some(i => i.invoiceId === o.value))}
                                                         placeholder={loadingInvoices ? "Cargando..." : "Buscar factura"}
-                                                        searchPlaceholder="Buscar..."
+                                                        searchPlaceholder="Buscar.."
                                                         emptyMessage={loadingInvoices ? "Cargando..." : "No hay facturas."}
                                                         className={cn(baseInput, "w-full rounded-md", errors.facturas && "border-red-400")}
                                                     />

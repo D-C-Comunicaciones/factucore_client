@@ -26,6 +26,8 @@ export interface SearchableSelectOption {
   value: string;
   /** Human-readable label shown in the list */
   label: string;
+  /** Optional description shown below the label */
+  description?: string;
 }
 
 export interface SearchableSelectProps {
@@ -62,7 +64,7 @@ export function SearchableSelect({
   onValueChange,
   options,
   placeholder = "Seleccionar",
-  searchPlaceholder = "Buscar.",
+  searchPlaceholder = "Buscar",
   emptyMessage = "No se encontraron resultados.",
   className,
   contentClassName,
@@ -135,13 +137,20 @@ export function SearchableSelect({
                 }}
                 className="rounded-lg cursor-pointer transition-colors data-[selected=true]:bg-primary/5 data-[selected=true]:text-primary hover:bg-primary/5 hover:text-primary group/item relative"
               >
-                <span className="flex-1 truncate">{option.label}</span>
+                <div className="flex-1 flex flex-col justify-center overflow-hidden">
+                  <span className="truncate">{option.label}</span>
+                  {option.description && (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {option.description}
+                    </span>
+                  )}
+                </div>
                 {value === option.value && (
                   <Check className="size-4 text-primary shrink-0" />
                 )}
                 {/* Custom tooltip — shows full label on hover */}
                 <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 hidden group-hover/item:block whitespace-nowrap rounded-md bg-[#2563eb] px-2.5 py-1.5 text-xs font-medium text-white shadow-lg">
-                  {option.label}
+                  {option.label} {option.description ? `- ${option.description}` : ''}
                 </span>
               </CommandItem>
             ))}</CommandGroup>

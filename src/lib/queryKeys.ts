@@ -16,8 +16,9 @@ export const QUERY_KEYS = {
 
     catalogs: {
         all: ["catalogs"] as const,
-
         countries: () => ["catalogs", "countries"] as const,
+
+        currencies: () => ["catalogs", "currencies"] as const,
 
         warehouses: () =>
             [

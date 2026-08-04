@@ -476,7 +476,7 @@ export function InvoiceItemsTable({
         <button
           type="button"
           onClick={invoiceBuilder.addItem}
-          className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+          className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
         >
           Agregar ítem
         </button>
