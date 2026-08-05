@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { NewQuoteFooter } from "@/components/quote/new/NewQuoteFooter";
 import { NewQuoteHeader } from "@/components/quote/new/NewQuoteHeader";
 import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
@@ -8,14 +8,14 @@ import { NewQuoteMain } from "@/components/quote/new/NewQuoteMain";
 import { NewQuoteOptions } from "@/components/quote/new/NewQuoteOptions";
 import { NewQuoteSettingsDrawer } from "@/components/quote/new/NewQuoteSettingsDrawer";
 import { PreviewModal } from "@/components/invoice/new/PreviewModal";
-import { useCreateQuote, useQuote } from "@/hooks/quotes/useQuotes";
-import { useQuoteBuilder, isIvaTax } from "@/hooks/quotes/useQuoteBuilder";
+import { QuoteDetailSkeleton } from "@/components/quotes/details/QuoteDetailSkeleton";
+import { useQuote, useUpdateQuote } from "@/hooks/quotes/useQuotes";
+import { useQuoteBuilder } from "@/hooks/quotes/useQuoteBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useSellersList } from "@/hooks/sellers/useSellers";
 import { QuotesService } from "@/lib/quotes";
 import { mapQuoteItemsToLines, mapQuoteGlobalAdjustments } from "@/lib/quoteLineMapping";
 import { AuthService } from "@/lib/auth";
-import { getSession } from "@/common/interfaces/session";
 import { useResolutions } from "@/hooks/useResolutions";
 import type { Resolution } from "@/lib/resolutions";
 import { costCentersApi } from "@/lib/costCenters";
@@ -23,25 +23,41 @@ import { useQuery } from "@tanstack/react-query";
 
 import { showToast } from "@/components/sonner/CustomToaster";
 
-export default function NewQuotePage() {
+// Las fechas del backend vienen como DD/MM/YYYY
+function parseDDMMYYYYToISO(str?: string | null): string | undefined {
+  if (!str) return undefined;
+  const [day, month, year] = str.split('/');
+  if (!day || !month || !year) return undefined;
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
+function parseDDMMYYYYToDate(str?: string | null): Date | null {
+  if (!str) return null;
+  const [day, month, year] = str.split('/').map(Number);
+  if (!day || !month || !year) return null;
+  return new Date(year, month - 1, day);
+}
+
+export default function EditQuotePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const cloneId = searchParams?.get("cloneId");
-  const createInvoice = useCreateQuote();
+  const params = useParams();
+  const id = params?.id as string | number | undefined;
+  const enabled = typeof id === 'string' || typeof id === 'number';
+
+  const { data: quoteResponse, isLoading, isError } = useQuote(enabled ? id! : "");
+  const updateQuote = useUpdateQuote();
   const catalogData = useCatalogs();
   const { data: sellersData } = useSellersList();
-  const { data: cloneSourceResponse } = useQuote(cloneId || "");
   const resolutionTypeFilter = 7; // Quotes
   const { resolutions, refetch: refetchResolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
   const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, any>>({});
 
-  // Set is_main resolution as default when resolutions load or tipoDoc changes
+  // Set is_main resolution as default until the quote's own resolution is loaded
   useEffect(() => {
     if (resolutions.length > 0) {
       const isValid = resolutions.some((r: Resolution) => r.id === selectedResolutionId);
       if (!isValid) {
-        // Prefer is_main, fallback to first
         const mainRes = resolutions.find((r: Resolution) => r.is_main) || resolutions[0];
         setSelectedResolutionId(mainRes.id);
       }
@@ -51,63 +67,86 @@ export default function NewQuotePage() {
   }, [resolutions]);
 
   const activeResolution = resolutions.find((r: Resolution) => r.id === selectedResolutionId) || resolutions[0] || null;
-  // Leer company guardada en localStorage al iniciar sesión
   const storedCompany = AuthService.getCompany<any>();
 
-  const [showEmitirMenu, setShowEmitirMenu] = useState(false);
   const [formState, setFormState] = useState<any>({
     notes: "",
     contact_id: null,
     seller_id: null,
-    payment_form_id: null,
-    payment_method_id: null,
     payment_due_date: null,
     currency_id: "COP"
   });
-  const [loadingEmitir, setLoadingEmitir] = useState(false);
   const [loadingGuardar, setLoadingGuardar] = useState(false);
 
-  // Selected filters for items
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | null>(null);
   const [selectedPriceListId, setSelectedPriceListId] = useState<number | null>(null);
 
-  // States for customizing visible fields
-  const [showWarehouse, setShowWarehouse] = useState(true);
-  const [showPriceList, setShowPriceList] = useState(true);
   const [showRemissionBar, setShowRemissionBar] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-  // Initialize the builder hook
   const QuoteBuilder = useQuoteBuilder();
 
-  // Prefill everything from the source quote when cloning ("Clonar")
-  const cloneSourceQuote = cloneSourceResponse?.data?.quotation || cloneSourceResponse?.data?.quote || cloneSourceResponse?.data?.bill;
-  const cloneSourceItems = (cloneSourceResponse?.data as any)?.items || cloneSourceQuote?.lines || cloneSourceQuote?.quote_lines || [];
-  const clonePrefillAppliedRef = useRef(false);
-  useEffect(() => {
-    if (!clonePrefillAppliedRef.current && cloneId && cloneSourceQuote) {
-      clonePrefillAppliedRef.current = true;
-      QuoteBuilder.setItems(mapQuoteItemsToLines(cloneSourceItems) as any);
-      QuoteBuilder.setGlobalAdjustments(mapQuoteGlobalAdjustments(cloneSourceQuote) as any);
+  // Snapshot de los valores originales de la cotización, usado para calcular qué cambió al guardar
+  const baselineRef = useRef<any>(null);
 
-      const warehouseId = cloneSourceQuote.warehouse?.id ?? cloneSourceQuote.warehouse_id ?? cloneSourceQuote.selected_warehouse?.id;
-      const priceListId = cloneSourceQuote.price_list?.id ?? cloneSourceQuote.price_list_id;
+  const quote = quoteResponse?.data?.quotation || quoteResponse?.data?.quote || quoteResponse?.data?.bill;
+  const quoteItems = (quoteResponse?.data as any)?.items || quote?.lines || quote?.quote_lines || [];
+
+  const prefillAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!prefillAppliedRef.current && quote) {
+      prefillAppliedRef.current = true;
+
+      const mappedItems = mapQuoteItemsToLines(quoteItems);
+      const mappedAdjustments = mapQuoteGlobalAdjustments(quote);
+      QuoteBuilder.setItems(mappedItems as any);
+      QuoteBuilder.setGlobalAdjustments(mappedAdjustments as any);
+
+      const warehouseId = quote.warehouse?.id ?? quote.warehouse_id ?? null;
+      const priceListId = quote.price_list?.id ?? quote.price_list_id ?? null;
+      const sellerIdRaw = quote.seller?.id ?? quote.seller_id;
+      const costCenterIdRaw = quote.cost_center?.id ?? quote.cost_center_id;
+      const currencyId = quote.currency?.code ?? quote.currency_id ?? "COP";
+      const sellerId = sellerIdRaw != null ? String(sellerIdRaw) : null;
+      const costCenterId = costCenterIdRaw != null ? String(costCenterIdRaw) : null;
+      const notes = quote.notes || quote.observation || "";
+      const termsAndConditions = quote.terms_and_conditions || "";
+      const issueDateISO = parseDDMMYYYYToISO(quote.issue_date);
+      const expiratopDateISO = parseDDMMYYYYToISO(quote.expiration_date);
+
       if (warehouseId) setSelectedWarehouseId(Number(warehouseId));
       if (priceListId) setSelectedPriceListId(Number(priceListId));
-
-      const sellerIdRaw = cloneSourceQuote.seller?.id ?? cloneSourceQuote.seller_id;
-      const costCenterIdRaw = cloneSourceQuote.cost_center?.id ?? cloneSourceQuote.cost_center_id;
+      if (quote.resolution_id) setSelectedResolutionId(Number(quote.resolution_id));
 
       setFormState((prev: any) => ({
         ...prev,
-        seller_id: sellerIdRaw != null ? String(sellerIdRaw) : prev.seller_id,
-        cost_center_id: costCenterIdRaw != null ? String(costCenterIdRaw) : prev.cost_center_id,
-        currency_id: cloneSourceQuote.currency?.code ?? cloneSourceQuote.currency_id ?? prev.currency_id,
-        notes: cloneSourceQuote.notes || cloneSourceQuote.observation || prev.notes,
-        terms_and_conditions: cloneSourceQuote.terms_and_conditions || prev.terms_and_conditions,
+        contact_id: quote.contact_id ?? null,
+        seller_id: sellerId,
+        cost_center_id: costCenterId,
+        currency_id: currencyId,
+        notes,
+        terms_and_conditions: termsAndConditions,
       }));
+
+      baselineRef.current = {
+        items: mappedItems,
+        globalAdjustments: mappedAdjustments,
+        warehouseId: warehouseId != null ? Number(warehouseId) : null,
+        priceListId: priceListId != null ? Number(priceListId) : null,
+        sellerId,
+        costCenterId,
+        currencyId,
+        notes,
+        termsAndConditions,
+        contactId: quote.contact_id ?? null,
+        resolutionId: quote.resolution_id ?? null,
+        issueDateISO,
+        expiratopDateISO,
+      };
     }
-  }, [cloneId, cloneSourceQuote, cloneSourceItems]);
+  }, [quote, quoteItems]);
+
+  const initialDueDate = quote ? parseDDMMYYYYToDate(quote.expiration_date) : null;
 
   // Drawer and fixed fields state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -145,13 +184,13 @@ export default function NewQuotePage() {
       return await costCentersApi.getCostCenters({ is_active: true });
     }
   });
-  const costCentersData = Array.isArray(costCentersResp?.data?.['cost-centers']) 
-    ? costCentersResp?.data['cost-centers'] 
+  const costCentersData = Array.isArray(costCentersResp?.data?.['cost-centers'])
+    ? costCentersResp?.data['cost-centers']
     : (Array.isArray(costCentersResp?.data) ? costCentersResp.data : []);
 
   const costCenters = costCentersData.map((cc: any) => ({ value: cc.id.toString(), label: cc.name, description: cc.description || "" }));
 
-  // Set default warehouse and price list when catalogs load
+  // Set default warehouse and price list when catalogs load, only if the quote hasn't loaded one yet
   useEffect(() => {
     if (catalogData.warehouses?.length > 0 && !selectedWarehouseId) {
       const defaultWh = catalogData.warehouses.find((w: any) => w.is_default) || catalogData.warehouses[0];
@@ -194,11 +233,6 @@ export default function NewQuotePage() {
     label: pf.name
   })) || [];
 
-  const bankAccounts = catalogData.bankAccounts?.map((ba: any) => ({
-    value: ba.id.toString(),
-    label: ba.name
-  })) || [];
-
   // Data para el main
   const mainData = {
     logo: "/img/logo.png",
@@ -210,7 +244,7 @@ export default function NewQuotePage() {
       email: storedCompany?.email ?? "",
     },
     invoiceType: "Factura electrónica",
-    invoiceNumber: activeResolution ? `${activeResolution.prefix || ''}${((activeResolution.current_number ?? (activeResolution.from_number - 1)) + 1)}` : "",
+    invoiceNumber: quote ? `${quote.prefix || ''}${quote.number || quote.id}` : "",
     documentTypes,
     warehouseOptions,
     priceListOptions,
@@ -220,16 +254,12 @@ export default function NewQuotePage() {
     user: AuthService.getUser() as any,
   };
 
-  const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
-  const isContadoForm = !formState.payment_form_id || !selectedForm ||
-    selectedForm.label?.toLowerCase().includes("contado") ||
-    selectedForm.value?.toLowerCase() === "contado" ||
-    selectedForm.value === "1";
+  const getContactId = () => formState.contact_id || formState.customer?.id || (typeof formState.customer === 'number' || typeof formState.customer === 'string' ? Number(formState.customer) : null);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    const contactId = formState.contact_id || formState.customer?.id || (typeof formState.customer === 'number' || typeof formState.customer === 'string' ? Number(formState.customer) : null);
+    const contactId = getContactId();
     if (!contactId) {
       newErrors.contact_id = "El cliente es requerido";
       setErrors(newErrors);
@@ -244,7 +274,6 @@ export default function NewQuotePage() {
       return false;
     }
 
-    // Ítems
     if (!QuoteBuilder.items || QuoteBuilder.items.length === 0) {
       newErrors.items = "empty_items";
       setErrors(newErrors);
@@ -277,48 +306,85 @@ export default function NewQuotePage() {
     return true;
   };
 
+  const buildCurrentPayload = () => {
+    const baseline = baselineRef.current;
+    return QuoteBuilder.buildPayload({
+      resolution_id: selectedResolutionId,
+      contact_id: getContactId(),
+      customer: formState.customer,
+      notes: formState.notes,
+      terms_and_conditions: formState.terms_and_conditions,
+      warehouse_id: selectedWarehouseId,
+      seller_id: formState.seller_id,
+      currency_id: formState.currency_id,
+      price_list_id: selectedPriceListId,
+      cost_center_id: formState.cost_center_id,
+      issue_date: baseline?.issueDateISO,
+      expiratop_date: formState.payment_due_date ? new Date(formState.payment_due_date).toISOString().split("T")[0] : baseline?.expiratopDateISO
+    });
+  };
+
   const handleSaveAction = async (_actionType?: string) => {
-    if (!validateForm()) return;
+    if (!validateForm() || !enabled) return;
+
+    const baseline = baselineRef.current;
+    if (!baseline) return;
 
     setLoadingGuardar(true);
     try {
-      const payload = QuoteBuilder.buildPayload({
-        resolution_id: selectedResolutionId,
-        contact_id: formState.contact_id || formState.customer?.id || (typeof formState.customer === 'number' || typeof formState.customer === 'string' ? Number(formState.customer) : null),
-        customer: formState.customer,
-        notes: formState.notes,
-        terms_and_conditions: formState.terms_and_conditions,
-        warehouse_id: selectedWarehouseId,
-        seller_id: formState.seller_id,
-        currency_id: formState.currency_id,
-        price_list_id: selectedPriceListId,
-        cost_center_id: formState.cost_center_id,
-        issue_date: formState.fecha ? new Date(formState.fecha).toISOString().split("T")[0] : undefined,
-        expiratop_date: formState.payment_due_date ? new Date(formState.payment_due_date).toISOString().split("T")[0] : undefined
-      });
+      const currentPayload = buildCurrentPayload();
+      const contactId = getContactId();
+      const patch: any = {};
 
-      const res: any = await QuotesService.create(payload);
-      showToast("Cotización creada correctamente", "success");
-
-      const id =
-        res?.id ||
-        res?.data?.id ||
-        res?.data?.quote?.id ||
-        res?.data?.quotation?.id ||
-        res?.data?.data?.id;
-
-      if (id) {
-        router.push(`/quotes/${id}`);
-      } else {
-        router.push("/quotes");
+      if (JSON.stringify(QuoteBuilder.items) !== JSON.stringify(baseline.items)) {
+        patch.items = currentPayload.items;
       }
+
+      if (JSON.stringify(QuoteBuilder.globalAdjustments) !== JSON.stringify(baseline.globalAdjustments)) {
+        patch.allowance_charges = currentPayload.allowance_charges ?? [];
+      }
+
+      const settingsChanged =
+        Number(selectedWarehouseId) !== Number(baseline.warehouseId) ||
+        Number(selectedPriceListId) !== Number(baseline.priceListId) ||
+        String(formState.seller_id || '') !== String(baseline.sellerId || '') ||
+        String(formState.cost_center_id || '') !== String(baseline.costCenterId || '') ||
+        (formState.currency_id || 'COP') !== (baseline.currencyId || 'COP');
+      if (settingsChanged) patch.settings = currentPayload.settings;
+
+      const quoteInfoChanged =
+        Number(contactId) !== Number(baseline.contactId) ||
+        currentPayload.quote_information.expiratop_date !== baseline.expiratopDateISO;
+      if (quoteInfoChanged) patch.quote_information = currentPayload.quote_information;
+
+      if (Number(selectedResolutionId) !== Number(baseline.resolutionId)) {
+        patch.resolution_id = Number(selectedResolutionId);
+      }
+
+      if ((formState.notes || '') !== (baseline.notes || '')) {
+        patch.notes = formState.notes || '';
+      }
+
+      if ((formState.terms_and_conditions || '') !== (baseline.termsAndConditions || '')) {
+        patch.terms_and_conditions = formState.terms_and_conditions || '';
+      }
+
+      if (Object.keys(patch).length === 0) {
+        showToast("No se detectaron cambios para guardar", "info");
+        router.push(`/quotes/${id}`);
+        return;
+      }
+
+      await updateQuote.mutateAsync({ id: id!, data: patch });
+      showToast("Cotización actualizada correctamente", "success");
+      router.push(`/quotes/${id}`);
     } catch (error: any) {
       const backendErrors = error.response?.data?.errors;
       if (backendErrors) {
         setErrors(backendErrors);
         showToast(error.response?.data?.message || "Se encontraron errores de validación", "error");
       } else {
-        showToast(error.response?.data?.message || "Error al crear la cotización", "error");
+        showToast(error.response?.data?.message || "Error al actualizar la cotización", "error");
       }
       console.error(error);
     } finally {
@@ -326,11 +392,16 @@ export default function NewQuotePage() {
     }
   };
 
+  if (!enabled) return <div className="py-10 text-center text-red-500">ID de cotización inválido</div>;
+  if (isLoading) return <QuoteDetailSkeleton />;
+  if (isError || !quote) return <div className="py-10 text-center text-red-500">No se pudo cargar la cotización</div>;
+
   return (
     <div className="w-full min-h-screen">
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
         <div className="space-y-6">
           <NewQuoteHeader
+            title={`Editar cotización ${quote.prefix || ''}${quote.number || quote.id}`}
             onOpenDrawer={() => setIsDrawerOpen(true)}
           />
 
@@ -345,7 +416,8 @@ export default function NewQuotePage() {
             resolutions={resolutions || []}
             selectedResolutionId={selectedResolutionId}
             setSelectedResolutionId={setSelectedResolutionId}
-            initialContactId={cloneSourceQuote?.contact_id}
+            initialContactId={quote.contact_id}
+            initialDueDate={initialDueDate}
             onRefetchResolutions={refetchResolutions}
             formState={formState}
             setFormState={setFormState}
@@ -392,7 +464,7 @@ export default function NewQuotePage() {
             requiresSaveFirst={true}
           />
           <NewQuoteFooter
-            onNavigate={() => router.push("/quotes")}
+            onNavigate={() => router.push(`/quotes/${id}`)}
             onSaveAction={handleSaveAction}
             loadingGuardar={loadingGuardar}
             onPreview={() => {
@@ -407,20 +479,7 @@ export default function NewQuotePage() {
         onOpenChange={setShowPreviewModal}
         title="Vista previa - Cotización"
         preflightFn={(payload) => QuotesService.preflight(payload)}
-        data={showPreviewModal ? QuoteBuilder.buildPayload({
-          resolution_id: selectedResolutionId,
-          contact_id: formState.contact_id || formState.customer?.id || (typeof formState.customer === 'number' || typeof formState.customer === 'string' ? Number(formState.customer) : null),
-          customer: formState.customer,
-          notes: formState.notes,
-          terms_and_conditions: formState.terms_and_conditions,
-          warehouse_id: selectedWarehouseId,
-          seller_id: formState.seller_id,
-          currency_id: formState.currency_id,
-          price_list_id: selectedPriceListId,
-          cost_center_id: formState.cost_center_id,
-          issue_date: formState.fecha ? new Date(formState.fecha).toISOString().split("T")[0] : undefined,
-          expiratop_date: formState.payment_due_date ? new Date(formState.payment_due_date).toISOString().split("T")[0] : undefined
-        }) : null}
+        data={showPreviewModal ? buildCurrentPayload() : null}
       />
 
       <NewQuoteSettingsDrawer

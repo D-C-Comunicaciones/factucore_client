@@ -22,7 +22,7 @@ export function ResolutionTableToolbar<TData>({
       {onToggleFilter && (
         <button
           onClick={onToggleFilter}
-          className="text-sm font-medium text-[#4B5563] hover:text-[#111827] transition-colors"
+          className="text-sm font-medium text-[#4B5563] hover:text-[#111827] transition-colors cursor-pointer"
         >
           Filtrar
         </button>

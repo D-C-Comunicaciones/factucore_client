@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowUp, ArrowDown, Printer, Pencil, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -166,6 +167,7 @@ export function StatusBadge({ status }: { status: any }) {
    ----------------------------------------------------------------------- */
 function ActionsCell({ quote }: { quote: QuoteSummary }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -174,10 +176,10 @@ function ActionsCell({ quote }: { quote: QuoteSummary }) {
       showToast("Preparando documento...", "info");
       const fileName = `Quote Electronica No. ${quote.number || quote.id}.pdf`;
       sessionStorage.setItem(`print_quote_${encodeURIComponent(fileName)}`, quote.id.toString());
-      const url = `/print/${encodeURIComponent(fileName)}`;
+      const url = `/print/${encodeURIComponent(fileName)}?type=quote`;
       window.open(url, "_blank");
     } catch (error) {
-      console.error("Error al preparar impresiÃ³n:", error);
+      console.error("Error al preparar impresión:", error);
       showToast("Error al cargar el documento", "error");
     }
   };
@@ -190,12 +192,12 @@ function ActionsCell({ quote }: { quote: QuoteSummary }) {
     setIsDeleting(true);
     try {
       await QuotesService.delete(quote.id);
-      showToast("Cotización eliminada correctamente", "success", "Ã‰xito");
-      window.location.reload();
+      showToast("Cotización eliminada correctamente", "success", "Éxito");
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
     } catch (error: any) {
-      console.error("Error al eliminar la cotizaciÃ³n:", error);
+      console.error("Error al eliminar la cotización:", error);
       const errorData = error.response?.data || error.data || error;
-      const errorMsg = errorData?.message || "No se pudo eliminar la cotizaciÃ³n";
+      const errorMsg = errorData?.message || "No se pudo eliminar la cotización";
       showToast(errorMsg, "error", "Error");
     } finally {
       setIsDeleting(false);
@@ -259,9 +261,9 @@ function ActionsCell({ quote }: { quote: QuoteSummary }) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Â¿EstÃ¡s seguro de que deseas eliminar esta cotizaciÃ³n?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás seguro de que deseas eliminar esta cotización?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acciÃ³n no se puede deshacer.
+              Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -274,7 +276,7 @@ function ActionsCell({ quote }: { quote: QuoteSummary }) {
                 handleDelete();
               }}
             >
-              {isDeleting ? "Eliminando..." : "Eliminar cotizaciÃ³n"}
+              {isDeleting ? "Eliminando..." : "Eliminar cotización"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

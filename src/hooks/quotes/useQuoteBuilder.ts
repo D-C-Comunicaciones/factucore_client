@@ -386,6 +386,8 @@ export function useQuoteBuilder() {
     return {
         items,
         globalAdjustments,
+        setItems,
+        setGlobalAdjustments,
         addItem,
         removeItem,
         updateItem,

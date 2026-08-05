@@ -1,55 +1,80 @@
-import { Clock, Download, ExternalLink, Link2, Mail, Paperclip } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 
 interface QuoteDetailExtraInfoProps {
     quote: any;
+    invoices?: any[];
 }
 
-export function QuoteDetailExtraInfo({ quote }: QuoteDetailExtraInfoProps) {
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-            <h3 className="font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100 flex items-center">
-                <Clock className="w-4 h-4 mr-2 text-slate-400" />
-                Historial y Enlaces
-            </h3>
-            <div className="grid grid-cols-2 gap-8 text-sm">
-                <div>
-                    <h4 className="font-semibold text-slate-700 mb-3">Auditoría</h4>
-                    <div className="space-y-3">
-                        <div className="flex flex-col">
-                            <span className="text-slate-500">Creado por</span>
-                            <span className="font-medium text-slate-800">{quote.user?.name || "Administrador"}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-slate-500">Fecha de creación</span>
-                            <span className="font-medium text-slate-800">{quote.created_at || "—"}</span>
-                        </div>
+        <div className="flex justify-between items-center px-6 py-3 border-b border-slate-100 last:border-b-0">
+            <span className="text-slate-500">{label}</span>
+            <span className="text-slate-800 font-medium">{value}</span>
+        </div>
+    );
+}
+
+export function QuoteDetailExtraInfo({ quote, invoices = [] }: QuoteDetailExtraInfoProps) {
+    const router = useRouter();
+
+    const sellerName = quote.seller?.name || quote.vendor?.name || "No asignado";
+    const priceListName = quote.price_list?.name || quote.priceList?.name || "General";
+    const warehouseName = quote.warehouse?.name || quote.selected_warehouse?.name || "Principal";
+    const costCenterName = quote.cost_center?.name || quote.costCenter?.name || "No asignado";
+
+    const hasInvoices = invoices && invoices.length > 0;
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+                <InfoRow label="Vendedor" value={sellerName} />
+                <InfoRow label="Lista de precios" value={priceListName} />
+                <InfoRow label="Bodega" value={warehouseName} />
+                <InfoRow label="Centro de costo" value={costCenterName} />
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+                <div className="flex border-b border-slate-100">
+                    <div className="px-6 py-4 font-medium text-primary border-b-2 border-primary">
+                        Facturas
                     </div>
                 </div>
 
-                <div>
-                    <h4 className="font-semibold text-slate-700 mb-3">Archivos Adjuntos</h4>
-                    {quote.attachments && quote.attachments.length > 0 ? (
-                        <div className="space-y-2">
-                            {quote.attachments.map((file: any, idx: number) => (
-                                <a
-                                    key={idx}
-                                    href={file.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 border border-slate-100 transition-colors group"
-                                >
-                                    <Paperclip className="w-4 h-4 text-slate-400 group-hover:text-primary" />
-                                    <span className="text-slate-700 group-hover:text-primary flex-1 truncate">{file.name || 'Archivo adjunto'}</span>
-                                    <Download className="w-4 h-4 text-slate-400 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </a>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-slate-500 flex items-center gap-2 p-3 bg-slate-50 rounded-md border border-slate-100 border-dashed">
-                            <Paperclip className="w-4 h-4" /> No hay archivos adjuntos
-                        </div>
-                    )}
-                </div>
+                {hasInvoices ? (
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-[#f8fafc] text-[#1e293b] font-semibold border-b border-slate-100">
+                                <tr>
+                                    <th className="py-3.5 px-6">Fecha</th>
+                                    <th className="py-3.5 px-6 text-center">Factura #</th>
+                                    <th className="py-3.5 px-6 text-center">Estado</th>
+                                    <th className="py-3.5 px-6 text-right">Total</th>
+                                    <th className="py-3.5 px-6">Observaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {invoices.map((inv: any, idx: number) => (
+                                    <tr
+                                        key={inv.id || idx}
+                                        className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-pointer"
+                                        onClick={() => inv.id && router.push(`/invoices/${inv.id}`)}
+                                    >
+                                        <td className="py-3.5 px-6 text-slate-700">{inv.created_at || inv.issue_date || '-'}</td>
+                                        <td className="py-3.5 px-6 text-center text-slate-700 font-medium">{inv.prefix || ''}{inv.number || inv.id}</td>
+                                        <td className="py-3.5 px-6 text-center text-slate-700">{inv.invoice_status?.name || inv.status?.name || inv.status || '-'}</td>
+                                        <td className="py-3.5 px-6 text-right text-slate-700 font-medium">$ {Number(inv.total || 0).toLocaleString('es-CO')}</td>
+                                        <td className="py-3.5 px-6 text-slate-500">{inv.notes || inv.observation || inv.observations || ''}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="text-slate-400 text-center py-10">
+                        No tiene facturas asociadas
+                    </div>
+                )}
             </div>
         </div>
     );

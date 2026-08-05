@@ -88,6 +88,7 @@ export function NewInvoiceMain({
     setShowRemissionBar,
     errors,
     onRefetchResolutions,
+    initialContactId,
 }: {
     mainData: any;
     catalogData: any;
@@ -107,6 +108,7 @@ export function NewInvoiceMain({
     setShowRemissionBar?: (show: boolean) => void;
     errors?: Record<string, string>;
     onRefetchResolutions?: () => void;
+    initialContactId?: number | string | null;
 }) {
     const catalogs = useCatalogs();
     const queryClient = useQueryClient();
@@ -185,6 +187,15 @@ export function NewInvoiceMain({
         loadCustomers();
     }, []);
 
+    // Preseleccionar el cliente cuando la factura se está creando a partir de otro documento (ej. cotización)
+    const initialContactAppliedRef = useRef(false);
+    useEffect(() => {
+        if (!initialContactAppliedRef.current && initialContactId) {
+            initialContactAppliedRef.current = true;
+            setCliente(String(initialContactId));
+        }
+    }, [initialContactId]);
+
     // Sincronizar estados de pago y cliente con formState del padre
     useEffect(() => {
         let isMounted = true;
@@ -215,6 +226,19 @@ export function NewInvoiceMain({
                             payment_method_id: medioPago ? Number(medioPago) : null,
                             payment_term_id: plazo ? Number(plazo) : null,
                         }));
+
+                        if (fetchedCustomer) {
+                            const name = fetchedCustomer.registration_name ||
+                                `${fetchedCustomer.first_name || ""} ${fetchedCustomer.last_name || ""}`.trim() ||
+                                fetchedCustomer.identification_number;
+                            setDisplayName(name || "");
+                            setEmail(fetchedCustomer.email || "");
+                            setEmailAutoFilled(!!fetchedCustomer.email);
+                            setDocNumber(fetchedCustomer.identification_number != null ? String(fetchedCustomer.identification_number) : "");
+                            if (fetchedCustomer.type_document_identification_id) {
+                                setDocType(fetchedCustomer.type_document_identification_id.toString());
+                            }
+                        }
                     }
                 } catch (e) {
                     if (isMounted) {

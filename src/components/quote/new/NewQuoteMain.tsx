@@ -91,6 +91,8 @@ export function NewQuoteMain({
     errors,
     onRefetchResolutions,
     quoteOptionsComponent,
+    initialContactId,
+    initialDueDate,
 }: {
     mainData: any;
     catalogData: any;
@@ -113,6 +115,8 @@ export function NewQuoteMain({
     errors?: Record<string, string>;
     onRefetchResolutions?: () => void;
     quoteOptionsComponent?: React.ReactNode;
+    initialContactId?: number | string | null;
+    initialDueDate?: Date | null;
 }) {
     const catalogs = useCatalogs();
     const queryClient = useQueryClient();
@@ -193,6 +197,24 @@ export function NewQuoteMain({
         loadCustomers();
     }, []);
 
+    // Preseleccionar el cliente cuando la cotización se está creando a partir de otra (ej. clonar o editar)
+    const initialContactAppliedRef = useRef(false);
+    useEffect(() => {
+        if (!initialContactAppliedRef.current && initialContactId) {
+            initialContactAppliedRef.current = true;
+            setCliente(String(initialContactId));
+        }
+    }, [initialContactId]);
+
+    // Preseleccionar la fecha de vencimiento cuando viene de otra cotización (ej. clonar o editar)
+    const initialDueDateAppliedRef = useRef(false);
+    useEffect(() => {
+        if (!initialDueDateAppliedRef.current && initialDueDate) {
+            initialDueDateAppliedRef.current = true;
+            setVencimiento(initialDueDate);
+        }
+    }, [initialDueDate]);
+
     // Sincronizar estados de pago y cliente con formState del padre
     useEffect(() => {
         let isMounted = true;
@@ -223,6 +245,19 @@ export function NewQuoteMain({
                             payment_method_id: medioPago ? Number(medioPago) : null,
                             payment_term_id: plazo ? Number(plazo) : null,
                         }));
+
+                        if (fetchedCustomer) {
+                            const name = fetchedCustomer.registration_name ||
+                                `${fetchedCustomer.first_name || ""} ${fetchedCustomer.last_name || ""}`.trim() ||
+                                fetchedCustomer.identification_number;
+                            setDisplayName(name || "");
+                            setEmail(fetchedCustomer.email || "");
+                            setEmailAutoFilled(!!fetchedCustomer.email);
+                            setDocNumber(fetchedCustomer.identification_number != null ? String(fetchedCustomer.identification_number) : "");
+                            if (fetchedCustomer.type_document_identification_id) {
+                                setDocType(fetchedCustomer.type_document_identification_id.toString());
+                            }
+                        }
                     }
                 } catch (e) {
                     if (isMounted) {

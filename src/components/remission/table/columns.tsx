@@ -174,10 +174,10 @@ function ActionsCell({ remission }: { remission: RemissionSummary }) {
       showToast("Preparando documento...", "info");
       const fileName = `Remission Electronica No. ${remission.number || remission.id}.pdf`;
       sessionStorage.setItem(`print_remission_${encodeURIComponent(fileName)}`, remission.id.toString());
-      const url = `/print/${encodeURIComponent(fileName)}`;
+      const url = `/print/${encodeURIComponent(fileName)}?type=remission`;
       window.open(url, "_blank");
     } catch (error) {
-      console.error("Error al preparar impresiÃ³n:", error);
+      console.error("Error al preparar impresión:", error);
       showToast("Error al cargar el documento", "error");
     }
   };
@@ -193,7 +193,7 @@ function ActionsCell({ remission }: { remission: RemissionSummary }) {
   // Disable Anular if approved by DIAN, or if status is 'cobrada', 'por cobrar', 'pendiente', 'vencida', 'parcial'
   // Only allow if 'borrador', 'guardada' etc and not approved.
   const isCobradaOPorCobrar = estado === "cobrada" || estado === "por cobrar" || estado === "pendiente" || estado === "vencida" || estado === "parcial";
-  const canAnular = (estado === "borrador" || estado === "draft" || estado === "guardada" || estado === "saved" || estado === "no electrÃ³nico") && !isDianAprobada && !isCobradaOPorCobrar;
+  const canAnular = (estado === "borrador" || estado === "draft" || estado === "guardada" || estado === "saved" || estado === "no electrónico") && !isDianAprobada && !isCobradaOPorCobrar;
 
   const canEdit = !isDianAprobada && (
     estado === "borrador" ||
@@ -202,7 +202,7 @@ function ActionsCell({ remission }: { remission: RemissionSummary }) {
     estado === "saved" ||
     estadoDian === "no aprobada" ||
     estadoDian === "rechazada" ||
-    estado === "no electrÃ³nico"
+    estado === "no electrónico"
   );
 
   const handleEdit = () => {
@@ -213,7 +213,7 @@ function ActionsCell({ remission }: { remission: RemissionSummary }) {
     setIsAnulando(true);
     try {
       await RemissionsService.cancel(remission.id);
-      showToast("Remission anulada correctamente", "success", "Ã‰xito");
+      showToast("Remission anulada correctamente", "success", "Éxito");
       window.location.reload();
     } catch (error: any) {
       console.error("Error al anular la remission:", error);
@@ -301,9 +301,9 @@ function ActionsCell({ remission }: { remission: RemissionSummary }) {
       <AlertDialog open={showAnularDialog} onOpenChange={setShowAnularDialog}>
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Â¿EstÃ¡s seguro de que deseas anular esta remission?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás seguro de que deseas anular esta remisión?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acciÃ³n no se puede deshacer.
+              Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

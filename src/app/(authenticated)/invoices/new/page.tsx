@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { NewInvoiceFooter } from "@/components/invoice/new/NewInvoiceFooter";
 import { NewInvoiceHeader } from "@/components/invoice/new/NewInvoiceHeader";
 import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
@@ -12,6 +12,8 @@ import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
 import { useInvoiceBuilder, isIvaTax } from "@/hooks/invoices/useInvoiceBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useSellersList } from "@/hooks/sellers/useSellers";
+import { useQuote } from "@/hooks/quotes/useQuotes";
+import { mapQuoteItemsToLines, mapQuoteGlobalAdjustments } from "@/lib/quoteLineMapping";
 import { InvoicesService } from "@/lib/invoices";
 import { AuthService } from "@/lib/auth";
 import { getSession } from "@/common/interfaces/session";
@@ -24,9 +26,12 @@ import { showToast } from "@/components/sonner/CustomToaster";
 
 export default function NewInvoicePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const quoteId = searchParams?.get("quoteId");
   const createInvoice = useCreateInvoice();
   const catalogData = useCatalogs();
   const { data: sellersData } = useSellersList();
+  const { data: quoteResponse } = useQuote(quoteId || "");
   const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
   const resolutionTypeFilter = tipoDoc === 'tiquete' ? 2 : 1; // 1=INVOICE, 2=POS
   const { resolutions, refetch: refetchResolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
@@ -96,6 +101,37 @@ export default function NewInvoicePage() {
 
   // Initialize the builder hook
   const invoiceBuilder = useInvoiceBuilder();
+
+  // Prefill items, discounts and charges when creating an invoice from a quote ("Convertir a factura")
+  const quoteDataForInvoice = quoteResponse?.data?.quotation || quoteResponse?.data?.quote || quoteResponse?.data?.bill;
+  const quoteItemsForInvoice = (quoteResponse?.data as any)?.items || quoteDataForInvoice?.lines || quoteDataForInvoice?.quote_lines || [];
+  const quotePrefillAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!quotePrefillAppliedRef.current && quoteId && quoteDataForInvoice) {
+      quotePrefillAppliedRef.current = true;
+      invoiceBuilder.setItems(mapQuoteItemsToLines(quoteItemsForInvoice) as any);
+      invoiceBuilder.setGlobalAdjustments(mapQuoteGlobalAdjustments(quoteDataForInvoice) as any);
+
+      const warehouseId = quoteDataForInvoice.warehouse?.id ?? quoteDataForInvoice.warehouse_id;
+      const priceListId = quoteDataForInvoice.price_list?.id ?? quoteDataForInvoice.price_list_id;
+      const costCenterId = quoteDataForInvoice.cost_center?.id ?? quoteDataForInvoice.cost_center_id;
+      const sellerIdRaw = quoteDataForInvoice.seller?.id ?? quoteDataForInvoice.seller_id;
+      if (warehouseId) setSelectedWarehouseId(Number(warehouseId));
+      if (priceListId) setSelectedPriceListId(Number(priceListId));
+      if (costCenterId) setSelectedCostCenter(String(costCenterId));
+
+      const quoteNumberLabel = `${quoteDataForInvoice.prefix || ''}${quoteDataForInvoice.number || quoteDataForInvoice.id}`;
+      const sourceNote = `Factura Elaborada a partir de la cotización: ${quoteNumberLabel}`;
+      const originalNotes = quoteDataForInvoice.notes || quoteDataForInvoice.observation || '';
+      const combinedNotes = originalNotes ? `${originalNotes}, ${sourceNote}` : sourceNote;
+
+      setFormState((prev: any) => ({
+        ...prev,
+        seller_id: sellerIdRaw != null ? String(sellerIdRaw) : prev.seller_id,
+        notes: combinedNotes,
+      }));
+    }
+  }, [quoteId, quoteDataForInvoice, quoteItemsForInvoice]);
 
   // Set default warehouse and price list when catalogs load
   useEffect(() => {
@@ -410,6 +446,11 @@ export default function NewInvoicePage() {
         finalPayload.payments = rawPayload.payments;
       }
 
+      // Si la factura se está creando a partir de una cotización ("Convertir a factura"), enlazarla
+      if (quoteId) {
+        finalPayload.quotation_id = Number(quoteId);
+      }
+
       // Remove undefined values cleanly
       Object.keys(finalPayload).forEach(key => finalPayload[key] === undefined && delete finalPayload[key]);
 
@@ -529,6 +570,7 @@ export default function NewInvoicePage() {
             selectedResolutionId={selectedResolutionId}
             setSelectedResolutionId={setSelectedResolutionId}
             onRefetchResolutions={refetchResolutions}
+            initialContactId={quoteDataForInvoice?.contact_id}
             formState={formState}
             setFormState={setFormState}
             notes={formState.notes}

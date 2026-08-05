@@ -85,14 +85,14 @@ export function NewInvoiceOptions({
             <div className="flex flex-nowrap items-end gap-3 w-full overflow-x-auto pb-1">
 
                 {/* TIPO DOCUMENTO */}
-                <div className="flex-1 min-w-[140px] max-w-[190px]">
+                <div className="flex-1 min-w-[170px] max-w-[230px]">
                     <label className="block text-sm font-medium text-foreground mb-2">
                         Tipo de documento
                     </label>
-                    <div className="flex gap-1 bg-gray-50 p-1 border border-gray-200 rounded-lg h-[38px] items-center w-full">
+                    <div className="flex gap-1 bg-gray-50 p-1 border border-gray-200 rounded-lg h-[34px] items-center w-full">
                         <button
                             onClick={() => setTipoDoc('factura')}
-                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 flex items-center justify-center ${tipoDoc === 'factura'
+                            className={`flex-[3] min-w-0 h-[26px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-2 flex items-center justify-center ${tipoDoc === 'factura'
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-transparent text-gray-500 hover:text-gray-900"
                                 }`}
@@ -101,7 +101,7 @@ export function NewInvoiceOptions({
                         </button>
                         <button
                             onClick={() => setTipoDoc('tiquete')}
-                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 flex items-center justify-center ${tipoDoc === 'tiquete'
+                            className={`flex-1 min-w-0 h-[26px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-2 flex items-center justify-center ${tipoDoc === 'tiquete'
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-transparent text-gray-500 hover:text-gray-900"
                                 }`}

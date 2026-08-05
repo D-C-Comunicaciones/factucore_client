@@ -4,15 +4,17 @@ import { Sparkles } from "lucide-react";
 
 interface NewQuoteHeaderProps {
   onOpenDrawer: () => void;
+  title?: string;
 }
 
 export function NewQuoteHeader({
   onOpenDrawer,
+  title = "Nueva cotización",
 }: NewQuoteHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <h1 className="text-2xl font-bold text-[#001D4A]">
-        Nueva cotización
+        {title}
       </h1>
 
       <div className="flex items-center gap-2 relative">

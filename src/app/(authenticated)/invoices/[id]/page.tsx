@@ -233,10 +233,11 @@ export default function InvoiceDetailPage() {
 
             <InvoiceDetailExtraInfo bill={bill} />
 
-            <InvoiceDetailTabs 
-                payments={bill.payments || data.data?.payments || invoiceData?.payments || templateData?.payments || data.data?.payments_received || []} 
+            <InvoiceDetailTabs
+                payments={bill.payments || data.data?.payments || invoiceData?.payments || templateData?.payments || data.data?.payments_received || []}
                 creditNotes={bill.credit_notes || data.data?.credit_notes || []}
                 remissions={bill.remissions || data.data?.remissions || []}
+                quotes={bill.quotation ? [bill.quotation] : (bill.quotations || (data.data as any)?.quotations || [])}
                 invoiceTotal={Number(bill.total || bill.payable_amount || 0)}
             />
 

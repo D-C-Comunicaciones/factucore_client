@@ -319,6 +319,8 @@ export function useInvoiceBuilder() {
     return {
         items,
         globalAdjustments,
+        setItems,
+        setGlobalAdjustments,
         addItem,
         removeItem,
         updateItem,

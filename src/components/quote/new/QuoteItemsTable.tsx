@@ -265,19 +265,19 @@ function ItemRow({
       style={style}
       className={`border-b border-border transition-colors ${isSelected ? 'bg-primary/10 hover:bg-primary/15' : hasError ? 'bg-destructive/5' : 'bg-white'}`}
     >
-      <td className="px-2 py-2 w-10 align-top">
+      <td className="px-0.5 py-2 w-6 align-top">
         <div className="h-8 flex items-center justify-center">
           <button
             type="button"
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded text-muted-foreground"
+            className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-muted rounded text-muted-foreground"
           >
             <GripVertical className="w-4 h-4" />
           </button>
         </div>
       </td>
-      <td className="px-2 py-2 w-10 align-top">
+      <td className="px-0.5 py-2 w-6 align-top">
         <div className="h-8 flex items-center justify-center">
           <Checkbox
             checked={isSelected}
@@ -598,8 +598,8 @@ export function QuoteItemsTable({
         <table className="min-w-full bg-background table-fixed">
           <thead className="bg-muted/30 border-b border-border">
             <tr>
-              <th className="px-2 py-3 text-center w-10"></th>
-              <th className="px-2 py-3 text-center w-10">
+              <th className="px-0.5 py-3 text-center w-6"></th>
+              <th className="px-0.5 py-3 text-center w-6">
                 <Checkbox
                   checked={allSelected}
                   onCheckedChange={(checked) => handleSelectAll(checked as boolean)}

@@ -86,6 +86,10 @@ export function useQuote(id: number | string, enabled = true) {
             return res;
         },
         enabled: !!id && enabled,
+        // Reutiliza los datos ya cargados en la vista detalle (misma queryKey) al navegar a
+        // editar/clonar/convertir, evitando un GET redundante. Las mutaciones (update) invalidan
+        // este cache explícitamente, así que la ventana de "frescura" es segura.
+        staleTime: 60 * 1000,
     });
 }
 

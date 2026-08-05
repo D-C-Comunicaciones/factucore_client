@@ -3,24 +3,27 @@ import { useRouter } from "next/navigation";
 import { Printer, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function InvoiceDetailTabs({ 
+export function InvoiceDetailTabs({
     payments = [],
     creditNotes = [],
     remissions = [],
+    quotes = [],
     invoiceTotal = 0
-}: { 
+}: {
     payments?: any[],
     creditNotes?: any[],
     remissions?: any[],
+    quotes?: any[],
     invoiceTotal?: number
 }) {
-    type TabType = 'pagos' | 'remisiones' | 'notas_credito' | 'contabilidad';
+    type TabType = 'pagos' | 'remisiones' | 'notas_credito' | 'cotizaciones' | 'contabilidad';
     const [activeTab, setActiveTab] = useState<TabType>('pagos');
     const router = useRouter();
 
     const hasPayments = payments && payments.length > 0;
     const hasRemissions = remissions && remissions.length > 0;
     const hasCreditNotes = creditNotes && creditNotes.length > 0;
+    const hasQuotes = quotes && quotes.length > 0;
 
     // Set default active tab based on what data is available
     useEffect(() => {
@@ -30,10 +33,12 @@ export function InvoiceDetailTabs({
             setActiveTab('remisiones');
         } else if (hasCreditNotes) {
             setActiveTab('notas_credito');
+        } else if (hasQuotes) {
+            setActiveTab('cotizaciones');
         } else {
             setActiveTab('contabilidad');
         }
-    }, [hasPayments, hasRemissions, hasCreditNotes]);
+    }, [hasPayments, hasRemissions, hasCreditNotes, hasQuotes]);
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200">
@@ -55,14 +60,22 @@ export function InvoiceDetailTabs({
                     </button>
                 )}
                 {hasCreditNotes && (
-                    <button 
+                    <button
                         onClick={() => setActiveTab('notas_credito')}
                         className={`px-6 py-4 cursor-pointer transition-colors ${activeTab === 'notas_credito' ? 'font-medium text-primary border-b-2 border-primary' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         Notas de crédito
                     </button>
                 )}
-                <button 
+                {hasQuotes && (
+                    <button
+                        onClick={() => setActiveTab('cotizaciones')}
+                        className={`px-6 py-4 cursor-pointer transition-colors ${activeTab === 'cotizaciones' ? 'font-medium text-primary border-b-2 border-primary' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Cotizaciones
+                    </button>
+                )}
+                <button
                     onClick={() => setActiveTab('contabilidad')}
                     className={`px-6 py-4 cursor-pointer transition-colors ${activeTab === 'contabilidad' ? 'font-medium text-primary border-b-2 border-primary' : 'text-slate-500 hover:text-slate-700'}`}
                 >
@@ -148,6 +161,38 @@ export function InvoiceDetailTabs({
                                             <td className="py-3.5 px-4 text-center text-primary font-medium underline cursor-pointer">{r.prefix || ''}{r.number || r.id}</td>
                                             <td className="py-3.5 px-4 text-center">{r.status || '-'}</td>
                                             <td className="py-3.5 px-4 text-right font-medium">$ {Number(r.total || 0).toLocaleString('es-CO')}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {activeTab === 'cotizaciones' && hasQuotes && (
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-[#f8fafc] text-[#1e293b] font-semibold border-b border-slate-100">
+                                <tr>
+                                    <th className="py-3.5 px-4 rounded-tl-md">Fecha</th>
+                                    <th className="py-3.5 px-4 text-center">Cotización #</th>
+                                    <th className="py-3.5 px-4 text-center">Estado</th>
+                                    <th className="py-3.5 px-4 text-right rounded-tr-md">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {quotes.map((q, idx) => {
+                                    const quoteId = q.id;
+                                    return (
+                                        <tr
+                                            key={q.id || idx}
+                                            className="border-b border-slate-100 hover:bg-slate-100 transition-colors cursor-pointer"
+                                            onClick={() => quoteId && router.push(`/quotes/${quoteId}`)}
+                                        >
+                                            <td className="py-3.5 px-4">{q.created_at || q.issue_date || '-'}</td>
+                                            <td className="py-3.5 px-4 text-center text-primary font-medium">{q.prefix || ''}{q.number || q.id}</td>
+                                            <td className="py-3.5 px-4 text-center">{q.quotation_status?.name || q.status || '-'}</td>
+                                            <td className="py-3.5 px-4 text-right font-medium">$ {Number(q.total || 0).toLocaleString('es-CO')}</td>
                                         </tr>
                                     );
                                 })}

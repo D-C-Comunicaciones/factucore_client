@@ -65,6 +65,7 @@ export default function QuoteDetailPage() {
     const snapshotQuote = templateData.quote || templateData.invoice || {};
     const customer = data.data?.customer || templateData.contact_snapshot || quote.contact || templateData.customer || {};
     const items = data.data?.items || snapshotQuote.lines || quote.lines || quote.quote_lines || [];
+    const invoices = (data.data as any)?.invoices || quote.invoices || quote.bills || [];
     // Merge company data: prefer API response but fill missing fields from localStorage
     const apiCompany = data.data?.company || templateData.supplier_snapshot || quote?.company || templateData.supplier || {};
     const company = {
@@ -169,7 +170,7 @@ export default function QuoteDetailPage() {
                 items={items}
             />
 
-            <QuoteDetailExtraInfo quote={quote} />
+            <QuoteDetailExtraInfo quote={quote} invoices={invoices} />
 
             <CommentsAndReminders comments={comments} setComments={setComments} />
         </div>
