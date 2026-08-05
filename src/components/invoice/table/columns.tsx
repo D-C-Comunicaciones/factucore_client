@@ -54,7 +54,7 @@ function SortableHeader({
       type="button"
       style={{ background: "none" }}
     >
-      <span className="text-xs font-medium text-gray-700">{label}</span>
+      <span className="text-xs font-medium text-slate-900">{label}</span>
       <span style={{ width: 16, display: "inline-flex", justifyContent: "center" }}>
         {isSorted === "desc" && <ArrowUp className="w-4 h-4 ml-1 text-black" />}
         {isSorted === "asc" && <ArrowDown className="w-4 h-4 ml-1 text-black" />}

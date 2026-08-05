@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { showToast } from "@/components/sonner/CustomToaster";
 
 export interface InvoiceLine {
     id: string; // internal row id
@@ -90,7 +91,10 @@ export function useInvoiceBuilder() {
         }));
     };
 
-    const updateItemDiscount = (id: string, value: number, type: 'percentage' | 'fixed') => {
+    const updateItemDiscount = (id: string, rawValue: number, type: 'percentage' | 'fixed') => {
+        let value = Number(rawValue) || 0;
+        if (value < 0) value = 0;
+
         setItems(prev => prev.map(item => {
             if (item.id === id) {
                 const allowance_charges = value > 0 ? [{
@@ -117,7 +121,18 @@ export function useInvoiceBuilder() {
         }));
     };
 
-    const addGlobalAdjustment = (type: 'discount' | 'charge', valueType: 'percentage' | 'fixed', value: number, reason: string) => {
+    const addGlobalAdjustment = (type: 'discount' | 'charge', valueType: 'percentage' | 'fixed', rawValue: number, reason: string) => {
+        let value = Number(rawValue) || 0;
+        if (value < 0) value = 0;
+
+        if (valueType === 'percentage' && value > 100) {
+            showToast("El porcentaje de ajuste no puede superar el 100%", "warning");
+            value = 100;
+        } else if (type === 'discount' && valueType === 'fixed' && value > totals.subtotal) {
+            showToast("El valor digitado excede el valor total del documento", "warning");
+            value = totals.subtotal > 0 ? totals.subtotal : 0;
+        }
+
         setGlobalAdjustments(prev => [
             ...prev,
             {
@@ -134,10 +149,23 @@ export function useInvoiceBuilder() {
         setGlobalAdjustments(prev => prev.filter(adj => adj.id !== id));
     };
 
-    const updateGlobalAdjustment = (id: string, field: keyof GlobalAdjustment, value: any) => {
+    const updateGlobalAdjustment = (id: string, field: keyof GlobalAdjustment, rawValue: any) => {
         setGlobalAdjustments(prev => prev.map(adj => {
             if (adj.id === id) {
-                return { ...adj, [field]: value };
+                let updated = { ...adj, [field]: rawValue };
+                if (field === 'value' || field === 'valueType') {
+                    let val = Number(updated.value) || 0;
+                    if (val < 0) val = 0;
+                    if (updated.valueType === 'percentage' && val > 100) {
+                        showToast("El porcentaje de ajuste no puede superar el 100%", "warning");
+                        val = 100;
+                    } else if (updated.type === 'discount' && updated.valueType === 'fixed' && val > totals.subtotal) {
+                        showToast("El valor digitado excede el valor total del documento", "warning");
+                        val = totals.subtotal > 0 ? totals.subtotal : 0;
+                    }
+                    updated.value = val;
+                }
+                return updated;
             }
             return adj;
         }));
@@ -154,22 +182,23 @@ export function useInvoiceBuilder() {
         let taxBreakdown: Record<string, { name: string; amount: number }> = {};
 
         items.forEach(item => {
-            const qty = Number(item.cantidad) || 0;
-            const price = Number(item.precio) || 0;
-            const discValue = Number(item.discountValue) || 0;
+            const qty = Math.max(0, Number(item.cantidad) || 0);
+            const price = Math.max(0, Number(item.precio) || 0);
+            const rawDiscValue = Math.max(0, Number(item.discountValue) || 0);
+            const discValue = item.discountType === 'percentage' ? Math.min(100, rawDiscValue) : rawDiscValue;
 
             const lineBase = qty * price;
             const lineDiscount = item.discountType === 'percentage'
                 ? lineBase * (discValue / 100)
-                : discValue;
+                : Math.min(lineBase, discValue);
 
-            const lineNet = lineBase - lineDiscount;
+            const lineNet = Math.max(0, lineBase - lineDiscount);
 
             // Safeguard taxRate parsing
             let taxRate = 0;
             if (item.taxObj && item.taxObj.rate !== undefined && item.taxObj.rate !== null) {
                 taxRate = Number(item.taxObj.rate);
-                if (isNaN(taxRate)) taxRate = 0;
+                if (isNaN(taxRate) || taxRate < 0) taxRate = 0;
             }
 
             const lineTax = lineNet * (taxRate / 100);
@@ -200,8 +229,9 @@ export function useInvoiceBuilder() {
         let globalChargesAmount = 0;
 
         globalAdjustments.forEach(adj => {
-            const val = Number(adj.value) || 0;
-            const amount = adj.valueType === 'percentage' ? netSubtotal * (val / 100) : val;
+            const val = Math.max(0, Number(adj.value) || 0);
+            const safeVal = adj.valueType === 'percentage' ? Math.min(100, val) : val;
+            const amount = adj.valueType === 'percentage' ? netSubtotal * (safeVal / 100) : safeVal;
             const safeAmount = isNaN(amount) ? 0 : amount;
 
             if (adj.type === 'discount') {
@@ -211,7 +241,8 @@ export function useInvoiceBuilder() {
             }
         });
 
-        const total = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount;
+        const rawTotal = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount;
+        const total = Math.max(0, rawTotal);
         const payableAmount = total;
 
         return {

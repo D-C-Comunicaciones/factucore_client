@@ -116,7 +116,7 @@ export function QuoteTablePagination({
       </div>
 
       <div className="flex items-center gap-3 text-xs text-gray-700">
-        <span>Quotes por pagina:</span>
+        <span>Cotizaciones por pagina:</span>
         <select
           value={perPage}
           onChange={(event) => {

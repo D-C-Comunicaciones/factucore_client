@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { Plus } from "lucide-react";
@@ -72,7 +72,7 @@ export function QuoteTableBody({ table, columns, loading, showNoDataMessage = fa
                 {row.getVisibleCells().map((cell) => {
                   const isClickable = cell.column.id !== "actions" && cell.column.id !== "select";
                   return (
-                    <TableCell 
+                    <TableCell
                       key={cell.id}
                       className={isClickable ? "cursor-pointer" : ""}
                       onClick={() => {
@@ -95,9 +95,9 @@ export function QuoteTableBody({ table, columns, loading, showNoDataMessage = fa
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={columns.length} className="h-64 bg-white text-center align-middle">
                 <div className="flex flex-col items-center justify-center h-full py-8">
-                  <div className="text-lg font-semibold text-red-500">Error al cargar quotes</div>
+                  <div className="text-lg font-semibold text-red-500">Error al cargar cotizaciones</div>
                   <div className="text-sm text-gray-500 mt-1">
-                    Verifica tu conexiÃ³n a internet e intenta de nuevo
+                    Verifica tu conexión a internet e intenta de nuevo
                   </div>
                 </div>
               </TableCell>
@@ -151,7 +151,7 @@ export function QuoteTableBody({ table, columns, loading, showNoDataMessage = fa
                       />
                     </svg>
                     <div className="text-center text-xl font-medium text-[#003B73]">
-                      Â¡AÃºn no tienes quotes!
+                      Aún no tienes cotizaciones!
                     </div>
                     <div className="mt-2 mb-6 text-center text-sm text-gray-500 max-w-md">
                       Crea tu primera quote y empieza a tomar el control de tus ingresos.

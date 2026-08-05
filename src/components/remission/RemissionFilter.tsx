@@ -1,4 +1,4 @@
-﻿import * as React from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CalendarDays, Clock, BadgeCheck, Funnel, CheckCircle, ListOrdered } from "lucide-react";
@@ -42,7 +42,7 @@ export const defaultFilterOptions: FilterOption[] = [
         icon: BadgeCheck,
     },
     {
-        label: "NÃºmero de RemisiÃ³n",
+        label: "Número de Remisión",
         value: "number",
         icon: ListOrdered,
     },

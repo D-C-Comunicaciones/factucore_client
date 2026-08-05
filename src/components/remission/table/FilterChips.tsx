@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { Table, ColumnFiltersState } from "@tanstack/react-table";
@@ -233,7 +233,7 @@ export function FilterChips({
                 <div className="px-3 py-2">
                   <input
                     className="w-full border rounded px-2 py-1 text-xs"
-                    placeholder="NÃºmero de remission"
+                    placeholder="Número de remission"
                     value={filter.value as string}
                     onChange={(e) => setColumnFilters(columnFilters.map(f => f.id === filter.id ? { ...f, value: e.target.value } : f))}
                   />

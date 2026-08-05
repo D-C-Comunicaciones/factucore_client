@@ -1,4 +1,4 @@
-﻿import * as React from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CalendarDays, Clock, BadgeCheck, Funnel, CheckCircle, ListOrdered } from "lucide-react";
@@ -17,34 +17,19 @@ interface QuoteFilterProps {
 
 export const defaultFilterOptions: FilterOption[] = [
     {
+        label: "Número de documento",
+        value: "number",
+        icon: ListOrdered,
+    },
+    {
         label: "Fecha de creación",
         value: "created_at",
         icon: CalendarDays,
     },
     {
-        label: "Fecha de vencimiento",
-        value: "payment_due_date",
-        icon: CalendarDays,
-    },
-    {
-        label: "Estado DIAN",
-        value: "status_dian",
-        icon: CheckCircle,
-    },
-    {
-        label: "Cotizaciones vencidas",
-        value: "overdue",
-        icon: Clock,
-    },
-    {
         label: "Estado",
         value: "status",
         icon: BadgeCheck,
-    },
-    {
-        label: "Número de Cotización",
-        value: "number",
-        icon: ListOrdered,
     },
 ];
 
@@ -54,7 +39,7 @@ export function QuoteFilter({ options, selected, onSelect }: QuoteFilterProps) {
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="outline"
-                    className="bg-white ml-2 flex items-center gap-2 h-8 px-3 text-xs border-0 shadow-none text-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
+                    className="bg-white ml-2 flex items-center gap-2 h-8 px-3 text-xs border-0 shadow-none text-foreground hover:bg-primary/10 hover:text-foreground transition-colors cursor-pointer"
                 >
                     <Funnel className="w-3.5 h-3.5" />
                     Filtrar
@@ -75,6 +60,7 @@ export function QuoteFilter({ options, selected, onSelect }: QuoteFilterProps) {
                             focus:bg-primary/10
                             focus:text-primary
                             transition-colors
+                            cursor-pointer
                             `}
                         >
                             <Icon className="w-4 h-4 mr-2" />

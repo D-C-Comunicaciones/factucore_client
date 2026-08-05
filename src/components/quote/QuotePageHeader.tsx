@@ -1,5 +1,6 @@
 "use client";
-import { Plus, ChevronDown, Download, FileEdit, Upload } from 'lucide-react';
+import React, { useState } from "react";
+import { Plus, ChevronDown, Download, FileEdit, Upload, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { QuoteExportModal } from "./QuoteExportModal";
 
 interface QuotePageHeaderProps {
   onNavigate?: (view: string) => void;
@@ -16,6 +18,7 @@ interface QuotePageHeaderProps {
 
 export function QuotePageHeader({ onNavigate }: QuotePageHeaderProps) {
   const router = useRouter();
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   return (
     <div className="mb-6">
@@ -35,7 +38,7 @@ export function QuotePageHeader({ onNavigate }: QuotePageHeaderProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onNavigate?.('exportar')}
+            onClick={() => setIsExportModalOpen(true)}
             className="text-xs border-border bg-white text-foreground hover:bg-primary/10 hover:text-foreground transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4 mr-1" />
@@ -69,10 +72,28 @@ export function QuotePageHeader({ onNavigate }: QuotePageHeaderProps) {
                 <FileEdit className="w-4 h-4 mr-2 text-primary" />
                 Crear manualmente
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  onNavigate?.("crear-desde-archivo");
+                }}
+                className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 mr-2 text-primary" />
+                Crear desde un archivo o imagen
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+      
+      <QuoteExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExport={(options) => {
+          console.log("Exporting quotes with options:", options);
+          onNavigate?.('exportar');
+        }}
+      />
     </div>
   );
 }

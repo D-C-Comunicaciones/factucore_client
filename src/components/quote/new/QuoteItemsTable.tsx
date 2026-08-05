@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, AlertCircle, GripVertical, Pencil, BadgePercent, Trash2 } from "lucide-react";
 import { showToast } from "@/components/sonner/CustomToaster";
 import {
@@ -16,6 +17,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  PopoverClose,
 } from "@/components/ui/popover";
 import {
   Tooltip,
@@ -23,6 +25,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
@@ -119,9 +128,6 @@ function ItemRow({
   const { data, isLoading } = useItems({
     params: {
       search: searchQuery,
-      warehouse_id: effectiveWarehouseId ?? undefined,
-      price_list_id: effectivePriceListId ?? undefined,
-      per_page: 20
     }
   });
 
@@ -257,7 +263,7 @@ function ItemRow({
     <tr
       ref={setNodeRef}
       style={style}
-      className={`border-b border-border transition-colors ${hasError ? 'bg-destructive/5' : 'bg-white'}`}
+      className={`border-b border-border transition-colors ${isSelected ? 'bg-primary/10 hover:bg-primary/15' : hasError ? 'bg-destructive/5' : 'bg-white'}`}
     >
       <td className="px-2 py-2 w-10 align-top">
         <div className="h-8 flex items-center justify-center">
@@ -271,7 +277,7 @@ function ItemRow({
           </button>
         </div>
       </td>
-      <td className="px-2 py-2 w-8 align-top">
+      <td className="px-2 py-2 w-10 align-top">
         <div className="h-8 flex items-center justify-center">
           <Checkbox
             checked={isSelected}
@@ -280,7 +286,7 @@ function ItemRow({
           />
         </div>
       </td>
-      <td className="px-2 py-2 w-48 align-top">
+      <td className="px-2 py-2 align-top">
         <AsyncSearchableSelect
           value={item.item_id ? item.item_id.toString() : ""}
           onValueChange={handleItemSelect}
@@ -309,32 +315,30 @@ function ItemRow({
         {item.item_id && (
           <div className="mt-1">
             <Popover>
-              <PopoverTrigger asChild>
-                {(item.referencia || item.description) ? (
-                  <button type="button" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors cursor-pointer truncate max-w-full">
-                    <span className="truncate">
+              <PopoverTrigger className="text-[10px] text-muted-foreground hover:text-primary inline-flex items-center gap-1 transition-colors cursor-pointer max-w-full text-left">
+                {item.referencia || item.description ? (
+                  <>
+                    <span className="truncate max-w-[220px]">
                       {item.referencia && item.description
                         ? `${item.referencia} | ${item.description}`
                         : item.referencia || item.description}
                     </span>
                     <Pencil className="w-3 h-3 flex-shrink-0" />
-                  </button>
+                  </>
                 ) : (
-                  <button type="button" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors cursor-pointer">
-                    <Pencil className="w-3 h-3" /> Agregar referencia y/o descripción
-                  </button>
+                  <>
+                    <Pencil className="w-3 h-3 flex-shrink-0" />
+                    <span>Agregar referencia y/o descripción</span>
+                  </>
                 )}
               </PopoverTrigger>
-              <PopoverContent 
-                className="w-80 p-4" 
-                align="start" 
-                side="bottom" 
+              <PopoverContent
+                className="w-80 p-4"
+                align="start"
+                side="bottom"
                 sideOffset={4}
-                avoidCollisions={false}
-                hideWhenDetached={true}
               >
                 <div className="space-y-4">
-                  <h4 className="font-medium text-[11px] uppercase tracking-wider text-muted-foreground">Detalles del ítem</h4>
                   <div className="space-y-2">
                     <label className="text-xs font-medium text-foreground">Referencia</label>
                     <Input
@@ -354,11 +358,11 @@ function ItemRow({
                     />
                   </div>
                   <div className="flex justify-end pt-2">
-                    <PopoverTrigger asChild>
+                    <PopoverClose asChild>
                       <button className="bg-primary text-primary-foreground px-4 py-1.5 rounded-md text-xs font-medium hover:bg-primary/90 transition-colors cursor-pointer">
                         Aplicar
                       </button>
-                    </PopoverTrigger>
+                    </PopoverClose>
                   </div>
                 </div>
               </PopoverContent>
@@ -367,7 +371,7 @@ function ItemRow({
         )}
       </td>
 
-      <td className="px-2 py-2 w-24 align-top">
+      <td className="px-2 py-2 align-top">
         <FormattedInput
           placeholder="Precio"
           value={item.precio || 0}
@@ -376,7 +380,7 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2 w-32 align-top">
+      <td className="px-2 py-2 align-top">
         <div className="flex items-center">
           {item.discountType === 'percentage' ? (
             <Input
@@ -385,14 +389,30 @@ function ItemRow({
               onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
               placeholder="0"
               value={item.discountValue || ""}
-              onChange={(e) => quoteBuilder.updateItemDiscount(item.id, Number(e.target.value), 'percentage')}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (val > 100) {
+                  showToast("El porcentaje de descuento no puede ser mayor al 100%", "warning");
+                  quoteBuilder.updateItemDiscount(item.id, "", 'percentage');
+                } else {
+                  quoteBuilder.updateItemDiscount(item.id, val, 'percentage');
+                }
+              }}
               className={`${inputClasses} rounded-r-none border-r-0`}
             />
           ) : (
             <FormattedInput
               placeholder="0"
               value={item.discountValue || 0}
-              onChange={(val: number) => quoteBuilder.updateItemDiscount(item.id, val, 'fixed')}
+              onChange={(val: number) => {
+                const lineBase = (Number(item.cantidad) || 0) * (Number(item.precio) || 0);
+                if (lineBase > 0 && val > lineBase) {
+                  showToast("El valor digitado excede el valor total del ítem", "warning");
+                  quoteBuilder.updateItemDiscount(item.id, "", 'fixed');
+                } else {
+                  quoteBuilder.updateItemDiscount(item.id, val, 'fixed');
+                }
+              }}
               className={`${inputClasses} rounded-r-none border-r-0`}
             />
           )}
@@ -400,7 +420,7 @@ function ItemRow({
             value={item.discountType || "percentage"}
             onValueChange={(val: any) => quoteBuilder.updateItemDiscount(item.id, item.discountValue || 0, val)}
           >
-            <SelectTrigger className={`h-8 px-1 text-xs border border-foreground/20 bg-white shadow-none rounded-l-none w-12 hover:bg-muted cursor-pointer transition-colors`}>
+            <SelectTrigger size="sm" className="h-8 px-1 text-xs border border-foreground/20 bg-white shadow-none rounded-l-none w-12 hover:bg-muted cursor-pointer transition-colors">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -411,7 +431,7 @@ function ItemRow({
         </div>
       </td>
 
-      <td className="px-2 py-2 w-48 align-top">
+      <td className="px-2 py-2 align-top">
         <SearchableSelect
           value={item.taxObj?.tax_rate_id?.toString() || item.taxObj?.tax_id?.toString() || "0"}
           onValueChange={(val) => {
@@ -453,18 +473,7 @@ function ItemRow({
         />
       </td>
 
-
-
       <td className="px-2 py-2 align-top">
-        <Input
-          placeholder="Descripción"
-          value={item.description}
-          onChange={(e) => quoteBuilder.updateItem(item.id, "description", e.target.value)}
-          className={inputClasses}
-        />
-      </td>
-
-      <td className="px-2 py-2 w-24 align-top">
         <div className="relative flex items-center">
           <Input
             type="number"
@@ -494,17 +503,21 @@ function ItemRow({
         </div>
       </td>
 
-      <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap align-top pt-4">
-        $ {new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rowTotal)}
+      <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap align-top">
+        <div className="h-8 flex items-center justify-end">
+          $ {new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rowTotal)}
+        </div>
       </td>
 
-      <td className="px-2 py-2 text-center w-10 align-top pt-2">
-        <button
-          onClick={() => quoteBuilder.removeItem(item.id)}
-          className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+      <td className="px-2 py-2 text-center w-10 align-top">
+        <div className="h-8 flex items-center justify-center">
+          <button
+            onClick={() => quoteBuilder.removeItem(item.id)}
+            className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -525,6 +538,22 @@ export function QuoteItemsTable({
 }) {
   const hasAnyIvaTax = quoteBuilder.items.some((item: any) => isIvaTax(item.taxObj));
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [batchDiscountType, setBatchDiscountType] = useState<"percentage" | "fixed">("percentage");
+  const [batchDiscountValue, setBatchDiscountValue] = useState<number>(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleApplyBatchDiscount = () => {
+    selectedItems.forEach(id => {
+      quoteBuilder.updateItemDiscount(id, batchDiscountValue, batchDiscountType);
+    });
+    showToast(`Descuento aplicado a ${selectedItems.length} ítem(s)`, "success");
+    setIsDiscountModalOpen(false);
+  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -566,40 +595,31 @@ export function QuoteItemsTable({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="overflow-x-auto w-full rounded-lg border border-border">
-        <table className="min-w-full bg-background">
+        <table className="min-w-full bg-background table-fixed">
           <thead className="bg-muted/30 border-b border-border">
             <tr>
-              <th className="px-2 py-3 text-center"></th>
-              <th className="px-2 py-3 text-center w-8">
+              <th className="px-2 py-3 text-center w-10"></th>
+              <th className="px-2 py-3 text-center w-10">
                 <Checkbox
                   checked={allSelected}
                   onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                   className="w-4 h-4 rounded text-primary border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                 />
               </th>
-              {[
-                "Ítem",
-                "Precio",
-                "Desc",
-                "Impuesto",
-                "Cant",
-                "Total",
-                "",
-              ].map((col, idx) => (
-                <th
-                  key={idx}
-                  className="px-2 py-3 text-xs font-semibold text-muted-foreground text-left first:pl-4"
-                >
-                  {col}
-                </th>
-              ))}
+              <th style={{ width: "30%" }} className="px-2 py-3 text-xs font-semibold text-muted-foreground text-left min-w-[240px]">Ítem</th>
+              <th style={{ width: "12%" }} className="px-2 py-3 text-xs font-semibold text-muted-foreground text-left">Precio</th>
+              <th style={{ width: "12%" }} className="px-2 py-3 text-xs font-semibold text-muted-foreground text-left">Descuento</th>
+              <th style={{ width: "13%" }} className="px-2 py-3 text-xs font-semibold text-muted-foreground text-left">Impuesto</th>
+              <th style={{ width: "8%" }} className="px-2 py-3 text-xs font-semibold text-muted-foreground text-left">Cantidad</th>
+              <th style={{ width: "10%" }} className="px-2 py-3 text-xs font-semibold text-muted-foreground text-right">Total</th>
+              <th className="px-2 py-3 text-center w-10"></th>
             </tr>
           </thead>
           <tbody>
             <SortableContext items={quoteBuilder.items.map((i: any) => i.id)} strategy={verticalListSortingStrategy}>
               {quoteBuilder.items.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="bg-white">
+                  <td colSpan={9} className="bg-white">
                     <div className="flex flex-col items-center justify-center py-12 gap-3">
                       <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -642,42 +662,116 @@ export function QuoteItemsTable({
           </button>
         </div>
 
-        {someSelected && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-4 bg-[#2A9D8F] text-white px-6 py-3 rounded-full shadow-lg font-medium text-sm min-w-[300px]">
-            <span>{selectedItems.length} {selectedItems.length === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  showToast("Esta función se implementará pronto.", "info");
-                }}
-                className="p-1.5 rounded-full hover:bg-white/20 transition-colors cursor-pointer"
-                title="Aplicar descuento"
-              >
-                <BadgePercent className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  selectedItems.forEach(id => quoteBuilder.removeItem(id));
-                  setSelectedItems([]);
-                }}
-                className="p-1.5 rounded-full hover:bg-white/20 transition-colors cursor-pointer"
-                title="Eliminar seleccionados"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <div className="w-px h-4 bg-white/30 mx-1"></div>
-              <button
-                type="button"
-                onClick={() => setSelectedItems([])}
-                className="p-1.5 rounded-full hover:bg-white/20 transition-colors cursor-pointer"
-                title="Deseleccionar"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        {mounted && someSelected && createPortal(
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center justify-between gap-4 bg-primary text-primary-foreground px-6 py-2.5 rounded-full shadow-2xl font-medium text-sm min-w-[320px]">
+            <span>
+              {selectedItems.length} {selectedItems.length === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <TooltipProvider delayDuration={100}>
+                <Popover open={isDiscountModalOpen} onOpenChange={setIsDiscountModalOpen}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger className="p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer text-white flex items-center justify-center">
+                        <BadgePercent className="w-4 h-4" />
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="bg-slate-900 text-white text-xs px-2.5 py-1 mb-1 rounded-md">
+                      Aplicar descuento
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <PopoverContent
+                    side="top"
+                    align="center"
+                    sideOffset={14}
+                    className="w-[310px] bg-white p-5 rounded-2xl border border-gray-100 shadow-2xl z-[10000]"
+                  >
+                    <div className="space-y-3 text-left">
+                      <div>
+                        <h4 className="text-base font-semibold text-slate-800">Aplicar descuento</h4>
+                        <p className="text-xs text-muted-foreground">Se agregará a los ítems seleccionados</p>
+                      </div>
+
+                      <div className="relative flex items-center pt-1">
+                        {batchDiscountType === "percentage" ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            placeholder="0"
+                            value={batchDiscountValue || ""}
+                            onChange={(e) => setBatchDiscountValue(Number(e.target.value))}
+                            className="h-10 text-sm border-gray-300 focus-visible:ring-1 focus-visible:ring-primary pr-10 rounded-xl"
+                          />
+                        ) : (
+                          <FormattedInput
+                            placeholder="0"
+                            value={batchDiscountValue}
+                            onChange={(val: number) => setBatchDiscountValue(val)}
+                            className="h-10 text-sm border-gray-300 focus-visible:ring-1 focus-visible:ring-primary pr-10 rounded-xl"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setBatchDiscountType(prev => prev === "percentage" ? "fixed" : "percentage")}
+                          className="absolute right-3 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer p-1"
+                          title="Cambiar tipo de descuento"
+                        >
+                          {batchDiscountType === "percentage" ? "%" : "$"}
+                        </button>
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button
+                          type="button"
+                          onClick={handleApplyBatchDiscount}
+                          className="px-5 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl cursor-pointer transition-colors shadow-sm"
+                        >
+                          Aplicar
+                        </button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        selectedItems.forEach(id => quoteBuilder.removeItem(id));
+                        setSelectedItems([]);
+                        showToast("Ítems eliminados", "info");
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-slate-900 text-white text-xs px-2.5 py-1 mb-1 rounded-md">
+                    Eliminar seleccionados
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedItems([])}
+                      className="p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-slate-900 text-white text-xs px-2.5 py-1 mb-1 rounded-md">
+                    Cancelar selección
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </DndContext>

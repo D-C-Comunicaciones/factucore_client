@@ -82,6 +82,8 @@ export function NewQuoteMain({
     setSelectedResolutionId,
     notes,
     onNotesChange,
+    terms_and_conditions,
+    onTermsChange,
     formState,
     setFormState,
     showRemissionBar,
@@ -102,6 +104,8 @@ export function NewQuoteMain({
     setSelectedResolutionId?: (id: number | null) => void;
     notes?: string;
     onNotesChange?: (val: string) => void;
+    terms_and_conditions?: string;
+    onTermsChange?: (val: string) => void;
     formState: any;
     setFormState: React.Dispatch<React.SetStateAction<any>>;
     showRemissionBar?: boolean;
@@ -728,14 +732,29 @@ export function NewQuoteMain({
                                 onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
                                 placeholder="Valor"
                                 value={globalAdjPercent || ""}
-                                onChange={(e) => setGlobalAdjPercent(Number(e.target.value))}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    if (val > 100) {
+                                        showToast("El porcentaje de ajuste no puede superar el 100%", "warning");
+                                        setGlobalAdjPercent("");
+                                    } else {
+                                        setGlobalAdjPercent(val);
+                                    }
+                                }}
                                 className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         ) : (
                             <FormattedInput
                                 placeholder="Valor"
                                 value={globalAdjPercent || 0}
-                                onChange={(val: number) => setGlobalAdjPercent(val)}
+                                onChange={(val: number) => {
+                                    if (globalAdjType === 'discount' && val > invoiceBuilder.totals.subtotal) {
+                                        showToast("El valor digitado excede el total del documento", "warning");
+                                        setGlobalAdjPercent("");
+                                    } else {
+                                        setGlobalAdjPercent(val);
+                                    }
+                                }}
                                 className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         )}
@@ -897,15 +916,16 @@ export function NewQuoteMain({
                                 className="w-full text-sm text-[#64748b] cursor-pointer flex items-center gap-1 group"
                                 onClick={() => setIsEditingTerms(true)}
                             >
-                                aa
+                                {terms_and_conditions || "Define los términos y condiciones, y/o las posibles cláusulas en caso de reclamos, serán visibles para tus clientes"}
                                 <Pencil className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
                             </div>
                         ) : (
                             <textarea
                                 autoFocus
                                 rows={3}
-                                defaultValue="aa"
+                                value={terms_and_conditions ?? ""}
                                 onBlur={() => setIsEditingTerms(false)}
+                                onChange={(e) => onTermsChange?.(e.target.value)}
                                 placeholder="Define los términos y condiciones, y/o las posibles cláusulas en caso de reclamos, serán visibles para tus clientes"
                                 className="w-full px-3 py-2 border border-[#818cf8] rounded-lg text-sm text-foreground focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1] transition-colors resize-none shadow-sm"
                             />

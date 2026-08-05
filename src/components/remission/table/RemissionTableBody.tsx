@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { Plus } from "lucide-react";
@@ -97,7 +97,7 @@ export function RemissionTableBody({ table, columns, loading, showNoDataMessage 
                 <div className="flex flex-col items-center justify-center h-full py-8">
                   <div className="text-lg font-semibold text-red-500">Error al cargar remissions</div>
                   <div className="text-sm text-gray-500 mt-1">
-                    Verifica tu conexiÃ³n a internet e intenta de nuevo
+                    Verifica tu conexión a internet e intenta de nuevo
                   </div>
                 </div>
               </TableCell>

@@ -544,3 +544,28 @@ export interface ItemListResponse {
 export interface GetItemByIdResponse {
     item: ItemResponse;
 }
+
+/* ========================================================================== */
+/* ITEM LIST (GET /items) — API DATA SHAPE                                   */
+/* ========================================================================== */
+
+export interface ItemsListPagination {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+    from: number;
+    to: number;
+}
+
+export interface ItemsListSummary {
+    total_active: number;
+    total_inactive: number;
+    last_created: string | null;
+}
+
+export interface ItemsListApiData {
+    items: ItemListResponse[];
+    pagination: ItemsListPagination;
+    summary: ItemsListSummary;
+}

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { Table, ColumnFiltersState } from "@tanstack/react-table";
@@ -19,8 +19,8 @@ import type { QuoteSummary } from "@/types/quote";
    ----------------------------------------------------------------------- */
 const filterLabels: Record<string, string> = {
   contact: "Cliente",
-  number: "NÃºmero",
-  created_at: "Fecha de creaciÃ³n",
+  number: "Número",
+  created_at: "Fecha de creación",
   payment_due_date: "Fecha de vencimiento",
   status: "Estado",
   status_dian: "Estado DIAN",
@@ -233,7 +233,7 @@ export function FilterChips({
                 <div className="px-3 py-2">
                   <input
                     className="w-full border rounded px-2 py-1 text-xs"
-                    placeholder="NÃºmero de quote"
+                    placeholder="Número de quote"
                     value={filter.value as string}
                     onChange={(e) => setColumnFilters(columnFilters.map(f => f.id === filter.id ? { ...f, value: e.target.value } : f))}
                   />

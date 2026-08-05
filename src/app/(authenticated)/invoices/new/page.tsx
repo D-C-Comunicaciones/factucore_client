@@ -278,6 +278,11 @@ export default function NewInvoicePage() {
       }
     }
 
+    if (invoiceBuilder.totals.payableAmount < 0) {
+        showToast("El total del documento no puede ser un valor negativo", "error");
+        return false;
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       showToast(

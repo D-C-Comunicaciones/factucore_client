@@ -5,7 +5,8 @@ import {
     UpdateItemPayload,
     UpdateVariantPayload,
     ItemListResponse,
-    GetItemByIdResponse
+    GetItemByIdResponse,
+    ItemsListApiData
 } from "@/types/items";
 import { PaginatedData } from "@/types/api";
 
@@ -15,15 +16,25 @@ export const itemsApi = {
      */
     getItems: async (
         params?: Record<string, any>
-    ) => {
+    ): Promise<PaginatedData<ItemListResponse> & { summary: ItemsListApiData["summary"] }> => {
         const response =
             await apiClient.get<
-                PaginatedData<ItemListResponse>
+                ItemsListApiData
             >("/items", {
                 params,
             });
 
-        return response.data;
+        const { items, pagination, summary } = response.data;
+
+        return {
+            data: items,
+            total: pagination.total,
+            per_page: pagination.per_page,
+            current_page: pagination.current_page,
+            last_page: pagination.last_page,
+            message: response.message,
+            summary,
+        };
     },
 
     /**

@@ -1,12 +1,11 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { ArrowUp, ArrowDown, Printer, Pencil, Minus, Coins, Eye } from "lucide-react";
+import { ArrowUp, ArrowDown, Printer, Pencil, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { QuotesService } from "@/lib/quotes";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -53,7 +52,7 @@ function SortableHeader({
       type="button"
       style={{ background: "none" }}
     >
-      <span className="text-xs font-medium text-gray-700">{label}</span>
+      <span className="text-xs font-medium text-slate-900">{label}</span>
       <span style={{ width: 16, display: "inline-flex", justifyContent: "center" }}>
         {isSorted === "desc" && <ArrowUp className="w-4 h-4 ml-1 text-black" />}
         {isSorted === "asc" && <ArrowDown className="w-4 h-4 ml-1 text-black" />}
@@ -114,7 +113,7 @@ export function DianStatusBadge({ status }: { status: any }) {
 /* -----------------------------------------------------------------------
    Badge de estado interno
    ----------------------------------------------------------------------- */
-function StatusBadge({ status }: { status: any }) {
+export function StatusBadge({ status }: { status: any }) {
   const estadoStr = typeof status === "string" ? status : (status?.name || "");
   const estado = estadoStr.toLowerCase();
 
@@ -145,6 +144,8 @@ function StatusBadge({ status }: { status: any }) {
   const styles: Record<string, string> = {
     "pagada": "bg-green-100 text-green-700",
     "cobrada": "bg-green-100 text-green-700",
+    "facturada": "bg-green-100 text-green-700",
+    "sin facturar": "bg-orange-100 text-orange-700",
     "por pagar": "bg-blue-100 text-blue-700",
     parcial: "bg-yellow-100 text-yellow-700",
     pendiente: "bg-primary/10 text-primary",
@@ -165,8 +166,8 @@ function StatusBadge({ status }: { status: any }) {
    ----------------------------------------------------------------------- */
 function ActionsCell({ quote }: { quote: QuoteSummary }) {
   const router = useRouter();
-  const [showAnularDialog, setShowAnularDialog] = React.useState(false);
-  const [isAnulando, setIsAnulando] = React.useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const handleDownloadPDF = async () => {
     try {
@@ -181,52 +182,25 @@ function ActionsCell({ quote }: { quote: QuoteSummary }) {
     }
   };
 
-  const estadoDianStr = typeof quote.status_dian === "string" ? quote.status_dian : ((quote.status_dian as any)?.name || "");
-  const estadoDian = estadoDianStr.toLowerCase();
-
-  const estadoStr = typeof quote.status === "string" ? quote.status : ((quote.status as any)?.name || "");
-  const estado = estadoStr.toLowerCase();
-
-  const isDianAprobada = estadoDian === "aprobada" || estadoDian === "approved" || estadoDian === "aceptada";
-
-  // Disable Anular if approved by DIAN, or if status is 'cobrada', 'por cobrar', 'pendiente', 'vencida', 'parcial'
-  // Only allow if 'borrador', 'guardada' etc and not approved.
-  const isCobradaOPorCobrar = estado === "cobrada" || estado === "por cobrar" || estado === "pendiente" || estado === "vencida" || estado === "parcial";
-  const canAnular = (estado === "borrador" || estado === "draft" || estado === "guardada" || estado === "saved" || estado === "no electrÃ³nico") && !isDianAprobada && !isCobradaOPorCobrar;
-
-  const canEdit = !isDianAprobada && (
-    estado === "borrador" ||
-    estado === "draft" ||
-    estado === "guardada" ||
-    estado === "saved" ||
-    estadoDian === "no aprobada" ||
-    estadoDian === "rechazada" ||
-    estado === "no electrÃ³nico"
-  );
-
   const handleEdit = () => {
-    console.log("Editar quote", quote.id);
+    router.push(`/quotes/${quote.id}/edit`);
   };
 
-  const handleAnular = async () => {
-    setIsAnulando(true);
+  const handleDelete = async () => {
+    setIsDeleting(true);
     try {
-      await QuotesService.cancel(quote.id);
-      showToast("Quote anulada correctamente", "success", "Ã‰xito");
+      await QuotesService.delete(quote.id);
+      showToast("Cotización eliminada correctamente", "success", "Ã‰xito");
       window.location.reload();
     } catch (error: any) {
-      console.error("Error al anular la quote:", error);
+      console.error("Error al eliminar la cotizaciÃ³n:", error);
       const errorData = error.response?.data || error.data || error;
-      const errorMsg = errorData?.message || "No se pudo anular la quote";
+      const errorMsg = errorData?.message || "No se pudo eliminar la cotizaciÃ³n";
       showToast(errorMsg, "error", "Error");
     } finally {
-      setIsAnulando(false);
-      setShowAnularDialog(false);
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
-  };
-
-  const handlePayment = () => {
-    console.log("Agregar pago a quote", quote.id);
   };
 
   return (
@@ -235,15 +209,20 @@ function ActionsCell({ quote }: { quote: QuoteSummary }) {
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:!bg-primary/10 transition-colors" onClick={(e) => { e.stopPropagation(); handlePayment(); }}>
-                <div className="flex items-center text-slate-700">
-                  <span className="text-[10px] font-bold mt-0.5 mr-[1px]">$</span>
-                  <Coins className="h-[15px] w-[15px]" strokeWidth={2.5} />
-                </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:!bg-primary/10 transition-colors text-slate-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownloadPDF();
+                }}
+              >
+                <Printer className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent className="bg-[#1e293b] text-white border-none" side="top">
-              <p className="font-medium">Agregar pago</p>
+              <p className="font-medium">Imprimir</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -260,62 +239,42 @@ function ActionsCell({ quote }: { quote: QuoteSummary }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={8} className="mt-2 min-w-[140px]">
-              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={() => router.push(`/quotes/${quote.id}`)} className="cursor-pointer">
-                <Eye className="w-4 h-4 mr-2 text-slate-700" />
-                Ver detalle
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={() => handleDownloadPDF()} className="cursor-pointer">
-                <Printer className="w-4 h-4 mr-2 text-slate-700" />
-                Imprimir
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => e.stopPropagation()}
-                onSelect={(e) => {
-                  if (!canEdit) e.preventDefault();
-                  else handleEdit();
-                }}
-                className={`cursor-pointer ${!canEdit ? 'opacity-50 pointer-events-none' : ''}`}
-                disabled={!canEdit}
-              >
+              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={handleEdit} className="cursor-pointer">
                 <Pencil className="w-4 h-4 mr-2 text-slate-700" />
                 Editar
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => e.stopPropagation()}
-                onSelect={(e) => {
-                  if (!canAnular) e.preventDefault();
-                  else setShowAnularDialog(true);
-                }}
-                className={`cursor-pointer ${!canAnular ? 'opacity-50 pointer-events-none' : ''}`}
-                disabled={!canAnular}
+                onSelect={() => setShowDeleteDialog(true)}
+                className="cursor-pointer text-destructive focus:text-destructive"
               >
-                <Minus className="w-4 h-4 mr-2 text-slate-700" />
-                Anular
+                <Trash2 className="w-4 h-4 mr-2" />
+                Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      <AlertDialog open={showAnularDialog} onOpenChange={setShowAnularDialog}>
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Â¿EstÃ¡s seguro de que deseas anular esta quote?</AlertDialogTitle>
+            <AlertDialogTitle>Â¿EstÃ¡s seguro de que deseas eliminar esta cotizaciÃ³n?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acciÃ³n no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isAnulando}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <Button
               variant="destructive"
-              disabled={isAnulando}
+              disabled={isDeleting}
               onClick={(e) => {
                 e.stopPropagation();
-                handleAnular();
+                handleDelete();
               }}
             >
-              {isAnulando ? "Anulando..." : "Anular quote"}
+              {isDeleting ? "Eliminando..." : "Eliminar cotizaciÃ³n"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -332,59 +291,11 @@ export function getColumns(
 ): ColumnDef<QuoteSummary>[] {
   return [
     {
-      id: "select",
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={
-            table.getRowModel().rows.length > 0 &&
-            table.getRowModel().rows.every(
-              row => row.getIsSelected()
-            )
-          }
-          ref={(el) => {
-            if (!el) return;
-
-            const rows = table.getRowModel().rows;
-            const selected = rows.filter(
-              row => row.getIsSelected()
-            ).length;
-
-            el.indeterminate =
-              selected > 0 &&
-              selected < rows.length;
-          }}
-          onChange={(e) => {
-            const checked = e.target.checked;
-
-            table.getRowModel().rows.forEach(
-              row => row.toggleSelected(checked)
-            );
-          }}
-        />
-      ),
-      cell: ({ row }) => (
-        <>
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={(e) => {
-              row.toggleSelected(e.target.checked);
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-      size: 48,
-    },
-    {
       accessorKey: "number",
-      header: ({ column }) => <SortableHeader column={column} label="NÃºmero" />,
+      header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Número" /></div>,
       enableSorting: true,
       cell: ({ row }) => (
-        <span className="text-xs text-gray-900 font-medium text-left">{row.original.number}</span>
+        <span className="text-xs text-gray-900 font-medium text-center block">{row.original.number}</span>
       ),
     },
     {
@@ -398,18 +309,10 @@ export function getColumns(
     },
     {
       accessorKey: "created_at",
-      header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="CreaciÃ³n" /></div>,
+      header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Creación" /></div>,
       enableSorting: true,
       cell: ({ row }) => (
         <span className="text-xs text-gray-600 text-center block">{row.original.created_at}</span>
-      ),
-    },
-    {
-      accessorKey: "payment_due_date",
-      header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Vencimiento" /></div>,
-      enableSorting: true,
-      cell: ({ row }) => (
-        <span className="text-xs text-gray-600 text-center block">{row.original.payment_due_date || row.original.created_at || "-"}</span>
       ),
     },
     {
@@ -417,23 +320,9 @@ export function getColumns(
       header: () => <div className="text-right">Total</div>,
       cell: ({ row }) => (
         <div className="text-xs text-gray-900 font-medium text-right">
-          $ {Number(row.original.total).toLocaleString()}
+          $ {Number(row.original.total || 0).toLocaleString()}
         </div>
       ),
-    },
-    {
-      accessorKey: "pending_amount",
-      header: () => <div className="text-right">Por pagar</div>,
-      cell: ({ row }) => (
-        <div className="text-xs text-gray-900 text-right">
-          $ {Number(row.original.pending_amount).toLocaleString()}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "status_dian",
-      header: "Estado DIAN",
-      cell: ({ row }) => <div className="text-left"><DianStatusBadge status={row.original.status_dian} /></div>,
     },
     {
       accessorKey: "status",

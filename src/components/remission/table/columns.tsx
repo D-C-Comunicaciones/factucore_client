@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
@@ -54,7 +54,7 @@ function SortableHeader({
       type="button"
       style={{ background: "none" }}
     >
-      <span className="text-xs font-medium text-gray-700">{label}</span>
+      <span className="text-xs font-medium text-slate-900">{label}</span>
       <span style={{ width: 16, display: "inline-flex", justifyContent: "center" }}>
         {isSorted === "desc" && <ArrowUp className="w-4 h-4 ml-1 text-black" />}
         {isSorted === "asc" && <ArrowDown className="w-4 h-4 ml-1 text-black" />}
@@ -382,7 +382,7 @@ export function getColumns(
     },
     {
       accessorKey: "number",
-      header: ({ column }) => <SortableHeader column={column} label="NÃºmero" />,
+      header: ({ column }) => <SortableHeader column={column} label="Número" />,
       enableSorting: true,
       cell: ({ row }) => (
         <span className="text-xs text-gray-900 font-medium text-left">{row.original.number}</span>
@@ -399,7 +399,7 @@ export function getColumns(
     },
     {
       accessorKey: "created_at",
-      header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="CreaciÃ³n" /></div>,
+      header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Creación" /></div>,
       enableSorting: true,
       cell: ({ row }) => (
         <span className="text-xs text-gray-600 text-center block">{row.original.created_at}</span>

@@ -1,0 +1,68 @@
+{
+    "resolution_id": 1, // id de la resolución que envia el frontend en el payload
+    "notes": "Notess.....", // notas de la cotización OPCIONAL
+    "terms_and_conditions": "Terms and conditions...", // terminos y condiciones de la cotización OPCIONAL
+    "settings": { // Ajustes de la cotización(son los campos de mas ajustes, si no están fijados en la vista o si no tienen datos seleccionados no se envia el campo que esté vacío, el que si tenga seteada informacion si se envia) si este objeto no viene entonces solo asigna la moneda en peso el resto null
+        "warehouse_id": 1, // OPCIONAL
+        "seller_id": 1, // OPCIONAL
+        "currency_id": 35, // OPCIONAL por default COP - Peso colombiano el cual su id es: 35
+        "price_list_id": 1, // OPCIONAL
+        "cost_center_id": 1 // OPCIONAL
+    },
+    "quote_information": { // información de la cotización: Cliente, Fecha de Creación, Fecha de Vencimiento
+        "contact_id": 1, // id del contacto al que se le cotiza
+        "issue_date": "2026-08-04", // fecha de creación de la cotización
+        "expiratop_date": "2026-09-04" // fecha de expiración de la cotización
+    },
+    "items": [ // los items vendrán tal cual como en invoice.
+        {
+            "item_id": 2,
+            "name": "1 Pantalla de Netflix",
+            "reference": "NETFLIX-SCREEN", // OBLIGATORIO
+            "description": "1 Pantalla de Netflix", // OPCIONAL
+            "quantity": 1,
+            "price_amount": 13000,
+            "unit_measure_code": "94",
+            "allowance_charges": [ // en este objeto los descuentos o cargos que se apliquen a la linea del item
+                {
+                    "scope": "line",
+                    "value_type": "percentage",
+                    "reason": "Descuento comercial",
+                    "charge_indicator": false, // charge_indicator: false significa que es un descuento, que se le resta a la factura. 
+                    "value": 15,
+                    "reason_code": "00"
+                }
+            ],
+            "taxes": [ // en este objeto los impuestos aplicados al item
+                {
+                    "tax_rate_id": 6,
+                    "tax_id": 1,
+                    "name": "IVA 19%",
+                    "rate": 19,
+                    "type": "percentage",
+                    "description": "Tarifa general",
+                    "tax_code": "1",
+                    "tax_name": "IVA 19%"
+                }
+            ]
+        }
+    ],
+    "allowance_charges": [ // en este objeto los cargos o descuentos globales a la cotización.
+        {
+            "scope": "global",
+            "value_type": "percentage",
+            "reason": "Timbre",
+            "reason_code": "01",
+            "charge_indicator": true, // charge_indicator: true significa que es un cargo, que se le suma a la factura y false es que se descuenta. 
+            "value": 5
+        },
+        {
+            "scope": "global",
+            "value_type": "percentage",
+            "reason": "Promo",
+            "reason_code": "00",
+            "charge_indicator": false, // charge_indicator: false significa que es un descuento, que se le resta a la factura. 
+            "value": 2
+        }
+    ]
+}

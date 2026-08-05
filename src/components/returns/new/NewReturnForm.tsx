@@ -540,6 +540,11 @@ export function NewReturnForm() {
         setErrors(newErrors);
         if (Object.keys(newErrors).length > 0) return;
 
+        if (rawReturnTotal < 0) {
+            showToast("El total del documento no puede ser un valor negativo", "error");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             // Build customer object from selected invoice details
@@ -819,9 +824,10 @@ export function NewReturnForm() {
     }
 
     const taxesTotal = Object.values(returnTaxesMap).reduce((sum, t) => sum + t.amount, 0);
-    const returnTotal = ['3', '6', '7'].includes(selectedType)
+    const rawReturnTotal = ['3', '6', '7'].includes(selectedType)
         ? returnSubtotal + newGlobalDiscountsTotal + taxesTotal
         : returnSubtotal - lineDiscountsTotal - globalDiscountsTotal + globalSurchargesTotal + taxesTotal;
+    const returnTotal = Math.max(0, rawReturnTotal);
 
 
     return (
@@ -1256,7 +1262,18 @@ export function NewReturnForm() {
                                                                 setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, discount: { ...l.discount, type: l.discount.type === '%' ? '$' : '%' } } : l));
                                                             }} className="px-2 border-r bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-medium w-8 text-center">{line.discount.type}</button>
                                                             <input type="text" inputMode="numeric" value={line.discount.value} disabled={selectedType === '2'} onChange={(e) => {
-                                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                let valNum = Number(e.target.value.replace(/[^0-9]/g, ''));
+                                                                if (line.discount.type === '%' && valNum > 100) {
+                                                                    showToast("El porcentaje de descuento no puede ser mayor al 100%", "warning");
+                                                                    valNum = 0;
+                                                                } else if (line.discount.type === '$') {
+                                                                    const lineBase = line.maxQuantity * line.price;
+                                                                    if (lineBase > 0 && valNum > lineBase) {
+                                                                        showToast("El valor digitado excede el valor total del ítem", "warning");
+                                                                        valNum = 0;
+                                                                    }
+                                                                }
+                                                                const val = String(valNum);
                                                                 setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, discount: { ...l.discount, value: val } } : l));
                                                             }} className="flex-1 w-full px-2 outline-none text-right" placeholder="0" />
                                                         </div>
@@ -1373,7 +1390,18 @@ export function NewReturnForm() {
                                                                 <span className="mr-1 text-red-500">-$</span>
                                                                 <input type="text" inputMode="numeric" value={d.calculated_amount || d.amount || d.value || 0} disabled={selectedType === '2'} onChange={(e) => {
                                                                     const val = e.target.value.replace(/[^0-9]/g, '');
-                                                                    setGlobalDiscounts(prev => prev.map((item, i) => i === idx ? { ...item, amount: val, value: val, calculated_amount: val } : item));
+                                                                    const numVal = Number(val);
+                                                                    const isPercentage = !!(d.percent || d.percentage);
+                                                                    
+                                                                    if (isPercentage && numVal > 100) {
+                                                                        showToast("El porcentaje no puede ser mayor al 100%", "warning");
+                                                                        setGlobalDiscounts(prev => prev.map((item, i) => i === idx ? { ...item, amount: "", value: "", calculated_amount: "" } : item));
+                                                                    } else if (!isPercentage && numVal > (originalInvoiceSubtotal || 0)) {
+                                                                        showToast("El valor excede el total del documento", "warning");
+                                                                        setGlobalDiscounts(prev => prev.map((item, i) => i === idx ? { ...item, amount: "", value: "", calculated_amount: "" } : item));
+                                                                    } else {
+                                                                        setGlobalDiscounts(prev => prev.map((item, i) => i === idx ? { ...item, amount: val, value: val, calculated_amount: val } : item));
+                                                                    }
                                                                 }} className="w-24 h-[28px] px-2 text-right border rounded-md outline-none focus:border-primary text-sm text-red-500" />
                                                             </div>
                                                         ) : (
@@ -1410,11 +1438,26 @@ export function NewReturnForm() {
                                             <div className="pt-2 border-t border-slate-200/50 flex flex-col gap-2">
                                                 <input type="text" value={newDiscountReason} onChange={e => setNewDiscountReason(e.target.value)} placeholder="Motivo" className="w-full text-sm h-8 px-2 border rounded-md outline-none focus:border-primary" />
                                                 <div className="flex gap-2">
-                                                    <select value={newDiscountType} onChange={e => setNewDiscountType(e.target.value as '%' | '$')} className="text-sm border rounded-md outline-none focus:border-primary w-24 px-1">
+                                                    <select value={newDiscountType} onChange={e => {
+                                                        setNewDiscountType(e.target.value as '%' | '$');
+                                                        setNewDiscountValue('');
+                                                    }} className="text-sm border rounded-md outline-none focus:border-primary w-24 px-1">
                                                         <option value="%">%</option>
                                                         <option value="$">$</option>
                                                     </select>
-                                                    <input type="text" inputMode="numeric" value={newDiscountValue} onChange={e => setNewDiscountValue(e.target.value.replace(/[^0-9]/g, ''))} placeholder="Valor" className="w-full text-sm h-8 px-2 border rounded-md outline-none focus:border-primary" />
+                                                    <input type="text" inputMode="numeric" value={newDiscountValue} onChange={e => {
+                                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                                        const numVal = Number(val);
+                                                        if (newDiscountType === '%' && numVal > 100) {
+                                                            showToast("El porcentaje no puede ser mayor al 100%", "warning");
+                                                            setNewDiscountValue('');
+                                                        } else if (newDiscountType === '$' && numVal > (originalInvoiceSubtotal || 0)) {
+                                                            showToast("El valor excede el total del documento", "warning");
+                                                            setNewDiscountValue('');
+                                                        } else {
+                                                            setNewDiscountValue(val);
+                                                        }
+                                                    }} placeholder="Valor" className="w-full text-sm h-8 px-2 border rounded-md outline-none focus:border-primary" />
                                                 </div>
                                                 <button type="button" onClick={() => {
                                                     if (!newDiscountReason || !newDiscountValue) return;

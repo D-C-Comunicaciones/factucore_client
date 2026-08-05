@@ -152,22 +152,22 @@ export function ReturnsTableBody({ loading = false, items = [] }: ReturnsTableBo
             <TableHead className="w-10 border-l border-gray-200">
               <Checkbox />
             </TableHead>
-            <TableHead className="font-medium text-xs text-gray-700">
+            <TableHead className="font-medium text-xs text-slate-900">
               <span className="flex items-center gap-1">Número</span>
             </TableHead>
-            <TableHead className="font-medium text-xs text-gray-700">
+            <TableHead className="font-medium text-xs text-slate-900">
               <span className="flex items-center gap-1">Cliente</span>
             </TableHead>
-            <TableHead className="font-medium text-xs text-gray-700">
+            <TableHead className="font-medium text-xs text-slate-900">
               <span className="flex items-center gap-1">Fecha</span>
             </TableHead>
-            <TableHead className="font-medium text-xs text-gray-700">
+            <TableHead className="font-medium text-xs text-slate-900">
               <span className="flex items-center gap-1">Total</span>
             </TableHead>
-            <TableHead className="font-medium text-xs text-gray-700 text-right">
+            <TableHead className="font-medium text-xs text-slate-900 text-right">
               <span className="flex items-center justify-end gap-1">Por aplicar</span>
             </TableHead>
-            <TableHead className="font-medium text-xs text-gray-700">
+            <TableHead className="font-medium text-xs text-slate-900">
               <span className="flex items-center gap-1">Estado DIAN</span>
             </TableHead>
             <TableHead className="w-10 border-r border-gray-200" />

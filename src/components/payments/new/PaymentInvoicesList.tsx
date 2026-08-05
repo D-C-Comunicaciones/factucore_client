@@ -181,7 +181,7 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
     <div className="space-y-4">
       <div>
         <h3 className="text-base font-bold text-foreground">Facturas por cobrar</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-slate-900 mt-1">
           Agrega el monto recibido a las facturas relacionadas con este ingreso.
         </p>
       </div>
@@ -190,12 +190,12 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
         <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-              <TableHead className="font-medium text-muted-foreground w-[15%] relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Número</TableHead>
-              <TableHead className="font-medium text-muted-foreground w-[15%] relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Vencimiento</TableHead>
-              <TableHead className="font-medium text-muted-foreground w-[15%] text-center relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Total</TableHead>
-              <TableHead className="font-medium text-muted-foreground w-[20%] text-center relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Retenciones</TableHead>
-              <TableHead className="font-medium text-muted-foreground w-[15%] text-center relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Por cobrar</TableHead>
-              <TableHead className="font-medium text-muted-foreground w-[20%] text-center">Monto recibido</TableHead>
+              <TableHead className="font-medium text-slate-900 w-[15%] relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Número</TableHead>
+              <TableHead className="font-medium text-slate-900 w-[15%] relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Vencimiento</TableHead>
+              <TableHead className="font-medium text-slate-900 w-[15%] text-center relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Total</TableHead>
+              <TableHead className="font-medium text-slate-900 w-[20%] text-center relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Retenciones</TableHead>
+              <TableHead className="font-medium text-slate-900 w-[15%] text-center relative after:absolute after:right-0 after:top-1/4 after:bottom-1/4 after:w-px after:bg-border">Por cobrar</TableHead>
+              <TableHead className="font-medium text-slate-900 w-[20%] text-center">Monto recibido</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -217,22 +217,22 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
                     <Link 
                       href={`/invoices/${inv.id}`} 
                       target="_blank" 
-                      className="text-muted-foreground hover:bg-slate-100 hover:text-slate-900 px-2 py-1 rounded -ml-2 transition-colors cursor-pointer inline-block"
+                      className="text-slate-900 hover:bg-slate-100 hover:text-slate-900 px-2 py-1 rounded -ml-2 transition-colors cursor-pointer inline-block"
                     >
                       {inv.number}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-slate-900">
                     {renderDueDate(inv.payment_due_date)}
                   </TableCell>
-                  <TableCell className="text-center text-muted-foreground">
+                  <TableCell className="text-center text-slate-900">
                     $ {inv.total ? parseFloat(inv.total).toLocaleString('es-CO') : '0'}
                   </TableCell>
                   <TableCell className="bg-slate-50/30">
                     <div className="flex items-center justify-center">
                       <div className="group flex items-center w-full max-w-[120px] rounded-md border border-gray-300 bg-slate-50 hover:border-primary focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-colors">
                         <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-900">$</span>
                           <input 
                             type="text" 
                             className="w-full h-9 pl-7 pr-2 text-sm bg-transparent outline-none cursor-default"
@@ -242,14 +242,14 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
                         </div>
                         <button 
                           onClick={() => setEditingWithholdingsFor(inv.id)}
-                          className="h-9 px-2 border-l border-gray-300 group-hover:border-primary group-focus-within:border-primary text-muted-foreground hover:text-foreground hover:bg-gray-100 cursor-pointer flex items-center justify-center transition-colors"
+                          className="h-9 px-2 border-l border-gray-300 group-hover:border-primary group-focus-within:border-primary text-slate-900 hover:text-foreground hover:bg-gray-100 cursor-pointer flex items-center justify-center transition-colors"
                         >
                           <PenLine className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-center text-muted-foreground">
+                  <TableCell className="text-center text-slate-900">
                     $ {getEffectivePendingAmount(inv).toLocaleString('es-CO')}
                   </TableCell>
                   <TableCell className="relative">
@@ -257,7 +257,7 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
                       <Popover open={focusedInvoice === inv.id && !formErrors?.amounts}>
                         <PopoverAnchor asChild>
                           <div className="relative w-full max-w-[120px]">
-                            <span className={cn("absolute left-3 top-1/2 -translate-y-1/2", formErrors?.amounts ? "text-[#ef4444]" : "text-muted-foreground")}>$</span>
+                            <span className={cn("absolute left-3 top-1/2 -translate-y-1/2", formErrors?.amounts ? "text-[#ef4444]" : "text-slate-900")}>$</span>
                             <input 
                               type="text" 
                               className={cn(
@@ -304,7 +304,7 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
                           }}
                         >
                           <div className="font-bold text-slate-800 text-[15px]">${getEffectivePendingAmount(inv).toLocaleString('es-CO')}</div>
-                          <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">Restante por pagar</div>
+                          <div className="text-[11px] text-slate-900 mt-0.5 leading-tight">Restante por pagar</div>
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -315,7 +315,7 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
           </TableBody>
         </Table>
         {!loading && invoices.length > 0 && (
-          <div className="p-3 border-t border-border flex items-center justify-end gap-2 text-sm text-muted-foreground">
+          <div className="p-3 border-t border-border flex items-center justify-end gap-2 text-sm text-slate-900">
             1-{invoices.length} de {invoices.length}
             <div className="flex gap-1 ml-4">
               <button disabled className="p-1 opacity-50 cursor-not-allowed"><ChevronLeft className="w-4 h-4" /></button>

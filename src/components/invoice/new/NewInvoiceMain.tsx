@@ -975,14 +975,29 @@ export function NewInvoiceMain({
                                     onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
                                     placeholder="Valor"
                                     value={globalAdjPercent || ""}
-                                    onChange={(e) => setGlobalAdjPercent(Number(e.target.value))}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        if (val > 100) {
+                                            showToast("El porcentaje no puede ser mayor al 100%", "warning");
+                                            setGlobalAdjPercent("");
+                                        } else {
+                                            setGlobalAdjPercent(val);
+                                        }
+                                    }}
                                     className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             ) : (
                                 <FormattedInput
                                     placeholder="Valor"
                                     value={globalAdjPercent || 0}
-                                    onChange={(val: number) => setGlobalAdjPercent(val)}
+                                    onChange={(val: number) => {
+                                        if (val > invoiceBuilder.totals.subtotal) {
+                                            showToast("El valor excede el total del documento", "warning");
+                                            setGlobalAdjPercent("");
+                                        } else {
+                                            setGlobalAdjPercent(val);
+                                        }
+                                    }}
                                     className="w-full bg-white h-9 border border-border [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             )}

@@ -28,7 +28,7 @@ export function QuoteTableToolbar({
       <div className="flex w-full md:w-auto items-center gap-2">
         <div className="relative w-full md:w-65">
           <DebouncedInput
-            placeholder="Buscar por cliente o no. de quote"
+            placeholder="Buscar por cliente o no. de cotización"
             value={search}
             onChange={setSearch}
           />

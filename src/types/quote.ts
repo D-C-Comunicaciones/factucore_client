@@ -69,6 +69,20 @@ export type QuoteFindAllSuccess = {
     meta?: any;
 };
 
+// Shape real que devuelve GET /quotations (data.quotations, no data.quotes)
+export type QuoteFindAllApiData = {
+    quotations: QuoteSummary[];
+    pagination: {
+        current_page: number;
+        per_page: number;
+        total: number;
+        last_page: number;
+        from: number;
+        to: number;
+    };
+    meta?: any;
+};
+
 export interface QuoteFindAllEmpty {
     message: string;
     code: number;
@@ -97,11 +111,12 @@ export interface QuoteSummary {
     number: string;
     contact: string;
     created_at: string;
-    payment_due_date: string | null;
+    payment_due_date?: string | null;
+    expiration_date?: string | null;
     total: string;
-    pending_amount: number;
+    pending_amount?: number;
     total_iva?: number;
-    status_dian: {
+    status_dian?: {
         id: number;
         code: string;
         name: string;
@@ -117,7 +132,7 @@ export interface QuoteSummary {
         created_at?: string | null;
         updated_at?: string | null;
     } | string;
-    is_email_sent: boolean;
+    is_email_sent?: boolean;
 }
 
 // Tipos para la respuesta de detalle de quote (segÃºn ejemplo real de backend)
@@ -133,6 +148,7 @@ export interface QuoteDetailResponse {
         billing_period?: QuoteBillingPeriod;
         bill?: QuoteBill;
         quote?: any; // AÃ±adido para el nuevo formato
+        quotation?: any; // Shape real que devuelve GET /quotations/{id}
         related_documents?: any[];
         items?: QuoteItem[];
         allowance_charges?: any[];

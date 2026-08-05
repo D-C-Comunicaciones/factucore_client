@@ -219,7 +219,7 @@ function ItemRow({
 
   return (
     <tr className={`border-b border-border transition-colors ${hasError ? 'bg-destructive/5' : 'bg-white'}`}>
-      <td className="px-2 py-2 w-48">
+      <td className="px-2 py-2 align-middle">
         <AsyncSearchableSelect
           value={item.item_id ? item.item_id.toString() : ""}
           onValueChange={handleItemSelect}
@@ -247,7 +247,7 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2">
+      <td className="px-2 py-2 align-middle">
         <Input
           placeholder="Referencia"
           value={item.referencia}
@@ -256,7 +256,7 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2 w-24">
+      <td className="px-2 py-2 align-middle">
         <FormattedInput
           placeholder="Precio"
           value={item.precio || 0}
@@ -265,7 +265,7 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2 w-32">
+      <td className="px-2 py-2 align-middle">
         <div className="flex items-center">
           {item.discountType === 'percentage' ? (
             <Input
@@ -274,14 +274,30 @@ function ItemRow({
               onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
               placeholder="0"
               value={item.discountValue || ""}
-              onChange={(e) => invoiceBuilder.updateItemDiscount(item.id, Number(e.target.value), 'percentage')}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (val > 100) {
+                  showToast("El porcentaje de descuento no puede ser mayor al 100%", "warning");
+                  invoiceBuilder.updateItemDiscount(item.id, "", 'percentage');
+                } else {
+                  invoiceBuilder.updateItemDiscount(item.id, val, 'percentage');
+                }
+              }}
               className={`${inputClasses} rounded-r-none border-r-0`}
             />
           ) : (
             <FormattedInput
               placeholder="0"
               value={item.discountValue || 0}
-              onChange={(val: number) => invoiceBuilder.updateItemDiscount(item.id, val, 'fixed')}
+              onChange={(val: number) => {
+                const lineBase = (Number(item.cantidad) || 0) * (Number(item.precio) || 0);
+                if (lineBase > 0 && val > lineBase) {
+                  showToast("El valor digitado excede el valor total del ítem", "warning");
+                  invoiceBuilder.updateItemDiscount(item.id, "", 'fixed');
+                } else {
+                  invoiceBuilder.updateItemDiscount(item.id, val, 'fixed');
+                }
+              }}
               className={`${inputClasses} rounded-r-none border-r-0`}
             />
           )}
@@ -300,7 +316,7 @@ function ItemRow({
         </div>
       </td>
 
-      <td className="px-2 py-2 w-48">
+      <td className="px-2 py-2 align-middle">
         <SearchableSelect
           value={item.taxObj?.tax_rate_id?.toString() || item.taxObj?.tax_id?.toString() || "0"}
           onValueChange={(val) => {
@@ -344,7 +360,7 @@ function ItemRow({
 
 
 
-      <td className="px-2 py-2">
+      <td className="px-2 py-2 align-middle">
         <Input
           placeholder="Descripción"
           value={item.description}
@@ -353,7 +369,7 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2 w-24">
+      <td className="px-2 py-2 align-middle">
         <div className="relative flex items-center">
           <Input
             type="number"
@@ -383,11 +399,11 @@ function ItemRow({
         </div>
       </td>
 
-      <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap">
+      <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap align-middle">
         $ {new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rowTotal)}
       </td>
 
-      <td className="px-2 py-2 text-center w-10">
+      <td className="px-2 py-2 text-center align-middle">
         <button
           onClick={() => invoiceBuilder.removeItem(item.id)}
           className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
@@ -420,21 +436,22 @@ export function InvoiceItemsTable({
         <thead className="bg-muted/30 border-b border-border">
           <tr>
             {[
-              "Ítem",
-              "Referencia",
-              "Precio",
-              "Desc",
-              "Impuesto",
-              "Descripción",
-              "Cant",
-              "Total",
-              "",
-            ].filter(Boolean).map((col) => (
+              { title: "Ítem", width: "30%" },
+              { title: "Referencia", width: "10%" },
+              { title: "Precio", width: "12%" },
+              { title: "Descuento", width: "12%" },
+              { title: "Impuesto", width: "13%" },
+              { title: "Descripción", width: "10%" },
+              { title: "Cantidad", width: "8%" },
+              { title: "Total", width: "10%" },
+              { title: "", width: "5%" }
+            ].map((col) => (
               <th
-                key={col as string}
+                key={col.title}
+                style={{ width: col.width }}
                 className="px-2 py-3 text-xs font-semibold text-muted-foreground text-left first:pl-4"
               >
-                {col}
+                {col.title}
               </th>
             ))}
           </tr>
