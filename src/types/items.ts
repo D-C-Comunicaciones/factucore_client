@@ -465,8 +465,14 @@ export interface ItemResponse {
         purchaseOrders: any[];
         deliveryNotes: any[];
         creditNotes: any[];
+        quotations: any[];
+        remissions: any[];
+        purchaseInvoices: any[];
+        supportDocuments: any[];
         debitNotes: any[];
+        customerDebitNotes: any[];
         inventoryTransfers: any[];
+        adjustmentNotes: any[];
     };
     images?: ItemImage[];
     created_at: string;

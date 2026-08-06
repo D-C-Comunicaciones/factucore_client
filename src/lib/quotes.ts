@@ -1,5 +1,6 @@
 import { envs } from "@/config/env";
 import { apiClient } from "@/lib/api-client";
+import { exportByDateRange } from "@/lib/dateRangeExport";
 import type { Quote, QuoteDetailResponse, QuoteFindAllSuccess, QuoteFindAllApiData } from "@/types/quote";
 import type { ApiResponse } from "@/types/api";
 
@@ -83,6 +84,15 @@ export class QuotesService {
      */
     static async preflight(data: Partial<Quote>) {
         return apiClient.postBlob("/quotations/preflight", data);
+    }
+
+    /**
+     * POST /quotations/export
+     * Exporta a Excel las cotizaciones creadas entre las fechas `from` y `to` (YYYY-MM-DD).
+     * Descarga el archivo automáticamente si hay resultados; si no, devuelve el mensaje del backend.
+     */
+    static async exportByDateRange(from: string, to: string) {
+        return exportByDateRange("/quotations/export", from, to, `Cotizaciones_${from}_a_${to}.xlsx`);
     }
 }
 

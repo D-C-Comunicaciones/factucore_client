@@ -243,6 +243,17 @@ export function QuickCreateItemModal({
          onSuccess: (resp: any) => {
            handleClose();
            const createdItem = resp?.data?.item || resp?.data?.data || resp?.data || resp;
+           // La respuesta de creación no siempre trae el stock recién registrado
+           // (se agrega/indexa después), así que usamos la cantidad inicial que
+           // el propio formulario acaba de enviar como respaldo.
+           if (createdItem && itemType === "producto" && !hasVariants) {
+             const validWarehouses = warehouses.filter((w: any) => w.initialQty || w.minQty || w.maxQty);
+             const primaryWarehouse = validWarehouses.length > 0 ? validWarehouses[0] : warehouses[0];
+             const knownInitialStock = parseFloat(primaryWarehouse?.initialQty || initialStock) || 0;
+             if (createdItem.stock_quantity == null || createdItem.stock_quantity === 0) {
+               createdItem.stock_quantity = knownInitialStock;
+             }
+           }
            onCreated?.(createdItem);
          },
          onError: handleBackendError,
@@ -290,6 +301,14 @@ export function QuickCreateItemModal({
          onSuccess: (resp: any) => {
            handleClose();
            const createdItem = resp?.data?.item || resp?.data?.data || resp?.data || resp;
+           // Igual que en el flujo avanzado: si la respuesta no trae el stock recién
+           // creado, usamos la cantidad inicial que se acaba de enviar en el payload.
+           if (createdItem && basicForm.itemType === "producto") {
+             const knownInitialStock = parseFloat(basicForm.initialQuantity) || 0;
+             if (createdItem.stock_quantity == null || createdItem.stock_quantity === 0) {
+               createdItem.stock_quantity = knownInitialStock;
+             }
+           }
            onCreated?.(createdItem);
          },
          onError: handleBackendError,

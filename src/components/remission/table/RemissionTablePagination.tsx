@@ -116,7 +116,7 @@ export function RemissionTablePagination({
       </div>
 
       <div className="flex items-center gap-3 text-xs text-gray-700">
-        <span>Remissions por pagina:</span>
+        <span>Remisiones por pagina:</span>
         <select
           value={perPage}
           onChange={(event) => {

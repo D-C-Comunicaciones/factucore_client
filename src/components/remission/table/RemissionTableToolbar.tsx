@@ -28,7 +28,7 @@ export function RemissionTableToolbar({
       <div className="flex w-full md:w-auto items-center gap-2">
         <div className="relative w-full md:w-65">
           <DebouncedInput
-            placeholder="Buscar por cliente o no. de remission"
+            placeholder="Buscar por cliente o no. de remisión"
             value={search}
             onChange={setSearch}
           />

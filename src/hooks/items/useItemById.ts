@@ -11,5 +11,10 @@ export function useItemById(id: number | string) {
             return response.data.item;
         },
         enabled: !!id,
+        // Los documentos asociados (facturas, cotizaciones, remisiones, etc.) cambian
+        // fuera de esta pantalla, así que siempre se refresca al entrar al detalle
+        // en lugar de servir la copia cacheada de hasta 1 día (staleTime global).
+        staleTime: 0,
+        refetchOnMount: "always",
     });
 }

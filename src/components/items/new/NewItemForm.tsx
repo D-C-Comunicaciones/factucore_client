@@ -28,9 +28,11 @@ interface NewItemFormProps {
   onSubmit: (payload: CreateItemPayload, options?: any) => void;
   isSubmitting: boolean;
   initialData?: Partial<ItemResponse>;
+  isEditMode?: boolean;
+  onCancel?: () => void;
 }
 
-export function NewItemForm({ catalogs, onSubmit, isSubmitting, initialData }: NewItemFormProps) {
+export function NewItemForm({ catalogs, onSubmit, isSubmitting, initialData, isEditMode = false, onCancel }: NewItemFormProps) {
   const searchParams = useSearchParams();
 
   const {
@@ -324,6 +326,7 @@ export function NewItemForm({ catalogs, onSubmit, isSubmitting, initialData }: N
           onOpenNewTaxModal={() => setIsTaxModalOpen(true)}
           onOpenNewCategoryModal={() => setIsCategoryModalOpen(true)}
           onOpenNewWarehouseModal={() => setIsWarehouseModalOpen(true)}
+          disableItemType={isEditMode}
         />
         <AdvancedOptionsSection
           itemType={itemType}
@@ -371,6 +374,8 @@ export function NewItemForm({ catalogs, onSubmit, isSubmitting, initialData }: N
         onInventariableChange={setIsInventoriable}
         ventaNegativo={allowNegativeStock}
         onVentaNegativoChange={setAllowNegativeStock}
+        hideSaveAndCreate={isEditMode}
+        onCancel={onCancel}
       />
 
       <CustomFieldModal

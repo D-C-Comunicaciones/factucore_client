@@ -1,4 +1,4 @@
-﻿import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RemissionsService } from "@/lib/remissions";
 
 import type {
@@ -12,11 +12,11 @@ import type {
 import type { ApiResponse } from "@/types/api";
 
 // --- Keys ---
-const INVOICES_KEY = ["remissions"] as const;
-const INVOICE_KEY = (id: number | string) => ["remission", id] as const;
+const REMISSIONS_KEY = ["remissions"] as const;
+const REMISSION_KEY = (id: number | string) => ["remission", id] as const;
 
 // =========================
-// ðŸ“Œ LIST
+// 📌 LIST
 // =========================
 export function useRemissionsList(options?: { params?: Record<string, any>; enabled?: boolean; fetchKey?: number }) {
 
@@ -33,7 +33,7 @@ export function useRemissionsList(options?: { params?: Record<string, any>; enab
             const res = await RemissionsService.list(options?.params);
 
             if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al obtener remissions");
+                throw new Error(res?.message || "Error al obtener remisiones");
             }
 
             return res;
@@ -49,19 +49,19 @@ export function useRemissionsList(options?: { params?: Record<string, any>; enab
     });
 }
 // =========================
-// ðŸ“Œ PREFETCH DETAIL
+// 📌 PREFETCH DETAIL
 // =========================
 export function usePrefetchRemissionDetail() {
     const queryClient = useQueryClient();
 
     return (id: number | string) =>
         queryClient.prefetchQuery({
-            queryKey: INVOICE_KEY(id),
+            queryKey: REMISSION_KEY(id),
             queryFn: async () => {
                 const res = await RemissionsService.getById(id);
 
                 if (!res || res.status !== "success") {
-                    throw new Error(res?.message || "Error al obtener remission");
+                    throw new Error(res?.message || "Error al obtener remisión");
                 }
 
                 return res;
@@ -70,47 +70,31 @@ export function usePrefetchRemissionDetail() {
 }
 
 // =========================
-// ðŸ“Œ DETAIL
+// 📌 DETAIL
 // =========================
 export function useRemission(id: number | string, enabled = true) {
     return useQuery<RemissionDetailResponse>({
-        queryKey: INVOICE_KEY(id),
+        queryKey: REMISSION_KEY(id),
         queryFn: async () => {
             const res: any = await RemissionsService.getById(id);
 
             if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al obtener remission");
+                throw new Error(res?.message || "Error al obtener remisión");
             }
 
             // res ya es RemissionDetailResponse porque RemissionsService.getById devuelve apiClient.get(...) que extrae la data de axios
             return res;
         },
         enabled: !!id && enabled,
+        // Reutiliza los datos ya cargados en la vista detalle (misma queryKey) al navegar a
+        // editar/clonar/convertir, evitando un GET redundante. Las mutaciones (update) invalidan
+        // este cache explícitamente, así que la ventana de "frescura" es segura.
+        staleTime: 60 * 1000,
     });
 }
 
 // =========================
-// ðŸ“Œ OPTIMISTIC UPDATE HELPERS
-// =========================
-function optimisticUpdateList(
-    queryClient: ReturnType<typeof useQueryClient>,
-    updater: (draft: RemissionSummary[]) => RemissionSummary[]
-) {
-    queryClient.setQueryData<ApiResponse<RemissionListData>>(INVOICES_KEY, (old) => {
-        if (!old?.data?.remissions) return old;
-
-        return {
-            ...old,
-            data: {
-                ...old.data,
-                remissions: updater(old.data.remissions),
-            },
-        };
-    });
-}
-
-// =========================
-// ðŸ“Œ CREATE
+// 📌 CREATE
 // =========================
 export function useCreateRemission() {
     const queryClient = useQueryClient();
@@ -120,35 +104,35 @@ export function useCreateRemission() {
             const res = await RemissionsService.create(data);
 
             if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al crear remission");
+                throw new Error(res?.message || "Error al crear remisión");
             }
 
             return res.data;
         },
 
         onMutate: async () => {
-            await queryClient.cancelQueries({ queryKey: INVOICES_KEY });
+            await queryClient.cancelQueries({ queryKey: REMISSIONS_KEY });
 
             const previous =
-                queryClient.getQueryData<ApiResponse<RemissionListData>>(INVOICES_KEY);
+                queryClient.getQueryData<ApiResponse<RemissionListData>>(REMISSIONS_KEY);
 
             return { previous };
         },
 
         onError: (_err, _vars, context) => {
             if (context?.previous) {
-                queryClient.setQueryData(INVOICES_KEY, context.previous);
+                queryClient.setQueryData(REMISSIONS_KEY, context.previous);
             }
         },
 
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: INVOICES_KEY });
+            queryClient.invalidateQueries({ queryKey: REMISSIONS_KEY });
         },
     });
 }
 
 // =========================
-// ðŸ“Œ UPDATE
+// 📌 UPDATE
 // =========================
 export function useUpdateRemission() {
     const queryClient = useQueryClient();
@@ -164,27 +148,27 @@ export function useUpdateRemission() {
             const res = await RemissionsService.update(id, data);
 
             if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al actualizar remission");
+                throw new Error(res?.message || "Error al actualizar remisión");
             }
 
             return res.data;
         },
 
         onMutate: async ({ id, data }) => {
-            await queryClient.cancelQueries({ queryKey: INVOICES_KEY });
+            await queryClient.cancelQueries({ queryKey: REMISSIONS_KEY });
 
             const previous =
-                queryClient.getQueryData<ApiResponse<RemissionListData>>(INVOICES_KEY);
+                queryClient.getQueryData<ApiResponse<RemissionListData>>(REMISSIONS_KEY);
 
-            queryClient.setQueryData<ApiResponse<RemissionListData>>(INVOICES_KEY, (old) => {
+            queryClient.setQueryData<ApiResponse<RemissionListData>>(REMISSIONS_KEY, (old) => {
                 if (!old?.data?.remissions) return old;
 
                 return {
                     ...old,
                     data: {
                         ...old.data,
-                        remissions: old.data.remissions.map((inv) =>
-                            inv.id === id ? { ...inv, ...data } : inv
+                        remissions: old.data.remissions.map((rem) =>
+                            rem.id === id ? { ...rem, ...data } : rem
                         ),
                     },
                 };
@@ -195,16 +179,16 @@ export function useUpdateRemission() {
 
         onError: (_err, _vars, context) => {
             if (context?.previous) {
-                queryClient.setQueryData(INVOICES_KEY, context.previous);
+                queryClient.setQueryData(REMISSIONS_KEY, context.previous);
             }
         },
 
         onSettled: (_data, _error, vars) => {
-            queryClient.invalidateQueries({ queryKey: INVOICES_KEY });
+            queryClient.invalidateQueries({ queryKey: REMISSIONS_KEY });
 
             if (vars?.id) {
                 queryClient.invalidateQueries({
-                    queryKey: INVOICE_KEY(vars.id),
+                    queryKey: REMISSION_KEY(vars.id),
                 });
             }
         },
@@ -212,35 +196,18 @@ export function useUpdateRemission() {
 }
 
 // =========================
-// ðŸ“Œ SEND TO DIAN
+// 📌 DELETE
 // =========================
-export function useSendRemission() {
+export function useDeleteRemission() {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (id: number | string) => {
-            const res = await RemissionsService.sendRemission(id);
-
-            if (!res || res.status !== "success") {
-                // If there are DIAN errors we can still return res, but maybe the API throws an error
-                // In this case, usually we let the component handle it or throw
-                if (res?.dian && res.dian.estado_documento === "NO APROBADA") {
-                    // Let's attach the response to the error so we can read it
-                    const err = new Error(res.dian.mensaje_dian || "La DIAN no aprobÃ³ la remission");
-                    (err as any).dian = res.dian;
-                    throw err;
-                }
-                throw new Error(res?.message || "Error al emitir remission");
-            }
-
+            const res = await RemissionsService.delete(id);
             return res;
         },
-        onSettled: (_data, _error, id) => {
-            queryClient.invalidateQueries({ queryKey: INVOICES_KEY });
-            if (id) {
-                queryClient.invalidateQueries({ queryKey: INVOICE_KEY(id) });
-            }
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: REMISSIONS_KEY });
         },
     });
 }
-

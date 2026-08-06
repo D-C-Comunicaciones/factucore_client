@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { type ItemFormState } from "@/types/items";
+import { useStandardCodes } from "@/hooks/catalogs/useStandardCodes";
 import { NewTaxRateModal } from "@/components/taxes/NewTaxRateModal";
 import { NewCategoryModal } from "@/components/category/NewCategoryModal";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -181,6 +183,10 @@ export function NewItemModal({
     "rounded-lg cursor-pointer transition-colors hover:bg-primary/10 hover:text-primary focus:bg-primary/10 data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary";
 
   const { taxes = [], categories = [], warehouses = [], unitMeasures = [], isLoading } = catalogs || {};
+
+  // Código estándar (UNSPSC / Colombia Compra Eficiente) para el selector "Código del producto o servicio"
+  const [standardCodeSearch, setStandardCodeSearch] = React.useState("");
+  const { options: standardCodeOptions, isLoading: isSearchingStandardCodes } = useStandardCodes(standardCodeSearch);
 
   const TAX_OPTIONS = (taxes || []).map((tax: any) => {
     const rate = tax.rate ?? tax.percentage ?? tax.code ?? 0;
@@ -579,16 +585,15 @@ export function NewItemModal({
                       </Tooltip>
                     </TooltipProvider>
                   </label>
-                  <SearchableSelect
+                  <AsyncSearchableSelect
                     value={form.comboCode}
                     onValueChange={(v) => set("comboCode", v)}
-                    options={[
-                      { value: "1", label: "Producto Ejemplo 1" },
-                      { value: "2", label: "Servicio Ejemplo 2" },
-                    ]}
+                    options={standardCodeOptions}
+                    loading={isSearchingStandardCodes}
+                    onSearchChange={setStandardCodeSearch}
                     placeholder="Buscar"
-                    searchPlaceholder="Buscar código..."
-                    emptyMessage="No se encontraron códigos."
+                    searchPlaceholder="Buscar código o descripción..."
+                    emptyMessage={isSearchingStandardCodes ? "Buscando..." : "No se encontraron códigos."}
                     className={cn(baseInput, "w-full rounded-md")}
                   />
                 </div>

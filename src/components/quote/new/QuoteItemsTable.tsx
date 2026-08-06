@@ -45,6 +45,7 @@ import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useItems } from "@/hooks/items/useItems";
 import { isIvaTax } from "@/hooks/invoices/useInvoiceBuilder";
+import { resolveStockFields, shouldValidateLineStock } from "@/lib/itemStock";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 // Reusable component for currency formatting without cursor jumps
@@ -128,6 +129,8 @@ function ItemRow({
   const { data, isLoading } = useItems({
     params: {
       search: searchQuery,
+      warehouse_id: effectiveWarehouseId ?? undefined,
+      price_list_id: effectivePriceListId ?? undefined,
     }
   });
 
@@ -160,8 +163,7 @@ function ItemRow({
     const selectedOption = options.find((o: any) => o.value === val);
     if (selectedOption) {
       const ri = selectedOption.rawItem;
-      const isService = ri.type_item_id === 2;
-      const isInventoriable = isService ? false : (ri.is_inventoriable ?? true);
+      const { is_inventoriable: isInventoriable, allow_negative_stock: allowNegativeStock, stock_quantity: stockQuantity } = resolveStockFields(ri);
 
       quoteBuilder.updateItem(item.id, "item_id", ri.id);
       quoteBuilder.updateItem(item.id, "standard_code", ri.standard_code || "");
@@ -170,9 +172,9 @@ function ItemRow({
       quoteBuilder.updateItem(item.id, "description", ri.description || "");
       quoteBuilder.updateItem(item.id, "precio", ri.price || 0);
       quoteBuilder.updateItem(item.id, "cantidad", 1);
-      quoteBuilder.updateItem(item.id, "stock_quantity", ri.stock_quantity ?? null);
+      quoteBuilder.updateItem(item.id, "stock_quantity", stockQuantity);
       quoteBuilder.updateItem(item.id, "is_inventoriable", isInventoriable);
-      quoteBuilder.updateItem(item.id, "allow_negative_stock", ri.allow_negative_stock ?? false);
+      quoteBuilder.updateItem(item.id, "allow_negative_stock", allowNegativeStock);
       quoteBuilder.updateItem(item.id, "selected_warehouse_id", selectedWarehouseId);
       quoteBuilder.updateItem(item.id, "selected_price_list_id", selectedPriceListId);
       quoteBuilder.updateItem(item.id, "warehouses", ri.warehouses);
@@ -197,8 +199,8 @@ function ItemRow({
       quoteBuilder.updateItem(item.id, "maximum_stock", warehouseData?.maximum_stock);
 
       // Validate initial quantity
-      const shouldValidateInitial = isInventoriable && !(ri.allow_negative_stock ?? false);
-      const initialStock = ri.stock_quantity ?? 0;
+      const shouldValidateInitial = isInventoriable && !allowNegativeStock;
+      const initialStock = stockQuantity ?? 0;
       if (shouldValidateInitial && initialStock < 1) {
         showToast("El producto seleccionado no tiene stock disponible.", "warning");
         quoteBuilder.updateItem(item.id, "cantidad", 0);
@@ -235,7 +237,7 @@ function ItemRow({
   const quantityBackendError = errors?.[`items.${index}.quantity`];
   const isInvalidQuantity = (errors?.items === "invalid_quantity" && item.item_id && (!item.cantidad || item.cantidad <= 0)) || !!quantityBackendError;
 
-  const shouldValidateStock = !!item.item_id && item.is_inventoriable && !item.allow_negative_stock;
+  const shouldValidateStock = shouldValidateLineStock(item);
   const currentStock = item.stock_quantity ?? 0;
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {

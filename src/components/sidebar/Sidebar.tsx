@@ -133,7 +133,7 @@ function SidebarMenuItems({
                         </Link>
 
                         {/* BOTÓN + */}
-                        {(sub.label === "Factura de venta" || 
+                        {(sub.label === "Factura de venta" ||
                           sub.label === "Items de Venta" ||
                           sub.label === "Bodegas" ||
                           sub.label === "Categorías" ||
@@ -150,23 +150,23 @@ function SidebarMenuItems({
                           sub.label === "Devoluciones en venta" ||
                           sub.label === "Cotizaciones" ||
                           sub.label === "Remisiones") && (
-                          <Link
-                            href={sub.path + '/new'}
-                            className="
+                            <Link
+                              href={sub.path + '/new'}
+                              className="
                               flex items-center justify-center w-10 h-full
                               opacity-0 group-hover:opacity-100
                               transition-all
                               hover:bg-primary/20
                               cursor-pointer
                             "
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (sub.path) onNavigate(sub.path + '/new');
-                            }}
-                          >
-                            <Plus className="w-4 h-4 text-primary" />
-                          </Link>
-                        )}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (sub.path) onNavigate(sub.path + '/new');
+                              }}
+                            >
+                              <Plus className="w-4 h-4 text-primary" />
+                            </Link>
+                          )}
                       </div>
                     );
                   })}
@@ -245,7 +245,7 @@ export function Sidebar({
         />
       )}
 
-    <div
+      <div
         className={`
     fixed top-0 left-0 z-40
     h-screen bg-white border-r border-sidebar-border
@@ -287,7 +287,7 @@ export function Sidebar({
           )}
         </div>
         {/* Empresa y usuario solo si expandido */}
-        {isSidebarExpanded && <WorkspaceSelector />}
+        {/*isSidebarExpanded && <WorkspaceSelector />*/}
 
         {/* Línea divisoria después del workspace */}
         {isSidebarExpanded && (

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Plus, ChevronDown, Download, FileEdit, Upload, Sparkles } from 'lucide-react';
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,6 +12,8 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { QuoteExportModal } from "./QuoteExportModal";
+import { QuotesService } from "@/lib/quotes";
+import { showToast } from "@/components/sonner/CustomToaster";
 
 interface QuotePageHeaderProps {
   onNavigate?: (view: string) => void;
@@ -89,8 +92,33 @@ export function QuotePageHeader({ onNavigate }: QuotePageHeaderProps) {
       <QuoteExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
-        onExport={(options) => {
-          console.log("Exporting quotes with options:", options);
+        onExport={async (options) => {
+          let from: string;
+          let to: string;
+
+          if (options.isAll) {
+            from = "2000-01-01";
+            to = format(new Date(), "yyyy-MM-dd");
+          } else {
+            if (!options.fromDate || !options.toDate) {
+              showToast("Debes seleccionar un rango de fechas válido", "error");
+              return;
+            }
+            from = format(options.fromDate, "yyyy-MM-dd");
+            to = format(options.toDate, "yyyy-MM-dd");
+          }
+
+          try {
+            showToast("Generando exportación...", "info");
+            const result = await QuotesService.exportByDateRange(from, to);
+            if (!result.downloaded) {
+              showToast(result.message || "No se encontraron registros que exportar para el rango de fechas seleccionado.", "warning");
+            }
+          } catch (error) {
+            console.error("Error al exportar cotizaciones:", error);
+            showToast("No fue posible generar el archivo de exportación.", "error");
+          }
+
           onNavigate?.('exportar');
         }}
       />

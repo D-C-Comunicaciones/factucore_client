@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import { QuotesService } from "@/lib/quotes";
 import { AuthService } from "@/lib/auth";
 
-import { QuoteDetailHeader } from "@/components/quotes/details/QuoteDetailHeader";
-import { QuoteDetailSummary } from "@/components/quotes/details/QuoteDetailSummary";
-import { QuoteDetailDocument } from "@/components/quotes/details/QuoteDetailDocument";
-import { QuoteDetailExtraInfo } from "@/components/quotes/details/QuoteDetailExtraInfo";
-import { QuoteDetailSkeleton } from "@/components/quotes/details/QuoteDetailSkeleton";
+import { QuoteDetailHeader } from "@/components/quote/details/QuoteDetailHeader";
+import { QuoteDetailSummary } from "@/components/quote/details/QuoteDetailSummary";
+import { QuoteDetailDocument } from "@/components/quote/details/QuoteDetailDocument";
+import { QuoteDetailExtraInfo } from "@/components/quote/details/QuoteDetailExtraInfo";
+import { QuoteDetailSkeleton } from "@/components/quote/details/QuoteDetailSkeleton";
 import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { showToast } from "@/components/sonner/CustomToaster";
 

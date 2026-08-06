@@ -17,11 +17,10 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { StatusBadge } from "@/components/quote/table/columns";
-import { showToast } from "@/components/sonner/CustomToaster";
+import { StatusBadge, isRemissionInvoiced } from "@/components/remission/table/columns";
 
-interface QuoteDetailHeaderProps {
-    quote: any;
+interface RemissionDetailHeaderProps {
+    remission: any;
     canEdit: boolean;
     handlePrint: () => void;
     handleDownloadPdf?: () => void;
@@ -29,35 +28,34 @@ interface QuoteDetailHeaderProps {
     isDownloadingPdf?: boolean;
 }
 
-export function QuoteDetailHeader({
-    quote,
+export function RemissionDetailHeader({
+    remission,
     canEdit,
     handlePrint,
     handleDownloadPdf,
     isPrinting,
     isDownloadingPdf
-}: QuoteDetailHeaderProps) {
+}: RemissionDetailHeaderProps) {
     const defaultBtnClass = "h-9 bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-700 cursor-pointer transition-colors shadow-sm font-medium";
 
     const router = useRouter();
 
-    const handleClone = () => {
-        router.push(`/quotes/new?cloneId=${quote.id}`);
-    };
+    const invoiced = isRemissionInvoiced(remission.remission_status || remission.status);
+    const documentTypeLabel = Number(remission.type_remission_id) === 2 ? "Orden de servicio" : "Remisión";
 
-    const handleConvertToRemission = () => {
-        showToast("La conversión a remisión estará disponible próximamente", "info");
+    const handleClone = () => {
+        router.push(`/remissions/new?cloneId=${remission.id}`);
     };
 
     return (
         <div>
-            <Link href="/quotes" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
-                <ArrowLeft className="w-4 h-4" /> Volver a mis cotizaciones
+            <Link href="/remissions" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
+                <ArrowLeft className="w-4 h-4" /> Volver a mis remisiones
             </Link>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl font-semibold text-[#0F2843] flex items-center gap-3">
-                    Cotización {quote.prefix || ''}{quote.number || quote.id}
-                    <StatusBadge status={quote.quotation_status || quote.status} />
+                    {documentTypeLabel} {remission.prefix || ''}{remission.number || remission.id}
+                    <StatusBadge status={remission.remission_status || remission.status} />
                 </h1>
                 <div className="flex flex-wrap items-center gap-2">
                     <DropdownMenu>
@@ -84,29 +82,28 @@ export function QuoteDetailHeader({
                         )}
                     </Button>
 
-                    {canEdit && (
+                    {!invoiced && canEdit && (
                         <Button variant="outline" size="sm" asChild className={defaultBtnClass}>
-                            <Link href={`/quotes/${quote.id}/edit`}>
+                            <Link href={`/remissions/${remission.id}/edit`}>
                                 <Pencil className="w-4 h-4 mr-2" /> Editar
                             </Link>
                         </Button>
                     )}
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button size="sm" className="h-9 shadow-sm font-medium cursor-pointer">
-                                Convertir <ChevronDown className="w-4 h-4 ml-2" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 text-slate-700 bg-white">
-                            <DropdownMenuItem className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/invoices/new?quoteId=${quote.id}`)}>
-                                Convertir a factura
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer hover:bg-slate-50" onClick={handleConvertToRemission}>
-                                Convertir a remisión
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {!invoiced && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm" className="h-9 shadow-sm font-medium cursor-pointer">
+                                    Convertir <ChevronDown className="w-4 h-4 ml-2" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56 text-slate-700 bg-white">
+                                <DropdownMenuItem className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/invoices/new?remissionId=${remission.id}`)}>
+                                    Convertir a factura
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                 </div>
             </div>
         </div>

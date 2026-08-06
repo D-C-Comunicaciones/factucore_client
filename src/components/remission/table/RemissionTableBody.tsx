@@ -95,7 +95,7 @@ export function RemissionTableBody({ table, columns, loading, showNoDataMessage 
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={columns.length} className="h-64 bg-white text-center align-middle">
                 <div className="flex flex-col items-center justify-center h-full py-8">
-                  <div className="text-lg font-semibold text-red-500">Error al cargar remissions</div>
+                  <div className="text-lg font-semibold text-red-500">Error al cargar remisiones</div>
                   <div className="text-sm text-gray-500 mt-1">
                     Verifica tu conexión a internet e intenta de nuevo
                   </div>
@@ -151,17 +151,17 @@ export function RemissionTableBody({ table, columns, loading, showNoDataMessage 
                       />
                     </svg>
                     <div className="text-center text-xl font-medium text-[#003B73]">
-                      Â¡AÃºn no tienes remissions!
+                      ¡Aún no tienes remisiones!
                     </div>
                     <div className="mt-2 mb-6 text-center text-sm text-gray-500 max-w-md">
-                      Crea tu primera remission y empieza a tomar el control de tus ingresos.
+                      Crea tu primera remisión y empieza a tomar el control de tus envíos.
                     </div>
                     <button
                       type="button"
                       className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
                       onClick={() => router.push("/remissions/new")}
                     >
-                      Crear primera remission
+                      Crear primera remisión
                     </button>
                   </div>
                 ) : (
@@ -179,7 +179,7 @@ export function RemissionTableBody({ table, columns, loading, showNoDataMessage 
                     </svg>
                     <div className="text-lg font-semibold text-gray-700">Sin resultados</div>
                     <div className="text-sm text-gray-500 mt-1">
-                      La bÃºsqueda no arrojÃ³ remissions electrÃ³nicas
+                      La búsqueda no arrojó remisiones
                     </div>
                   </div>
                 )}

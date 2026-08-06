@@ -236,7 +236,15 @@ export default function InvoiceDetailPage() {
             <InvoiceDetailTabs
                 payments={bill.payments || data.data?.payments || invoiceData?.payments || templateData?.payments || data.data?.payments_received || []}
                 creditNotes={bill.credit_notes || data.data?.credit_notes || []}
-                remissions={bill.remissions || data.data?.remissions || []}
+                remissions={(
+                    (bill.remissions && bill.remissions.length > 0)
+                        ? bill.remissions
+                        : (data.data?.remissions && (data.data.remissions as any[]).length > 0)
+                            ? data.data.remissions
+                            : bill.remission
+                                ? [bill.remission]
+                                : []
+                )}
                 quotes={bill.quotation ? [bill.quotation] : (bill.quotations || (data.data as any)?.quotations || [])}
                 invoiceTotal={Number(bill.total || bill.payable_amount || 0)}
             />

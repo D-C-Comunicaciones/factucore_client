@@ -26,7 +26,7 @@ const filterLabels: Record<string, string> = {
   status_dian: "Estado DIAN",
   total: "Total",
   pending_amount: "Por cobrar",
-  overdue: "Remissions vencidas",
+  overdue: "Remisiones vencidas",
 };
 
 const filterIcons: Record<string, React.ReactNode> = {
@@ -72,7 +72,7 @@ const filterIcons: Record<string, React.ReactNode> = {
 };
 
 /* -----------------------------------------------------------------------
-   Mapeo de opciÃ³n de filtro â†’ id de columna
+   Mapeo de opción de filtro → id de columna
    ----------------------------------------------------------------------- */
 export const filterValueToColumnId: Record<string, string> = {
   created_at: "created_at",
@@ -124,7 +124,7 @@ export function FilterChips({
             <DropdownMenuTrigger asChild>
               <button
                 className={`inline-flex items-center px-3 py-1 rounded-full border ${isDate ? "border-primary/30 bg-primary/10 text-primary" : "border-border bg-background text-foreground"
-                  } text-xs font-medium shadow-sm 
+                  } text-xs font-medium shadow-sm
                     hover:bg-primary/10 hover:text-primary hover:border-primary/40
                     focus:bg-primary/10 focus:text-primary
                     transition-colors`}
@@ -145,7 +145,7 @@ export function FilterChips({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="start" sideOffset={4} className="min-w-[220px]">
-              {/* Encabezado del dropdown con botÃ³n eliminar */}
+              {/* Encabezado del dropdown con botón eliminar */}
               <div className="flex items-center justify-between px-3 pt-2 pb-1 text-xs font-semibold text-gray-600">
                 {filterLabels[filter.id] ?? filter.id}
                 <button
@@ -169,7 +169,7 @@ export function FilterChips({
               {/* Filtro de estado */}
               {filter.id === "status" && (
                 <div className="flex flex-col gap-1 px-3 py-2">
-                  {["Por cobrar", "Cobrada", "Anulada", "Borrador", "Enviada", "Guardada"].map((opt) => (
+                  {["Por cobrar", "Cobrada", "Facturada", "Anulada", "Borrador", "Enviada", "Guardada"].map((opt) => (
                     <label key={opt} className="flex items-center gap-2 text-xs cursor-pointer">
                       <Checkbox
                         checked={
@@ -228,28 +228,28 @@ export function FilterChips({
                 </div>
               )}
 
-              {/* Filtro de nÃºmero de remission */}
+              {/* Filtro de número de remisión */}
               {filter.id === "number" && (
                 <div className="px-3 py-2">
                   <input
                     className="w-full border rounded px-2 py-1 text-xs"
-                    placeholder="Número de remission"
+                    placeholder="Número de remisión"
                     value={filter.value as string}
                     onChange={(e) => setColumnFilters(columnFilters.map(f => f.id === filter.id ? { ...f, value: e.target.value } : f))}
                   />
                 </div>
               )}
 
-              {/* Remissions vencidas */}
+              {/* Remisiones vencidas */}
               {filter.id === "overdue" && (
-                <div className="px-3 py-2 text-xs">Remissions vencidas</div>
+                <div className="px-3 py-2 text-xs">Remisiones vencidas</div>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
       })}
 
-      {/* BotÃ³n + para agregar mÃ¡s filtros */}
+      {/* Botón + para agregar más filtros */}
       {columnFilters.length < defaultFilterOptions.length && (
         <DropdownMenu open={showPlusFilter} onOpenChange={setShowPlusFilter}>
           <DropdownMenuTrigger asChild>
@@ -314,4 +314,3 @@ ml-1
     </div>
   );
 }
-

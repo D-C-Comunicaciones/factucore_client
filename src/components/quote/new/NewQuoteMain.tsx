@@ -59,6 +59,7 @@ function FormattedInput({ value, onChange, placeholder, className }: any) {
 import { EditResolutionModal } from "@/components/invoice/new/EditResolutionModal";
 import { AddContactModal } from "@/components/contact/new/AddContactModal";
 import { QuickCreateItemModal } from "@/components/invoice/new/QuickCreateItemModal";
+import { resolveStockFields } from "@/lib/itemStock";
 import { NewPaymentTermModal } from "@/components/payment-terms/NewPaymentTermModal";
 import { FactucoreLogo } from "@/components/brand/FactucoreLogo";
 import { CompanyHeaderPdfStyle } from "@/components/shared/CompanyHeaderPdfStyle";
@@ -1037,10 +1038,10 @@ export function NewQuoteMain({
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "cantidad", 1);
 
                         // Fix for inventory tracking of newly created items (e.g. services)
-                        const isInventoriable = createdItem.type_item_id !== undefined ? createdItem.type_item_id === 1 : (createdItem.type_item?.name?.toLowerCase() === 'producto' || createdItem.type_item?.id === 1);
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "stock_quantity", createdItem.stock_quantity ?? null);
+                        const { is_inventoriable: isInventoriable, allow_negative_stock: allowNegativeStock, stock_quantity: stockQuantity } = resolveStockFields(createdItem);
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "stock_quantity", stockQuantity);
                         invoiceBuilder.updateItem(quickCreateItemTargetRow, "is_inventoriable", isInventoriable);
-                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "allow_negative_stock", createdItem.allow_negative_stock ?? false);
+                        invoiceBuilder.updateItem(quickCreateItemTargetRow, "allow_negative_stock", allowNegativeStock);
 
                         // Auto-fill default tax
                         let itemTaxes = createdItem.tax_rates || createdItem.pricing?.tax_rates;

@@ -20,6 +20,7 @@ import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useItems } from "@/hooks/items/useItems";
 import { isIvaTax } from "@/hooks/invoices/useInvoiceBuilder";
+import { resolveStockFields, shouldValidateLineStock } from "@/lib/itemStock";
 
 // Reusable component for currency formatting without cursor jumps
 function FormattedInput({ value, onChange, placeholder, className }: any) {
@@ -85,7 +86,6 @@ function ItemRow({
       search: searchQuery,
       warehouse_id: effectiveWarehouseId ?? undefined,
       price_list_id: effectivePriceListId ?? undefined,
-      per_page: 20
     }
   });
 
@@ -118,8 +118,7 @@ function ItemRow({
     const selectedOption = options.find(o => o.value === val);
     if (selectedOption) {
       const ri = selectedOption.rawItem;
-      const isService = ri.type_item_id === 2;
-      const isInventoriable = isService ? false : (ri.is_inventoriable ?? true);
+      const { is_inventoriable: isInventoriable, allow_negative_stock: allowNegativeStock, stock_quantity: stockQuantity } = resolveStockFields(ri);
 
       invoiceBuilder.updateItem(item.id, "item_id", ri.id);
       invoiceBuilder.updateItem(item.id, "standard_code", ri.standard_code || "");
@@ -128,9 +127,9 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "description", ri.description || "");
       invoiceBuilder.updateItem(item.id, "precio", ri.price || 0);
       invoiceBuilder.updateItem(item.id, "cantidad", 1);
-      invoiceBuilder.updateItem(item.id, "stock_quantity", ri.stock_quantity ?? null);
+      invoiceBuilder.updateItem(item.id, "stock_quantity", stockQuantity);
       invoiceBuilder.updateItem(item.id, "is_inventoriable", isInventoriable);
-      invoiceBuilder.updateItem(item.id, "allow_negative_stock", ri.allow_negative_stock ?? false);
+      invoiceBuilder.updateItem(item.id, "allow_negative_stock", allowNegativeStock);
       invoiceBuilder.updateItem(item.id, "selected_warehouse_id", selectedWarehouseId);
       invoiceBuilder.updateItem(item.id, "selected_price_list_id", selectedPriceListId);
       invoiceBuilder.updateItem(item.id, "warehouses", ri.warehouses);
@@ -155,8 +154,8 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "maximum_stock", warehouseData?.maximum_stock);
 
       // Validate initial quantity
-      const shouldValidateInitial = isInventoriable && !(ri.allow_negative_stock ?? false);
-      const initialStock = ri.stock_quantity ?? 0;
+      const shouldValidateInitial = isInventoriable && !allowNegativeStock;
+      const initialStock = stockQuantity ?? 0;
       if (shouldValidateInitial && initialStock < 1) {
         showToast("El producto seleccionado no tiene stock disponible.", "warning");
         invoiceBuilder.updateItem(item.id, "cantidad", 0);
@@ -193,7 +192,7 @@ function ItemRow({
   const quantityBackendError = errors?.[`items.${index}.quantity`];
   const isInvalidQuantity = (errors?.items === "invalid_quantity" && item.item_id && (!item.cantidad || item.cantidad <= 0)) || !!quantityBackendError;
 
-  const shouldValidateStock = !!item.item_id && item.is_inventoriable && !item.allow_negative_stock;
+  const shouldValidateStock = shouldValidateLineStock(item);
   const currentStock = item.stock_quantity ?? 0;
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {

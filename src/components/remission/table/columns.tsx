@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ArrowUp, ArrowDown, Printer, Pencil, Minus, Coins, Eye } from "lucide-react";
+import { ArrowUp, ArrowDown, Printer, Pencil, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RemissionsService } from "@/lib/remissions";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,7 +18,6 @@ import type { RemissionSummary } from "@/types/remission";
 import { showToast } from "@/components/sonner/CustomToaster";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -115,7 +114,7 @@ export function DianStatusBadge({ status }: { status: any }) {
 /* -----------------------------------------------------------------------
    Badge de estado interno
    ----------------------------------------------------------------------- */
-function StatusBadge({ status }: { status: any }) {
+export function StatusBadge({ status }: { status: any }) {
   const estadoStr = typeof status === "string" ? status : (status?.name || "");
   const estado = estadoStr.toLowerCase();
 
@@ -146,6 +145,8 @@ function StatusBadge({ status }: { status: any }) {
   const styles: Record<string, string> = {
     "pagada": "bg-green-100 text-green-700",
     "cobrada": "bg-green-100 text-green-700",
+    "facturada": "bg-green-100 text-green-700",
+    "sin facturar": "bg-orange-100 text-orange-700",
     "por pagar": "bg-blue-100 text-blue-700",
     parcial: "bg-yellow-100 text-yellow-700",
     pendiente: "bg-primary/10 text-primary",
@@ -161,18 +162,27 @@ function StatusBadge({ status }: { status: any }) {
   );
 }
 
+/** Returns true when the remission's status indicates it was already invoiced */
+export function isRemissionInvoiced(status: any): boolean {
+  const estadoStr = typeof status === "string" ? status : (status?.name || "");
+  return estadoStr.toLowerCase() === "facturada";
+}
+
 /* -----------------------------------------------------------------------
    Celda de acciones (descarga PDF)
    ----------------------------------------------------------------------- */
 function ActionsCell({ remission }: { remission: RemissionSummary }) {
   const router = useRouter();
-  const [showAnularDialog, setShowAnularDialog] = React.useState(false);
-  const [isAnulando, setIsAnulando] = React.useState(false);
+  const queryClient = useQueryClient();
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const invoiced = isRemissionInvoiced(remission.status);
 
   const handleDownloadPDF = async () => {
     try {
       showToast("Preparando documento...", "info");
-      const fileName = `Remission Electronica No. ${remission.number || remission.id}.pdf`;
+      const fileName = `Remision Electronica No. ${remission.number || remission.id}.pdf`;
       sessionStorage.setItem(`print_remission_${encodeURIComponent(fileName)}`, remission.id.toString());
       const url = `/print/${encodeURIComponent(fileName)}?type=remission`;
       window.open(url, "_blank");
@@ -182,52 +192,25 @@ function ActionsCell({ remission }: { remission: RemissionSummary }) {
     }
   };
 
-  const estadoDianStr = typeof remission.status_dian === "string" ? remission.status_dian : ((remission.status_dian as any)?.name || "");
-  const estadoDian = estadoDianStr.toLowerCase();
-
-  const estadoStr = typeof remission.status === "string" ? remission.status : ((remission.status as any)?.name || "");
-  const estado = estadoStr.toLowerCase();
-
-  const isDianAprobada = estadoDian === "aprobada" || estadoDian === "approved" || estadoDian === "aceptada";
-
-  // Disable Anular if approved by DIAN, or if status is 'cobrada', 'por cobrar', 'pendiente', 'vencida', 'parcial'
-  // Only allow if 'borrador', 'guardada' etc and not approved.
-  const isCobradaOPorCobrar = estado === "cobrada" || estado === "por cobrar" || estado === "pendiente" || estado === "vencida" || estado === "parcial";
-  const canAnular = (estado === "borrador" || estado === "draft" || estado === "guardada" || estado === "saved" || estado === "no electrónico") && !isDianAprobada && !isCobradaOPorCobrar;
-
-  const canEdit = !isDianAprobada && (
-    estado === "borrador" ||
-    estado === "draft" ||
-    estado === "guardada" ||
-    estado === "saved" ||
-    estadoDian === "no aprobada" ||
-    estadoDian === "rechazada" ||
-    estado === "no electrónico"
-  );
-
   const handleEdit = () => {
-    console.log("Editar remission", remission.id);
+    router.push(`/remissions/${remission.id}/edit`);
   };
 
-  const handleAnular = async () => {
-    setIsAnulando(true);
+  const handleDelete = async () => {
+    setIsDeleting(true);
     try {
-      await RemissionsService.cancel(remission.id);
-      showToast("Remission anulada correctamente", "success", "Éxito");
-      window.location.reload();
+      await RemissionsService.delete(remission.id);
+      showToast("Remisión eliminada correctamente", "success", "Éxito");
+      queryClient.invalidateQueries({ queryKey: ["remissions"] });
     } catch (error: any) {
-      console.error("Error al anular la remission:", error);
+      console.error("Error al eliminar la remisión:", error);
       const errorData = error.response?.data || error.data || error;
-      const errorMsg = errorData?.message || "No se pudo anular la remission";
+      const errorMsg = errorData?.message || "No se pudo eliminar la remisión";
       showToast(errorMsg, "error", "Error");
     } finally {
-      setIsAnulando(false);
-      setShowAnularDialog(false);
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
-  };
-
-  const handlePayment = () => {
-    console.log("Agregar pago a remission", remission.id);
   };
 
   return (
@@ -236,15 +219,20 @@ function ActionsCell({ remission }: { remission: RemissionSummary }) {
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:!bg-primary/10 transition-colors" onClick={(e) => { e.stopPropagation(); handlePayment(); }}>
-                <div className="flex items-center text-slate-700">
-                  <span className="text-[10px] font-bold mt-0.5 mr-[1px]">$</span>
-                  <Coins className="h-[15px] w-[15px]" strokeWidth={2.5} />
-                </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:!bg-primary/10 transition-colors text-slate-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownloadPDF();
+                }}
+              >
+                <Printer className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent className="bg-[#1e293b] text-white border-none" side="top">
-              <p className="font-medium">Agregar pago</p>
+              <p className="font-medium">Imprimir</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -261,62 +249,44 @@ function ActionsCell({ remission }: { remission: RemissionSummary }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={8} className="mt-2 min-w-[140px]">
-              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={() => router.push(`/remissions/${remission.id}`)} className="cursor-pointer">
-                <Eye className="w-4 h-4 mr-2 text-slate-700" />
-                Ver detalle
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={() => handleDownloadPDF()} className="cursor-pointer">
-                <Printer className="w-4 h-4 mr-2 text-slate-700" />
-                Imprimir
-              </DropdownMenuItem>
+              {!invoiced && (
+                <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={handleEdit} className="cursor-pointer">
+                  <Pencil className="w-4 h-4 mr-2 text-slate-700" />
+                  Editar
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={(e) => e.stopPropagation()}
-                onSelect={(e) => {
-                  if (!canEdit) e.preventDefault();
-                  else handleEdit();
-                }}
-                className={`cursor-pointer ${!canEdit ? 'opacity-50 pointer-events-none' : ''}`}
-                disabled={!canEdit}
+                onSelect={() => setShowDeleteDialog(true)}
+                className="cursor-pointer text-destructive focus:text-destructive"
               >
-                <Pencil className="w-4 h-4 mr-2 text-slate-700" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => e.stopPropagation()}
-                onSelect={(e) => {
-                  if (!canAnular) e.preventDefault();
-                  else setShowAnularDialog(true);
-                }}
-                className={`cursor-pointer ${!canAnular ? 'opacity-50 pointer-events-none' : ''}`}
-                disabled={!canAnular}
-              >
-                <Minus className="w-4 h-4 mr-2 text-slate-700" />
-                Anular
+                <Trash2 className="w-4 h-4 mr-2" />
+                Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      <AlertDialog open={showAnularDialog} onOpenChange={setShowAnularDialog}>
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro de que deseas anular esta remisión?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás seguro de que deseas eliminar esta remisión?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isAnulando}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <Button
               variant="destructive"
-              disabled={isAnulando}
+              disabled={isDeleting}
               onClick={(e) => {
                 e.stopPropagation();
-                handleAnular();
+                handleDelete();
               }}
             >
-              {isAnulando ? "Anulando..." : "Anular remission"}
+              {isDeleting ? "Eliminando..." : "Eliminar remisión"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -333,59 +303,11 @@ export function getColumns(
 ): ColumnDef<RemissionSummary>[] {
   return [
     {
-      id: "select",
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={
-            table.getRowModel().rows.length > 0 &&
-            table.getRowModel().rows.every(
-              row => row.getIsSelected()
-            )
-          }
-          ref={(el) => {
-            if (!el) return;
-
-            const rows = table.getRowModel().rows;
-            const selected = rows.filter(
-              row => row.getIsSelected()
-            ).length;
-
-            el.indeterminate =
-              selected > 0 &&
-              selected < rows.length;
-          }}
-          onChange={(e) => {
-            const checked = e.target.checked;
-
-            table.getRowModel().rows.forEach(
-              row => row.toggleSelected(checked)
-            );
-          }}
-        />
-      ),
-      cell: ({ row }) => (
-        <>
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={(e) => {
-              row.toggleSelected(e.target.checked);
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-      size: 48,
-    },
-    {
       accessorKey: "number",
-      header: ({ column }) => <SortableHeader column={column} label="Número" />,
+      header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Número" /></div>,
       enableSorting: true,
       cell: ({ row }) => (
-        <span className="text-xs text-gray-900 font-medium text-left">{row.original.number}</span>
+        <span className="text-xs text-gray-900 font-medium text-center block">{row.original.number}</span>
       ),
     },
     {
@@ -406,35 +328,13 @@ export function getColumns(
       ),
     },
     {
-      accessorKey: "payment_due_date",
-      header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Vencimiento" /></div>,
-      enableSorting: true,
-      cell: ({ row }) => (
-        <span className="text-xs text-gray-600 text-center block">{row.original.payment_due_date || row.original.created_at || "-"}</span>
-      ),
-    },
-    {
       accessorKey: "total",
       header: () => <div className="text-right">Total</div>,
       cell: ({ row }) => (
         <div className="text-xs text-gray-900 font-medium text-right">
-          $ {Number(row.original.total).toLocaleString()}
+          $ {Number(row.original.total || 0).toLocaleString()}
         </div>
       ),
-    },
-    {
-      accessorKey: "pending_amount",
-      header: () => <div className="text-right">Por pagar</div>,
-      cell: ({ row }) => (
-        <div className="text-xs text-gray-900 text-right">
-          $ {Number(row.original.pending_amount).toLocaleString()}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "status_dian",
-      header: "Estado DIAN",
-      cell: ({ row }) => <div className="text-left"><DianStatusBadge status={row.original.status_dian} /></div>,
     },
     {
       accessorKey: "status",
@@ -451,4 +351,3 @@ export function getColumns(
     },
   ];
 }
-

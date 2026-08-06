@@ -13,8 +13,11 @@ import { useInvoiceBuilder, isIvaTax } from "@/hooks/invoices/useInvoiceBuilder"
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useSellersList } from "@/hooks/sellers/useSellers";
 import { useQuote } from "@/hooks/quotes/useQuotes";
+import { useRemission } from "@/hooks/remissions/useRemissions";
 import { mapQuoteItemsToLines, mapQuoteGlobalAdjustments } from "@/lib/quoteLineMapping";
+import { mapRemissionItemsToLines, mapRemissionGlobalAdjustments } from "@/lib/remissionLineMapping";
 import { InvoicesService } from "@/lib/invoices";
+import { shouldValidateLineStock } from "@/lib/itemStock";
 import { AuthService } from "@/lib/auth";
 import { getSession } from "@/common/interfaces/session";
 import { useResolutions } from "@/hooks/useResolutions";
@@ -28,10 +31,12 @@ export default function NewInvoicePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const quoteId = searchParams?.get("quoteId");
+  const remissionId = searchParams?.get("remissionId");
   const createInvoice = useCreateInvoice();
   const catalogData = useCatalogs();
   const { data: sellersData } = useSellersList();
   const { data: quoteResponse } = useQuote(quoteId || "");
+  const { data: remissionResponse } = useRemission(remissionId || "");
   const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
   const resolutionTypeFilter = tipoDoc === 'tiquete' ? 2 : 1; // 1=INVOICE, 2=POS
   const { resolutions, refetch: refetchResolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
@@ -132,6 +137,37 @@ export default function NewInvoicePage() {
       }));
     }
   }, [quoteId, quoteDataForInvoice, quoteItemsForInvoice]);
+
+  // Prefill items, discounts and charges when creating an invoice from a remission ("Convertir a factura")
+  const remissionDataForInvoice = remissionResponse?.data?.remission;
+  const remissionItemsForInvoice = (remissionResponse?.data as any)?.items || remissionDataForInvoice?.lines || remissionDataForInvoice?.remission_lines || [];
+  const remissionPrefillAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!remissionPrefillAppliedRef.current && remissionId && remissionDataForInvoice) {
+      remissionPrefillAppliedRef.current = true;
+      invoiceBuilder.setItems(mapRemissionItemsToLines(remissionItemsForInvoice) as any);
+      invoiceBuilder.setGlobalAdjustments(mapRemissionGlobalAdjustments(remissionDataForInvoice) as any);
+
+      const warehouseId = remissionDataForInvoice.warehouse?.id ?? remissionDataForInvoice.warehouse_id;
+      const priceListId = remissionDataForInvoice.price_list?.id ?? remissionDataForInvoice.price_list_id;
+      const costCenterId = remissionDataForInvoice.cost_center?.id ?? remissionDataForInvoice.cost_center_id;
+      const sellerIdRaw = remissionDataForInvoice.seller?.id ?? remissionDataForInvoice.seller_id;
+      if (warehouseId) setSelectedWarehouseId(Number(warehouseId));
+      if (priceListId) setSelectedPriceListId(Number(priceListId));
+      if (costCenterId) setSelectedCostCenter(String(costCenterId));
+
+      const remissionNumberLabel = `${remissionDataForInvoice.prefix || ''}${remissionDataForInvoice.number || remissionDataForInvoice.id}`;
+      const sourceNote = `Factura creada a partir de remisión No. ${remissionNumberLabel}`;
+      const originalNotes = remissionDataForInvoice.notes || remissionDataForInvoice.observation || '';
+      const combinedNotes = originalNotes ? `${originalNotes}, ${sourceNote}` : sourceNote;
+
+      setFormState((prev: any) => ({
+        ...prev,
+        seller_id: sellerIdRaw != null ? String(sellerIdRaw) : prev.seller_id,
+        notes: combinedNotes,
+      }));
+    }
+  }, [remissionId, remissionDataForInvoice, remissionItemsForInvoice]);
 
   // Set default warehouse and price list when catalogs load
   useEffect(() => {
@@ -278,7 +314,7 @@ export default function NewInvoicePage() {
       }
 
       const outOfStockItem = invoiceBuilder.items.find((item: any) => {
-        if (item.is_inventoriable && !item.allow_negative_stock) {
+        if (shouldValidateLineStock(item)) {
           const availableStock = item.stock_quantity || 0;
           return item.cantidad > availableStock;
         }
@@ -451,6 +487,11 @@ export default function NewInvoicePage() {
         finalPayload.quotation_id = Number(quoteId);
       }
 
+      // Si la factura se está creando a partir de una remisión ("Convertir a factura"), enlazarla
+      if (remissionId) {
+        finalPayload.remission_id = Number(remissionId);
+      }
+
       // Remove undefined values cleanly
       Object.keys(finalPayload).forEach(key => finalPayload[key] === undefined && delete finalPayload[key]);
 
@@ -570,7 +611,7 @@ export default function NewInvoicePage() {
             selectedResolutionId={selectedResolutionId}
             setSelectedResolutionId={setSelectedResolutionId}
             onRefetchResolutions={refetchResolutions}
-            initialContactId={quoteDataForInvoice?.contact_id}
+            initialContactId={quoteDataForInvoice?.contact_id ?? remissionDataForInvoice?.contact_id}
             formState={formState}
             setFormState={setFormState}
             notes={formState.notes}

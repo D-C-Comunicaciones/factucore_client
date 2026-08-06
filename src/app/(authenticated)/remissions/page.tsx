@@ -1,11 +1,9 @@
 ﻿"use client";
 
 import * as React from 'react';
-import { StatCard } from '@/components/remission/StatCard';
 import { RemissionTable } from '@/components/remission/RemissionTable';
 import { useRemissionsList } from '@/hooks/remissions/useRemissions';
 import { RemissionPageHeader } from '@/components/remission/RemissionPageHeader';
-import { X, MessageCircle, Clock, Ban } from 'lucide-react';
 import type { RemissionSummary } from '@/types/remission';
 
 interface FacturasVentaViewProps {

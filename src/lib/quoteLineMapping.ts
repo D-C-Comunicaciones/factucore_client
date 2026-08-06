@@ -1,3 +1,5 @@
+import { resolveStockFields } from "@/lib/itemStock";
+
 interface MappedLine {
     id: string;
     item_id: number | null;
@@ -84,6 +86,11 @@ export function mapQuoteItemsToLines(items: any[]): MappedLine[] {
             type: rawTax?.type || 'percentage',
         } : null;
 
+        // is_inventoriable / allow_negative_stock / stock_quantity no vienen planos en la línea:
+        // están anidados en item_snapshot (o item) del documento de origen.
+        const itemDetail = item.item_snapshot || item.item || item;
+        const { is_inventoriable, allow_negative_stock, stock_quantity } = resolveStockFields(itemDetail);
+
         return {
             id: crypto.randomUUID(),
             item_id: itemId,
@@ -99,9 +106,9 @@ export function mapQuoteItemsToLines(items: any[]): MappedLine[] {
             taxObj,
             allowance_charges,
             taxes: taxObj ? [taxObj] : [],
-            stock_quantity: item.stock_quantity ?? null,
-            is_inventoriable: item.is_inventoriable ?? true,
-            allow_negative_stock: item.allow_negative_stock ?? false,
+            stock_quantity,
+            is_inventoriable,
+            allow_negative_stock,
             selected_warehouse_id: item.warehouse_id ?? item.selected_warehouse_id ?? null,
         };
     });

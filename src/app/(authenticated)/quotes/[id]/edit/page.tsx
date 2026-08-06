@@ -8,7 +8,7 @@ import { NewQuoteMain } from "@/components/quote/new/NewQuoteMain";
 import { NewQuoteOptions } from "@/components/quote/new/NewQuoteOptions";
 import { NewQuoteSettingsDrawer } from "@/components/quote/new/NewQuoteSettingsDrawer";
 import { PreviewModal } from "@/components/invoice/new/PreviewModal";
-import { QuoteDetailSkeleton } from "@/components/quotes/details/QuoteDetailSkeleton";
+import { QuoteDetailSkeleton } from "@/components/quote/details/QuoteDetailSkeleton";
 import { useQuote, useUpdateQuote } from "@/hooks/quotes/useQuotes";
 import { useQuoteBuilder } from "@/hooks/quotes/useQuoteBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
