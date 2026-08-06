@@ -74,7 +74,7 @@ export function ConfigurationGrid() {
       <ConfigCard
         title="Integraciones"
         description="Encuentra toda la información para que puedas integrar otros sistemas con la plataforma."
-        links={[{ label: 'Integraciones', href: '/configuration/integraciones' }]}
+        links={[{ label: 'Integraciones', href: '/integrations' }]}
       />
       <ConfigCard
         title="Historial"

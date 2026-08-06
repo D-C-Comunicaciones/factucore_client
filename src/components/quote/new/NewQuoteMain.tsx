@@ -772,7 +772,7 @@ export function NewQuoteMain({
                                     const val = Number(e.target.value);
                                     if (val > 100) {
                                         showToast("El porcentaje de ajuste no puede superar el 100%", "warning");
-                                        setGlobalAdjPercent("");
+                                        setGlobalAdjPercent(0);
                                     } else {
                                         setGlobalAdjPercent(val);
                                     }
@@ -786,7 +786,7 @@ export function NewQuoteMain({
                                 onChange={(val: number) => {
                                     if (globalAdjType === 'discount' && val > invoiceBuilder.totals.subtotal) {
                                         showToast("El valor digitado excede el total del documento", "warning");
-                                        setGlobalAdjPercent("");
+                                        setGlobalAdjPercent(0);
                                     } else {
                                         setGlobalAdjPercent(val);
                                     }

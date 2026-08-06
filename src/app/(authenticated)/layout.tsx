@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar/Sidebar';
 import { Header } from '@/components/header/Header';
 import { useAuth } from '@/contexts/auth-context';
+import { showToast } from '@/components/sonner/CustomToaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
     Home, FileText, ShoppingBag, Users, Package,
@@ -78,17 +79,48 @@ export default function AuthenticatedLayout({
         return () => window.removeEventListener('resize', handleResize);
     }, [isMobileMenuOpen]);
 
-    // AUTH
+    // AUTH & GUARD
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
             router.push('/login');
+        } else if (!isLoading && isAuthenticated && user) {
+            const pathname = window.location.pathname;
+            const routeGuards = [
+                { prefix: '/ingresos', module: 'billing' },
+                { prefix: '/contacts', module: 'contacts' },
+                { prefix: '/inventario', module: 'inventory' },
+                { prefix: '/items', module: 'items' },
+                { prefix: '/integrations', permission: 'integrations.view' }
+            ];
+
+            const match = routeGuards.find(g => pathname.startsWith(g.prefix));
+            if (match) {
+                if (match.module && !user?.modules?.includes(match.module)) {
+                    showToast("Módulo inactivo para su cuenta", "error");
+                    router.push('/dashboard');
+                } else if (match.permission && !user?.permissions?.some(p => p.name === match.permission)) {
+                    showToast("No tiene permisos para acceder a esta ruta", "error");
+                    router.push('/dashboard');
+                }
+            }
         }
-    }, [isAuthenticated, isLoading, router]);
+    }, [isAuthenticated, isLoading, user, router]);
 
     if (isLoading || !isAuthenticated) return null;
 
-    // MENU
-    const menuItems: SidebarMenuItem[] = [
+    // FUNCIONES DE VERIFICACIÓN
+    const hasModule = useCallback((moduleCode?: string) => {
+        if (!moduleCode) return true;
+        return user?.modules?.includes(moduleCode) ?? true; // fallback to true if no modules array
+    }, [user]);
+
+    const hasPermission = useCallback((permission?: string) => {
+        if (!permission) return true;
+        return user?.permissions?.some(p => p.name === permission) ?? true;
+    }, [user]);
+
+    // MENU CONFIG
+    const rawMenuItems: SidebarMenuItem[] = [
         { icon: Home, label: 'Inicio', path: '/dashboard' },
         { icon: Inbox, label: 'Bandeja de entrada', path: '/bandeja' },
         {
@@ -96,11 +128,12 @@ export default function AuthenticatedLayout({
             label: 'Ingresos',
             path: '/ingresos',
             expandable: true,
+            moduleCode: 'billing',
             submenu: [
                 { icon: FileText, label: 'Factura de venta', path: '/invoices' },
                 { icon: FileText, label: 'Pagos recibidos', path: '/payments' },
                 { icon: FileText, label: 'Devoluciones en venta', path: '/returns' },
-                { icon: FileText, label: 'Notas débito', path: '/debit-notes' },
+                { icon: FileText, label: 'Notas débito', path: '/debit-notes', moduleCode: 'credit_notes' },
                 { icon: FileText, label: 'Cotizaciones', path: '/quotes' },
                 { icon: FileText, label: 'Remisiones', path: '/remissions' },
             ]
@@ -121,18 +154,19 @@ export default function AuthenticatedLayout({
                 { icon: ShoppingBag, label: 'Recepción de comprobantes', path: '/gastos/recepcion-comprobantes' },
             ]
         },
-        { icon: Users, label: 'Contactos', path: '/contacts' },
+        { icon: Users, label: 'Contactos', path: '/contacts', moduleCode: 'contacts' },
         {
             icon: Package,
             label: 'Inventario',
             path: '/inventario',
             expandable: true,
+            moduleCode: 'inventory',
             submenu: [
-                { icon: Package, label: 'Items de Venta', path: '/items' },
+                { icon: Package, label: 'Items de Venta', path: '/items', moduleCode: 'items' },
                 { icon: BarChart3, label: 'Valor de inventario', path: '/inventario/valor' },
                 { icon: Sliders, label: 'Ajustes de inventario', path: '/inventario/ajustes' },
-                { icon: ClipboardList, label: 'Gestión de items', path: '/inventario/gestion' },
-                { icon: Tags, label: 'Listas de precios', path: '/inventario/precios' },
+                { icon: ClipboardList, label: 'Gestión de items', path: '/inventario/gestion', moduleCode: 'items' },
+                { icon: Tags, label: 'Listas de precios', path: '/inventario/precios', moduleCode: 'items' },
                 { icon: Warehouse, label: 'Bodegas', path: '/inventario/bodegas' },
                 { icon: Layers, label: 'Categorías', path: '/inventario/categorias' },
                 { icon: ListTree, label: 'Atributos', path: '/inventario/atributos' },
@@ -143,7 +177,28 @@ export default function AuthenticatedLayout({
         { icon: BarChart3, label: 'Reportes', path: '/reports' },
         { icon: CheckSquare, label: 'Mis tareas', path: '/tasks' },
         { icon: Settings, label: 'Configuración', path: '/configuration' },
+        { icon: Settings, label: 'Integraciones', path: '/integrations', requiredPermission: 'integrations.view' },
     ];
+
+    const menuItems = rawMenuItems
+        .filter(item => hasModule(item.moduleCode))
+        .map(item => {
+            const isItemDisabled = !hasPermission(item.requiredPermission);
+            let filteredSubmenu = item.submenu?.filter(sub => hasModule(sub.moduleCode));
+
+            if (filteredSubmenu) {
+                filteredSubmenu = filteredSubmenu.map(sub => ({
+                    ...sub,
+                    isDisabled: !hasPermission(sub.requiredPermission)
+                }));
+            }
+
+            return {
+                ...item,
+                isDisabled: isItemDisabled,
+                submenu: filteredSubmenu
+            };
+        });
 
     // 👉 ANCHO REAL DEL SIDEBAR (UNA SOLA FUENTE DE VERDAD)
     const sidebarWidth =

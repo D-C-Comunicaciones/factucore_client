@@ -17,6 +17,13 @@ interface BackendUser {
     level: string
     roles: { id: number; name: string }[]
     permissions: { id: number; name: string }[]
+    account_type?: string
+    tenant_id?: string
+    channels?: string[]
+    modules?: string[]
+    scopes?: string[]
+    features?: string[]
+    features_override?: any[]
 }
 
 interface AuthContextType {
@@ -62,7 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         id: i,
                         name: p
                     }))
-                    : []
+                    : [],
+                account_type: session.account_type,
+                tenant_id: session.tenant_id,
+                channels: session.channels || [],
+                modules: session.modules || [],
+                scopes: session.scopes || [],
+                features: session.features || [],
+                features_override: session.features_override || []
             })
         } else {
             setUser(null)
@@ -113,7 +127,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         id: i,
                         name: p
                     }))
-                    : []
+                    : [],
+                account_type: session.account_type,
+                tenant_id: session.tenant_id,
+                channels: session.channels || [],
+                modules: session.modules || [],
+                scopes: session.scopes || [],
+                features: session.features || [],
+                features_override: session.features_override || []
             })
 
             // 🔥 Prefetch and cache all catalogs for the session

@@ -8,6 +8,7 @@ import { CollapseButton } from './CollapseButton'
 import { WorkspaceSelector } from './WorkspaceSelector'
 import { usePathname } from "next/navigation";
 import { Logo } from '../logos/Logo'
+import { showToast } from '@/components/sonner/CustomToaster'
 
 export interface SidebarMenuItem {
   icon: React.ElementType
@@ -15,6 +16,9 @@ export interface SidebarMenuItem {
   path: string
   expandable?: boolean
   submenu?: SidebarMenuItem[]
+  moduleCode?: string
+  requiredPermission?: string
+  isDisabled?: boolean
 }
 
 interface SidebarProps {
@@ -109,23 +113,33 @@ function SidebarMenuItems({
                     return (
                       <div
                         key={sub.path}
+                        onClick={(e) => {
+                          if (sub.isDisabled) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showToast("Usted no tiene permiso para usar esta función, contacte con el administrador.", "error");
+                          }
+                        }}
                         className={`
                           relative group flex items-stretch
                           rounded-md overflow-hidden
                           transition-colors
-                          ${isActive ? 'bg-background' : 'hover:bg-background'}
+                          ${sub.isDisabled ? 'opacity-50 cursor-not-allowed' : (isActive ? 'bg-background' : 'hover:bg-background')}
                           h-[30px]
                         `}
                       >
                         {/* Línea azul */}
-                        {isActive && (
+                        {isActive && !sub.isDisabled && (
                           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-r" />
                         )}
 
                         {/* TEXTO */}
                         <Link
-                          href={sub.path}
-                          className="flex items-center flex-1 h-full text-[14px] leading-tight px-2 overflow-hidden"
+                          href={sub.isDisabled ? '#' : sub.path}
+                          className={`flex items-center flex-1 h-full text-[14px] leading-tight px-2 overflow-hidden ${sub.isDisabled ? 'pointer-events-none' : ''}`}
+                          onClick={(e) => {
+                            if (sub.isDisabled) e.preventDefault();
+                          }}
                         >
                           <span className="flex-1 text-foreground truncate">
                             {sub.label}
@@ -133,7 +147,7 @@ function SidebarMenuItems({
                         </Link>
 
                         {/* BOTÓN + */}
-                        {(sub.label === "Factura de venta" ||
+                        {!sub.isDisabled && (sub.label === "Factura de venta" ||
                           sub.label === "Items de Venta" ||
                           sub.label === "Bodegas" ||
                           sub.label === "Categorías" ||
