@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,6 +13,7 @@ import Image from "next/image"
 import { envs } from "@/config/env"
 import { Eye, EyeOff } from "lucide-react"
 import { LogoHorizontal } from "@/components/logos/LogoHorizontal"
+import { TwoFactorChallengeForm } from "@/components/auth/TwoFactorChallengeForm"
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -21,6 +23,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [twoFactorChallenge, setTwoFactorChallenge] = useState<{ token: string; expiresIn: number } | null>(null)
 
   // Mantener el tamaño original para el login
   useEffect(() => {
@@ -35,7 +38,11 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
     try {
-      await login(email, password)
+      const result = await login(email, password)
+      if (result?.requires2fa) {
+        setTwoFactorChallenge({ token: result.challengeToken, expiresIn: result.expiresIn })
+        return
+      }
       // Redirige solo después de login exitoso
       router.replace("/dashboard")
     } catch (error: any) {
@@ -55,6 +62,15 @@ export default function LoginPage() {
       <div className="w-full max-w-sm md:max-w-4xl">
         <Card className="overflow-hidden p-0">
           <CardContent className="grid items-stretch !p-0 !pb-0 md:grid-cols-2 min-h-[560px]">
+            {twoFactorChallenge ? (
+              <div className="px-8 py-5 md:px-8 md:py-6 flex flex-col justify-center">
+                <TwoFactorChallengeForm
+                  challengeToken={twoFactorChallenge.token}
+                  onSuccess={() => router.replace("/dashboard")}
+                  onBackToLogin={() => setTwoFactorChallenge(null)}
+                />
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="px-8 py-5 md:px-8 md:py-6">
               <FieldGroup>
                 <div className="flex flex-col items-center gap-1 text-center mb-4">
@@ -80,12 +96,12 @@ export default function LoginPage() {
                 <Field>
                   <div className="flex items-center">
                     <FieldLabel htmlFor="password">Contraseña</FieldLabel>
-                    <a
-                      href="#"
+                    <Link
+                      href="/forgot-password"
                       className="ml-auto text-sm underline-offset-2 hover:underline"
                     >
                       ¿Olvidaste tu contraseña?
-                    </a>
+                    </Link>
                   </div>
 
                   <div className="relative">
@@ -137,6 +153,7 @@ export default function LoginPage() {
                 )}
               </FieldGroup>
             </form>
+            )}
 
             <div className="relative hidden md:block min-h-full">
               <Image

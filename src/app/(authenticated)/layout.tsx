@@ -7,11 +7,7 @@ import { Header } from '@/components/header/Header';
 import { useAuth } from '@/contexts/auth-context';
 import { showToast } from '@/components/sonner/CustomToaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import {
-    Home, FileText, ShoppingBag, Users, Package,
-    Building2, BarChart3, CheckSquare, Settings,
-    ArrowDownLeft, Inbox, Tags, Layers, Warehouse, Sliders, ClipboardList, ListTree
-} from 'lucide-react';
+import { Home, FileText, ShoppingBag, Users, Package, Building2, BarChart3, CheckSquare, Settings, ArrowDownLeft, Inbox, Tags, Layers, Warehouse, Sliders, ClipboardList, ListTree, Puzzle } from 'lucide-react';
 import type { SidebarMenuItem } from '@/components/sidebar/Sidebar';
 
 export default function AuthenticatedLayout({
@@ -177,7 +173,7 @@ export default function AuthenticatedLayout({
         { icon: BarChart3, label: 'Reportes', path: '/reports' },
         { icon: CheckSquare, label: 'Mis tareas', path: '/tasks' },
         { icon: Settings, label: 'Configuración', path: '/configuration' },
-        { icon: Settings, label: 'Integraciones', path: '/integrations', requiredPermission: 'integrations.view' },
+        { icon: Puzzle, label: 'Integraciones', path: '/integrations', requiredPermission: 'integrations.view' },
     ];
 
     const menuItems = rawMenuItems

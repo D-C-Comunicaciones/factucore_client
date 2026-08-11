@@ -8,11 +8,11 @@ export function ConfigurationGrid() {
         title="Empresa"
         description="Configura la información de tu empresa y adapta la plataforma a tu negocio."
         links={[
-          { label: 'Empresa', href: '/configuration/empresa' },
-          { label: 'Usuarios', href: '/configuration/usuarios' },
-          { label: 'Mi perfil', href: '/configuration/perfil' },
+          { label: 'Empresa', href: '/configuration/company' },
+          { label: 'Usuarios', href: '/configuration/users' },
+          { label: 'Mi perfil', href: '/configuration/profile' },
           { label: 'Centros de costos', href: '/cost-centers' },
-          { label: 'Monedas', href: '/configuration/monedas' },
+          { label: 'Monedas', href: '/configuration/currencies' },
         ]}
       />
       <ConfigCard
@@ -21,17 +21,17 @@ export function ConfigurationGrid() {
         links={[
           { label: 'Certificado Digital', href: '/certificates' },
           { label: 'Software', href: '/software' },
-          { label: 'Términos de pago', href: '/configuration/terminos-pago' },
+          { label: 'Términos de pago', href: '/configuration/payment-terms' },
           { label: 'Numeraciones', href: '/resolutions' },
           { label: 'Configuración de documentos', href: '/configuration/configuracion-documentos' },
-          { label: 'Vendedores', href: '/configuration/vendedores' },
+          { label: 'Vendedores', href: '/configuration/sellers' },
           { label: 'Propinas', href: '/configuration/propinas' },
         ]}
       />
       <ConfigCard
         title="Plantillas de impresión"
         description="Administra las plantillas de impresión de tus documentos."
-        links={[{ label: 'Plantillas', href: '/configuration/plantillas' }]}
+        links={[{ label: 'Plantillas', href: '/configuration/templates' }]}
       />
       <ConfigCard
         title="Impuestos"

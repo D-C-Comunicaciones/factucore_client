@@ -1,92 +1,226 @@
-# Prompt para el frontend principal (app de los tenants: facturación, ítems, clientes, y ahora integraciones)
+# Integración Frontend: Recuperación de contraseña, activación de cuenta, 2FA y perfil
 
-Copia este documento completo como instrucción inicial en la sesión de Claude Code que trabaje sobre el repositorio de la app principal (donde los usuarios WEB_APP inician sesión, facturan, gestionan ítems/clientes/etc.). El backend ya está implementado y probado end-to-end. **Este prompt cubre exclusivamente lo recién implementado: menú dinámico + autoservicio de API Keys y Webhooks.** Certificados, software, resoluciones y todo lo demás ya existen en esta app — no los toques ni los describas de nuevo, no son parte de este trabajo.
+Este documento describe la nueva funcionalidad de autenticación implementada en la API para que el
+equipo/asistente de frontend la integre en la webapp (SPA que consume `https://.../v1/...`).
 
-Formato de respuesta estándar del backend: `{ message?, code, status, data: {...} }` (login/me) o `{ customMessage?, ...datos }` (el resto). Todas las rutas van bajo `/v1` con la sesión Sanctum normal del tenant.
+## Alcance
+
+- Aplica **solo a cuentas webapp**: usuarios Master (equipo interno) y usuarios Tenant (empresas clientes)
+  que inician sesión con `POST /auth/login`.
+- **No aplica** al portal de clientes DIAN (`/portal/auth/login`) ni a los clientes API que se autentican
+  con API Key + firma HMAC (`/external/*`). Esos flujos no cambian.
+- Todo lo nuevo vive bajo el prefijo `/v1` (igual que el resto de la API).
+
+## Recordatorio del modelo de auth existente (sin cambios)
+
+- El login (`POST /auth/login`) devuelve `data.token.access_token` (Bearer) y además setea una cookie
+  `access_token`. El frontend puede usar cualquiera de los dos mecanismos.
+- La respuesta de login para cuentas **sin 2FA** no cambia en absoluto respecto a hoy.
+- Para cuentas **con 2FA activo**, el login ahora puede devolver una respuesta distinta (ver más abajo)
+  que requiere un segundo paso antes de obtener el token real.
 
 ---
 
-## Parte 1 — Menú dinámico (prioridad alta, afecta a toda la app)
+## 1. Catálogo de endpoints nuevos
 
-El login (`POST /v1/auth/login` con credenciales de tenant) y `GET /v1/me` ahora devuelven, junto a lo que ya devolvían (`roles`, `permissions`, `company`/`user`):
+| Método | Ruta | Auth | Body | Respuesta (data) |
+|---|---|---|---|---|
+| POST | `/auth/login` | pública | `{email, password}` | Igual que hoy, **o** `{requires_2fa: true, challenge_token, expires_in}` si la cuenta tiene 2FA |
+| POST | `/auth/2fa/challenge` | pública, throttled | `{challenge_token, code}` o `{challenge_token, recovery_code}` | Igual que una respuesta de login exitosa normal |
+| POST | `/auth/password/forgot` | pública, throttled | `{email}` | `{message}` — siempre 200, exista o no la cuenta |
+| GET | `/auth/password/validate?email=&token=` | pública | — | `{valid: bool, purpose: "password_reset"\|"tenant_activation"}` |
+| POST | `/auth/password/reset` | pública, throttled | `{email, token, password, password_confirmation}` | `{message}` |
+| GET | `/profile` | autenticado | — | Ver §5 |
+| PUT | `/profile` | autenticado | `{name?, phone?, avatar?}` | Igual que GET `/profile` |
+| PUT | `/profile/password` | autenticado | `{current_password, password, password_confirmation}` | `{message}` |
+| GET | `/profile/two-factor` | autenticado | — | `{enabled, confirmed_at, pending_setup}` |
+| POST | `/profile/two-factor/enable` | autenticado | — | `{secret, otpauth_uri, qr_svg}` |
+| POST | `/profile/two-factor/confirm` | autenticado, throttled | `{code}` | `{recovery_codes: [10 strings]}` |
+| POST | `/profile/two-factor/disable` | autenticado | `{password, code?}` | `{message}` |
+| POST | `/profile/two-factor/recovery-codes/regenerate` | autenticado | `{password}` | `{recovery_codes: [...]}` |
+| PATCH | `/company/profile` | autenticado, solo tenant con permiso `company.profile.edit` | ver §6 | objeto `company` actualizado |
+
+`phone`/`avatar` en `/profile` solo aplican a cuentas tenant; en cuentas master se omiten y en su lugar
+aparece `level`.
+
+---
+
+## 2. Flujo: activación de cuenta (tenant recién creado)
+
+Cuando Master crea un tenant nuevo, la API **ya no** entrega una contraseña utilizable de inmediato.
+En su lugar, se envía un correo al admin del tenant con un enlace de activación:
+
+```
+{FRONTEND_URL}/activate-account?email={email}&token={token}
+```
+
+Ese enlace debe llevar a una pantalla nueva **"Activar cuenta"** que:
+
+1. Al cargar, llama a `GET /auth/password/validate?email=...&token=...` para verificar que el enlace
+   siga vigente y mostrar el estado correcto (válido / expirado) antes de mostrar el formulario.
+   - `purpose` en la respuesta será `"tenant_activation"`.
+2. Pide una nueva contraseña (con confirmación) y llama a `POST /auth/password/reset` con
+   `{email, token, password, password_confirmation}` (el mismo endpoint que "olvidé mi contraseña").
+3. Si la respuesta es 200, redirige a `/login` con un mensaje de éxito ("Tu cuenta fue activada,
+   inicia sesión con tu nueva contraseña").
+4. Si el token expiró (respuesta 422), mostrar mensaje claro y, si aplica, un enlace para contactar
+   soporte (no hay endpoint de "reenviar activación" en esta primera versión).
+
+El enlace expira (por defecto 7 días).
+
+---
+
+## 3. Flujo: olvidé mi contraseña
+
+Pantallas nuevas:
+
+1. **Solicitar recuperación** (`/forgot-password`): un input de email → `POST /auth/password/forgot`.
+   - La respuesta **siempre** es `200 {"message": "Si el correo existe, se enviará un enlace de
+     recuperación."}`, exista o no la cuenta. Mostrar siempre ese mensaje genérico; no revelar si el
+     email existe o no.
+2. **Restablecer contraseña** (`/reset-password?email=...&token=...`): mismo patrón que activación:
+   `GET /auth/password/validate` al cargar, luego `POST /auth/password/reset` con la nueva contraseña.
+   - `purpose` será `"password_reset"` en este caso (la pantalla puede ser la misma para ambos
+     `purpose`, ya que el body de `reset` es idéntico).
+
+Al restablecer la contraseña exitosamente, **todas las sesiones activas del usuario se cierran**
+(se revocan todos sus tokens). El usuario debe iniciar sesión de nuevo — el endpoint de reset no
+devuelve un token de sesión.
+
+Un botón "¿Olvidaste tu contraseña?" en la pantalla de login debe llevar a `/forgot-password`.
+
+---
+
+## 4. Flujo: login con 2FA
+
+El `POST /auth/login` existente no cambia su firma de request. Lo que cambia es la respuesta cuando
+la cuenta tiene 2FA confirmado:
 
 ```json
 {
+  "message": "Verificación de dos factores requerida",
+  "code": 200,
+  "status": "success",
   "data": {
-    "account_type": "tenant",
-    "tenant_id": "...",
-    "channels": ["WEB_APP", "API"],
-    "modules": ["billing", "credit_notes", "contacts", "items", "inventory", "resolutions", "certificates", "software", "webhooks"],
-    "scopes": ["billing.invoice.create", "billing.invoice.read", "..."],
-    "features": ["excel_export", "items_combo_management"],
-    "features_override": [
-      { "feature_code": "items_combo_management", "feature_name": "Gestión de combos", "is_enabled": false, "reason": "Downgrade temporal acordado con el cliente" }
-    ],
-    "user": { "id": 1, "name": "...", "email": "...", "roles": [...], "permissions": [...] }
+    "requires_2fa": true,
+    "challenge_token": "…64 chars…",
+    "expires_in": 300
   }
 }
 ```
 
-**Qué es cada campo y cómo usarlo:**
+El frontend debe:
 
-- **`channels`**: casi nunca relevante en la UI (si `WEB_APP` no estuviera activo, el login ya se habría rechazado con 403 antes de llegar aquí) — inclúyelo en el store por completitud, sin lógica especial.
-- **`modules`**: códigos de los módulos que el TENANT tiene habilitados (esto lo controla Master, no depende del usuario). **Regla de armado del menú**:
-  ```
-  mostrar item de menú del módulo X  ⟺  X está en modules  Y  el usuario tiene el permiso Spatie correspondiente (roles/permissions, como ya se hacía)
-  ```
-  Si `items` no está en `modules`, oculta TODO lo de Ítems para TODOS los usuarios del tenant, sin importar sus permisos individuales — es una restricción a nivel de tenant, no de usuario.
-- **`scopes`**: catálogo de acciones disponibles bajo los módulos activos del tenant (informativo — no hay "scopes por usuario", solo por tenant). Útil si quieres mostrar, en la pantalla de autoservicio de API Clients (Parte 2), qué scopes existen para ofrecer al crear/editar uno — pero para eso ya existe un endpoint dedicado más cómodo (ver Parte 2.2), no hace falta derivarlo de aquí.
-- **`features`**: funcionalidades puntuales activas. Úsalo para mostrar/ocultar botones específicos dentro de un módulo ya visible — ej. si `excel_export` no está, oculta el botón "Exportar" en Cotizaciones/Remisiones aunque el módulo de facturación sí esté activo.
-- **`features_override`**: informativo — si quieres mostrarle al usuario tenant "por qué" no tiene cierta feature (ej. un tooltip "Esta función no está incluida en tu plan actual"), aquí viene el detalle. No es obligatorio usarlo en el MVP.
-
-Guarda esta respuesta en el store global de sesión (junto a roles/permisos) y recalcula el menú en cada login y cada refresh de `/me`.
+1. Detectar `data.requires_2fa === true` en la respuesta de login.
+2. Mostrar una pantalla/modal pidiendo el código de 6 dígitos de la app autenticadora, con un enlace
+   secundario "Usar un código de recuperación" que cambia el input a texto libre.
+3. Llamar a `POST /auth/2fa/challenge` con `{challenge_token, code}` o `{challenge_token,
+   recovery_code}`.
+4. Si es exitoso, la respuesta es **idéntica a un login exitoso normal** (mismo `account_type`,
+   `user`, `token`, `company`, etc.) — tratarla exactamente igual que hoy tratas la respuesta de login.
+5. Si el código es incorrecto: 422, mostrar error y permitir reintentar (máximo 5 intentos antes de
+   que el `challenge_token` se invalide y haya que volver a iniciar sesión desde cero).
+6. El `challenge_token` expira a los 5 minutos.
 
 ---
 
-## Parte 2 — Autoservicio de Integraciones (NUEVO módulo en el menú, sujeto a permiso `integrations.view`)
+## 5. Vista de Perfil (nueva pantalla obligatoria)
 
-Agrega una sección "Integraciones" (o dentro de "Configuración") con dos pestañas: **API Keys** y **Webhooks**. Visible solo si el usuario tiene el permiso `integrations.view` (viene en `permissions`, igual que cualquier otro permiso ya usado en esta app) — no depende de ningún módulo en particular, es transversal.
+Crear una pantalla **"Mi perfil"** accesible para cualquier usuario en sesión (master o tenant), con
+estas secciones:
 
-**Importante**: en estos endpoints el tenant NUNCA se envía en el payload — el backend siempre usa el tenant de la sesión autenticada. Un usuario tenant solo puede ver/administrar los API Clients y Webhooks de su propio tenant.
+### 5.1 Datos personales
 
-### 2.1 Pestaña "API Keys"
+`GET /profile` →
 
-- **Listar**: `GET /v1/integrations/api-clients` → `{ api_clients: [{ id, name, api_key, is_active, last_used_at, rotated_at, revoked_at, scopes_count, created_at }] }`. El `secret` nunca viene aquí.
-- **Crear**: `POST /v1/integrations/api-clients` con `{ name, scope_ids?: number[] }` → `201` con `{ api_client, secret }`. **El `secret` solo se muestra en este momento y al rotar — nunca más se puede recuperar.** Modal con botón "copiar" + aviso claro tipo "Guarda este secreto ahora, no volverá a mostrarse" antes de cerrar. Explica también, en el mismo modal o en ayuda contextual, que la integración deberá firmar sus peticiones con este `api_key`/`secret` vía HMAC-SHA256 (headers `X-API-Key`, `X-Timestamp`, `X-Nonce`, `X-Signature`) — es información para que el usuario se la pase a quien vaya a configurar la integración (SAP, ERP, etc.), no algo que la UI tenga que implementar.
-- **Detalle**: `GET /v1/integrations/api-clients/{id}` → incluye `scopes: [{id, code, name}]`.
-- **Rotar secreto**: `POST /v1/integrations/api-clients/{id}/rotate-secret` → `{ secret }` (mismo patrón "una sola vez").
-- **Revocar / Reactivar**: `POST /v1/integrations/api-clients/{id}/revoke` y `.../reactivate`.
-- **Editar scopes**: `PATCH /v1/integrations/api-clients/{id}/scopes` con `{ scope_ids: number[] }` (reemplaza la lista completa; `[]` los quita todos).
-
-#### Catálogo de Scopes (selector de checkboxes al crear/editar)
-
-`GET /v1/integrations/api-clients/scopes-catalog` → 
 ```json
-{ "modules": [
-  { "code": "billing", "name": "Facturación", "capabilities": [
-    { "code": "invoice", "name": "Facturas", "scopes": [
-      { "id": 1, "code": "billing.invoice.create", "name": "Crear facturas" },
-      { "id": 2, "code": "billing.invoice.read", "name": "Consultar facturas" }
-    ]}
-  ]}
-]}
+{
+  "data": {
+    "id": 1,
+    "name": "Administrador",
+    "email": "admin@empresa.com",
+    "phone": null,
+    "avatar": null,
+    "two_factor": { "enabled": false }
+  }
+}
 ```
-Este catálogo trae **todos** los módulos del sistema, no solo los que el tenant tiene activos — filtra en frontend contra `modules` (Parte 1) si quieres mostrar solo los scopes de módulos que el tenant realmente tiene habilitados. Renderiza un árbol/acordeón Módulo → Capability → Scopes con checkboxes.
 
-### 2.2 Pestaña "Webhooks"
+(en cuentas master, en vez de `phone`/`avatar` aparece `level`). Formulario editable para `name` y,
+si es cuenta tenant, `phone`/`avatar` → `PUT /profile`. El email no es editable desde aquí.
 
-- **Tipos de evento disponibles**: `GET /v1/integrations/webhook-endpoints/event-types` → objeto `{codigo: nombre_legible}`. Eventos de facturas (creada, firmada, enviada a la DIAN, aceptada, rechazada, correo enviado, correo fallido) y los mismos 7 para notas crédito.
-- **Listar**: `GET /v1/integrations/webhook-endpoints` → cada uno con sus `subscriptions` (a qué eventos está suscrito).
-- **Crear**: `POST /v1/integrations/webhook-endpoints` con `{ name, url (debe ser https://), event_types?: string[] }` → `201` con el endpoint + `secret` (mismo patrón "una sola vez" — este es el secreto para validar la firma HMAC que el backend pone en cada webhook entregado, distinto del secreto del API Key).
-- **Detalle**: `GET /v1/integrations/webhook-endpoints/{id}`.
-- **Historial de entregas**: `GET /v1/integrations/webhook-endpoints/{id}/deliveries?per_page=25` → paginado, con `status` (`pending`/`success`/`failed`/`exhausted`), `http_status_code`, `attempt`, `error_message`, `requested_at`, `responded_at`, `next_retry_at`. Pantalla de "logs" con reintentos visibles — útil para que el usuario diagnostique por qué no le está llegando un webhook.
-- **Rotar secreto / Revocar / Reactivar**: mismos verbos que API Keys.
-- **Editar suscripciones**: `PATCH /v1/integrations/webhook-endpoints/{id}/subscriptions` con `{ event_types: string[] }` (reemplaza completo).
+### 5.2 Cambiar contraseña
+
+Formulario con `current_password`, `password`, `password_confirmation` → `PUT /profile/password`.
+Al tener éxito, informar al usuario que sus otras sesiones/dispositivos fueron cerrados (la sesión
+actual permanece activa).
+
+### 5.3 Autenticación de dos pasos (2FA)
+
+Sub-sección "Seguridad" dentro del perfil:
+
+- Estado inicial: `GET /profile/two-factor` → mostrar "Activada" / "Desactivada".
+- **Activar 2FA**:
+  1. `POST /profile/two-factor/enable` → devuelve `{secret, otpauth_uri, qr_svg}`.
+     - `qr_svg` es un SVG en base64: renderizar como
+       `<img src="data:image/svg+xml;base64,{qr_svg}">`. No se necesita ninguna librería de QR en
+       el frontend.
+     - Mostrar también `secret` como texto (para ingreso manual en la app autenticadora) y/o
+       `otpauth_uri` como fallback.
+  2. Pedir al usuario el código de 6 dígitos que genera su app → `POST
+     /profile/two-factor/confirm` con `{code}`.
+  3. Si es exitoso, la respuesta trae `recovery_codes` (10 códigos). **Mostrarlos una sola vez**,
+     en una pantalla que insista en guardarlos ("no podrás verlos de nuevo, solo regenerarlos").
+     No hay endpoint para volver a consultarlos.
+- **Desactivar 2FA**: formulario pidiendo la contraseña actual → `POST
+  /profile/two-factor/disable` con `{password}`.
+- **Regenerar códigos de recuperación**: pide contraseña → `POST
+  /profile/two-factor/recovery-codes/regenerate`, muestra los nuevos 10 códigos una sola vez
+  (invalida los anteriores).
 
 ---
 
-## Notas generales
+## 6. Vista de configuración de empresa (solo usuarios tenant)
 
-- Nada de esto usa firma HMAC desde el navegador — todas estas pantallas son peticiones normales autenticadas con la sesión Sanctum de siempre, como el resto de la app. La HMAC es algo que la integración externa (el software del cliente) tiene que implementar por su cuenta, usando las credenciales que esta UI le entrega.
-- El patrón "secreto mostrado una sola vez" es intencional y de seguridad — no lo hagas recuperable ni lo pidas al backend.
-- Certificados, Software y Resoluciones de autoservicio ya existen en esta app — no son parte de este prompt.
+Los usuarios tenant con el permiso `company.profile.edit` (rol `admin` por defecto) pueden editar los
+datos básicos de su propia empresa — antes esto solo lo podía hacer Master.
+
+`PATCH /company/profile`, body (todos los campos son opcionales, se envía solo lo que cambia):
+
+```json
+{
+  "company_name": "…",
+  "identification_number": 900123456,
+  "verification_digit": 7,
+  "email": "contacto@empresa.com",
+  "phone": "3001234567",
+  "address": "…",
+  "postal_code": "…",
+  "merchant_registration": "…",
+  "municipality_id": 126,
+  "type_document_identification_id": 6
+}
+```
+
+Este es el mismo set de campos básicos que ya se usa en la pantalla de creación/edición de tenant por
+parte de Master (nombre, tipo/número de documento, correo, teléfono, dirección, etc.) — **no**
+incluye plan, ambiente DIAN, tipo de organización/régimen ni responsabilidades fiscales (esos siguen
+siendo exclusivos de Master). Si se envían de todos modos, la API los ignora silenciosamente.
+
+Respuesta: `{ "company": { ...objeto tenant actualizado... } }`.
+
+Si el usuario no tiene el permiso, la API responde `403` con
+`{"details": {"required_permission": "company.profile.edit"}}`.
+
+---
+
+## 7. Manejo de errores / notas generales
+
+- Todos los endpoints públicos sensibles (`/auth/password/forgot`, `/auth/password/reset`,
+  `/auth/2fa/challenge`, `/profile/two-factor/confirm`) tienen rate limiting (5 intentos/minuto por
+  IP+email o IP+challenge_token). Una respuesta `429` debe mostrarse como "demasiados intentos,
+  espera un momento".
+- Los mensajes de error de validación siguen el formato estándar de la API
+  (`{"errors": {"campo": ["mensaje"]}}` con status 422).
+- Ningún endpoint de esta feature revela si un email existe o no en el sistema — diseñar los mensajes
+  de UI en consecuencia (mensajes genéricos, nunca "ese correo no existe").

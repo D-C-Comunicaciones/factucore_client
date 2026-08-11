@@ -9,6 +9,9 @@ import { showToast } from "@/components/sonner/CustomToaster"
 import { getSession } from "@/common/interfaces/session"
 import { prefetchAllCatalogs } from "@/hooks/useCatalogs";
 import { SplashScreen } from "@/components/SplashScreen";
+import { AuthFlowService } from "@/lib/authFlow";
+import { extractErrorMessage } from "@/lib/errors";
+import type { TwoFactorChallengePayload } from "@/types/auth";
 
 interface BackendUser {
     id: number
@@ -26,11 +29,18 @@ interface BackendUser {
     features_override?: any[]
 }
 
+export interface LoginRequires2FAResult {
+    requires2fa: true
+    challengeToken: string
+    expiresIn: number
+}
+
 interface AuthContextType {
     user: BackendUser | null
     isAuthenticated: boolean
     isLoading: boolean
-    login: (email: string, password: string) => Promise<void>
+    login: (email: string, password: string) => Promise<LoginRequires2FAResult | void>
+    completeTwoFactorChallenge: (challengeToken: string, credentials: Omit<TwoFactorChallengePayload, "challenge_token">) => Promise<void>
     logout: () => Promise<void>
 }
 
@@ -84,8 +94,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
     }, [])
 
+    // ✅ Aplica una sesión exitosa (login normal o challenge 2FA resuelto)
+    const applyLoginSession = (session: any, message?: string) => {
+        // 🔥 Guardar sesión
+        localStorage.setItem("session", JSON.stringify(session))
+
+        // 🔥 Guardar company de forma independiente
+        if (session.company) {
+            AuthService.setCompany(session.company)
+        }
+
+        // 🔥 Setear user seguro
+        const userRoles = session.user?.roles || [];
+        const userPermissions = session.user?.permissions || [];
+
+        setUser({
+            id: session.user?.id,
+            name: session.user?.name,
+            email: session.user?.email,
+            level: userRoles.length > 0 ? userRoles[0].name : "",
+            roles: userRoles.map((r: any) => ({ id: r.id || 0, name: r.name || "" })),
+            permissions: userPermissions.map((p: any, i: number) => ({
+                id: p.id !== undefined ? p.id : i,
+                name: typeof p === 'string' ? p : (p.name || "")
+            })),
+            account_type: session.account_type,
+            tenant_id: session.tenant_id,
+            channels: session.channels || [],
+            modules: session.modules || [],
+            scopes: session.scopes || [],
+            features: session.features || [],
+            features_override: session.features_override || []
+        })
+
+        // 🔥 Prefetch and cache all catalogs for the session
+        prefetchAllCatalogs(queryClient);
+
+        showToast(message || "Inicio de sesión exitoso", "success")
+        setShowSplash(true) // Splash will fade out after its animation; navigate once it's done
+    }
+
     // ✅ LOGIN SIN /me
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string): Promise<LoginRequires2FAResult | void> => {
         try {
             // 🔥 Obtener CSRF Cookie primero
             await apiClient.csrfCookie()
@@ -102,44 +152,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 throw new Error(errorMsg)
             }
 
-            const session = res.data
-
-            // 🔥 Guardar sesión
-            localStorage.setItem("session", JSON.stringify(session))
-
-            // 🔥 Guardar company de forma independiente
-            if (session.company) {
-                AuthService.setCompany(session.company)
+            // 🔥 Cuenta con 2FA activo: requiere un segundo paso antes de tener sesión
+            if (res.data?.requires_2fa === true) {
+                return {
+                    requires2fa: true,
+                    challengeToken: res.data.challenge_token,
+                    expiresIn: res.data.expires_in,
+                }
             }
 
-            // 🔥 Setear user seguro
-            const userRoles = session.user?.roles || [];
-            const userPermissions = session.user?.permissions || [];
-
-            setUser({
-                id: session.user?.id,
-                name: session.user?.name,
-                email: session.user?.email,
-                level: userRoles.length > 0 ? userRoles[0].name : "",
-                roles: userRoles.map((r: any) => ({ id: r.id || 0, name: r.name || "" })),
-                permissions: userPermissions.map((p: any, i: number) => ({
-                    id: p.id !== undefined ? p.id : i,
-                    name: typeof p === 'string' ? p : (p.name || "")
-                })),
-                account_type: session.account_type,
-                tenant_id: session.tenant_id,
-                channels: session.channels || [],
-                modules: session.modules || [],
-                scopes: session.scopes || [],
-                features: session.features || [],
-                features_override: session.features_override || []
-            })
-
-            // 🔥 Prefetch and cache all catalogs for the session
-            prefetchAllCatalogs(queryClient);
-
-            showToast(res.message || "Inicio de sesión exitoso", "success")
-            setShowSplash(true) // Splash will fade out after its animation; navigate once it's done
+            applyLoginSession(res.data, res.message)
         } catch (error: any) {
             let errorMsg = "Credenciales inválidas o error de red";
 
@@ -150,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (data.errors) {
                     let parsedErrors = data.errors;
                     if (typeof data.errors === "string") {
-                        try { parsedErrors = JSON.parse(data.errors); } 
+                        try { parsedErrors = JSON.parse(data.errors); }
                         catch (e) { parsedErrors = null; }
                     }
                     if (parsedErrors && typeof parsedErrors === "object") {
@@ -171,6 +193,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             showToast(errorMsg, "error");
             // Lanza un Error con el mensaje extraído para que la vista lo capture correctamente
             throw new Error(errorMsg);
+        }
+    }
+
+    // ✅ Segundo paso del login cuando la cuenta tiene 2FA activo
+    const completeTwoFactorChallenge = async (
+        challengeToken: string,
+        credentials: Omit<TwoFactorChallengePayload, "challenge_token">
+    ): Promise<void> => {
+        try {
+            const res = await AuthFlowService.twoFactorChallenge({ challenge_token: challengeToken, ...credentials })
+
+            if (res.status === "error") {
+                const errorMsg = res.message || "Código inválido"
+                showToast(errorMsg, "error")
+                throw new Error(errorMsg)
+            }
+
+            applyLoginSession(res.data, res.message)
+        } catch (error: any) {
+            const errorMsg = extractErrorMessage(error)
+            showToast(errorMsg, "error")
+            throw new Error(errorMsg)
         }
     }
 
@@ -271,6 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 isAuthenticated: !!user,
                 isLoading,
                 login,
+                completeTwoFactorChallenge,
                 logout,
             }}
         >
