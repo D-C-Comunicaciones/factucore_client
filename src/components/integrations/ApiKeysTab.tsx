@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Key, RotateCcw, Ban, CheckCircle, Eye } from 'lucide-react';
 import { showToast } from '@/components/sonner/CustomToaster';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import dayjs from 'dayjs';
 // Placeholder for Modals that will be implemented next
 import { CreateApiKeyModal } from './CreateApiKeyModal';
@@ -35,6 +36,8 @@ export function ApiKeysTab() {
     fetchClients();
   }, []);
 
+  const hasActiveKey = apiClients.some(client => client.is_active);
+
   const handleRevoke = async (id: number) => {
     try {
       await IntegrationsService.revokeApiClient(id);
@@ -62,10 +65,22 @@ export function ApiKeysTab() {
           <h2 className="text-lg font-semibold text-foreground">API Keys</h2>
           <p className="text-sm text-muted-foreground">Gestiona las credenciales de acceso para tus integraciones.</p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva API Key
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            disabled={isLoading || hasActiveKey}
+            title={hasActiveKey ? "Ya tienes una API Key activa" : undefined}
+            className="cursor-pointer"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva API Key
+          </Button>
+          {!isLoading && hasActiveKey && (
+            <p className="text-xs text-muted-foreground text-right max-w-[260px]">
+              Ya tienes una API Key activa. Revócala si necesitas generar una nueva, o usa "Rotar secreto" si solo necesitas renovar las credenciales.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -81,9 +96,15 @@ export function ApiKeysTab() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr>
-                <td colSpan={5} className="text-center py-8 text-muted-foreground">Cargando...</td>
-              </tr>
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-44" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded-full" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                  <td className="px-4 py-3 text-right"><Skeleton className="h-8 w-16 ml-auto" /></td>
+                </tr>
+              ))
             ) : apiClients.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center py-8 text-muted-foreground">No hay API Keys registradas.</td>

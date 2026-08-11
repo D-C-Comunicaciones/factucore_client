@@ -56,20 +56,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const session = getSession()
 
         if (session?.user) {
+            const userRoles = session.user.roles || [];
+            const userPermissions = session.user.permissions || [];
+            
             setUser({
                 id: session.user.id,
                 name: session.user.name,
                 email: session.user.email,
-                level: session.role?.name || "",
-                roles: session.role
-                    ? [{ id: session.role.id || 0, name: session.role.name || "" }]
-                    : [],
-                permissions: Array.isArray(session.permissions)
-                    ? session.permissions.map((p: string, i: number) => ({
-                        id: i,
-                        name: p
-                    }))
-                    : [],
+                level: userRoles.length > 0 ? userRoles[0].name : "",
+                roles: userRoles.map((r: any) => ({ id: r.id || 0, name: r.name || "" })),
+                permissions: userPermissions.map((p: any, i: number) => ({
+                    id: p.id !== undefined ? p.id : i,
+                    name: typeof p === 'string' ? p : (p.name || "")
+                })),
                 account_type: session.account_type,
                 tenant_id: session.tenant_id,
                 channels: session.channels || [],
@@ -114,20 +113,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             // 🔥 Setear user seguro
+            const userRoles = session.user?.roles || [];
+            const userPermissions = session.user?.permissions || [];
+
             setUser({
                 id: session.user?.id,
                 name: session.user?.name,
                 email: session.user?.email,
-                level: session.role?.name || "",
-                roles: session.role
-                    ? [{ id: session.role.id || 0, name: session.role.name || "" }]
-                    : [],
-                permissions: Array.isArray(session.permissions)
-                    ? session.permissions.map((p: string, i: number) => ({
-                        id: i,
-                        name: p
-                    }))
-                    : [],
+                level: userRoles.length > 0 ? userRoles[0].name : "",
+                roles: userRoles.map((r: any) => ({ id: r.id || 0, name: r.name || "" })),
+                permissions: userPermissions.map((p: any, i: number) => ({
+                    id: p.id !== undefined ? p.id : i,
+                    name: typeof p === 'string' ? p : (p.name || "")
+                })),
                 account_type: session.account_type,
                 tenant_id: session.tenant_id,
                 channels: session.channels || [],

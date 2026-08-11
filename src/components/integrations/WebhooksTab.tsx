@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, RotateCcw, Ban, CheckCircle, Activity } from 'lucide-react';
 import { showToast } from '@/components/sonner/CustomToaster';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import dayjs from 'dayjs';
 
 // Placeholders for modals
@@ -81,9 +82,15 @@ export function WebhooksTab() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr>
-                <td colSpan={5} className="text-center py-8 text-muted-foreground">Cargando...</td>
-              </tr>
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-52" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded-full" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-20 rounded" /></td>
+                  <td className="px-4 py-3 text-right"><Skeleton className="h-8 w-20 ml-auto" /></td>
+                </tr>
+              ))
             ) : webhooks.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center py-8 text-muted-foreground">No hay Webhooks registrados.</td>
