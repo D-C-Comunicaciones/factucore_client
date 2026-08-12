@@ -10,6 +10,9 @@ import type {
     TwoFactorDisablePayload,
     RecoveryCodesRegeneratePayload,
     RecoveryCodesResponse,
+    DeviceSession,
+    ChangeEmailPayload,
+    VerifyPasswordPayload,
 } from "@/types/auth"
 
 export class ProfileService {
@@ -67,5 +70,33 @@ export class ProfileService {
      */
     static async regenerateRecoveryCodes(payload: RecoveryCodesRegeneratePayload) {
         return apiClient.post<RecoveryCodesResponse>("/profile/two-factor/recovery-codes/regenerate", payload)
+    }
+
+    /**
+     * GET /profile/devices
+     */
+    static async getDevices() {
+        return apiClient.get<DeviceSession[]>("/profile/devices")
+    }
+
+    /**
+     * DELETE /profile/devices/{id}
+     */
+    static async revokeDevice(id: number) {
+        return apiClient.delete<{ message: string }>(`/profile/devices/${id}`)
+    }
+
+    /**
+     * POST /profile/email/change
+     */
+    static async changeEmail(payload: ChangeEmailPayload) {
+        return apiClient.post<{ message: string }>("/profile/email/change", payload)
+    }
+
+    /**
+     * POST /profile/verify-password
+     */
+    static async verifyPassword(payload: VerifyPasswordPayload) {
+        return apiClient.post<{ message: string }>("/profile/verify-password", payload)
     }
 }

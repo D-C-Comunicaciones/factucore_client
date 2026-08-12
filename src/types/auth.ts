@@ -30,6 +30,7 @@ export interface TwoFactorChallengePayload {
     challenge_token: string
     code?: string
     recovery_code?: string
+    remember_device?: boolean
 }
 
 export interface ProfileTenant {
@@ -77,6 +78,7 @@ export interface TwoFactorEnableResponse {
 
 export interface TwoFactorConfirmPayload {
     code: string
+    remember_device?: boolean
 }
 
 export interface TwoFactorConfirmResponse {
@@ -86,14 +88,40 @@ export interface TwoFactorConfirmResponse {
 export interface TwoFactorDisablePayload {
     password: string
     code?: string
+    recovery_code?: string
 }
 
 export interface RecoveryCodesRegeneratePayload {
     password: string
+    code?: string
+    recovery_code?: string
 }
 
 export interface RecoveryCodesResponse {
     recovery_codes: string[]
+}
+
+export interface VerifyPasswordPayload {
+    password: string
+}
+
+export interface DeviceSession {
+    id: number
+    device_name: string | null
+    ip_address: string | null
+    is_current: boolean
+    last_used_at: string | null
+    created_at: string
+}
+
+export interface ChangeEmailPayload {
+    new_email: string
+    password: string
+}
+
+export interface ConfirmEmailPayload {
+    email: string
+    token: string
 }
 
 export interface CompanyProfileUpdatePayload {

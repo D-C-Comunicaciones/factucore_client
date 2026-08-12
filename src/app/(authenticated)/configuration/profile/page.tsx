@@ -1,16 +1,9 @@
 "use client"
 
-import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
-import { PersonalDataSection } from "@/components/perfil/PersonalDataSection"
-import { ChangePasswordSection } from "@/components/perfil/ChangePasswordSection"
-import { TwoFactorSection } from "@/components/perfil/TwoFactorSection"
-import { CollapsibleSection } from "@/components/perfil/CollapsibleSection"
+import { PersonalDataSection } from "@/components/profile/PersonalDataSection"
 
 export default function ProfilePage() {
-    const searchParams = useSearchParams()
-    const openSeguridad = searchParams.get("tab") === "seguridad"
-
     return (
         <div className="flex flex-col gap-6 max-w-[800px] mx-auto py-4">
             <div>
@@ -22,14 +15,6 @@ export default function ProfilePage() {
                     <PersonalDataSection />
                 </CardContent>
             </Card>
-
-            <CollapsibleSection title="Cambiar contraseña">
-                <ChangePasswordSection />
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Seguridad" defaultOpen={openSeguridad}>
-                <TwoFactorSection />
-            </CollapsibleSection>
         </div>
     )
 }

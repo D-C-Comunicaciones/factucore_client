@@ -4,10 +4,11 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import { IconLoader } from "@tabler/icons-react"
 import { Upload } from "lucide-react"
-import { useProfile } from "@/hooks/perfil/useProfile"
-import { useUpdateProfile } from "@/hooks/perfil/useUpdateProfile"
+import { useProfile } from "@/hooks/profile/useProfile"
+import { useUpdateProfile } from "@/hooks/profile/useUpdateProfile"
 import { extractFieldErrors } from "@/lib/errors"
 import type { ProfileTenant } from "@/types/auth"
 
@@ -47,8 +48,24 @@ export function PersonalDataSection() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-10 text-muted-foreground">
-                <IconLoader className="animate-spin" />
+            <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                    <Skeleton className="w-20 h-20 rounded-full" />
+                </div>
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-4 w-32" />
+                    </div>
+                    <div className="space-y-2">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-4 w-40" />
+                    </div>
+                    <div className="space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-4 w-28" />
+                    </div>
+                </div>
             </div>
         )
     }

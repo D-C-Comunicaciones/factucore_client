@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { Checkbox } from "@/components/ui/checkbox"
 import { IconLoader } from "@tabler/icons-react"
 import { useAuth } from "@/contexts/auth-context"
 import { extractErrorMessage } from "@/lib/errors"
@@ -19,6 +20,7 @@ export function TwoFactorChallengeForm({ challengeToken, onSuccess, onBackToLogi
     const { completeTwoFactorChallenge } = useAuth()
     const [mode, setMode] = useState<"code" | "recovery">("code")
     const [value, setValue] = useState("")
+    const [rememberDevice, setRememberDevice] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -30,7 +32,9 @@ export function TwoFactorChallengeForm({ challengeToken, onSuccess, onBackToLogi
         try {
             await completeTwoFactorChallenge(
                 challengeToken,
-                mode === "code" ? { code: value } : { recovery_code: value }
+                mode === "code"
+                    ? { code: value, remember_device: rememberDevice }
+                    : { recovery_code: value, remember_device: rememberDevice }
             )
             onSuccess()
         } catch (err: any) {
@@ -87,6 +91,15 @@ export function TwoFactorChallengeForm({ challengeToken, onSuccess, onBackToLogi
                     )}
                     {error && <FieldError>{error}</FieldError>}
                 </Field>
+
+                <label className="flex items-center gap-2 text-sm justify-center cursor-pointer">
+                    <Checkbox
+                        checked={rememberDevice}
+                        onCheckedChange={(checked) => setRememberDevice(checked === true)}
+                        disabled={isSubmitting}
+                    />
+                    No pedir código en este dispositivo
+                </label>
 
                 <Field>
                     <Button type="submit" className="w-full" disabled={isSubmitting || !value}>

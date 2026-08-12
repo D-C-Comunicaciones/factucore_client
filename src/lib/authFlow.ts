@@ -5,6 +5,7 @@ import type {
     ResetPasswordPayload,
     ResetPasswordResponse,
     TwoFactorChallengePayload,
+    ConfirmEmailPayload,
 } from "@/types/auth"
 
 export class AuthFlowService {
@@ -37,5 +38,12 @@ export class AuthFlowService {
      */
     static async twoFactorChallenge(payload: TwoFactorChallengePayload) {
         return apiClient.post<any>("/auth/2fa/challenge", payload)
+    }
+
+    /**
+     * POST /auth/email/confirm
+     */
+    static async confirmEmail(payload: ConfirmEmailPayload) {
+        return apiClient.post<{ message: string }>("/auth/email/confirm", payload)
     }
 }

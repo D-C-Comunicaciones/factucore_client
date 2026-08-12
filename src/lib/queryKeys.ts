@@ -22,6 +22,9 @@ export const QUERY_KEYS = {
 
         twoFactor: () =>
             ["profile", "two-factor"] as const,
+
+        devices: () =>
+            ["profile", "devices"] as const,
     },
 
     /* ====================================================================== */

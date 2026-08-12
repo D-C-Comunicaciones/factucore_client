@@ -9,7 +9,7 @@ import { IconLoader } from "@tabler/icons-react"
 import { Pencil, Upload } from "lucide-react"
 import { AuthService } from "@/lib/auth"
 import { useCatalogs } from "@/hooks/useCatalogs"
-import { useUpdateCompanyProfile } from "@/hooks/perfil/useCompanyProfile"
+import { useUpdateCompanyProfile } from "@/hooks/profile/useCompanyProfile"
 import { validateVerificationDigit } from "@/utils/validate-verification-digit"
 import { extractFieldErrors } from "@/lib/errors"
 import type { CompanyProfileUpdatePayload } from "@/types/auth"
@@ -112,7 +112,7 @@ export function CompanyProfileForm() {
     const personTypeOptions = [{ value: "Nacional", label: "Nacional" }, { value: "Extranjero", label: "Extranjero" }]
 
     const initials = getInitials(form.company_name || form.first_name || "?")
-    
+
     const isNitSelected = documentTypeOptions.find(o => o.value === String(form.type_document_identification_id))?.label?.toUpperCase().includes("NIT")
 
     const handleCancel = () => {

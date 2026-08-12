@@ -2390,8 +2390,8 @@
     "semantic_hash": ""
   },
   "src/components/profile/RecoveryCodesDisplay.tsx": {
-    "mtime": 1786505160.729178,
-    "ast_hash": "a52e80ff8d18126eb17135a950240078",
+    "mtime": 1786499351.6950257,
+    "ast_hash": "58dca92ccb07b2629976f8f0f6ba2339",
     "semantic_hash": ""
   },
   "src/components/profile/TwoFactorSection.tsx": {
@@ -2460,8 +2460,8 @@
     "semantic_hash": ""
   },
   "src/types/auth.ts": {
-    "mtime": 1786508614.1577818,
-    "ast_hash": "835b41c93b87cf2e5b9f87579c628d43",
+    "mtime": 1786504174.1352718,
+    "ast_hash": "5e30fa3fd195797e219912ba432649a9",
     "semantic_hash": ""
   },
   "src/utils/get-initials.ts": {
@@ -2510,8 +2510,8 @@
     "semantic_hash": ""
   },
   "src/components/profile/TwoFactorPanel.tsx": {
-    "mtime": 1786508710.1589012,
-    "ast_hash": "bd1fc3c3e5049a0ec78ea6177589646a",
+    "mtime": 1786504384.5917811,
+    "ast_hash": "78f2d07a63884cc8044c70fc58e90e37",
     "semantic_hash": ""
   },
   "src/hooks/profile/useVerifyPassword.ts": {

@@ -72,7 +72,7 @@ export function UserMenu({ onClose }: UserMenuProps) {
         </button>
 
         <button
-          onClick={() => { onClose(); router.push('/configuration'); }}
+          onClick={() => { onClose(); router.push(''); }}
           className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors"
         >
           <Settings className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
@@ -80,7 +80,7 @@ export function UserMenu({ onClose }: UserMenuProps) {
         </button>
 
         <button
-          onClick={() => { onClose(); router.push('/configuration/perfil'); }}
+          onClick={() => { onClose(); router.push('/configuration/profile'); }}
           className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors"
         >
           <User className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
@@ -89,7 +89,7 @@ export function UserMenu({ onClose }: UserMenuProps) {
         </button>
 
         <button
-          onClick={() => { onClose(); router.push('/configuration/perfil?tab=seguridad'); }}
+          onClick={() => { onClose(); router.push('/configuration/security'); }}
           className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors"
         >
           <Lock className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />

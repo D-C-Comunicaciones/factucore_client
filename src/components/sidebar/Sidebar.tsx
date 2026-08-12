@@ -303,11 +303,6 @@ export function Sidebar({
         {/* Empresa y usuario solo si expandido */}
         {/*isSidebarExpanded && <WorkspaceSelector />*/}
 
-        {/* Línea divisoria después del workspace */}
-        {isSidebarExpanded && (
-          <div className="w-full border-b border-sidebar-border mt-2" />
-        )}
-
         {/* MENU */}
         <nav className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
