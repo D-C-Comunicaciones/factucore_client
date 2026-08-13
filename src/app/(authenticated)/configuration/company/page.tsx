@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { useHasPermission } from "@/hooks/useHasPermission"
-import { CompanyProfileForm } from "@/components/empresa/CompanyProfileForm"
+import { CompanyProfileForm } from "@/components/company/CompanyProfileForm"
 
 export default function CompanyProfilePage() {
     const router = useRouter()

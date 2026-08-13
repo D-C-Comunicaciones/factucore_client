@@ -21,6 +21,7 @@ const getLocalIPs = (): string[] => {
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  agentRules: false,
   allowedDevOrigins: [
     ...getLocalIPs(),
     "localhost",

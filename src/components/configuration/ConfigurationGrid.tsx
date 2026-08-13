@@ -10,6 +10,7 @@ export function ConfigurationGrid() {
         links={[
           { label: 'Empresa', href: '/configuration/company' },
           { label: 'Usuarios', href: '/configuration/users' },
+          { label: 'Roles', href: '/configuration/roles' },
           { label: 'Mi perfil', href: '/configuration/profile' },
           { label: 'Seguridad', href: '/configuration/security' },
           { label: 'Centros de costos', href: '/cost-centers' },
