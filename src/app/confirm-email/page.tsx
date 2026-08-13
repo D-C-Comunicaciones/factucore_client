@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,6 +12,14 @@ import { AuthFlowService } from "@/lib/authFlow"
 import { extractErrorMessage } from "@/lib/errors"
 
 export default function ConfirmEmailPage() {
+    return (
+        <Suspense fallback={null}>
+            <ConfirmEmailContent />
+        </Suspense>
+    )
+}
+
+function ConfirmEmailContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const email = searchParams.get("email") || ""
