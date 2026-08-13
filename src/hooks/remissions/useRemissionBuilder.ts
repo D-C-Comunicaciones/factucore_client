@@ -295,7 +295,7 @@ export function useRemissionBuilder() {
         const payloadItems = items.map(item => {
             const itemObj: any = {
                 item_id: Number(item.item_id),
-                name: item.item || item.name || "",
+                name: item.item || "",
                 reference: item.referencia || "",
                 description: item.description || "",
                 quantity: Number(item.cantidad),

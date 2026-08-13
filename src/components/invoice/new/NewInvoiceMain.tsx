@@ -1004,7 +1004,7 @@ export function NewInvoiceMain({
                                         const val = Number(e.target.value);
                                         if (val > 100) {
                                             showToast("El porcentaje no puede ser mayor al 100%", "warning");
-                                            setGlobalAdjPercent("");
+                                            setGlobalAdjPercent(0);
                                         } else {
                                             setGlobalAdjPercent(val);
                                         }
@@ -1018,7 +1018,7 @@ export function NewInvoiceMain({
                                     onChange={(val: number) => {
                                         if (val > invoiceBuilder.totals.subtotal) {
                                             showToast("El valor excede el total del documento", "warning");
-                                            setGlobalAdjPercent("");
+                                            setGlobalAdjPercent(0);
                                         } else {
                                             setGlobalAdjPercent(val);
                                         }

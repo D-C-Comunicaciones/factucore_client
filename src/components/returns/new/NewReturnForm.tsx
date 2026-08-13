@@ -807,8 +807,8 @@ export function NewReturnForm() {
     }
 
     let newGlobalDiscountsTotal = 0;
+    let originalInvoiceSubtotal = 0;
     if (['3', '6', '7'].includes(selectedType)) {
-        let originalInvoiceSubtotal = 0;
         addedLines.forEach(item => {
             originalInvoiceSubtotal += item.maxQuantity * item.price;
         });
