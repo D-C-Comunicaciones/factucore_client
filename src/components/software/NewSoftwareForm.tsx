@@ -144,7 +144,7 @@ export function NewSoftwareForm({ onSuccess, onCancel, hideCardStyles, extraFoot
         <Button
           type="button"
           variant="outline"
-          className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+          className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 cursor-pointer"
           disabled={isSaving}
           onClick={() => {
             if (onCancel) {
@@ -159,7 +159,7 @@ export function NewSoftwareForm({ onSuccess, onCancel, hideCardStyles, extraFoot
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="bg-primary hover:bg-primary/90 text-white shadow-md active:scale-95"
+          className="bg-primary hover:bg-primary/90 text-white shadow-md active:scale-95 cursor-pointer"
         >
           {isSaving ? (
             <>

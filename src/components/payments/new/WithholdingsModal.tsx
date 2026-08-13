@@ -6,6 +6,7 @@ import { Plus, X } from "lucide-react";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { InvoiceSummary } from "@/types/invoice";
+import { showToast } from "@/components/sonner/CustomToaster";
 
 export interface WithholdingEntry {
   withholding_rate_id: number;
@@ -52,9 +53,27 @@ export function WithholdingsModal({ isOpen, onClose, invoice, initialWithholding
 
     if (field === "withholding_rate_id" || field === "base") {
       const rateId = field === "withholding_rate_id" ? Number(value) : newWithholdings[index].withholding_rate_id;
-      const base = field === "base" ? Number(value) : newWithholdings[index].base;
+      let base = field === "base" ? Number(value) : newWithholdings[index].base;
       const rateData = catalogs.withholdingRates?.find((r: any) => r.id === rateId);
+      
       if (rateData) {
+        const isReteIva = rateData.name?.toLowerCase().includes("iva");
+
+        if (field === "withholding_rate_id" && isReteIva) {
+          const totalIva = invoice?.total_iva || 0;
+          if (totalIva <= 0) {
+            showToast("No se puede aplicar retención de IVA a una operación comercial gravada sin IVA.", "error");
+            newWithholdings[index].withholding_rate_id = 0;
+            newWithholdings[index].base = Number(invoice?.pending_amount || 0);
+            newWithholdings[index].amount = 0;
+            setWithholdings(newWithholdings);
+            return;
+          } else {
+            base = totalIva;
+            newWithholdings[index].base = base;
+          }
+        }
+
         newWithholdings[index].amount = Math.round(base * (Number(rateData.code) / 100));
       }
     }
@@ -104,9 +123,9 @@ export function WithholdingsModal({ isOpen, onClose, invoice, initialWithholding
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                     <input
                       type="text"
-                      className="w-full h-9 pl-7 pr-3 text-sm rounded-md border border-gray-300 bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      readOnly
+                      className="w-full h-9 pl-7 pr-3 text-sm rounded-md border border-gray-300 bg-slate-50 text-slate-500 cursor-not-allowed focus-visible:outline-none"
                       value={w.base ? w.base.toLocaleString('es-CO') : ''}
-                      onChange={(e) => handleChange(i, "base", e.target.value.replace(/\D/g, ''))}
                     />
                   </div>
                 </div>
@@ -116,9 +135,9 @@ export function WithholdingsModal({ isOpen, onClose, invoice, initialWithholding
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                     <input
                       type="text"
-                      className="w-full h-9 pl-7 pr-3 text-sm rounded-md border border-gray-300 bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      readOnly
+                      className="w-full h-9 pl-7 pr-3 text-sm rounded-md border border-gray-300 bg-slate-50 text-slate-500 cursor-not-allowed focus-visible:outline-none"
                       value={w.amount ? w.amount.toLocaleString('es-CO') : ''}
-                      onChange={(e) => handleChange(i, "amount", e.target.value.replace(/\D/g, ''))}
                     />
                   </div>
                 </div>

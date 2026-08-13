@@ -17,7 +17,10 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useItems } from "@/hooks/items/useItems";
+import { isIvaTax } from "@/hooks/invoices/useInvoiceBuilder";
+import { resolveStockFields, shouldValidateLineStock } from "@/lib/itemStock";
 
 // Reusable component for currency formatting without cursor jumps
 function FormattedInput({ value, onChange, placeholder, className }: any) {
@@ -26,7 +29,7 @@ function FormattedInput({ value, onChange, placeholder, className }: any) {
   React.useEffect(() => {
     const numericDisplay = parseFloat(displayValue.replace(/\./g, "").replace(/,/g, ".")) || 0;
     if (value !== numericDisplay && value !== undefined) {
-       setDisplayValue(value ? new Intl.NumberFormat('es-CO').format(value) : "");
+      setDisplayValue(value ? new Intl.NumberFormat('es-CO').format(value) : "");
     }
   }, [value]);
 
@@ -53,6 +56,8 @@ function FormattedInput({ value, onChange, placeholder, className }: any) {
   );
 }
 
+
+
 function ItemRow({
   item,
   index,
@@ -60,7 +65,7 @@ function ItemRow({
   selectedWarehouseId,
   selectedPriceListId,
   taxes,
-  errors
+  errors,
 }: {
   item: any;
   index: number;
@@ -69,6 +74,7 @@ function ItemRow({
   selectedPriceListId: number | null;
   taxes: any[];
   errors?: Record<string, any>;
+  hasAnyIvaTax: boolean;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -76,11 +82,12 @@ function ItemRow({
   const effectivePriceListId = item.item_id ? (item.selected_price_list_id ?? selectedPriceListId) : selectedPriceListId;
 
   const { data, isLoading } = useItems({
-    search: searchQuery,
-    warehouse_id: effectiveWarehouseId ?? undefined,
-    price_list_id: effectivePriceListId ?? undefined,
-    per_page: 20
-  } as any);
+    params: {
+      search: searchQuery,
+      warehouse_id: effectiveWarehouseId ?? undefined,
+      price_list_id: effectivePriceListId ?? undefined,
+    }
+  });
 
   const itemsList = data?.data || [];
   const options = itemsList.map(i => ({
@@ -94,9 +101,9 @@ function ItemRow({
     options.push({
       value: item.item_id.toString(),
       label: `${item.referencia ? item.referencia + ' - ' : ''}${item.item}`,
-      rawItem: { 
-        id: item.item_id, 
-        name: item.item, 
+      rawItem: {
+        id: item.item_id,
+        name: item.item,
         reference: item.referencia,
         price: item.precio,
         stock_quantity: item.stock_quantity,
@@ -111,8 +118,7 @@ function ItemRow({
     const selectedOption = options.find(o => o.value === val);
     if (selectedOption) {
       const ri = selectedOption.rawItem;
-      const isService = ri.type_item_id === 2;
-      const isInventoriable = isService ? false : (ri.is_inventoriable ?? true);
+      const { is_inventoriable: isInventoriable, allow_negative_stock: allowNegativeStock, stock_quantity: stockQuantity } = resolveStockFields(ri);
 
       invoiceBuilder.updateItem(item.id, "item_id", ri.id);
       invoiceBuilder.updateItem(item.id, "standard_code", ri.standard_code || "");
@@ -121,12 +127,26 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "description", ri.description || "");
       invoiceBuilder.updateItem(item.id, "precio", ri.price || 0);
       invoiceBuilder.updateItem(item.id, "cantidad", 1);
-      invoiceBuilder.updateItem(item.id, "stock_quantity", ri.stock_quantity ?? null);
+      invoiceBuilder.updateItem(item.id, "stock_quantity", stockQuantity);
       invoiceBuilder.updateItem(item.id, "is_inventoriable", isInventoriable);
-      invoiceBuilder.updateItem(item.id, "allow_negative_stock", ri.allow_negative_stock ?? false);
+      invoiceBuilder.updateItem(item.id, "allow_negative_stock", allowNegativeStock);
       invoiceBuilder.updateItem(item.id, "selected_warehouse_id", selectedWarehouseId);
       invoiceBuilder.updateItem(item.id, "selected_price_list_id", selectedPriceListId);
       invoiceBuilder.updateItem(item.id, "warehouses", ri.warehouses);
+
+      if (ri.tax_rates && ri.tax_rates.length > 0) {
+        const defaultTax = ri.tax_rates[0];
+        invoiceBuilder.updateItemTax(item.id, {
+          tax_rate_id: defaultTax.tax_rate_id,
+          tax_id: defaultTax.tax_id,
+          name: defaultTax.name,
+          rate: parseFloat(defaultTax.rate || "0"),
+          type: defaultTax.type || 'percentage',
+          description: defaultTax.description || ""
+        });
+      } else {
+        invoiceBuilder.updateItemTax(item.id, null);
+      }
 
       // Extract minimum_stock and maximum_stock for the selected warehouse
       const warehouseData = ri.warehouses?.find((w: any) => String(w.id) === String(selectedWarehouseId));
@@ -134,11 +154,11 @@ function ItemRow({
       invoiceBuilder.updateItem(item.id, "maximum_stock", warehouseData?.maximum_stock);
 
       // Validate initial quantity
-      const shouldValidateInitial = isInventoriable && !(ri.allow_negative_stock ?? false);
-      const initialStock = ri.stock_quantity ?? 0;
+      const shouldValidateInitial = isInventoriable && !allowNegativeStock;
+      const initialStock = stockQuantity ?? 0;
       if (shouldValidateInitial && initialStock < 1) {
-          showToast("El producto seleccionado no tiene stock disponible.", "warning");
-          invoiceBuilder.updateItem(item.id, "cantidad", 0);
+        showToast("El producto seleccionado no tiene stock disponible.", "warning");
+        invoiceBuilder.updateItem(item.id, "cantidad", 0);
       }
     }
   };
@@ -172,21 +192,21 @@ function ItemRow({
   const quantityBackendError = errors?.[`items.${index}.quantity`];
   const isInvalidQuantity = (errors?.items === "invalid_quantity" && item.item_id && (!item.cantidad || item.cantidad <= 0)) || !!quantityBackendError;
 
-  const shouldValidateStock = !!item.item_id && item.is_inventoriable && !item.allow_negative_stock;
+  const shouldValidateStock = shouldValidateLineStock(item);
   const currentStock = item.stock_quantity ?? 0;
-  
+
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newQty = Number(e.target.value);
-      if (shouldValidateStock && newQty > currentStock) {
-          if (currentStock === 0) {
-              showToast("Este producto está agotado.", "error");
-          } else {
-              showToast(`Stock insuficiente. Solo hay ${currentStock} unidades disponibles.`, "error");
-          }
-          invoiceBuilder.updateItem(item.id, "cantidad", currentStock > 0 ? currentStock : 0);
+    const newQty = Number(e.target.value);
+    if (shouldValidateStock && newQty > currentStock) {
+      if (currentStock === 0) {
+        showToast("Este producto está agotado.", "error");
       } else {
-          invoiceBuilder.updateItem(item.id, "cantidad", newQty);
+        showToast(`Stock insuficiente. Solo hay ${currentStock} unidades disponibles.`, "error");
       }
+      invoiceBuilder.updateItem(item.id, "cantidad", currentStock > 0 ? currentStock : 0);
+    } else {
+      invoiceBuilder.updateItem(item.id, "cantidad", newQty);
+    }
   };
 
   const minStock = Number(item.minimum_stock);
@@ -194,9 +214,11 @@ function ItemRow({
   const isLowStock = shouldValidateStock && (minStock > 0 ? currentStock <= minStock : currentStock <= 5);
   const isGoodStock = shouldValidateStock && (maxStock > 0 ? currentStock >= maxStock : currentStock >= 10);
 
+
+
   return (
     <tr className={`border-b border-border transition-colors ${hasError ? 'bg-destructive/5' : 'bg-white'}`}>
-      <td className="px-2 py-2 w-48">
+      <td className="px-2 py-2 align-middle">
         <AsyncSearchableSelect
           value={item.item_id ? item.item_id.toString() : ""}
           onValueChange={handleItemSelect}
@@ -224,7 +246,7 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2">
+      <td className="px-2 py-2 align-middle">
         <Input
           placeholder="Referencia"
           value={item.referencia}
@@ -233,7 +255,7 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2 w-24">
+      <td className="px-2 py-2 align-middle">
         <FormattedInput
           placeholder="Precio"
           value={item.precio || 0}
@@ -242,7 +264,7 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2 w-32">
+      <td className="px-2 py-2 align-middle">
         <div className="flex items-center">
           {item.discountType === 'percentage' ? (
             <Input
@@ -251,14 +273,30 @@ function ItemRow({
               onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
               placeholder="0"
               value={item.discountValue || ""}
-              onChange={(e) => invoiceBuilder.updateItemDiscount(item.id, Number(e.target.value), 'percentage')}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (val > 100) {
+                  showToast("El porcentaje de descuento no puede ser mayor al 100%", "warning");
+                  invoiceBuilder.updateItemDiscount(item.id, "", 'percentage');
+                } else {
+                  invoiceBuilder.updateItemDiscount(item.id, val, 'percentage');
+                }
+              }}
               className={`${inputClasses} rounded-r-none border-r-0`}
             />
           ) : (
             <FormattedInput
               placeholder="0"
               value={item.discountValue || 0}
-              onChange={(val: number) => invoiceBuilder.updateItemDiscount(item.id, val, 'fixed')}
+              onChange={(val: number) => {
+                const lineBase = (Number(item.cantidad) || 0) * (Number(item.precio) || 0);
+                if (lineBase > 0 && val > lineBase) {
+                  showToast("El valor digitado excede el valor total del ítem", "warning");
+                  invoiceBuilder.updateItemDiscount(item.id, "", 'fixed');
+                } else {
+                  invoiceBuilder.updateItemDiscount(item.id, val, 'fixed');
+                }
+              }}
               className={`${inputClasses} rounded-r-none border-r-0`}
             />
           )}
@@ -277,49 +315,51 @@ function ItemRow({
         </div>
       </td>
 
-      <td className="px-2 py-2 w-32">
-        <Select
+      <td className="px-2 py-2 align-middle">
+        <SearchableSelect
           value={item.taxObj?.tax_rate_id?.toString() || item.taxObj?.tax_id?.toString() || "0"}
           onValueChange={(val) => {
+            if (val === "new_tax") {
+              const el = document.getElementById('open-new-tax-modal');
+              if (el) el.click();
+              return;
+            }
             if (val === "0") {
               invoiceBuilder.updateItemTax(item.id, null);
             } else {
               const tax = taxes?.find((t: any) => t.id.toString() === val);
               if (tax) {
                 // Support multiple field names: code (from new tax API), rate (from item tax_rates), and percentage
-                const rawRate = tax.code ?? tax.rate ?? tax.percentage ?? 0;
-                const taxRate = Number(rawRate);
-                const normalizedName = `${tax.name || 'IVA'} (${isNaN(taxRate) ? 0 : taxRate}%)`;
-                invoiceBuilder.updateItemTax(item.id, {
+                const taxRateObj = {
                   tax_rate_id: tax.id,
-                  tax_id: tax.tax_id || tax.id,
-                  type: "percentage",
-                  rate: isNaN(taxRate) ? 0 : taxRate,
-                  name: normalizedName
-                });
+                  tax_id: tax.tax_id,
+                  name: tax.name,
+                  rate: parseFloat(tax.rate || tax.percentage || "0"),
+                  type: tax.type || 'percentage',
+                  description: tax.description || ""
+                };
+                invoiceBuilder.updateItemTax(item.id, taxRateObj);
               }
             }
           }}
-        >
-          <SelectTrigger className={`${inputClasses} hover:bg-muted cursor-pointer`}>
-            <SelectValue placeholder="Impuesto" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0" className="cursor-pointer hover:bg-muted focus:bg-muted">Sin impuesto</SelectItem>
-            {taxes?.map((t: any) => {
-              const rawRate = t.code ?? t.rate ?? t.percentage ?? 0;
-              const displayRate = Number(rawRate);
-              return (
-                <SelectItem key={t.id} value={t.id.toString()} className="cursor-pointer hover:bg-muted focus:bg-muted">
-                  {t.name} ({isNaN(displayRate) ? 0 : displayRate}%)
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+          options={[
+            { value: "0", label: "Sin impuesto" },
+            ...(taxes || []).map((tax: any) => ({
+              value: tax.id.toString(),
+              label: `${tax.name} (${parseFloat(tax.rate || "0")}%)`
+            })),
+            { value: "new_tax", label: "+ Crear impuesto" }
+          ]}
+          placeholder="Sin impuesto"
+          searchPlaceholder="Buscar impuesto..."
+          emptyMessage="No se encontraron impuestos"
+          className={`h-8 text-xs bg-white shadow-none hover:border-primary/50 focus:border-primary transition-colors ${hasError ? 'border-destructive' : 'border-foreground/20'}`}
+        />
       </td>
 
-      <td className="px-2 py-2">
+
+
+      <td className="px-2 py-2 align-middle">
         <Input
           placeholder="Descripción"
           value={item.description}
@@ -328,41 +368,41 @@ function ItemRow({
         />
       </td>
 
-      <td className="px-2 py-2 w-24">
+      <td className="px-2 py-2 align-middle">
         <div className="relative flex items-center">
-            <Input
+          <Input
             type="number"
             min={0}
             onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') e.preventDefault(); }}
             value={item.cantidad || ""}
             onChange={handleQuantityChange}
             className={`${inputClasses} w-full pr-8 ${isLowStock || isInvalidQuantity ? '!text-red-600 font-bold !border-red-500' : ''} ${isGoodStock && !isInvalidQuantity ? '!text-green-600 font-bold' : ''}`}
-            />
-            {(isLowStock || isInvalidQuantity) && (
-                <div className="absolute right-2 flex items-center">
-                    <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="bg-red-600 text-white p-2 text-xs">
-                                {quantityBackendError ? quantityBackendError[0] || quantityBackendError : 
-                                 isInvalidQuantity ? "Cantidad inválida." :
-                                 currentStock === 0 ? "¡Este producto está agotado!" : 
-                                 `¡Stock bajo! Solo quedan ${currentStock} unidades.`}
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-            )}
+          />
+          {(isLowStock || isInvalidQuantity) && (
+            <div className="absolute right-2 flex items-center">
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-red-600 text-white p-2 text-xs">
+                    {quantityBackendError ? quantityBackendError[0] || quantityBackendError :
+                      isInvalidQuantity ? "Cantidad inválida." :
+                        currentStock === 0 ? "¡Este producto está agotado!" :
+                          `¡Stock bajo! Solo quedan ${currentStock} unidades.`}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
         </div>
       </td>
 
-      <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap">
+      <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap align-middle">
         $ {new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rowTotal)}
       </td>
 
-      <td className="px-2 py-2 text-center w-10">
+      <td className="px-2 py-2 text-center align-middle">
         <button
           onClick={() => invoiceBuilder.removeItem(item.id)}
           className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
@@ -379,7 +419,7 @@ export function InvoiceItemsTable({
   selectedWarehouseId,
   selectedPriceListId,
   taxes,
-  errors
+  errors,
 }: {
   invoiceBuilder: any;
   selectedWarehouseId: number | null;
@@ -387,27 +427,30 @@ export function InvoiceItemsTable({
   taxes: any[];
   errors?: Record<string, any>;
 }) {
+  const hasAnyIvaTax = invoiceBuilder.items.some((item: any) => isIvaTax(item.taxObj));
+
   return (
     <div className="overflow-x-auto w-full rounded-lg border border-border">
       <table className="min-w-full bg-background">
         <thead className="bg-muted/30 border-b border-border">
           <tr>
             {[
-              "Ítem",
-              "Referencia",
-              "Precio",
-              "Desc",
-              "Impuesto",
-              "Descripción",
-              "Cant",
-              "Total",
-              "",
+              { title: "Ítem", width: "30%" },
+              { title: "Referencia", width: "10%" },
+              { title: "Precio", width: "12%" },
+              { title: "Descuento", width: "12%" },
+              { title: "Impuesto", width: "13%" },
+              { title: "Descripción", width: "10%" },
+              { title: "Cantidad", width: "8%" },
+              { title: "Total", width: "10%" },
+              { title: "", width: "5%" }
             ].map((col) => (
               <th
-                key={col}
+                key={col.title}
+                style={{ width: col.width }}
                 className="px-2 py-3 text-xs font-semibold text-muted-foreground text-left first:pl-4"
               >
-                {col}
+                {col.title}
               </th>
             ))}
           </tr>
@@ -438,6 +481,7 @@ export function InvoiceItemsTable({
                 selectedPriceListId={selectedPriceListId}
                 taxes={taxes}
                 errors={errors}
+                hasAnyIvaTax={hasAnyIvaTax}
               />
             ))
           )}
@@ -448,7 +492,7 @@ export function InvoiceItemsTable({
         <button
           type="button"
           onClick={invoiceBuilder.addItem}
-          className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+          className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
         >
           Agregar ítem
         </button>

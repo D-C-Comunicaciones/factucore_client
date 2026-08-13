@@ -24,7 +24,7 @@ export interface AllowanceCharge {
 
 export interface Invoice {
     id: number;
-    numbering_range_id: number;
+    resolution_id: number;
     contact_id: number;
     payment_form_id: number;
     payment_method_id: number;
@@ -96,10 +96,12 @@ export interface InvoiceSummary {
     id: number;
     number: string;
     contact: string;
+    contact_id?: number;
     created_at: string;
     payment_due_date: string | null;
     total: string;
     pending_amount: number;
+    total_iva?: number;
     status_dian: {
         id: number;
         code: string;
@@ -125,13 +127,13 @@ export interface InvoiceDetailResponse {
     code: number;
     status: "success" | "error";
     data: {
+        invoice?: any; // El nuevo formato viene directamente en invoice
         company?: InvoiceCompany;
         establishment?: InvoiceEstablishment;
         customer?: InvoiceCustomer;
         numbering_range?: InvoiceNumberingRange;
         billing_period?: InvoiceBillingPeriod;
         bill?: InvoiceBill;
-        invoice?: any; // Añadido para el nuevo formato
         related_documents?: any[];
         items?: InvoiceItem[];
         allowance_charges?: any[];
@@ -140,6 +142,7 @@ export interface InvoiceDetailResponse {
         debit_notes?: any[];
         payments?: any[];
         payments_received?: any[];
+        remissions?: any[];
     };
     dian?: InvoiceDian;
 }

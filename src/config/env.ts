@@ -4,6 +4,7 @@ export const envs = {
     appVersion: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
     testUserEmail: process.env.NEXT_PUBLIC_TEST_USER_EMAIL || '',
     testUserPassword: process.env.NEXT_PUBLIC_TEST_USER_PASSWORD || '',
+    defaultCurrency: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || 'COP',
 } as const
 
 // Validate required environment variables

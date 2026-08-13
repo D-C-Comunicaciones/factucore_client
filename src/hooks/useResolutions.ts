@@ -26,6 +26,8 @@ export function useResolutions(params?: ResolutionsParams) {
         return { resolutions: [] };
       }
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const updateResolutionMutation = useMutation({

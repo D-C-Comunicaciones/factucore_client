@@ -11,13 +11,31 @@ export const QUERY_KEYS = {
     },
 
     /* ====================================================================== */
+    /* PROFILE                                                                */
+    /* ====================================================================== */
+
+    profile: {
+        all: ["profile"] as const,
+
+        me: () =>
+            ["profile", "me"] as const,
+
+        twoFactor: () =>
+            ["profile", "two-factor"] as const,
+
+        devices: () =>
+            ["profile", "devices"] as const,
+    },
+
+    /* ====================================================================== */
     /* CATALOGS                                                               */
     /* ====================================================================== */
 
     catalogs: {
         all: ["catalogs"] as const,
-
         countries: () => ["catalogs", "countries"] as const,
+
+        currencies: () => ["catalogs", "currencies"] as const,
 
         warehouses: () =>
             [

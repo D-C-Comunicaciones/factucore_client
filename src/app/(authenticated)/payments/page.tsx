@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ColumnFiltersState } from "@tanstack/react-table";
 import { PaymentTable } from "@/components/payments/PaymentTable";
-import { useDebounce } from "@/hooks/useDebounce";
 import { usePayments } from "@/hooks/payments/usePayments";
 import { showToast } from "@/components/sonner/CustomToaster";
 
@@ -16,27 +15,57 @@ export default function PaymentsPage() {
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(20);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [fetchKey, setFetchKey] = React.useState(0);
 
-  const debouncedSearch = useDebounce(search, 600);
+  // Reset pagination to page 1 when search or filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [search, columnFilters]);
 
   const buildApiFilters = React.useCallback(() => {
     const apiParams: Record<string, any> = {};
 
-    // Map column filters
     columnFilters.forEach((f) => {
       if (f.value === "" || f.value === undefined || f.value === null) return;
       
+      if (f.id === "payment_status") {
+        const statusMap: Record<string, number> = {
+          "Conciliado": 1,
+          "No conciliado": 2,
+          "Anulado": 3,
+        };
+        apiParams["payment_status_id"] = statusMap[f.value as string] ?? f.value;
+        return;
+      }
+
       apiParams[f.id] = f.value;
     });
 
     return apiParams;
   }, [columnFilters]);
 
+  const params = React.useMemo(() => {
+    return {
+      ...(search ? { search } : {}),
+      page,
+      per_page: perPage,
+      ...buildApiFilters(),
+    };
+  }, [search, page, perPage, buildApiFilters]);
+
+  const paramsKey = JSON.stringify(params);
+  const prevParamsKeyRef = React.useRef<string>("");
+
+  React.useEffect(() => {
+    if (prevParamsKeyRef.current !== paramsKey) {
+      prevParamsKeyRef.current = paramsKey;
+      setFetchKey((k) => k + 1);
+    }
+  }, [paramsKey]);
+
   const { data, isLoading, isRefetching, refetch } = usePayments({
-    ...(debouncedSearch ? { search: debouncedSearch } : {}),
-    page,
-    per_page: perPage,
-    ...buildApiFilters(),
+    params,
+    fetchKey,
   });
 
   const payments = data?.data || [];
@@ -111,7 +140,7 @@ export default function PaymentsPage() {
         <div className="w-full mt-6">
           <PaymentTable
             payments={payments}
-            loading={isLoading}
+            loading={isLoading || isRefetching}
             refreshing={isRefetching}
             onRefresh={handleRefresh}
             search={search}

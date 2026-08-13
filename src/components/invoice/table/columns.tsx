@@ -54,7 +54,7 @@ function SortableHeader({
       type="button"
       style={{ background: "none" }}
     >
-      <span className="text-xs font-medium text-gray-700">{label}</span>
+      <span className="text-xs font-medium text-slate-900">{label}</span>
       <span style={{ width: 16, display: "inline-flex", justifyContent: "center" }}>
         {isSorted === "desc" && <ArrowUp className="w-4 h-4 ml-1 text-black" />}
         {isSorted === "asc" && <ArrowDown className="w-4 h-4 ml-1 text-black" />}
@@ -205,6 +205,8 @@ function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
     estado === "no electrónico"
   );
 
+  const isPagadaOCobrada = estado === "pagada" || estado === "cobrada";
+
   const handleEdit = () => {
     console.log("Editar factura", invoice.id);
   };
@@ -227,27 +229,33 @@ function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
   };
 
   const handlePayment = () => {
-    console.log("Agregar pago a factura", invoice.id);
+    if (invoice.contact_id) {
+      router.push(`/payments/new?customer_id=${invoice.contact_id}&invoice_id=${invoice.id}`);
+    } else {
+      router.push(`/payments/new?invoice_id=${invoice.id}`);
+    }
   };
 
   return (
     <>
       <div className="flex items-center justify-end gap-1">
-        <TooltipProvider delayDuration={0}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:!bg-primary/10 transition-colors" onClick={(e) => { e.stopPropagation(); handlePayment(); }}>
-                <div className="flex items-center text-slate-700">
-                  <span className="text-[10px] font-bold mt-0.5 mr-[1px]">$</span>
-                  <Coins className="h-[15px] w-[15px]" strokeWidth={2.5} />
-                </div>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[#1e293b] text-white border-none" side="top">
-              <p className="font-medium">Agregar pago</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {!isPagadaOCobrada && (
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:!bg-primary/10 transition-colors" onClick={(e) => { e.stopPropagation(); handlePayment(); }}>
+                  <div className="flex items-center text-slate-700">
+                    <span className="text-[10px] font-bold mt-0.5 mr-[1px]">$</span>
+                    <Coins className="h-[15px] w-[15px]" strokeWidth={2.5} />
+                  </div>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-[#1e293b] text-white border-none" side="top">
+                <p className="font-medium">Agregar pago</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
         <div className="relative inline-block text-left">
           <DropdownMenu>

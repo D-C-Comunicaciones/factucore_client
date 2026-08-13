@@ -56,7 +56,7 @@ export function DatePickerSimple({ value, onChange, className }: { value?: Date,
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button variant="outline" className={cn(inputClass, "w-full justify-start font-normal", !date && "text-muted-foreground", className)}>
+                <Button variant="outline" className={cn(inputClass, "cursor-pointer w-full justify-start font-normal", !date && "text-muted-foreground", className)}>
                     {date
                         ? format(date, "dd/MM/yyyy", { locale: es })
                         : "dd/mm/aaaa"}

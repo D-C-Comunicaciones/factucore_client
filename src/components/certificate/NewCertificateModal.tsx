@@ -36,7 +36,7 @@ export function NewCertificateModal({ open, onOpenChange }: NewCertificateModalP
                   onOpenChange(false);
                   router.push('/certificates/new');
                 }}
-                className="text-primary hover:text-primary/80 text-sm font-semibold flex items-center gap-1 transition-colors mr-auto"
+                className="text-primary hover:text-primary/80 text-sm font-semibold flex items-center gap-1 transition-colors mr-auto cursor-pointer hover:bg-slate-100 px-3 py-2 rounded-md -ml-3"
               >
                 Ir a formulario avanzado
               </button>

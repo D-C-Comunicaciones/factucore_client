@@ -8,14 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
 import { cn } from "@/lib/utils";
+import { useItems } from "@/hooks/items/useItems";
 
 interface ProductComboModalProps {
   open: boolean;
@@ -63,19 +58,17 @@ export function ProductComboModal({ open, onOpenChange, onSave, initialData, exi
   const baseInput =
     "bg-white h-8 px-3 text-sm border border-foreground/20 rounded-md shadow-none text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary/40 outline-none";
 
-  // Usar catalogo real si existe, sino usar mock
-  const products = catalogs?.items?.length ? catalogs.items.map((item: any) => ({
+  // Ítems reales del sistema, con búsqueda
+  const [search, setSearch] = React.useState("");
+  const { data: itemsData, isLoading: isLoadingItems } = useItems({ params: { search } });
+
+  const products = (itemsData?.data || []).map((item: any) => ({
     id: String(item.id),
-    name: item.name,
+    name: item.reference ? `${item.reference} - ${item.name}` : item.name,
     unit: item.unit_measure?.name || "Unidad",
-    cost: item.pricing?.default_cost_price?.toString() || "0",
+    cost: (item.pricing?.default_cost_price ?? item.default_cost_price ?? item.price ?? "0").toString(),
     variant_id: undefined
-  })) : [
-    { id: "1", name: "Prueba", unit: "Unidad", cost: "100000" },
-    { id: "2", name: "Servicio técnico", unit: "Servicio", cost: "50000" },
-    { id: "3", name: "Producto A", unit: "Unidad", cost: "15000" },
-    { id: "4", name: "Producto B", unit: "Unidad", cost: "25000" },
-  ];
+  }));
 
   const visibleProducts = products.filter((p: any) => !existingProducts.includes(p.name) || p.name === initialData?.product);
 
@@ -114,13 +107,13 @@ export function ProductComboModal({ open, onOpenChange, onSave, initialData, exi
               Producto <span className="text-primary">*</span>
             </label>
             <div className="relative">
-              <Select
-                value={data.product}
+              <AsyncSearchableSelect
+                value={data.product_id}
                 onValueChange={(v) => {
-                  const p = products.find((prod: any) => prod.name === v);
-                  setData({ 
-                    ...data, 
-                    product: v,
+                  const p = products.find((prod: any) => prod.id === v);
+                  setData({
+                    ...data,
+                    product: p?.name || "",
                     product_id: p?.id,
                     variant_id: p?.variant_id,
                     unit: p?.unit || "",
@@ -128,18 +121,14 @@ export function ProductComboModal({ open, onOpenChange, onSave, initialData, exi
                   });
                   setErrorProduct(false);
                 }}
-              >
-                <SelectTrigger className={cn(baseInput, "w-full", errorProduct && "border-destructive focus:border-destructive focus:ring-destructive/20")}>
-                  <SelectValue placeholder="Buscar producto facturable" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-border rounded-xl shadow-xl max-h-[200px]">
-                  {visibleProducts.map((p: any) => (
-                    <SelectItem key={p.id + p.name} value={p.name} className="cursor-pointer hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors">
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={visibleProducts.map((p: any) => ({ value: p.id, label: p.name }))}
+                loading={isLoadingItems}
+                onSearchChange={setSearch}
+                placeholder="Buscar producto facturable"
+                searchPlaceholder="Buscar producto o servicio..."
+                emptyMessage={isLoadingItems ? "Buscando..." : "No se encontraron ítems."}
+                className={cn(baseInput, "w-full", errorProduct && "border-destructive focus:border-destructive focus:ring-destructive/20")}
+              />
             </div>
             {errorProduct && (
               <p className="text-[10px] text-destructive font-bold mt-1">Este campo es obligatorio</p>

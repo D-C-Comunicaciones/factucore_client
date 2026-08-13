@@ -1,10 +1,12 @@
+import React from "react";
+import { FactucoreLogo } from "@/components/brand/FactucoreLogo";
+
 export function LogoHorizontal({ className = "", ...props }: React.HTMLProps<HTMLImageElement>) {
     return (
-        <img
-            src="/img/factucore_logo_horizontal.webp"
-            alt="Factucore S.A.S."
-            className={`object-contain ${className}`}
-            {...props}
+        <FactucoreLogo
+            variant="horizontal"
+            className={`${className}`}
+            {...props as any}
         />
     );
 }

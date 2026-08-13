@@ -34,7 +34,7 @@ export function PaymentNumberingModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-white">
         <DialogHeader>
           <DialogTitle>Cambiar numeración</DialogTitle>
         </DialogHeader>
@@ -57,15 +57,15 @@ export function PaymentNumberingModal({
             <Input 
               value={currentNextNumber}
               disabled
-              className="h-9 bg-muted/50 text-muted-foreground"
+              className="h-9 bg-white border border-gray-300 hover:border-primary focus-visible:ring-1 focus-visible:ring-primary text-black disabled:text-black disabled:opacity-100 cursor-not-allowed font-medium"
             />
           </div>
         </div>
         <div className="flex justify-end gap-3 mt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-lg font-medium">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-lg bg-white text-slate-800 border border-gray-300 hover:bg-gray-100 font-medium cursor-pointer">
             Cancelar
           </Button>
-          <Button onClick={() => onOpenChange(false)} className="rounded-lg bg-teal-400 hover:bg-teal-500 text-white font-medium">
+          <Button onClick={() => onOpenChange(false)} className="rounded-lg bg-primary hover:bg-primary/90 text-white font-medium cursor-pointer">
             Guardar cambios
           </Button>
         </div>

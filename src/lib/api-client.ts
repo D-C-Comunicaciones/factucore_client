@@ -133,6 +133,14 @@ class ApiClient {
         return response.data
     }
 
+    // 🔥 POST BLOB (con headers, para leer Content-Disposition)
+    async postBlobFull(endpoint: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<Blob>> {
+        return this.client.post(endpoint, data, {
+            ...config,
+            responseType: 'blob'
+        })
+    }
+
     // 🔥 PATCH
     async patch<T>(endpoint: string, data?: unknown, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
         const response = await this.client.patch<ApiResponse<T>>(endpoint, data, config)

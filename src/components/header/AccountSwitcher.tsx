@@ -34,7 +34,7 @@ export function AccountSwitcher({ onClose, userName }: AccountSwitcherProps) {
         <div className="relative">
           <input
             type="text"
-            placeholder="Buscar."
+            placeholder="Buscar"
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all text-gray-700"
           />
         </div>

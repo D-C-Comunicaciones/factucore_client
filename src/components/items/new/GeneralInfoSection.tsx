@@ -9,7 +9,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
 import { FormattedInput } from "@/components/ui/formatted-input";
 import { SectionCard } from "./SectionCard";
-import { catalogsApi } from "@/lib/catalogs";
+import { useStandardCodes } from "@/hooks/catalogs/useStandardCodes";
 
 type ItemType = "producto" | "servicio" | "combo";
 
@@ -48,6 +48,7 @@ interface GeneralInfoSectionProps {
   onOpenNewTaxModal?: () => void;
   onOpenNewCategoryModal?: () => void;
   onOpenNewWarehouseModal?: () => void;
+  disableItemType?: boolean;
 }
 
 export function GeneralInfoSection({
@@ -68,6 +69,7 @@ export function GeneralInfoSection({
   onDescriptionChange,
   unitMeasureId,
   onUnitMeasureIdChange,
+  disableItemType = false,
   categoryId,
   onCategoryIdChange,
   typeItemIdentificationId,
@@ -100,32 +102,8 @@ export function GeneralInfoSection({
   const UNIT_OPTIONS = catalogs.unitMeasures || [];
   const CATEGORY_OPTIONS = catalogs.categories || [];
   const WAREHOUSE_OPTIONS = catalogs.warehouses || [];
-  const [standardCodeOptions, setStandardCodeOptions] = React.useState<{ value: string, label: string }[]>([]);
-  const [isSearchingCodes, setIsSearchingCodes] = React.useState(false);
-
-  const handleSearchStandardCodes = async (search: string) => {
-    if (!search || search.length < 2) return;
-    setIsSearchingCodes(true);
-    try {
-      const res = await catalogsApi.searchStandardCodes(search);
-      let data = res?.data?.data;
-      if (data && !Array.isArray(data) && Array.isArray(data.data)) {
-        data = data.data;
-      } else if (!Array.isArray(data)) {
-        data = res?.data?.standard_codes || [];
-      }
-
-      const opts = Array.isArray(data) ? data.map((c: any) => ({
-        value: c.id.toString(),
-        label: `${c.code} - ${c.name}`
-      })) : [];
-      setStandardCodeOptions(opts);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSearchingCodes(false);
-    }
-  };
+  const [standardCodeSearch, setStandardCodeSearch] = React.useState("");
+  const { options: standardCodeOptions, isLoading: isSearchingCodes } = useStandardCodes(standardCodeSearch);
 
   const handleNumericChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/[^0-9.]/g, "");
@@ -179,12 +157,14 @@ export function GeneralInfoSection({
             <button
               key={key}
               type="button"
-              onClick={() => onItemTypeChange(key)}
+              disabled={disableItemType}
+              onClick={() => !disableItemType && onItemTypeChange(key)}
               className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg transition-all flex items-center justify-between border-2
                 ${itemType === key
                   ? "bg-white border-primary text-primary shadow-sm"
                   : "bg-muted/40 border-transparent text-muted-foreground/50 hover:bg-muted/60"
-                }`}
+                }
+                ${disableItemType ? "opacity-60 cursor-not-allowed" : ""}`}
             >
               {label}
               {itemType === key && <Check className="w-4 h-4 stroke-[3px]" />}
@@ -310,7 +290,7 @@ export function GeneralInfoSection({
             value={unitMeasureId?.toString()}
             onValueChange={(v) => onUnitMeasureIdChange(parseInt(v))}
             options={UNIT_OPTIONS.map((u: any) => ({ value: u.id.toString(), label: u.name }))}
-            placeholder="Buscar."
+            placeholder="Buscar"
             searchPlaceholder="Buscar unidad..."
             emptyMessage="No se encontraron unidades."
             className={cn(baseInput, "w-full rounded-md", errors.unitMeasureId && "border-destructive focus:border-destructive focus:ring-destructive/40")}
@@ -357,9 +337,9 @@ export function GeneralInfoSection({
             value={typeItemIdentificationId?.toString()}
             onValueChange={(v) => onTypeItemIdentificationIdChange(parseInt(v))}
             options={standardCodeOptions}
-            onSearchChange={handleSearchStandardCodes}
+            onSearchChange={setStandardCodeSearch}
             loading={isSearchingCodes}
-            placeholder="Buscar."
+            placeholder="Buscar"
             searchPlaceholder="Buscar código o descripción..."
             emptyMessage={isSearchingCodes ? "Buscando..." : "No se encontraron códigos."}
             className={cn(baseInput, "w-full rounded-md", errors.typeItemIdentificationId && "border-destructive focus:border-destructive focus:ring-destructive/40")}

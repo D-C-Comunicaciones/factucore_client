@@ -4,7 +4,6 @@ import * as React from 'react';
 import { StatCard } from '@/components/invoice/StatCard';
 import { InvoiceTable } from '@/components/invoice/InvoiceTable';
 import { useInvoicesList } from '@/hooks/invoices/useInvoices';
-import { useDebounce } from '@/hooks/useDebounce';
 import { InvoicePageHeader } from '@/components/invoice/InvoicePageHeader';
 import { X, MessageCircle, Clock, Ban } from 'lucide-react';
 import type { InvoiceSummary } from '@/types/invoice';
@@ -23,12 +22,10 @@ export default function InvoicesPage({ onNavigate }: FacturasVentaViewProps) {
     const [fetchKey, setFetchKey] = React.useState(0);
     const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-    const debouncedSearch = useDebounce(search, 600);
-
     // Reset pagination to page 1 when search or filters change
     React.useEffect(() => {
         setPage(1);
-    }, [debouncedSearch, columnFilters]);
+    }, [search, columnFilters]);
 
     /* ===================== BUILD PARAMS - DEFAULT PAGINATION ===================== */
     const params = React.useMemo(() => {
@@ -46,12 +43,12 @@ export default function InvoicesPage({ onNavigate }: FacturasVentaViewProps) {
         const hasCustomerFilter = columnFilters.some(f => f.id === 'customer' && f.value);
         const hasNumberFilter = columnFilters.some(f => f.id === 'number' && f.value);
 
-        if (debouncedSearch && !hasCustomerFilter && !hasNumberFilter) {
-            obj.search = debouncedSearch;
+        if (search && !hasCustomerFilter && !hasNumberFilter) {
+            obj.search = search;
         }
 
         return obj;
-    }, [columnFilters, debouncedSearch, page, perPage]);
+    }, [columnFilters, search, page, perPage]);
 
     const paramsKey = JSON.stringify(params);
 

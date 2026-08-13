@@ -22,7 +22,7 @@ export class InvoicesService {
         // Aquí se debe mapear el formulario real a la estructura del backend
         // Ejemplo base:
         const {
-            numbering_range_id,
+            resolution_id,
             contact_id,
             payment_form_id,
             payment_method_id,
@@ -50,6 +50,9 @@ export class InvoicesService {
                 l.taxes = line.taxes.map((t: any) => ({
                     tax_id: t.tax_id,
                     tax_rate_id: t.tax_rate_id,
+                    tax_code: t.tax_code || t.code || (t.tax_id ? String(t.tax_id) : undefined),
+                    tax_name: t.tax_name || t.name,
+                    name: t.name,
                     type: t.type,
                     rate: t.rate,
                 }));
@@ -65,7 +68,7 @@ export class InvoicesService {
         const globalAllowanceCharges = (allowance_charges || []).filter((a: any) => a.scope === "global");
 
         return {
-            numbering_range_id,
+            resolution_id,
             contact_id,
             payment_form_id,
             payment_method_id,

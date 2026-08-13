@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Settings, User, Lock, LogOut, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 
@@ -8,6 +9,7 @@ interface UserMenuProps {
 
 export function UserMenu({ onClose }: UserMenuProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   const name = user?.name || "Usuario";
   const email = user?.email || "";
@@ -69,18 +71,27 @@ export function UserMenu({ onClose }: UserMenuProps) {
           <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-500" />
         </button>
 
-        <button className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors">
+        <button
+          onClick={() => { onClose(); router.push(''); }}
+          className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors"
+        >
           <Settings className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
           <span className="flex-1 text-left font-medium">Configuración</span>
         </button>
 
-        <button className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors">
+        <button
+          onClick={() => { onClose(); router.push('/configuration/profile'); }}
+          className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors"
+        >
           <User className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
           <span className="flex-1 text-left font-medium">Mi perfil</span>
           <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-500" />
         </button>
 
-        <button className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors">
+        <button
+          onClick={() => { onClose(); router.push('/configuration/security'); }}
+          className="w-full flex items-center gap-3 px-3 h-9 text-[13px] text-gray-700 hover:bg-gray-50 rounded-lg group transition-colors"
+        >
           <Lock className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
           <span className="flex-1 text-left font-medium">Seguridad</span>
           <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-500" />

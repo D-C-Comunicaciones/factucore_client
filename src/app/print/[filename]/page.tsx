@@ -3,16 +3,32 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { InvoicesService } from "@/lib/invoices";
+import { QuotesService } from "@/lib/quotes";
+import { RemissionsService } from "@/lib/remissions";
 import { Loader2 } from "lucide-react";
+
+type DocumentType = "invoice" | "quote" | "remission";
+
+// Registro de tipos de documento imprimibles. Para soportar un nuevo tipo (notas
+// crédito, etc.) basta con agregar una entrada aquí con su servicio de descarga de PDF.
+const DOCUMENT_TYPES: Record<DocumentType, {
+  downloadPdfBlob: (id: string, template?: number) => Promise<Blob>;
+  storagePrefix: string;
+}> = {
+  invoice: { downloadPdfBlob: InvoicesService.downloadPdfBlob, storagePrefix: "print_invoice_" },
+  quote: { downloadPdfBlob: QuotesService.downloadPdfBlob, storagePrefix: "print_quote_" },
+  remission: { downloadPdfBlob: RemissionsService.downloadPdfBlob, storagePrefix: "print_remission_" },
+};
 
 function PrintPdfContent() {
   const searchParams = useSearchParams();
   const params = useParams();
-  
+
   // Safe extraction for Next.js 15 dynamic params in client components
   const filename = typeof params?.filename === 'string' ? params.filename : "documento.pdf";
-  const urlInvoiceId = searchParams.get("invoiceId");
-  
+  const urlDocumentId = searchParams.get("invoiceId") || searchParams.get("documentId");
+  const urlType = searchParams.get("type") as DocumentType | null;
+
   const [status, setStatus] = useState<string>("Iniciando...");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,23 +37,43 @@ function PrintPdfContent() {
     // Set document title so printing works correctly
     document.title = decodeURIComponent(filename);
 
-    // Intentar leer de sessionStorage primero, si no, del URL (por si recarga la página)
-    let invoiceId = urlInvoiceId || sessionStorage.getItem(`print_invoice_${filename}`);
-    
+    // Resuelve el tipo de documento y su ID, ya sea desde la URL o desde sessionStorage
+    // (por si recarga la página). Si no viene el tipo explícito en la URL, se busca en
+    // sessionStorage bajo cada prefijo conocido hasta encontrar uno.
+    let documentType: DocumentType | null = urlType && DOCUMENT_TYPES[urlType] ? urlType : null;
+    let documentId: string | null = urlDocumentId;
+
+    if (!documentId) {
+      for (const type of Object.keys(DOCUMENT_TYPES) as DocumentType[]) {
+        const storedId = sessionStorage.getItem(`${DOCUMENT_TYPES[type].storagePrefix}${filename}`);
+        if (storedId) {
+          documentId = storedId;
+          documentType = type;
+          break;
+        }
+      }
+    } else if (!documentType) {
+      // Compatibilidad con enlaces que solo pasaban ?invoiceId= sin tipo explícito
+      documentType = "invoice";
+    }
+
     // Limpiar la URL si tiene parámetros de consulta para que se vea perfectamente limpia
-    if (urlInvoiceId && window.history.replaceState) {
+    if ((urlDocumentId || urlType) && window.history.replaceState) {
       window.history.replaceState(null, "", `/print/${filename}`);
     }
 
-    if (!invoiceId) {
-      setError("No se proporcionó el ID de la factura.");
+    if (!documentId || !documentType) {
+      setError("No se proporcionó el ID del documento.");
       return;
     }
+
+    const resolvedType = documentType;
+    const resolvedId = documentId;
 
     const loadPdf = async () => {
       try {
         setStatus("Descargando archivo...");
-        const rawBlob = await InvoicesService.downloadPdfBlob(invoiceId, 1);
+        const rawBlob = await DOCUMENT_TYPES[resolvedType].downloadPdfBlob(resolvedId, 1);
         setStatus("Procesando documento...");
         const fileName = decodeURIComponent(filename);
         const file = new File([rawBlob], fileName, { type: "application/pdf" });
@@ -57,7 +93,7 @@ function PrintPdfContent() {
         window.URL.revokeObjectURL(pdfUrl);
       }
     };
-  }, [urlInvoiceId, filename]);
+  }, [urlDocumentId, urlType, filename]);
 
   if (error) {
     return (
@@ -87,7 +123,7 @@ function PrintPdfContent() {
           {decodedFilename}
         </h1>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => {
               const iframe = document.getElementById('pdf-iframe') as HTMLIFrameElement;
               iframe?.contentWindow?.print();
@@ -97,8 +133,8 @@ function PrintPdfContent() {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
             Imprimir
           </button>
-          <a 
-            href={pdfUrl} 
+          <a
+            href={pdfUrl}
             download={decodedFilename}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/90 transition-colors"
           >
@@ -107,14 +143,14 @@ function PrintPdfContent() {
           </a>
         </div>
       </div>
-      
+
       {/* Visor de PDF */}
       <div className="flex-1 w-full relative">
-        <iframe 
+        <iframe
           id="pdf-iframe"
-          src={pdfUrl} 
-          className="w-full h-full border-none absolute inset-0" 
-          title={decodedFilename} 
+          src={pdfUrl}
+          className="w-full h-full border-none absolute inset-0"
+          title={decodedFilename}
         />
       </div>
     </div>

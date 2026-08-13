@@ -51,7 +51,7 @@ function ResolutionActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:bg-background"
+              className="h-7 w-7 hover:bg-background cursor-pointer"
               onClick={() => onEdit(resolution.id)}
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -68,7 +68,7 @@ function ResolutionActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:bg-background"
+              className="h-7 w-7 hover:bg-background cursor-pointer"
               onClick={() => onToggleActive(resolution.id, !isActive)}
             >
               {isActive ? (
@@ -89,7 +89,7 @@ function ResolutionActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:bg-background"
+              className="h-7 w-7 hover:bg-background cursor-pointer"
               onClick={() => onDelete(resolution.id)}
               disabled={resolution.is_main}
             >

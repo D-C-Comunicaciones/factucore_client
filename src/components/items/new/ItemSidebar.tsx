@@ -39,6 +39,8 @@ interface ItemSidebarProps {
   onInventariableChange?: (val: boolean | ((prev: boolean) => boolean)) => void;
   ventaNegativo?: boolean;
   onVentaNegativoChange?: (val: boolean | ((prev: boolean) => boolean)) => void;
+  hideSaveAndCreate?: boolean;
+  onCancel?: () => void;
 }
 
 export function ItemSidebar({
@@ -55,6 +57,8 @@ export function ItemSidebar({
   onInventariableChange,
   ventaNegativo = false,
   onVentaNegativoChange,
+  hideSaveAndCreate = false,
+  onCancel,
 }: ItemSidebarProps) {
   const router = useRouter();
 
@@ -342,7 +346,7 @@ export function ItemSidebar({
                 type="button"
                 disabled={isSubmitting}
                 onClick={() =>
-                  router.push("/items")
+                  onCancel ? onCancel() : router.push("/items")
                 }
                 className="flex-1 py-2 bg-white text-sm font-bold rounded-xl border border-border text-foreground hover:bg-muted transition-all cursor-pointer active:scale-95 disabled:opacity-50"
               >
@@ -361,14 +365,16 @@ export function ItemSidebar({
               </button>
             </div>
 
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={onSaveAndCreate}
-              className="w-full py-2 text-sm font-bold rounded-xl border border-border text-foreground hover:bg-muted transition-all active:scale-95 disabled:opacity-50"
-            >
-              Guardar y crear otro
-            </button>
+            {!hideSaveAndCreate && (
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={onSaveAndCreate}
+                className="w-full py-2 text-sm font-bold rounded-xl border border-border text-foreground hover:bg-muted transition-all active:scale-95 disabled:opacity-50"
+              >
+                Guardar y crear otro
+              </button>
+            )}
           </div>
         </div>
       </div>

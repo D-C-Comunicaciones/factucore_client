@@ -305,7 +305,7 @@ ml-1
 
       {/* Remover todos los filtros */}
       <button
-        className="ml-auto text-xs text-black font-medium px-2 py-1 rounded focus:outline-none hover:no-underline"
+        className="ml-auto text-xs text-black font-medium px-2 py-1 rounded focus:outline-none hover:bg-gray-100 cursor-pointer transition-colors"
         style={{ textDecoration: "none" }}
         onClick={removeAllFilters}
       >

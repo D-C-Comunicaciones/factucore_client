@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useContactForm } from "./ContactFormProvider";
 import { ContactCommercialInfo } from "./ContactCommercialInfo";
 import { ContactAccountingInfo } from "./ContactAccountingInfo";
-import { ContactComments } from "./ContactComments";
+import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { validateVerificationDigit } from "@/utils/validate-verification-digit";
 
@@ -46,6 +46,7 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
     commercialRegistration, setCommercialRegistration,
     sendAccountStatement, setSendAccountStatement,
     associatedPersons, setAssociatedPersons,
+    comments, setComments,
     autocompleting,
     errors, setErrors
   } = useContactForm();
@@ -616,7 +617,7 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
         {/* Otras secciones */}
         <ContactCommercialInfo catalogData={catalogData} />
         <ContactAccountingInfo catalogData={catalogData} />
-        <ContactComments />
+        <CommentsAndReminders comments={comments} setComments={setComments} />
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

@@ -32,16 +32,14 @@ export function NewPaymentForm({ formState, setFormState, formErrors }: NewPayme
 
   // Load resolutions
   const { resolutions, refetch: refetchResolutions, isLoading: isLoadingResolutions } = useResolutions({ type_resolution: 5, is_active: true });
-  const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
-
   useEffect(() => {
-    if (resolutions && resolutions.length > 0 && !selectedResolutionId) {
+    if (resolutions && resolutions.length > 0 && !formState.resolution_id) {
       const defaultRes = resolutions.find((r: any) => r.is_main) || resolutions[0];
-      setSelectedResolutionId(defaultRes.id);
+      setFormState((prev: any) => ({ ...prev, resolution_id: defaultRes.id }));
     }
-  }, [resolutions, selectedResolutionId]);
+  }, [resolutions, formState.resolution_id, setFormState]);
 
-  const activeResolution = resolutions?.find((r: any) => r.id === selectedResolutionId) || resolutions?.[0];
+  const activeResolution = resolutions?.find((r: any) => r.id === formState.resolution_id) || resolutions?.[0];
   const nextNumber = activeResolution
     ? ((activeResolution.current_number ?? (activeResolution.from_number - 1)) + 1)
     : 1;
@@ -176,7 +174,7 @@ export function NewPaymentForm({ formState, setFormState, formErrors }: NewPayme
                   }}
                   className="w-full text-center text-primary text-sm font-medium p-2 hover:bg-primary/5 rounded-md transition-colors"
                 >
-                  Crear nuevo cliente
+                  + Crear nuevo cliente
                 </button>
               }
             />
@@ -349,8 +347,8 @@ export function NewPaymentForm({ formState, setFormState, formErrors }: NewPayme
         open={isNumberingModalOpen}
         onOpenChange={setIsNumberingModalOpen}
         resolutions={resolutions}
-        selectedResolutionId={selectedResolutionId}
-        setSelectedResolutionId={setSelectedResolutionId}
+        selectedResolutionId={formState.resolution_id}
+        setSelectedResolutionId={(id) => setFormState({ ...formState, resolution_id: id })}
         currentNextNumber={`${activeResolution?.prefix || ""}${nextNumber}`}
       />
 

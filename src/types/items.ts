@@ -465,8 +465,14 @@ export interface ItemResponse {
         purchaseOrders: any[];
         deliveryNotes: any[];
         creditNotes: any[];
+        quotations: any[];
+        remissions: any[];
+        purchaseInvoices: any[];
+        supportDocuments: any[];
         debitNotes: any[];
+        customerDebitNotes: any[];
         inventoryTransfers: any[];
+        adjustmentNotes: any[];
     };
     images?: ItemImage[];
     created_at: string;
@@ -543,4 +549,29 @@ export interface ItemListResponse {
 
 export interface GetItemByIdResponse {
     item: ItemResponse;
+}
+
+/* ========================================================================== */
+/* ITEM LIST (GET /items) — API DATA SHAPE                                   */
+/* ========================================================================== */
+
+export interface ItemsListPagination {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+    from: number;
+    to: number;
+}
+
+export interface ItemsListSummary {
+    total_active: number;
+    total_inactive: number;
+    last_created: string | null;
+}
+
+export interface ItemsListApiData {
+    items: ItemListResponse[];
+    pagination: ItemsListPagination;
+    summary: ItemsListSummary;
 }

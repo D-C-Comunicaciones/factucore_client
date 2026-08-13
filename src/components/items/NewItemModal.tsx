@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { AsyncSearchableSelect } from "@/components/ui/async-searchable-select";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { type ItemFormState } from "@/types/items";
+import { useStandardCodes } from "@/hooks/catalogs/useStandardCodes";
 import { NewTaxRateModal } from "@/components/taxes/NewTaxRateModal";
 import { NewCategoryModal } from "@/components/category/NewCategoryModal";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -182,6 +184,10 @@ export function NewItemModal({
 
   const { taxes = [], categories = [], warehouses = [], unitMeasures = [], isLoading } = catalogs || {};
 
+  // Código estándar (UNSPSC / Colombia Compra Eficiente) para el selector "Código del producto o servicio"
+  const [standardCodeSearch, setStandardCodeSearch] = React.useState("");
+  const { options: standardCodeOptions, isLoading: isSearchingStandardCodes } = useStandardCodes(standardCodeSearch);
+
   const TAX_OPTIONS = (taxes || []).map((tax: any) => {
     const rate = tax.rate ?? tax.percentage ?? tax.code ?? 0;
     return {
@@ -265,14 +271,14 @@ export function NewItemModal({
   const handleSaveWarehouse = async (data: { name: string; address: string; observations: string }) => {
     try {
       const response = await warehousesApi.createWarehouse(data);
-      
+
       invalidateCatalog(queryClient, QUERY_KEYS.catalogs.warehouses());
-      
+
       const created =
         response?.data?.warehouse ??
         response?.data ??
         { id: Date.now(), name: data.name };
-        
+
       set("bodega", created.name);
       setIsWarehouseModalOpen(false);
       showToast(`La bodega "${created.name}" fue creada exitosamente.`, "success");
@@ -350,11 +356,11 @@ export function NewItemModal({
                     <AlertCircle className="w-4 h-4 text-destructive absolute right-3 top-1/2 -translate-y-1/2" />
                   )}
                 </div>
-                  {errors.name && typeof errors.name === "string" ? (
-                    <p className="text-[11px] text-destructive leading-none">{errors.name}</p>
-                  ) : errors.name ? (
-                    <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
-                  ) : null}
+                {errors.name && typeof errors.name === "string" ? (
+                  <p className="text-[11px] text-destructive leading-none">{errors.name}</p>
+                ) : errors.name ? (
+                  <p className="text-[11px] text-destructive leading-none">Este campo es obligatorio</p>
+                ) : null}
               </div>
 
               {/* Bodega + Categoría (Hidden for Servicio) */}
@@ -450,7 +456,7 @@ export function NewItemModal({
                       if (errors.unit) setErrors(prev => ({ ...prev, unit: false }));
                     }}
                     options={(unitMeasures || []).map((unit: any) => ({ value: String(unit.id), label: unit.name }))}
-                    placeholder="Buscar."
+                    placeholder="Buscar"
                     searchPlaceholder="Buscar unidad..."
                     emptyMessage="No se encontraron unidades."
                     className={cn(baseInput, "w-full rounded-md", errors.unit && "border-destructive ring-destructive/20")}
@@ -579,16 +585,15 @@ export function NewItemModal({
                       </Tooltip>
                     </TooltipProvider>
                   </label>
-                  <SearchableSelect
+                  <AsyncSearchableSelect
                     value={form.comboCode}
                     onValueChange={(v) => set("comboCode", v)}
-                    options={[
-                      { value: "1", label: "Producto Ejemplo 1" },
-                      { value: "2", label: "Servicio Ejemplo 2" },
-                    ]}
-                    placeholder="Buscar."
-                    searchPlaceholder="Buscar código..."
-                    emptyMessage="No se encontraron códigos."
+                    options={standardCodeOptions}
+                    loading={isSearchingStandardCodes}
+                    onSearchChange={setStandardCodeSearch}
+                    placeholder="Buscar"
+                    searchPlaceholder="Buscar código o descripción..."
+                    emptyMessage={isSearchingStandardCodes ? "Buscando..." : "No se encontraron códigos."}
                     className={cn(baseInput, "w-full rounded-md")}
                   />
                 </div>

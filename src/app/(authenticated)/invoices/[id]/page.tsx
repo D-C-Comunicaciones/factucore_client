@@ -14,7 +14,7 @@ import { InvoiceDetailExtraInfo } from "@/components/invoice/details/InvoiceDeta
 import { InvoiceDetailTabs } from "@/components/invoice/details/InvoiceDetailTabs";
 import { InvoiceDetailSkeleton } from "@/components/invoice/details/InvoiceDetailSkeleton";
 import { InvoiceDianStatus } from "@/components/invoice/details/InvoiceDianStatus";
-import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
+import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { showToast } from "@/components/sonner/CustomToaster";
 
 
@@ -23,12 +23,14 @@ export default function InvoiceDetailPage() {
     const router = useRouter();
     const id = params?.id;
     const enabled = typeof id === 'string' || typeof id === 'number';
-    const { data, isLoading, isError, isFetching } = useInvoice(enabled ? id : "");
+    const { data, isLoading, isError, isFetching, refetch } = useInvoice(enabled ? id : "");
     const sendToDian = useSendInvoice();
 
     const [isSending, setIsSending] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [comments, setComments] = useState<any[]>([]);
+    const [isPrinting, setIsPrinting] = useState(false);
+    const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
     useEffect(() => {
         if (!isFetching && isRefreshing) {
@@ -122,12 +124,13 @@ export default function InvoiceDetailPage() {
         } finally {
             setIsSending(false);
             setIsRefreshing(true);
+            refetch();
         }
     };
 
     const handlePrint = async () => {
         try {
-            showToast("Preparando documento para imprimir", "info");
+            setIsPrinting(true);
             const blob = await InvoicesService.printPdfBlob(bill.id);
             const pdfName = `Factura de venta No. ${bill.prefix || ''}${bill.number || bill.id}`;
             const file = new File([blob], pdfName + ".pdf", { type: 'application/pdf' });
@@ -146,24 +149,23 @@ export default function InvoiceDetailPage() {
 
                 const win = iframe.contentWindow;
                 if (win) {
-                    win.onafterprint = () => {
-                        document.title = originalTitle;
-                        if (document.body.contains(iframe)) {
-                            document.body.removeChild(iframe);
-                        }
-                        window.URL.revokeObjectURL(url);
-                    };
-
                     setTimeout(() => {
                         win.print();
+                        // Volver al estado normal tan pronto aparece el diálogo de impresión
+                        setIsPrinting(false);
 
-                        // Fallback cleanup just in case onafterprint doesn't fire
-                        setTimeout(() => {
+                        // Cleanup tras cerrar el diálogo
+                        const cleanup = () => {
                             document.title = originalTitle;
                             if (document.body.contains(iframe)) {
                                 document.body.removeChild(iframe);
                             }
-                        }, 300000); // 5 minutos
+                            window.URL.revokeObjectURL(url);
+                        };
+
+                        win.onafterprint = cleanup;
+                        // Fallback si onafterprint no dispara (algunos navegadores)
+                        setTimeout(cleanup, 120000);
                     }, 100);
                 }
             };
@@ -172,12 +174,13 @@ export default function InvoiceDetailPage() {
         } catch (error) {
             console.error("Error al preparar impresión:", error);
             showToast("No se pudo cargar el documento para imprimir", "error");
+            setIsPrinting(false);
         }
     };
 
     const handleDownloadPdf = async () => {
         try {
-            showToast("Descargando documento", "info");
+            setIsDownloadingPdf(true);
             const blob = await InvoicesService.downloadPdfBlob(bill.id);
             const pdfName = `Factura de venta No. ${bill.prefix || ''}${bill.number || bill.id}.pdf`;
             const file = new File([blob], pdfName, { type: 'application/pdf' });
@@ -193,6 +196,8 @@ export default function InvoiceDetailPage() {
         } catch (error) {
             console.error("Error al descargar el PDF:", error);
             showToast("No se pudo descargar el PDF", "error");
+        } finally {
+            setIsDownloadingPdf(false);
         }
     };
 
@@ -206,6 +211,8 @@ export default function InvoiceDetailPage() {
                 handleSendToDian={handleSendToDian}
                 handlePrint={handlePrint}
                 handleDownloadPdf={handleDownloadPdf}
+                isPrinting={isPrinting}
+                isDownloadingPdf={isDownloadingPdf}
             />
 
             <InvoiceDetailSummary bill={bill} />
@@ -226,9 +233,23 @@ export default function InvoiceDetailPage() {
 
             <InvoiceDetailExtraInfo bill={bill} />
 
-            <InvoiceDetailTabs payments={bill.payments || data.data?.payments || invoiceData?.payments || templateData?.payments || data.data?.payments_received || []} />
+            <InvoiceDetailTabs
+                payments={bill.payments || data.data?.payments || invoiceData?.payments || templateData?.payments || data.data?.payments_received || []}
+                creditNotes={bill.credit_notes || data.data?.credit_notes || []}
+                remissions={(
+                    (bill.remissions && bill.remissions.length > 0)
+                        ? bill.remissions
+                        : (data.data?.remissions && (data.data.remissions as any[]).length > 0)
+                            ? data.data.remissions
+                            : bill.remission
+                                ? [bill.remission]
+                                : []
+                )}
+                quotes={bill.quotation ? [bill.quotation] : (bill.quotations || (data.data as any)?.quotations || [])}
+                invoiceTotal={Number(bill.total || bill.payable_amount || 0)}
+            />
 
-            <NewInvoiceComments comments={comments} setComments={setComments} />
+            <CommentsAndReminders comments={comments} setComments={setComments} />
         </div>
     );
 }

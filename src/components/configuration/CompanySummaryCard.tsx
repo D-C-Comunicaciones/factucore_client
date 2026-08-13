@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AuthService } from "@/lib/auth";
 import Image from "next/image";
+import { FactucoreLogo } from "@/components/brand/FactucoreLogo";
 
 export function CompanySummaryCard() {
   const [company, setCompany] = useState<any>(null);
@@ -39,12 +40,10 @@ export function CompanySummaryCard() {
 
       {/* Logo Factucore */}
       <div className="flex flex-col items-center justify-center flex-1 min-w-0">
-        <Image
-          src="/img/factucore_logo_horizontal.webp"
+        <FactucoreLogo
+          variant="horizontal"
           alt="Factucore Logo"
-          width={220}
-          height={60}
-          className="object-contain"
+          className="w-[220px] h-[60px]"
         />
       </div>
 

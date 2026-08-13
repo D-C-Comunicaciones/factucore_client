@@ -138,6 +138,10 @@ export const prefetchAllCatalogs = async (
             queryKey: QUERY_KEYS.catalogs.withholdingRates(),
             queryFn: catalogsApi.getWithholdingRates,
         }),
+        queryClient.prefetchQuery({
+            queryKey: QUERY_KEYS.catalogs.currencies(),
+            queryFn: catalogsApi.getCurrencies,
+        }),
     ]);
 };
 
@@ -168,6 +172,11 @@ export function useCatalogs() {
     const warehousesQuery = useQuery({
         queryKey: QUERY_KEYS.catalogs.warehouses(),
         queryFn: catalogsApi.getWarehouses,
+    });
+
+    const currenciesQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.currencies(),
+        queryFn: catalogsApi.getCurrencies,
     });
 
     const categoriesQuery = useQuery({
@@ -513,6 +522,12 @@ export function useCatalogs() {
             "data"
         ),
 
+        currencies: extractArray(
+            currenciesQuery.data?.data,
+            "currencies",
+            "data"
+        ),
+
         isLoading:
             warehousesQuery.isLoading ||
             categoriesQuery.isLoading ||
@@ -540,6 +555,7 @@ export function useCatalogs() {
             municipalitiesQuery.isLoading ||
             countriesQuery.isLoading ||
             typeResolutionsQuery.isLoading ||
-            withholdingRatesQuery.isLoading,
+            withholdingRatesQuery.isLoading ||
+            currenciesQuery.isLoading,
     };
 }

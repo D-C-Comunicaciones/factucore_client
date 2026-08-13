@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { showToast } from "@/components/sonner/CustomToaster";
 
 export interface InvoiceLine {
     id: string; // internal row id
@@ -12,7 +13,7 @@ export interface InvoiceLine {
     precio: number;
     discountValue: number;
     discountType: 'percentage' | 'fixed';
-    taxObj: any | null; // e.g. { tax_id: 1, type: "percentage", rate: 19 }
+    taxObj: any | null; // e.g. { tax_id: 1, type: "percentage", rate: 19, name: "IVA 19%" }
     allowance_charges: any[];
     taxes: any[];
     stock_quantity: number | null;
@@ -23,11 +24,10 @@ export interface InvoiceLine {
 
 export interface GlobalAdjustment {
     id: string;
-    type: 'discount' | 'charge' | 'withholding';
-    valueType: 'percentage' | 'fixed' | string; // string for withholding rate id
+    type: 'discount' | 'charge';
+    valueType: 'percentage' | 'fixed';
     value: number;
     reason: string;
-    withholdingData?: any; // optional data for withholding rendering
 }
 
 export interface SimulationTotals {
@@ -35,11 +35,19 @@ export interface SimulationTotals {
     lineDiscountsAmount: number;
     globalDiscountsAmount: number;
     globalChargesAmount: number;
-    withholdingsAmount: number;
     taxesAmount: number;
     total: number;
     payableAmount: number;
 }
+
+/** Returns true if the tax object represents an IVA tax */
+export function isIvaTax(taxObj: any): boolean {
+    if (!taxObj) return false;
+    const name: string = taxObj.name || '';
+    return name.toUpperCase().includes('IVA');
+}
+
+
 
 export function useInvoiceBuilder() {
     const [items, setItems] = useState<InvoiceLine[]>([]);
@@ -83,7 +91,10 @@ export function useInvoiceBuilder() {
         }));
     };
 
-    const updateItemDiscount = (id: string, value: number, type: 'percentage' | 'fixed') => {
+    const updateItemDiscount = (id: string, rawValue: number, type: 'percentage' | 'fixed') => {
+        let value = Number(rawValue) || 0;
+        if (value < 0) value = 0;
+
         setItems(prev => prev.map(item => {
             if (item.id === id) {
                 const allowance_charges = value > 0 ? [{
@@ -110,7 +121,18 @@ export function useInvoiceBuilder() {
         }));
     };
 
-    const addGlobalAdjustment = (type: 'discount' | 'charge' | 'withholding', valueType: 'percentage' | 'fixed' | string, value: number, reason: string, withholdingData?: any) => {
+    const addGlobalAdjustment = (type: 'discount' | 'charge', valueType: 'percentage' | 'fixed', rawValue: number, reason: string) => {
+        let value = Number(rawValue) || 0;
+        if (value < 0) value = 0;
+
+        if (valueType === 'percentage' && value > 100) {
+            showToast("El porcentaje de ajuste no puede superar el 100%", "warning");
+            value = 100;
+        } else if (type === 'discount' && valueType === 'fixed' && value > totals.subtotal) {
+            showToast("El valor digitado excede el valor total del documento", "warning");
+            value = totals.subtotal > 0 ? totals.subtotal : 0;
+        }
+
         setGlobalAdjustments(prev => [
             ...prev,
             {
@@ -118,8 +140,7 @@ export function useInvoiceBuilder() {
                 type,
                 valueType,
                 value,
-                reason: reason || (type === 'discount' ? 'Descuento global' : type === 'charge' ? 'Recargo global' : (withholdingData?.description || 'Retención')),
-                withholdingData
+                reason: reason || (type === 'discount' ? 'Descuento global' : 'Cargo global')
             }
         ]);
     };
@@ -128,10 +149,23 @@ export function useInvoiceBuilder() {
         setGlobalAdjustments(prev => prev.filter(adj => adj.id !== id));
     };
 
-    const updateGlobalAdjustment = (id: string, field: keyof GlobalAdjustment, value: any) => {
+    const updateGlobalAdjustment = (id: string, field: keyof GlobalAdjustment, rawValue: any) => {
         setGlobalAdjustments(prev => prev.map(adj => {
             if (adj.id === id) {
-                return { ...adj, [field]: value };
+                let updated = { ...adj, [field]: rawValue };
+                if (field === 'value' || field === 'valueType') {
+                    let val = Number(updated.value) || 0;
+                    if (val < 0) val = 0;
+                    if (updated.valueType === 'percentage' && val > 100) {
+                        showToast("El porcentaje de ajuste no puede superar el 100%", "warning");
+                        val = 100;
+                    } else if (updated.type === 'discount' && updated.valueType === 'fixed' && val > totals.subtotal) {
+                        showToast("El valor digitado excede el valor total del documento", "warning");
+                        val = totals.subtotal > 0 ? totals.subtotal : 0;
+                    }
+                    updated.value = val;
+                }
+                return updated;
             }
             return adj;
         }));
@@ -143,36 +177,42 @@ export function useInvoiceBuilder() {
         let netSubtotal = 0;
         let lineDiscountsAmount = 0;
         let taxesAmount = 0;
+        let totalIvaAmount = 0;
         // Key: tax_id (string), Value: { name, amount }
         let taxBreakdown: Record<string, { name: string; amount: number }> = {};
 
         items.forEach(item => {
-            const qty = Number(item.cantidad) || 0;
-            const price = Number(item.precio) || 0;
-            const discValue = Number(item.discountValue) || 0;
+            const qty = Math.max(0, Number(item.cantidad) || 0);
+            const price = Math.max(0, Number(item.precio) || 0);
+            const rawDiscValue = Math.max(0, Number(item.discountValue) || 0);
+            const discValue = item.discountType === 'percentage' ? Math.min(100, rawDiscValue) : rawDiscValue;
 
             const lineBase = qty * price;
-            const lineDiscount = item.discountType === 'percentage' 
-                ? lineBase * (discValue / 100) 
-                : discValue;
-            
-            const lineNet = lineBase - lineDiscount;
-            
+            const lineDiscount = item.discountType === 'percentage'
+                ? lineBase * (discValue / 100)
+                : Math.min(lineBase, discValue);
+
+            const lineNet = Math.max(0, lineBase - lineDiscount);
+
             // Safeguard taxRate parsing
             let taxRate = 0;
             if (item.taxObj && item.taxObj.rate !== undefined && item.taxObj.rate !== null) {
                 taxRate = Number(item.taxObj.rate);
-                if (isNaN(taxRate)) taxRate = 0;
+                if (isNaN(taxRate) || taxRate < 0) taxRate = 0;
             }
-            
+
             const lineTax = lineNet * (taxRate / 100);
 
             grossSubtotal += (isNaN(lineBase) ? 0 : lineBase);
             netSubtotal += (isNaN(lineNet) ? 0 : lineNet);
             lineDiscountsAmount += (isNaN(lineDiscount) ? 0 : lineDiscount);
-            
+
             const safeTax = isNaN(lineTax) ? 0 : lineTax;
             taxesAmount += safeTax;
+
+            if (isIvaTax(item.taxObj)) {
+                totalIvaAmount += safeTax;
+            }
 
             if (taxRate > 0 && safeTax > 0 && item.taxObj) {
                 // Use tax_id as the grouping key for reliability
@@ -187,37 +227,29 @@ export function useInvoiceBuilder() {
 
         let globalDiscountsAmount = 0;
         let globalChargesAmount = 0;
-        let withholdingsAmount = 0;
 
         globalAdjustments.forEach(adj => {
-            if (adj.type === 'withholding') {
-                const percent = Number(adj.withholdingData?.code) || 0;
-                // Calculate withholding over netSubtotal automatically
-                const baseValue = netSubtotal;
-                const amount = baseValue * (percent / 100);
-                withholdingsAmount += isNaN(amount) ? 0 : amount;
-            } else {
-                const val = Number(adj.value) || 0;
-                const amount = adj.valueType === 'percentage' ? netSubtotal * (val / 100) : val;
-                const safeAmount = isNaN(amount) ? 0 : amount;
+            const val = Math.max(0, Number(adj.value) || 0);
+            const safeVal = adj.valueType === 'percentage' ? Math.min(100, val) : val;
+            const amount = adj.valueType === 'percentage' ? netSubtotal * (safeVal / 100) : safeVal;
+            const safeAmount = isNaN(amount) ? 0 : amount;
 
-                if (adj.type === 'discount') {
-                    globalDiscountsAmount += safeAmount;
-                } else {
-                    globalChargesAmount += safeAmount;
-                }
+            if (adj.type === 'discount') {
+                globalDiscountsAmount += safeAmount;
+            } else {
+                globalChargesAmount += safeAmount;
             }
         });
 
-        const total = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount;
-        const payableAmount = total - withholdingsAmount;
+        const rawTotal = netSubtotal + taxesAmount - globalDiscountsAmount + globalChargesAmount;
+        const total = Math.max(0, rawTotal);
+        const payableAmount = total;
 
         return {
             subtotal: isNaN(grossSubtotal) ? 0 : grossSubtotal,
             lineDiscountsAmount: isNaN(lineDiscountsAmount) ? 0 : lineDiscountsAmount,
             globalDiscountsAmount: isNaN(globalDiscountsAmount) ? 0 : globalDiscountsAmount,
             globalChargesAmount: isNaN(globalChargesAmount) ? 0 : globalChargesAmount,
-            withholdingsAmount: isNaN(withholdingsAmount) ? 0 : withholdingsAmount,
             taxesAmount: isNaN(taxesAmount) ? 0 : taxesAmount,
             taxBreakdown,
             total: isNaN(total) ? 0 : total,
@@ -237,7 +269,11 @@ export function useInvoiceBuilder() {
                 description: item.description,
                 unit_measure_code: item.unit_measure_code,
                 allowance_charges: item.allowance_charges,
-                taxes: item.taxes,
+                taxes: item.taxes?.map((t: any) => ({
+                    ...t,
+                    tax_code: t.tax_code || t.code || (t.tax_id ? String(t.tax_id) : undefined),
+                    tax_name: t.tax_name || t.name,
+                })),
                 warehouse_id: item.selected_warehouse_id
             };
             if (item.standard_code && item.standard_code.trim() !== '') {
@@ -247,7 +283,6 @@ export function useInvoiceBuilder() {
         });
 
         const global_allowance_charges = globalAdjustments
-            .filter(adj => adj.type !== 'withholding')
             .map(adj => ({
                 scope: 'global',
                 value_type: adj.valueType,
@@ -257,23 +292,6 @@ export function useInvoiceBuilder() {
                 value: adj.value
             }));
 
-        const netSubtotalForWithholding = items.reduce((sum, item) => {
-            const qty = Number(item.cantidad) || 0;
-            const price = Number(item.precio) || 0;
-            const discValue = Number(item.discountValue) || 0;
-            const lineBase = qty * price;
-            const lineDiscount = item.discountType === 'percentage' 
-                ? lineBase * (discValue / 100) 
-                : discValue;
-            return sum + (lineBase - lineDiscount);
-        }, 0);
-
-        const withholdings = globalAdjustments
-            .filter(adj => adj.type === 'withholding')
-            .map(adj => ({
-                withholding_rate_id: Number(adj.valueType)
-            }));
-
         const now = new Date();
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
@@ -281,9 +299,9 @@ export function useInvoiceBuilder() {
         return {
             ...baseData,
             type_operation_invoice: 1,
+            send_mail: true,
             items: payload_lines,
             allowance_charges: global_allowance_charges,
-            withholdings,
             billing_period: {
                 start_date: todayStr,
                 start_time: timeStr,
@@ -301,6 +319,8 @@ export function useInvoiceBuilder() {
     return {
         items,
         globalAdjustments,
+        setItems,
+        setGlobalAdjustments,
         addItem,
         removeItem,
         updateItem,

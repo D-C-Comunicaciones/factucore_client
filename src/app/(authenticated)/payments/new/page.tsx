@@ -1,19 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { NewPaymentForm } from "@/components/payments/new/NewPaymentForm";
 import { PaymentTabs } from "@/components/payments/new/PaymentTabs";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { PaymentsService } from "@/lib/payments";
+import { useEffect } from "react";
 
 export default function NewPaymentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const customerId = searchParams.get('customer_id');
+
   const [loadingGuardar, setLoadingGuardar] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [formState, setFormState] = useState<any>({
-    contact_id: null,
+    contact_id: customerId || null,
     bank_account_id: null,
     payment_date: new Date(),
     payment_form_id: null,
@@ -25,59 +30,134 @@ export default function NewPaymentPage() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validations
     let errors: Record<string, boolean> = {};
 
+    if (!formState.contact_id) errors.contact_id = true;
     if (!formState.bank_account_id) errors.bank_account_id = true;
     if (!formState.payment_form_id) errors.payment_form_id = true;
     if (!formState.payment_date) errors.payment_date = true;
 
-    let hasAmount = false;
-    let invoiceIdForPayload = null;
+    let totalAmount = 0;
+    let hasAmountForInvoices = false;
+    
     if (formState.income_type === "invoice_payment") {
       const amounts = formState.receivedAmounts || {};
       for (const invId in amounts) {
         const val = Number(String(amounts[invId]).replace(/\D/g, ''));
         if (val > 0) {
-          hasAmount = true;
-          invoiceIdForPayload = invId;
-          // We break here or just take the first one, or we can send all? 
-          // Requirements say "solo en la que quiero agregar pago. por lo que también debes enviar invoice_id..." 
-          break;
+          hasAmountForInvoices = true;
         }
       }
-      if (!hasAmount) errors.amounts = true;
+      if (!hasAmountForInvoices) errors.amounts = true;
+    } else {
+      if (!formState.other_incomes || formState.other_incomes.length === 0) {
+        errors.other_incomes = true;
+      } else {
+        totalAmount = formState.other_incomes.reduce((acc: number, curr: any) => acc + (Number(curr.total) || 0), 0);
+        if (totalAmount <= 0) errors.amounts = true;
+      }
     }
 
     setFormErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      if (errors.bank_account_id || errors.payment_form_id || errors.payment_date) {
+      if (errors.contact_id || errors.bank_account_id || errors.payment_form_id || errors.payment_date) {
         showToast("Asegúrate de completar todos los campos marcados con *.", "error", "Revisa los campos obligatorios");
+      } else if (errors.amounts) {
+        showToast("Debes ingresar un valor a pagar mayor a cero.", "error");
+      } else if (errors.other_incomes) {
+        showToast("Debes agregar al menos un concepto de ingreso.", "error");
       }
       return;
     }
 
-    // Prepare payload
-    const payload = {
-      invoice_id: invoiceIdForPayload ? parseInt(invoiceIdForPayload) : null,
-      payment_type: formState.income_type === "invoice_payment" ? 1 : 2,
-      notes: formState.notes || "",
-      cost_center_id: formState.cost_center_id || null,
-      customer_id: formState.contact_id || null,
-      bank_account_id: formState.bank_account_id,
-      payment_date: formState.payment_date,
-      payment_form_id: formState.payment_form_id,
+    const formattedDate = formState.payment_date instanceof Date 
+      ? formState.payment_date.toISOString().split('T')[0] 
+      : formState.payment_date;
+
+    const basePayment: any = {
+      contact_id: parseInt(formState.contact_id),
+      account_id: parseInt(formState.bank_account_id),
+      payment_method_id: parseInt(formState.payment_form_id),
+      payment_date: formattedDate,
     };
-    console.log("PAYLOAD:", payload);
+    if (formState.resolution_id) basePayment.resolution_id = parseInt(formState.resolution_id);
+    if (formState.notes) basePayment.notes = formState.notes;
+    if (formState.cost_center_id) basePayment.cost_center_id = parseInt(formState.cost_center_id);
+
+    let paymentsPayload: any[] = [];
+
+    if (formState.income_type === "invoice_payment") {
+      const amounts = formState.receivedAmounts || {};
+      const withholdings = formState.withholdings || {};
+      
+      for (const invId in amounts) {
+        const val = Number(String(amounts[invId]).replace(/\D/g, ''));
+        if (val > 0) {
+          const invPayment: any = {
+            ...basePayment,
+            income_type_id: 1,
+            invoice_id: parseInt(invId),
+            amount: val
+          };
+          
+          const invWithholdings = withholdings[invId];
+          if (invWithholdings && invWithholdings.length > 0) {
+            invPayment.withholdings = invWithholdings.map((ret: any) => ({
+              withholding_rate_id: parseInt(ret.type_id || ret.withholding_rate_id || ret.id),
+              base_amount: parseFloat(ret.base_amount || val),
+              amount: parseFloat(ret.amount || ret.value)
+            }));
+          }
+          paymentsPayload.push(invPayment);
+        }
+      }
+    } else {
+      const otherPayment: any = {
+        ...basePayment,
+        income_type_id: 2,
+        amount: totalAmount,
+        lines: formState.other_incomes.map((item: any) => ({
+          concept_id: parseInt(item.concept) || 1, // fallback since UI is dummy
+          quantity: parseInt(item.qty) || 1,
+          price: parseFloat(item.value) || 0,
+          tax_rate_id: item.tax ? parseInt(item.tax) : null,
+          total: parseFloat(item.total) || 0
+        }))
+      };
+
+      if (formState.retentions && formState.retentions.length > 0) {
+        otherPayment.withholdings = formState.retentions.map((ret: any) => ({
+          withholding_rate_id: parseInt(ret.id),
+          base_amount: parseFloat(ret.base_amount || totalAmount),
+          amount: parseFloat(ret.amount)
+        }));
+      }
+      paymentsPayload.push(otherPayment);
+    }
+
+    const payload = { payments: paymentsPayload };
+    console.log("PAYLOAD:", JSON.stringify(payload, null, 2));
 
     setLoadingGuardar(true);
-    setTimeout(() => {
-      showToast("Pago registrado exitosamente (Simulación)", "success");
+    try {
+      const res: any = await PaymentsService.create(payload);
+      showToast("Pagos registrados exitosamente", "success");
+      
+      const paymentId = res?.data?.payment?.id || res?.data?.id || res?.data?.[0]?.id || res?.data?.payments?.[0]?.id || res?.id || res?.[0]?.id;
+      if (paymentId) {
+        router.push(`/payments/${paymentId}`);
+      } else {
+        router.push("/payments");
+      }
+    } catch (error: any) {
+      console.error(error);
+      showToast(error.response?.data?.message || "Ocurrió un error al registrar los pagos", "error");
+    } finally {
       setLoadingGuardar(false);
-      router.push("/payments");
-    }, 1000);
+    }
   };
 
   const isFormDirty = () => {

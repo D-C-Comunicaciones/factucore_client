@@ -20,6 +20,7 @@ export function NewInvoiceOptions({
     warehouseOptions,
     priceListOptions,
     sellerOptions,
+    costCenterOptions = [],
     selectedWarehouseId,
     setSelectedWarehouseId,
     selectedPriceListId,
@@ -32,10 +33,13 @@ export function NewInvoiceOptions({
     setShowRemissionBar,
     selectedSeller,
     setSelectedSeller,
+    selectedCostCenter,
+    setSelectedCostCenter,
 }: {
     warehouseOptions: { value: string; label: string }[];
     priceListOptions: { value: string; label: string }[];
     sellerOptions: { value: string; label: string }[];
+    costCenterOptions?: { value: string; label: string; description?: string }[];
     selectedWarehouseId: number | null;
     setSelectedWarehouseId: (id: number | null) => void;
     selectedPriceListId: number | null;
@@ -48,6 +52,8 @@ export function NewInvoiceOptions({
     setShowRemissionBar: (show: boolean) => void;
     selectedSeller?: string | null;
     setSelectedSeller?: (id: string | null) => void;
+    selectedCostCenter?: string | null;
+    setSelectedCostCenter?: (id: string | null) => void;
 }) {
     const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
     const [isPriceListModalOpen, setIsPriceListModalOpen] = useState(false);
@@ -62,7 +68,7 @@ export function NewInvoiceOptions({
                 status: 1
             });
             await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.catalogs.warehouses() });
-            
+
             const newWarehouse = res?.data?.warehouse || res?.data || res;
             if (newWarehouse?.id) {
                 setSelectedWarehouseId(Number(newWarehouse.id));
@@ -76,40 +82,38 @@ export function NewInvoiceOptions({
 
     return (
         <div className="bg-white rounded-lg border border-border p-4 md:p-6">
-            <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-nowrap items-end gap-3 w-full overflow-x-auto pb-1">
 
                 {/* TIPO DOCUMENTO */}
-                <div className="shrink-0">
+                <div className="flex-1 min-w-[170px] max-w-[230px]">
                     <label className="block text-sm font-medium text-foreground mb-2">
                         Tipo de documento
                     </label>
-                    <div className="flex gap-1 bg-gray-50 p-1 border border-gray-200 rounded-lg h-[38px] items-center min-w-[210px]">
+                    <div className="flex gap-1 bg-gray-50 p-1 border border-gray-200 rounded-lg h-[34px] items-center w-full">
                         <button
                             onClick={() => setTipoDoc('factura')}
-                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 ${
-                                tipoDoc === 'factura'
+                            className={`flex-[3] min-w-0 h-[26px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-2 flex items-center justify-center ${tipoDoc === 'factura'
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-transparent text-gray-500 hover:text-gray-900"
-                            }`}
+                                }`}
                         >
                             Factura de venta
                         </button>
                         <button
                             onClick={() => setTipoDoc('tiquete')}
-                            className={`flex-1 h-[30px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-3 ${
-                                tipoDoc === 'tiquete'
+                            className={`flex-1 min-w-0 h-[26px] rounded-md text-xs font-semibold cursor-pointer transition-all whitespace-nowrap px-2 flex items-center justify-center ${tipoDoc === 'tiquete'
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-transparent text-gray-500 hover:text-gray-900"
-                            }`}
+                                }`}
                         >
-                            Tiquete
+                            POS
                         </button>
                     </div>
                 </div>
 
                 {/* BODEGA */}
                 {showWarehouse && (
-                    <div className="shrink-0 min-w-[160px]">
+                    <div className="flex-1 min-w-[110px] max-w-[180px]">
                         <div className="flex items-center gap-1 mb-2">
                             <label className="text-sm font-medium text-foreground">
                                 Bodega
@@ -146,7 +150,7 @@ export function NewInvoiceOptions({
 
                 {/* LISTA DE PRECIOS */}
                 {showPriceList && (
-                    <div className="shrink-0 min-w-[160px]">
+                    <div className="flex-1 min-w-[110px] max-w-[180px]">
                         <div className="flex items-center gap-1 mb-2">
                             <label className="text-sm font-medium text-foreground">
                                 Lista de precios
@@ -182,7 +186,7 @@ export function NewInvoiceOptions({
                 )}
 
                 {/* VENDEDOR */}
-                <div className="shrink-0 min-w-[170px]">
+                <div className="flex-1 min-w-[110px] max-w-[180px]">
                     <div className="flex items-center gap-1 mb-2">
                         <label className="text-sm font-medium text-foreground">
                             Vendedor
@@ -216,27 +220,51 @@ export function NewInvoiceOptions({
                     />
                 </div>
 
-                {/* AGREGAR REMISIÓN */}
-                <div className="shrink-0 flex items-end h-[38px]">
-                    <button 
-                        onClick={() => setShowRemissionBar(!showRemissionBar)}
+                {/* CENTRO DE COSTOS */}
+                <div className="flex-1 min-w-[110px] max-w-[180px]">
+                    <div className="flex items-center gap-1 mb-2">
+                        <label className="text-sm font-medium text-foreground">
+                            Centro de costos
+                        </label>
+                        <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help hover:text-primary/70 transition-colors" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
+                                    Centro de costos asociado a esta factura.
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                    <SearchableSelect
+                        value={selectedCostCenter || ""}
+                        onValueChange={setSelectedCostCenter as any}
+                        options={costCenterOptions}
+                        placeholder="Seleccionar centro de costos"
+                        searchPlaceholder="Buscar centro de costos..."
+                    />
+                </div>
+
+                <div className="shrink-0 flex items-end h-[38px] gap-2">
+                    <button
+                        onClick={() => { }}
                         className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors cursor-pointer whitespace-nowrap h-full"
                     >
                         <Plus className="w-4 h-4 shrink-0" />
-                        Agregar remisión
+                        Orden de compra
                         <TooltipProvider delayDuration={200}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <HelpCircle className="w-3.5 h-3.5 text-primary ml-0.5 shrink-0 cursor-help hover:text-primary/70 transition-colors" />
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
-                                    Asocia una remisión existente a esta factura.
+                                    Asocia una orden de compra a esta factura.
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
                     </button>
                 </div>
-
             </div>
 
             <NewWarehouseModal

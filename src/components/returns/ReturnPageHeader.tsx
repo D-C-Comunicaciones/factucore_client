@@ -37,7 +37,7 @@ export function ReturnPageHeader({ onNavigate }: ReturnPageHeaderProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-sm border-slate-200 bg-white text-slate-700 hover:bg-primary/10 hover:text-slate-900 transition-colors"
+                className="cursor-pointer text-sm border-slate-200 bg-white text-slate-700 hover:bg-gray-100 hover:text-slate-900 transition-colors"
               >
                 Más opciones
                 <ChevronDown className="w-4 h-4 ml-1" />
@@ -50,7 +50,7 @@ export function ReturnPageHeader({ onNavigate }: ReturnPageHeaderProps) {
             >
               <DropdownMenuItem
                 onClick={() => onNavigate?.('nueva-devolucion-xml')}
-                className="hover:bg-primary/10 focus:bg-primary/10 transition-colors"
+                className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100 transition-colors"
               >
                 <Upload className="w-4 h-4 mr-2 text-slate-500" />
                 Nueva devolución desde XML
@@ -58,7 +58,7 @@ export function ReturnPageHeader({ onNavigate }: ReturnPageHeaderProps) {
 
               <DropdownMenuItem
                 onClick={() => onNavigate?.('exportar')}
-                className="hover:bg-primary/10 focus:bg-primary/10 transition-colors"
+                className="cursor-pointer hover:bg-gray-100 focus:bg-gray-100 transition-colors"
               >
                 <FileEdit className="w-4 h-4 mr-2 text-slate-500" />
                 Exportar

@@ -54,6 +54,7 @@ export default function ItemsPage() {
   const [exportModalOpen, setExportModalOpen] = React.useState(false);
   const [selectedPriceList, setSelectedPriceList] = React.useState<string>("General");
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [fetchKey, setFetchKey] = React.useState(0);
 
   // Form State
   const [form, setForm] = React.useState<FormState>({
@@ -128,11 +129,28 @@ export default function ItemsPage() {
     return apiParams;
   }, [selectedPriceList, columnFilters, catalogs]);
 
+  const params = React.useMemo(() => {
+    return {
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      page,
+      per_page: perPage,
+      ...buildApiFilters(),
+    };
+  }, [debouncedSearch, page, perPage, buildApiFilters]);
+
+  const paramsKey = JSON.stringify(params);
+  const prevParamsKeyRef = React.useRef<string>("");
+
+  React.useEffect(() => {
+    if (prevParamsKeyRef.current !== paramsKey) {
+      prevParamsKeyRef.current = paramsKey;
+      setFetchKey((k) => k + 1);
+    }
+  }, [paramsKey]);
+
   const { data, isLoading: isLoadingItems, isRefetching, refetch } = useItems({
-    ...(debouncedSearch ? { search: debouncedSearch } : {}),
-    page,
-    per_page: perPage,
-    ...buildApiFilters(),
+    params,
+    fetchKey,
   });
 
   const { mutate: toggleStatus } = useToggleItemStatus();

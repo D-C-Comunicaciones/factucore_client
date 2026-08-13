@@ -1,34 +1,68 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { NewInvoiceFooter } from "@/components/invoice/new/NewInvoiceFooter";
 import { NewInvoiceHeader } from "@/components/invoice/new/NewInvoiceHeader";
-import { NewInvoiceComments } from "@/components/invoice/new/NewInvoiceComments";
+import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { NewInvoiceMain } from "@/components/invoice/new/NewInvoiceMain";
 import { NewInvoiceOptions } from "@/components/invoice/new/NewInvoiceOptions";
 import { NewInvoicePayment } from "@/components/invoice/new/NewInvoicePayment";
 import { PreviewModal } from "@/components/invoice/new/PreviewModal";
 import { useCreateInvoice } from "@/hooks/invoices/useInvoices";
-import { useInvoiceBuilder } from "@/hooks/invoices/useInvoiceBuilder";
+import { useInvoiceBuilder, isIvaTax } from "@/hooks/invoices/useInvoiceBuilder";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useSellersList } from "@/hooks/sellers/useSellers";
+import { useQuote } from "@/hooks/quotes/useQuotes";
+import { useRemission } from "@/hooks/remissions/useRemissions";
+import { mapQuoteItemsToLines, mapQuoteGlobalAdjustments } from "@/lib/quoteLineMapping";
+import { mapRemissionItemsToLines, mapRemissionGlobalAdjustments } from "@/lib/remissionLineMapping";
 import { InvoicesService } from "@/lib/invoices";
+import { shouldValidateLineStock } from "@/lib/itemStock";
 import { AuthService } from "@/lib/auth";
+import { getSession } from "@/common/interfaces/session";
 import { useResolutions } from "@/hooks/useResolutions";
 import type { Resolution } from "@/lib/resolutions";
+import { useQuery } from "@tanstack/react-query";
+import { costCentersApi } from "@/lib/costCenters";
 
 import { showToast } from "@/components/sonner/CustomToaster";
 
 export default function NewInvoicePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const quoteId = searchParams?.get("quoteId");
+  const remissionId = searchParams?.get("remissionId");
   const createInvoice = useCreateInvoice();
   const catalogData = useCatalogs();
   const { data: sellersData } = useSellersList();
+  const { data: quoteResponse } = useQuote(quoteId || "");
+  const { data: remissionResponse } = useRemission(remissionId || "");
   const [tipoDoc, setTipoDoc] = useState<'factura' | 'tiquete'>('factura');
   const resolutionTypeFilter = tipoDoc === 'tiquete' ? 2 : 1; // 1=INVOICE, 2=POS
   const { resolutions, refetch: refetchResolutions } = useResolutions({ type_resolution: resolutionTypeFilter, is_active: true });
   const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, any>>({});
+  const [selectedCostCenter, setSelectedCostCenter] = useState<string | null>(null);
+
+  const { data: costCentersResp } = useQuery({
+    queryKey: ['costCenters', { is_active: true }],
+    queryFn: async () => await costCentersApi.getCostCenters({ is_active: true })
+  });
+  
+  const { data: costCentersSettingsResp } = useQuery({
+    queryKey: ['costCenterSettings', { type_document: 'invoice' }],
+    queryFn: async () => await costCentersApi.getSettings({ type_document: 'invoice' })
+  });
+
+  useEffect(() => {
+    if (costCentersSettingsResp?.data) {
+      const settings = Array.isArray(costCentersSettingsResp.data) ? costCentersSettingsResp.data : (costCentersSettingsResp.data.settings || []);
+      const invoiceSetting = settings.find((s: any) => s.document_type === 'invoice');
+      if (invoiceSetting?.default_cost_center_id && !selectedCostCenter) {
+        setSelectedCostCenter(invoiceSetting.default_cost_center_id.toString());
+      }
+    }
+  }, [costCentersSettingsResp]);
 
   // Set is_main resolution as default when resolutions load or tipoDoc changes
   useEffect(() => {
@@ -73,6 +107,68 @@ export default function NewInvoicePage() {
   // Initialize the builder hook
   const invoiceBuilder = useInvoiceBuilder();
 
+  // Prefill items, discounts and charges when creating an invoice from a quote ("Convertir a factura")
+  const quoteDataForInvoice = quoteResponse?.data?.quotation || quoteResponse?.data?.quote || quoteResponse?.data?.bill;
+  const quoteItemsForInvoice = (quoteResponse?.data as any)?.items || quoteDataForInvoice?.lines || quoteDataForInvoice?.quote_lines || [];
+  const quotePrefillAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!quotePrefillAppliedRef.current && quoteId && quoteDataForInvoice) {
+      quotePrefillAppliedRef.current = true;
+      invoiceBuilder.setItems(mapQuoteItemsToLines(quoteItemsForInvoice) as any);
+      invoiceBuilder.setGlobalAdjustments(mapQuoteGlobalAdjustments(quoteDataForInvoice) as any);
+
+      const warehouseId = quoteDataForInvoice.warehouse?.id ?? quoteDataForInvoice.warehouse_id;
+      const priceListId = quoteDataForInvoice.price_list?.id ?? quoteDataForInvoice.price_list_id;
+      const costCenterId = quoteDataForInvoice.cost_center?.id ?? quoteDataForInvoice.cost_center_id;
+      const sellerIdRaw = quoteDataForInvoice.seller?.id ?? quoteDataForInvoice.seller_id;
+      if (warehouseId) setSelectedWarehouseId(Number(warehouseId));
+      if (priceListId) setSelectedPriceListId(Number(priceListId));
+      if (costCenterId) setSelectedCostCenter(String(costCenterId));
+
+      const quoteNumberLabel = `${quoteDataForInvoice.prefix || ''}${quoteDataForInvoice.number || quoteDataForInvoice.id}`;
+      const sourceNote = `Factura Elaborada a partir de la cotización: ${quoteNumberLabel}`;
+      const originalNotes = quoteDataForInvoice.notes || quoteDataForInvoice.observation || '';
+      const combinedNotes = originalNotes ? `${originalNotes}, ${sourceNote}` : sourceNote;
+
+      setFormState((prev: any) => ({
+        ...prev,
+        seller_id: sellerIdRaw != null ? String(sellerIdRaw) : prev.seller_id,
+        notes: combinedNotes,
+      }));
+    }
+  }, [quoteId, quoteDataForInvoice, quoteItemsForInvoice]);
+
+  // Prefill items, discounts and charges when creating an invoice from a remission ("Convertir a factura")
+  const remissionDataForInvoice = remissionResponse?.data?.remission;
+  const remissionItemsForInvoice = (remissionResponse?.data as any)?.items || remissionDataForInvoice?.lines || remissionDataForInvoice?.remission_lines || [];
+  const remissionPrefillAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!remissionPrefillAppliedRef.current && remissionId && remissionDataForInvoice) {
+      remissionPrefillAppliedRef.current = true;
+      invoiceBuilder.setItems(mapRemissionItemsToLines(remissionItemsForInvoice) as any);
+      invoiceBuilder.setGlobalAdjustments(mapRemissionGlobalAdjustments(remissionDataForInvoice) as any);
+
+      const warehouseId = remissionDataForInvoice.warehouse?.id ?? remissionDataForInvoice.warehouse_id;
+      const priceListId = remissionDataForInvoice.price_list?.id ?? remissionDataForInvoice.price_list_id;
+      const costCenterId = remissionDataForInvoice.cost_center?.id ?? remissionDataForInvoice.cost_center_id;
+      const sellerIdRaw = remissionDataForInvoice.seller?.id ?? remissionDataForInvoice.seller_id;
+      if (warehouseId) setSelectedWarehouseId(Number(warehouseId));
+      if (priceListId) setSelectedPriceListId(Number(priceListId));
+      if (costCenterId) setSelectedCostCenter(String(costCenterId));
+
+      const remissionNumberLabel = `${remissionDataForInvoice.prefix || ''}${remissionDataForInvoice.number || remissionDataForInvoice.id}`;
+      const sourceNote = `Factura creada a partir de remisión No. ${remissionNumberLabel}`;
+      const originalNotes = remissionDataForInvoice.notes || remissionDataForInvoice.observation || '';
+      const combinedNotes = originalNotes ? `${originalNotes}, ${sourceNote}` : sourceNote;
+
+      setFormState((prev: any) => ({
+        ...prev,
+        seller_id: sellerIdRaw != null ? String(sellerIdRaw) : prev.seller_id,
+        notes: combinedNotes,
+      }));
+    }
+  }, [remissionId, remissionDataForInvoice, remissionItemsForInvoice]);
+
   // Set default warehouse and price list when catalogs load
   useEffect(() => {
     if (catalogData.warehouses?.length > 0 && !selectedWarehouseId) {
@@ -95,6 +191,11 @@ export default function NewInvoicePage() {
 
   const sellersArray = Array.isArray(sellersData) ? sellersData : (sellersData?.data || []);
   const sellerOptions = sellersArray.map((s: any) => ({ value: String(s.id), label: s.name }));
+
+  const costCentersData = Array.isArray(costCentersResp?.data?.['cost-centers']) 
+    ? costCentersResp?.data['cost-centers'] 
+    : (Array.isArray(costCentersResp?.data) ? costCentersResp.data : []);
+  const costCenterOptions = costCentersData.map((cc: any) => ({ value: cc.id.toString(), label: cc.name, description: cc.description || "" }));
 
   const paymentMethods = catalogData.paymentMethods?.map((pm: any) => ({
     value: pm.id.toString(),
@@ -128,23 +229,43 @@ export default function NewInvoicePage() {
     sellerOptions,
     paymentMethods,
     paymentForms,
+    user: AuthService.getUser() as any,
   };
 
-    const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
-    const isContadoForm = !formState.payment_form_id || !selectedForm ||
-      selectedForm.label?.toLowerCase().includes("contado") ||
-      selectedForm.value?.toLowerCase() === "contado" ||
-      selectedForm.value === "1";
+  const selectedForm = paymentForms.find((f: any) => f.value === String(formState.payment_form_id));
+  const isContadoForm = !formState.payment_form_id || !selectedForm ||
+    selectedForm.label?.toLowerCase().includes("contado") ||
+    selectedForm.value?.toLowerCase() === "contado" ||
+    selectedForm.value === "1";
 
-    const validateForm = () => {
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     // 1. Contacto
-    if (!formState.contact_id) {
+    if (!formState.customer) {
       newErrors.contact_id = "El contacto es requerido";
       setErrors(newErrors);
       showToast("El contacto es requerido", "error");
       return false;
+    } else {
+      const c = formState.customer;
+      const missing = [];
+      if (!c.identification_number) missing.push("Número de identificación");
+      if (c.type_document_identification?.code === "31" && (c.verification_digit === null || c.verification_digit === undefined)) missing.push("Dígito de verificación (NIT)");
+      if (c.type_organization?.code === "1" && !c.registration_name) missing.push("Razón social");
+      if (c.type_organization?.code === "2" && (!c.first_name || !c.last_name)) missing.push("Nombres y Apellidos");
+      if (!c.email) missing.push("Correo electrónico");
+      if (!c.type_document_identification) missing.push("Tipo de documento");
+      if (!c.type_organization) missing.push("Tipo de organización");
+      if (!c.type_regime) missing.push("Tipo de régimen");
+
+
+      if (missing.length > 0) {
+        newErrors.contact_id = "Faltan datos requeridos del cliente";
+        setErrors(newErrors);
+        showToast(`Faltan datos en el cliente: ${missing.join(", ")}`, "error");
+        return false;
+      }
     }
 
     // 2. Forma / Medio de pago
@@ -191,11 +312,11 @@ export default function NewInvoicePage() {
         showToast("Por favor ingrese una cantidad mayor a 0 en los productos seleccionados.", "error");
         return false;
       }
-      
+
       const outOfStockItem = invoiceBuilder.items.find((item: any) => {
-        if (item.is_inventoriable && !item.allow_negative_stock) {
-           const availableStock = item.stock_quantity || 0;
-           return item.cantidad > availableStock;
+        if (shouldValidateLineStock(item)) {
+          const availableStock = item.stock_quantity || 0;
+          return item.cantidad > availableStock;
         }
         return false;
       });
@@ -206,6 +327,8 @@ export default function NewInvoicePage() {
         showToast(`El producto "${outOfStockItem.item}" no tiene stock suficiente. Stock disponible: ${outOfStockItem.stock_quantity || 0}, Cantidad solicitada: ${outOfStockItem.cantidad}.`, "error");
         return false;
       }
+
+
     }
 
     // 4. Pago
@@ -227,6 +350,11 @@ export default function NewInvoicePage() {
       }
     }
 
+    if (invoiceBuilder.totals.payableAmount < 0) {
+        showToast("El total del documento no puede ser un valor negativo", "error");
+        return false;
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       showToast(
@@ -246,41 +374,130 @@ export default function NewInvoicePage() {
 
     if (formState.paymentData && Number(formState.paymentData.amount) > invoiceBuilder.totals.total) {
       const maxAllowed = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(invoiceBuilder.totals.total);
-      showToast(`El pago que intenta registrar excede el valor facturado. El máximo que puede registrar es ${maxAllowed} (recargos, descuentos e impuestos incluidos, sin contar retenciones).`, "warning");
+      showToast(`El pago que intenta registrar excede el valor facturado. El máximo que puede registrar es ${maxAllowed} (cargos, descuentos e impuestos incluidos, sin contar retenciones).`, "warning");
       return;
     }
 
     setLoadingGuardar(true);
     try {
-      const basePayload = invoiceBuilder.buildPayload({
+      const rawPayload = invoiceBuilder.buildPayload({
         ...formState,
-        numbering_range_id: selectedResolutionId,
+        resolution_id: selectedResolutionId,
       });
-      basePayload.type_operation_id = 1;
+
+      const session = getSession();
+      if (session?.user?.id) {
+        rawPayload.user_id = session.user.id;
+      }
+
+      if (rawPayload.customer) {
+        const c = rawPayload.customer;
+        rawPayload.customer = {
+          id: c.id,
+          identification_number: c.identification_number,
+          verification_digit: c.verification_digit,
+          registration_name: c.registration_name,
+          first_name: c.first_name,
+          last_name: c.last_name,
+          address: c.address,
+          email: c.email,
+          phone1: c.phone1,
+          type_document_identification: c.type_document_identification ? {
+            code: c.type_document_identification.code,
+            name: c.type_document_identification.name
+          } : undefined,
+          type_organization: c.type_organization ? {
+            code: c.type_organization.code,
+            name: c.type_organization.name
+          } : undefined,
+          type_regime: c.type_regime ? {
+            code: c.type_regime.code,
+            name: c.type_regime.name
+          } : undefined,
+          type_liabilities: c.type_liabilities && c.type_liabilities.length > 0 ? c.type_liabilities.map((t: any) => ({
+            code: t.code,
+            name: t.name
+          })) : [{ code: "R-99-PN", name: "No aplica" }],
+          municipality: c.municipality ? {
+            code: c.municipality.code,
+            name: c.municipality.name,
+            department: c.municipality.department ? {
+              code: c.municipality.department.code,
+              name: c.municipality.department.name,
+              country: c.municipality.department.country ? {
+                code: c.municipality.department.country.code,
+                name: c.municipality.department.country.name
+              } : undefined
+            } : undefined
+          } : undefined
+        };
+      }
 
       if (formState.paymentData) {
-        basePayload.payments = [formState.paymentData];
-      } else {
-        delete basePayload.payments;
-      }
-      delete basePayload.paymentData;
-      delete basePayload.comments;
-
-      if (!basePayload.seller_id || basePayload.seller_id === "") {
-        basePayload.seller_id = null;
-      } else {
-        basePayload.seller_id = Number(basePayload.seller_id);
+        rawPayload.payments = [formState.paymentData];
       }
 
-      if (isContadoForm) {
-        delete basePayload.payment_term_id;
-      } else {
-        delete basePayload.payment_method_id;
+      let sellerId: number | null = null;
+      if (rawPayload.seller_id && rawPayload.seller_id !== "") {
+        sellerId = Number(rawPayload.seller_id);
       }
+
+      const {
+        resolution_id,
+        payment_form_id,
+        payment_method_id,
+        payment_term_id,
+        payment_due_date,
+        user_id,
+        notes,
+        billing_period,
+        customer,
+        items,
+        allowance_charges,
+        seller_id,
+        ...restRaw
+      } = rawPayload;
+
+      // Ensure the payload is strictly ordered: single properties first, then objects/arrays
+      const finalPayload: any = {
+        resolution_id,
+        type_operation_invoice: 1,
+        type_currency_id: 35,
+        seller_id: sellerId,
+        cost_center_id: selectedCostCenter ? Number(selectedCostCenter) : undefined,
+        payment_form_id,
+        payment_method_id,
+        payment_term_id: isContadoForm ? undefined : payment_term_id,
+        payment_due_date,
+        user_id,
+        notes: notes || "",
+        ...restRaw, // Include any other root properties (like type_document_id)
+        billing_period,
+        customer,
+        items,
+        allowance_charges,
+      };
+
+      if (rawPayload.payments) {
+        finalPayload.payments = rawPayload.payments;
+      }
+
+      // Si la factura se está creando a partir de una cotización ("Convertir a factura"), enlazarla
+      if (quoteId) {
+        finalPayload.quotation_id = Number(quoteId);
+      }
+
+      // Si la factura se está creando a partir de una remisión ("Convertir a factura"), enlazarla
+      if (remissionId) {
+        finalPayload.remission_id = Number(remissionId);
+      }
+
+      // Remove undefined values cleanly
+      Object.keys(finalPayload).forEach(key => finalPayload[key] === undefined && delete finalPayload[key]);
 
       if (actionType === "SEND") {
         // Emitir directamente a la DIAN: POST /invoices/send (sin save_action)
-        const res: any = await InvoicesService.sendDirect(basePayload);
+        const res: any = await InvoicesService.sendDirect(finalPayload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
 
@@ -298,7 +515,7 @@ export default function NewInvoicePage() {
 
       } else if (actionType === "DRAFT") {
         // Guardar como borrador: POST /invoices con save_action DRAFT
-        const payload = { ...basePayload, save_action: "DRAFT" };
+        const payload = { ...finalPayload, save_action: "DRAFT" };
         const res: any = await createInvoice.mutateAsync(payload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
@@ -307,7 +524,7 @@ export default function NewInvoicePage() {
 
       } else if (actionType === "CREATE_NEW") {
         // Guardar y crear nueva: POST /invoices con save_action SAVED + limpiar form
-        const payload = { ...basePayload, save_action: "SAVED" };
+        const payload = { ...finalPayload, save_action: "SAVED" };
         await createInvoice.mutateAsync(payload);
         showToast("Factura guardada correctamente", "success");
         invoiceBuilder.reset();
@@ -315,7 +532,7 @@ export default function NewInvoicePage() {
         setFormState({ notes: "", contact_id: null, payment_form_id: null, payment_method_id: null, payment_due_date: null });
 
       } else if (actionType === "PRINT") {
-        const payload = { ...basePayload, save_action: "SAVED" };
+        const payload = { ...finalPayload, save_action: "SAVED" };
         const res: any = await createInvoice.mutateAsync(payload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
@@ -323,7 +540,7 @@ export default function NewInvoicePage() {
         router.push(`/invoices/${id}`);
 
       } else if (actionType === "SEND_EMAIL") {
-        const payload = { ...basePayload, save_action: "SAVED", send_email: true };
+        const payload = { ...finalPayload, save_action: "SAVED", send_email: true };
         const res: any = await createInvoice.mutateAsync(payload);
         const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
@@ -371,13 +588,16 @@ export default function NewInvoicePage() {
             selectedPriceListId={selectedPriceListId}
             setSelectedPriceListId={setSelectedPriceListId}
             selectedSeller={formState.seller_id}
-            setSelectedSeller={(val) => setFormState({ ...formState, seller_id: val })}
+            setSelectedSeller={(val) => setFormState((prev: any) => ({ ...prev, seller_id: val }))}
             showWarehouse={showWarehouse}
             showPriceList={showPriceList}
             tipoDoc={tipoDoc}
             setTipoDoc={setTipoDoc}
             showRemissionBar={showRemissionBar}
             setShowRemissionBar={setShowRemissionBar}
+            costCenterOptions={costCenterOptions}
+            selectedCostCenter={selectedCostCenter}
+            setSelectedCostCenter={setSelectedCostCenter}
           />
           <NewInvoiceMain
             mainData={mainData}
@@ -391,6 +611,7 @@ export default function NewInvoicePage() {
             selectedResolutionId={selectedResolutionId}
             setSelectedResolutionId={setSelectedResolutionId}
             onRefetchResolutions={refetchResolutions}
+            initialContactId={quoteDataForInvoice?.contact_id ?? remissionDataForInvoice?.contact_id}
             formState={formState}
             setFormState={setFormState}
             notes={formState.notes}
@@ -406,7 +627,7 @@ export default function NewInvoicePage() {
             onPaymentDataChange={(data) => setFormState({ ...formState, paymentData: data })}
             errors={errors}
           />
-          <NewInvoiceComments
+          <CommentsAndReminders
             comments={formState.comments || []}
             setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
           />
@@ -426,7 +647,7 @@ export default function NewInvoicePage() {
         onOpenChange={setShowPreviewModal}
         data={showPreviewModal ? invoiceBuilder.buildPayload({
           ...formState,
-          numbering_range_id: selectedResolutionId,
+          resolution_id: selectedResolutionId,
         }) : null}
       />
     </div>

@@ -1,4 +1,5 @@
 import { ChevronRight, Plus } from 'lucide-react';
+import { showToast } from '@/components/sonner/CustomToaster';
 import { SidebarMenuItem } from './Sidebar';
 
 interface MenuItemProps {
@@ -31,7 +32,13 @@ export function MenuItem({
     <div className={`${isCollapsed && !showLabel ? 'mx-0' : 'mx-1.5 mr-[1.125rem]'}`}>
 
       <div
-        onClick={() => {
+        onClick={(e) => {
+          if (item.isDisabled) {
+            e.preventDefault();
+            e.stopPropagation();
+            showToast("Usted no tiene permiso para usar esta función, contacte con el administrador.", "error");
+            return;
+          }
           if (isExpandable) {
             onToggle?.();
           } else {
@@ -41,10 +48,11 @@ export function MenuItem({
         className={`
       relative group w-full flex items-stretch
       rounded-md overflow-hidden
-      cursor-pointer transition-colors
+      transition-colors
 
       ${isCollapsed && !showLabel ? 'justify-center h-10' : 'h-8'}
-      ${isActive ? 'bg-background' : 'hover:bg-background'}
+      ${isActive ? 'bg-background' : ''}
+      ${item.isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-background'}
     `}
       >
 

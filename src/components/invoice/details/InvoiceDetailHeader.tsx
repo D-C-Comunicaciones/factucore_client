@@ -39,6 +39,8 @@ interface InvoiceDetailHeaderProps {
     handleSendToDian: () => void;
     handlePrint: () => void;
     handleDownloadPdf?: () => void;
+    isPrinting?: boolean;
+    isDownloadingPdf?: boolean;
 }
 
 export function InvoiceDetailHeader({
@@ -48,7 +50,9 @@ export function InvoiceDetailHeader({
     isSending,
     handleSendToDian,
     handlePrint,
-    handleDownloadPdf
+    handleDownloadPdf,
+    isPrinting,
+    isDownloadingPdf
 }: InvoiceDetailHeaderProps) {
     const defaultBtnClass = "h-9 bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-700 cursor-pointer transition-colors shadow-sm font-medium";
     
@@ -87,21 +91,46 @@ export function InvoiceDetailHeader({
                     </Button>
                 )}
                 {canEmit && (
-                    <Button variant="default" size="sm" className="h-9 bg-[#2b5deb] hover:bg-[#204bc2] text-white border-transparent cursor-pointer shadow-sm" onClick={handleSendToDian} disabled={isSending}>
-                        {isSending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />} 
-                        Emitir
+                    <Button variant="default" size="sm" className="relative h-9 bg-[#2b5deb] hover:bg-[#204bc2] text-white border-transparent cursor-pointer shadow-sm disabled:opacity-100 disabled:bg-[#2b5deb]" onClick={handleSendToDian} disabled={isSending}>
+                        {isSending ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white" />
+                                <span className="invisible flex items-center"><Send className="w-4 h-4 mr-2" /> Emitir</span>
+                            </>
+                        ) : (
+                            <><Send className="w-4 h-4 mr-2" /> Emitir</>
+                        )}
                     </Button>
                 )}
-                <Button variant="outline" size="sm" className={defaultBtnClass} onClick={handlePrint}>
-                    <Printer className="w-4 h-4 mr-2" /> Imprimir
+                <Button variant="outline" size="sm" className={`relative ${defaultBtnClass} disabled:opacity-100 disabled:bg-white`} onClick={handlePrint} disabled={isPrinting}>
+                    {isPrinting ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#2b5deb]" />
+                            <span className="invisible flex items-center"><Printer className="w-4 h-4 mr-2" /> Imprimir</span>
+                        </>
+                    ) : (
+                        <><Printer className="w-4 h-4 mr-2" /> Imprimir</>
+                    )}
                 </Button>
-                <Button variant="outline" size="sm" className={defaultBtnClass} onClick={handleDownloadPdf}>
-                    <Download className="w-4 h-4 mr-2" /> Descargar PDF
+                <Button variant="outline" size="sm" className={`relative ${defaultBtnClass} disabled:opacity-100 disabled:bg-white`} onClick={handleDownloadPdf} disabled={isDownloadingPdf}>
+                    {isDownloadingPdf ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#2b5deb]" />
+                            <span className="invisible flex items-center"><Download className="w-4 h-4 mr-2" /> Descargar PDF</span>
+                        </>
+                    ) : (
+                        <><Download className="w-4 h-4 mr-2" /> Descargar PDF</>
+                    )}
                 </Button>
                 <Button variant="outline" size="sm" className={defaultBtnClass}>
                     <Share2 className="w-4 h-4 mr-2" /> Compartir
                 </Button>
-                <Button variant="outline" size="sm" className={defaultBtnClass}>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={defaultBtnClass}
+                    onClick={() => router.push(`/payments/new?customer_id=${bill?.customer_id || bill?.contact_id || ''}`)}
+                >
                     <Plus className="w-4 h-4 mr-2" /> Agregar pago
                 </Button>
                 
@@ -116,7 +145,12 @@ export function InvoiceDetailHeader({
                         <DropdownMenuItem onClick={() => setShowAnularDialog(true)} className="cursor-pointer hover:bg-slate-50">Anular</DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Cerrar sin pago</DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Aplicar anticipo</DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Aplicar nota de crédito</DropdownMenuItem>
+                        <DropdownMenuItem 
+                            className="cursor-pointer hover:bg-slate-50"
+                            onClick={() => router.push(`/returns/new?clientId=${bill?.customer_id || bill?.contact_id || ''}&invoiceId=${bill?.id || ''}`)}
+                        >
+                            Aplicar nota de crédito
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Aplicar nota de débito</DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Adjuntar archivos</DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Convertir a borrador</DropdownMenuItem>

@@ -9,7 +9,7 @@ import {
   VisibilityState,
   ColumnFiltersState,
 } from "@tanstack/react-table";
-import { Trash2, X } from "lucide-react";
+import { Printer, X, FileText } from "lucide-react";
 import { getPaymentColumns } from "@/components/payments/table/columns";
 import { PaymentTableToolbar } from "@/components/payments/table/PaymentTableToolbar";
 import { PaymentFilterChips } from "@/components/payments/table/PaymentFilterChips";
@@ -173,41 +173,45 @@ export function PaymentTable({
     <div className="space-y-4">
       <div
         className={`transition-all duration-500 ease-in-out overflow-hidden ${selectedCount > 0
-          ? "max-h-32 opacity-100 translate-y-0 mb-4"
+          ? "max-h-32 opacity-100 translate-y-0 mb-0"
           : "max-h-0 opacity-0 -translate-y-4 mb-0 pointer-events-none"
           }`}
       >
-        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center shadow-sm">
-          <div className="flex items-center gap-3 h-full">
-            <span className="text-[13px] font-medium text-[#64748b]">
-              {selectedCount} seleccionados
-            </span>
-            <div className="w-[1px] h-4 bg-gray-200" />
+        <div className="bg-primary rounded-t-xl px-4 py-4 flex items-center justify-between text-white shadow-sm -mb-[1px] relative z-10">
+          <div className="flex items-center gap-3 font-semibold text-[15px]">
+            {selectedCount} Pagos seleccionados
           </div>
 
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-6">
             <button
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold text-white bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 text-[14px] font-medium hover:text-white/80 transition-colors"
               onClick={() => {
-                selectedItemsArr.forEach((payment) => onDelete(payment.id));
-                setSelection({});
+                // Action to print
               }}
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              Eliminar
+              <Printer className="w-4 h-4" />
+              Imprimir
+            </button>
+            <button
+              className="flex items-center gap-2 text-[14px] font-medium hover:text-white/80 transition-colors"
+              onClick={() => {
+                // Action to download PDF
+              }}
+            >
+              <FileText className="w-4 h-4" />
+              Descargar PDF
+            </button>
+            <button
+              className="text-[14px] font-medium hover:text-white/80 transition-colors"
+              onClick={() => setSelection({})}
+            >
+              Cancelar
             </button>
           </div>
-
-          <button
-            className="ml-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-            onClick={() => setSelection({})}
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+      <div className={`bg-white border border-gray-200 overflow-hidden shadow-sm ${selectedCount > 0 ? "rounded-b-xl rounded-t-none" : "rounded-xl"}`}>
         <PaymentTableToolbar
           table={table}
           search={search}

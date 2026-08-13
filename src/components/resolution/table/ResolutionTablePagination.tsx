@@ -98,7 +98,7 @@ export function ResolutionTablePagination({
           type="button"
           onClick={handlePrev}
           disabled={page <= 1}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Pagina anterior"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -108,7 +108,7 @@ export function ResolutionTablePagination({
           type="button"
           onClick={handleNext}
           disabled={page >= safeLastPage}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Pagina siguiente"
         >
           <ChevronRight className="h-4 w-4" />
@@ -123,7 +123,7 @@ export function ResolutionTablePagination({
             setPerPage(Number(event.target.value));
             setPage(1);
           }}
-          className="h-7 rounded-md border border-gray-300 px-2 text-xs text-gray-800 outline-none focus:border-gray-400"
+          className="h-7 rounded-md border border-gray-300 px-2 text-xs text-gray-800 outline-none focus:border-gray-400 cursor-pointer"
         >
           {[10, 20, 40, 60, 80, 100].map((value) => (
             <option key={value} value={value}>
@@ -139,7 +139,7 @@ export function ResolutionTablePagination({
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Actualizar"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />

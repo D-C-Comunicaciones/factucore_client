@@ -14,13 +14,17 @@ import { InvoicesService } from "@/lib/invoices";
 interface PreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  data: any; // payload built by invoiceBuilder
+  data: any; // payload built by builder
+  preflightFn?: (data: any) => Promise<Blob>;
+  title?: string;
 }
 
 export function PreviewModal({
   open,
   onOpenChange,
   data,
+  preflightFn,
+  title = "Vista previa - Factura de venta",
 }: PreviewModalProps) {
   const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -33,7 +37,8 @@ export function PreviewModal({
       
       setLoading(true);
       try {
-        const blob = await InvoicesService.preflight(data);
+        const fetchBlob = preflightFn || InvoicesService.preflight;
+        const blob = await fetchBlob(data);
         if (active) {
           const url = URL.createObjectURL(blob);
           setPdfUrl(url);
@@ -75,7 +80,7 @@ export function PreviewModal({
     if (!pdfUrl) return;
     const a = document.createElement("a");
     a.href = pdfUrl;
-    a.download = `Borrador_Factura.pdf`;
+    a.download = `Borrador.pdf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -83,9 +88,9 @@ export function PreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-gray-50/50" aria-describedby={undefined}>
+      <DialogContent className="max-w-6xl w-[95vw] h-[95vh] flex flex-col p-0 gap-0 overflow-hidden bg-gray-50/50" aria-describedby={undefined}>
         <DialogHeader className="px-6 py-4 border-b bg-white shrink-0">
-          <DialogTitle className="text-xl font-semibold text-gray-800">Vista previa - Factura de venta</DialogTitle>
+          <DialogTitle className="text-xl font-semibold text-gray-800">{title}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex justify-center bg-gray-200">
@@ -110,10 +115,19 @@ export function PreviewModal({
 
         {/* BARRA DE BOTONES FIJA AL FONDO */}
         <div className="px-6 py-4 border-t bg-white flex items-center justify-end gap-3 shrink-0">
-          <Button variant="outline" onClick={handlePrint} disabled={!pdfUrl || loading} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            disabled={!pdfUrl || loading}
+            className="gap-2 bg-white border-gray-300 hover:bg-gray-100 cursor-pointer"
+          >
             <Printer className="w-4 h-4" /> Imprimir
           </Button>
-          <Button variant="outline" onClick={handleDownload} disabled={!pdfUrl || loading} className="gap-2">
+          <Button
+            onClick={handleDownload}
+            disabled={!pdfUrl || loading}
+            className="gap-2 cursor-pointer"
+          >
             <Download className="w-4 h-4" /> Descargar
           </Button>
         </div>

@@ -280,7 +280,7 @@ export default function ItemDetailPage() {
         </div>
 
         <div className="mt-4">
-          <ItemDocumentsTab />
+          <ItemDocumentsTab item={item} />
         </div>
 
         <div className="mt-4">
