@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { NewPaymentForm } from "@/components/payments/new/NewPaymentForm";
@@ -11,6 +11,14 @@ import { PaymentsService } from "@/lib/payments";
 import { useEffect } from "react";
 
 export default function NewPaymentPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewPaymentPageContent />
+    </Suspense>
+  );
+}
+
+function NewPaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const customerId = searchParams.get('customer_id');

@@ -183,5 +183,16 @@
   "181": "tailwind.config.ts",
   "182": "@tabler/icons-react",
   "183": "@tanstack/react-query",
-  "184": "prompt.md"
+  "184": "prompt.md",
+  "185": "@radix-ui/react-select",
+  "186": "get-initials.ts",
+  "187": "pagination.tsx",
+  "188": "@radix-ui/react-separator",
+  "189": "certificates/page.tsx",
+  "190": "@radix-ui/react-slider",
+  "191": "@radix-ui/react-switch",
+  "192": "ClientesConVentasWidget.tsx",
+  "193": "@tabler/icons-react",
+  "194": "@tanstack/react-query",
+  "195": "install-factucore-command.ps1"
 }

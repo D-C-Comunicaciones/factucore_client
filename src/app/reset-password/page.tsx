@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { LogoHorizontal } from "@/components/logos/LogoHorizontal"
@@ -11,6 +11,14 @@ import { extractErrorMessage, extractFieldErrors } from "@/lib/errors"
 import { showToast } from "@/components/sonner/CustomToaster"
 
 export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={null}>
+            <ResetPasswordContent />
+        </Suspense>
+    )
+}
+
+function ResetPasswordContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const email = searchParams.get("email") || ""
