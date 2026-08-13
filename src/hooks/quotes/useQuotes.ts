@@ -223,7 +223,7 @@ export function useSendQuote() {
 
     return useMutation({
         mutationFn: async (id: number | string) => {
-            const res = await QuotesService.sendQuote(id);
+            const res: any = await QuotesService.sendQuote(id);
 
             if (!res || res.status !== "success") {
                 // If there are DIAN errors we can still return res, but maybe the API throws an error

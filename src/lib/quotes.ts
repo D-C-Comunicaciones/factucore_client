@@ -59,6 +59,13 @@ export class QuotesService {
     }
 
     /**
+     * Emitir cotización ya guardada (enviar a la DIAN)
+     */
+    static async sendQuote(id: number | string) {
+        return apiClient.post<Quote>(`/quotations/send/${id}`);
+    }
+
+    /**
      * GET /quotations/{quotationId}/pdf/preview
      */
     static getPrintUrl(id: number | string, template?: number) {

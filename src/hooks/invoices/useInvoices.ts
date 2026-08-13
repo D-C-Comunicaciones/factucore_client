@@ -219,7 +219,7 @@ export function useSendInvoice() {
 
     return useMutation({
         mutationFn: async (id: number | string) => {
-            const res = await InvoicesService.sendInvoice(id);
+            const res: any = await InvoicesService.sendInvoice(id);
 
             if (!res || res.status !== "success") {
                 // If there are DIAN errors we can still return res, but maybe the API throws an error

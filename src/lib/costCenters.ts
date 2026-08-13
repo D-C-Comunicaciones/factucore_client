@@ -34,6 +34,11 @@ export const costCentersApi = {
         return await apiClient.delete<any>(`/cost-centers/${costCenterId}`);
     },
 
+    // POST /cost-centers/{costCenterId}/toggle-status
+    toggleStatus: async (costCenterId: number): Promise<ApiResponse<any>> => {
+        return await apiClient.post<any>(`/cost-centers/${costCenterId}/toggle-status`, {});
+    },
+
     // GET /cost-center-settings
     getSettings: async (params?: { type_document?: string }): Promise<ApiResponse<any>> => {
         const queryParams = new URLSearchParams();

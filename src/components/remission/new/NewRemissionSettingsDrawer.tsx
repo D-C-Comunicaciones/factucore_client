@@ -117,7 +117,6 @@ export function NewRemissionSettingsDrawer({
         name: data.name,
         code: data.code,
         description: data.description,
-        status: 1
       });
       await queryClient.invalidateQueries({ queryKey: ['costCenters'] });
 

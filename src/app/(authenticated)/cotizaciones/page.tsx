@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from 'react';
-import { StatCard } from '@/components/quote/StatCard';
 import { QuoteTable } from '@/components/quote/QuoteTable';
 import { useQuotesList } from '@/hooks/quotes/useQuotes';
 import { QuotePageHeader } from '@/components/quote/QuotePageHeader';

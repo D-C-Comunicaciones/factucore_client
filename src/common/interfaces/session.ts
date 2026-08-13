@@ -6,12 +6,21 @@ export interface SessionData {
         id: number
         email: string
         name: string
+        roles?: { id: number; name: string }[]
+        permissions?: { id: number; name: string }[] | string[]
     }
     role: {
         id: number
         name: string
     }
     permissions: string[]
+    account_type?: string
+    tenant_id?: string
+    channels?: string[]
+    modules?: string[]
+    scopes?: string[]
+    features?: string[]
+    features_override?: any[]
     ts: number
 }
 
