@@ -140,8 +140,8 @@
     "semantic_hash": "48ba3a0800d592c43392b11ce34d5102"
   },
   "src/app/(authenticated)/invoices/new/page.tsx": {
-    "mtime": 1785959382.592082,
-    "ast_hash": "7358380a6dd77e1681db9d687501a353",
+    "mtime": 1786635855.1689808,
+    "ast_hash": "6f0e58877f5a5a6a1d2cc01c359cc1d0",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/invoices/page.tsx": {
@@ -190,8 +190,8 @@
     "semantic_hash": "212d3fa6df4126adcd331f1a58fa0cf1"
   },
   "src/app/(authenticated)/payments/new/page.tsx": {
-    "mtime": 1784064308.0117307,
-    "ast_hash": "dabbc8bbea1c06ad1ce2468589cf4ff0",
+    "mtime": 1786635895.918776,
+    "ast_hash": "0e9c09fce7490c58a4a57cebb30818aa",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/payments/page.tsx": {
@@ -205,8 +205,8 @@
     "semantic_hash": ""
   },
   "src/app/(authenticated)/quotes/new/page.tsx": {
-    "mtime": 1785949743.285704,
-    "ast_hash": "edb63093962837922abaf8eacc6db520",
+    "mtime": 1786635876.6473804,
+    "ast_hash": "37a0a833290274b200d1fdf12128a669",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/quotes/page.tsx": {
@@ -2175,8 +2175,8 @@
     "semantic_hash": ""
   },
   "src/app/(authenticated)/remissions/new/page.tsx": {
-    "mtime": 1785953986.9975142,
-    "ast_hash": "bf868f158375421511212cb144f2bec6",
+    "mtime": 1786635843.7011664,
+    "ast_hash": "7cf60867d5264dd4c953a18c62ea613f",
     "semantic_hash": ""
   },
   "src/components/remission/RemissionExportModal.tsx": {
@@ -2320,8 +2320,8 @@
     "semantic_hash": ""
   },
   "src/app/activate-account/page.tsx": {
-    "mtime": 1786478641.6560738,
-    "ast_hash": "31907286dc1c0d4ebac0405c6cf6e616",
+    "mtime": 1786635792.2558002,
+    "ast_hash": "d7d25afcd6aaff2e37cece9df7274021",
     "semantic_hash": ""
   },
   "src/app/forgot-password/page.tsx": {
@@ -2330,8 +2330,8 @@
     "semantic_hash": ""
   },
   "src/app/reset-password/page.tsx": {
-    "mtime": 1786478628.9459424,
-    "ast_hash": "abf10f05a59de1f472679bb3abcbcdc5",
+    "mtime": 1786635800.4990535,
+    "ast_hash": "f6f28e2bbaae5aa657ab79336d67c825",
     "semantic_hash": ""
   },
   "src/components/auth/AuthLinkStatus.tsx": {
@@ -2470,8 +2470,8 @@
     "semantic_hash": ""
   },
   "src/app/confirm-email/page.tsx": {
-    "mtime": 1786633423.1287959,
-    "ast_hash": "346211cfb63191477274f006db311ea2",
+    "mtime": 1786635810.4847217,
+    "ast_hash": "60b2501e7e9f8aacbe809e290176b02d",
     "semantic_hash": ""
   },
   "src/components/profile/ChangeEmailDialog.tsx": {
