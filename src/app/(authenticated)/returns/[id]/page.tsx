@@ -1,6 +1,7 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
 import { useCreditNote, useSendCreditNote } from "@/hooks/returns/useReturns";
+import { useDianSubmissionPolling } from "@/hooks/useDianSubmissionPolling";
 import { useEffect, useState } from "react";
 
 import { Loader2 } from "lucide-react";
@@ -12,6 +13,7 @@ import { ReturnDetailSummary } from "@/components/returns/details/ReturnDetailSu
 import { ReturnDetailDocument } from "@/components/returns/details/ReturnDetailDocument";
 import { ReturnDetailTabs } from "@/components/returns/details/ReturnDetailTabs";
 import { ReturnDetailSkeleton } from "@/components/returns/details/ReturnDetailSkeleton";
+import { DianSubmissionPendingCard } from "@/components/shared/DianSubmissionPendingCard";
 import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { showToast } from "@/components/sonner/CustomToaster";
 
@@ -20,7 +22,8 @@ export default function ReturnDetailPage() {
     const router = useRouter();
     const id = params?.id;
     const enabled = typeof id === "string" || typeof id === "number";
-    const { data, isLoading, isError, isFetching, refetch } = useCreditNote(enabled ? id : "");
+    const [pollEnabled, setPollEnabled] = useState(true);
+    const { data, isLoading, isError, isFetching, refetch } = useCreditNote(enabled ? id : "", { poll: pollEnabled });
     const sendToDian = useSendCreditNote();
 
     const [isSending, setIsSending] = useState(false);
@@ -43,6 +46,17 @@ export default function ReturnDetailPage() {
     }, [data?.message, data?.status]);
 
     const creditNoteData = data?.data?.credit_note || data?.credit_note || data?.creditNote;
+
+    // El envío a la DIAN es asíncrono: mientras esté QUEUED/PROCESSING seguimos
+    // haciendo polling (vía useCreditNote) hasta resolver o cumplir el timeout de UI.
+    const dianSubmissionStatus = creditNoteData?.dian_submission_status;
+    const isSubmissionPending = dianSubmissionStatus === "QUEUED" || dianSubmissionStatus === "PROCESSING";
+    const isSubmissionFailed = dianSubmissionStatus === "FAILED";
+    const { timedOut: pollTimedOut, reset: resetPollTimeout } = useDianSubmissionPolling(dianSubmissionStatus);
+
+    useEffect(() => {
+        setPollEnabled(!pollTimedOut);
+    }, [pollTimedOut]);
 
     useEffect(() => {
         if (creditNoteData) {
@@ -80,18 +94,23 @@ export default function ReturnDetailPage() {
     const APPROVED_STATUSES = ["APROBADA", "ACEPTADA", "PROCESADO CORRECTAMENTE", "AUTORIZADA"];
     const isApproved = APPROVED_STATUSES.includes(dianStatusName);
 
-    // Emitir solo si NO está aprobado (todavía puede enviarse)
-    const canEmit = !isApproved;
+    // Emitir solo si NO está aprobado y no hay un envío ya en curso
+    const canEmit = !isApproved && !isSubmissionPending;
 
     // Editar solo si NO está aprobado (no ha llegado a la DIAN exitosamente)
-    const canEdit = !isApproved;
+    const canEdit = !isApproved && !isSubmissionPending;
 
     // ── Enviar a DIAN ──────────────────────────────────────────────────────────
     const handleSendToDian = async () => {
         setIsSending(true);
         try {
-            await sendToDian.mutateAsync(creditNote.id);
-            showToast("Nota crédito enviada correctamente a la DIAN", "success", "Éxito");
+            // El envío ahora es asíncrono: el POST solo confirma que quedó encolado
+            // (HTTP 202, sin resultado final de la DIAN). El resultado real llega vía
+            // polling en useCreditNote mientras dian_submission_status esté QUEUED/PROCESSING.
+            const res: any = await sendToDian.mutateAsync(creditNote.id);
+            showToast(res?.message || "Nota crédito creada. Estamos validándola ante la DIAN.", "success", "Éxito");
+            resetPollTimeout();
+            setPollEnabled(true);
         } catch (error: any) {
             const errorData = error.response?.data || error.data || error;
             const errorMsg = errorData?.message || "Error al emitir nota crédito";
@@ -228,6 +247,21 @@ export default function ReturnDetailPage() {
             />
 
             <ReturnDetailSummary creditNote={creditNote} />
+
+            {isSubmissionPending || isSubmissionFailed ? (
+                <DianSubmissionPendingCard
+                    status={dianSubmissionStatus as "QUEUED" | "PROCESSING" | "FAILED"}
+                    timedOut={pollTimedOut}
+                    documentLabel={`la nota crédito No. ${creditNote.prefix || ''}${creditNote.number || creditNote.id}`}
+                    onCheckNow={() => {
+                        resetPollTimeout();
+                        setPollEnabled(true);
+                        refetch();
+                    }}
+                    onRetry={isSubmissionFailed ? handleSendToDian : undefined}
+                    isRetrying={isSending}
+                />
+            ) : null}
 
             <ReturnDetailDocument
                 creditNote={creditNote}

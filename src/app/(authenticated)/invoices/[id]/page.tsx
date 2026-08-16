@@ -1,6 +1,7 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
 import { useInvoice, useSendInvoice } from "@/hooks/invoices/useInvoices";
+import { useDianSubmissionPolling } from "@/hooks/useDianSubmissionPolling";
 import { useEffect, useState } from "react";
 
 import { Loader2 } from "lucide-react";
@@ -14,6 +15,7 @@ import { InvoiceDetailExtraInfo } from "@/components/invoice/details/InvoiceDeta
 import { InvoiceDetailTabs } from "@/components/invoice/details/InvoiceDetailTabs";
 import { InvoiceDetailSkeleton } from "@/components/invoice/details/InvoiceDetailSkeleton";
 import { InvoiceDianStatus } from "@/components/invoice/details/InvoiceDianStatus";
+import { DianSubmissionPendingCard } from "@/components/shared/DianSubmissionPendingCard";
 import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { showToast } from "@/components/sonner/CustomToaster";
 
@@ -23,7 +25,8 @@ export default function InvoiceDetailPage() {
     const router = useRouter();
     const id = params?.id;
     const enabled = typeof id === 'string' || typeof id === 'number';
-    const { data, isLoading, isError, isFetching, refetch } = useInvoice(enabled ? id : "");
+    const [pollEnabled, setPollEnabled] = useState(true);
+    const { data, isLoading, isError, isFetching, refetch } = useInvoice(enabled ? id : "", { poll: pollEnabled });
     const sendToDian = useSendInvoice();
 
     const [isSending, setIsSending] = useState(false);
@@ -47,6 +50,18 @@ export default function InvoiceDetailPage() {
     }, [data?.message, data?.status]);
 
     const invoiceData = data?.data?.invoice || data?.data?.bill;
+
+    // El envío a la DIAN es asíncrono: mientras el documento esté QUEUED/PROCESSING,
+    // seguimos haciendo polling (vía useInvoice) hasta que el backend resuelva el envío
+    // o se cumpla el timeout de UI de ~90s.
+    const dianSubmissionStatus = invoiceData?.dian_submission_status;
+    const isSubmissionPending = dianSubmissionStatus === "QUEUED" || dianSubmissionStatus === "PROCESSING";
+    const isSubmissionFailed = dianSubmissionStatus === "FAILED";
+    const { timedOut: pollTimedOut, reset: resetPollTimeout } = useDianSubmissionPolling(dianSubmissionStatus);
+
+    useEffect(() => {
+        setPollEnabled(!pollTimedOut);
+    }, [pollTimedOut]);
 
     // Cambiamos el title del documento
     useEffect(() => {
@@ -82,19 +97,19 @@ export default function InvoiceDetailPage() {
     const dianStatus = bill.dian_rejection_reason ? "NO APROBADA" : (bill.dian_response?.estado_documento || bill.dian_status?.name || data.dian?.estado_documento || '');
 
     const isAccepted = ["ACEPTADA", "PROCESADO CORRECTAMENTE", "APROBADA", "AUTORIZADA"].includes(dianStatus.toUpperCase());
-    const canEdit = !isAccepted;
-    const canEmit = !isAccepted;
+    const canEdit = !isAccepted && !isSubmissionPending;
+    const canEmit = !isAccepted && !isSubmissionPending;
 
     const handleSendToDian = async () => {
         setIsSending(true);
         try {
+            // El envío ahora es asíncrono: el POST solo confirma que quedó encolado
+            // (HTTP 202, sin resultado final de la DIAN). El resultado real llega vía
+            // polling en useInvoice mientras dian_submission_status esté QUEUED/PROCESSING.
             const res: any = await sendToDian.mutateAsync(bill.id);
-            if (res?.dian?.estado_documento === "NO APROBADA") {
-                const errorMessages = res.dian.errors?.map((e: any) => e.message).join(" | ");
-                showToast(`Rechazado por DIAN: ${errorMessages || res.message || "Intente más tarde"}`, "error", "Rechazado por DIAN");
-            } else {
-                showToast("Factura validada correctamente por la DIAN", "success", "Éxito");
-            }
+            showToast(res?.message || "Factura creada. Estamos validándola ante la DIAN.", "success", "Éxito");
+            resetPollTimeout();
+            setPollEnabled(true);
         } catch (error: any) {
             const errorData = error.response?.data || error.data || error;
             let errorMsg = errorData.message || "Error al emitir factura";
@@ -217,11 +232,26 @@ export default function InvoiceDetailPage() {
 
             <InvoiceDetailSummary bill={bill} />
 
-            <InvoiceDianStatus
-                bill={bill}
-                company={company}
-                dianStatus={dianStatus}
-            />
+            {isSubmissionPending || isSubmissionFailed ? (
+                <DianSubmissionPendingCard
+                    status={dianSubmissionStatus as "QUEUED" | "PROCESSING" | "FAILED"}
+                    timedOut={pollTimedOut}
+                    documentLabel={`la factura de venta No. ${bill.prefix || ''}${bill.number || bill.id}`}
+                    onCheckNow={() => {
+                        resetPollTimeout();
+                        setPollEnabled(true);
+                        refetch();
+                    }}
+                    onRetry={isSubmissionFailed ? handleSendToDian : undefined}
+                    isRetrying={isSending}
+                />
+            ) : (
+                <InvoiceDianStatus
+                    bill={bill}
+                    company={company}
+                    dianStatus={dianStatus}
+                />
+            )}
 
             <InvoiceDetailDocument
                 bill={bill}

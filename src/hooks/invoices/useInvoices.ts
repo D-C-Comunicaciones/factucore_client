@@ -72,7 +72,14 @@ export function usePrefetchInvoiceDetail() {
 // =========================
 // 📌 DETAIL
 // =========================
-export function useInvoice(id: number | string, enabled = true) {
+function extractInvoiceFromDetail(data: InvoiceDetailResponse | undefined) {
+    return data?.data?.invoice || data?.data?.bill;
+}
+
+export function useInvoice(id: number | string, options?: { enabled?: boolean; poll?: boolean }) {
+    const enabled = options?.enabled ?? true;
+    const poll = options?.poll ?? true;
+
     return useQuery<InvoiceDetailResponse>({
         queryKey: INVOICE_KEY(id),
         queryFn: async () => {
@@ -86,6 +93,13 @@ export function useInvoice(id: number | string, enabled = true) {
             return res;
         },
         enabled: !!id && enabled,
+        // El envío a la DIAN es asíncrono: mientras esté QUEUED/PROCESSING, refrescamos
+        // cada 3s para recibir el resultado final en cuanto el backend lo procese.
+        refetchInterval: (query) => {
+            if (!poll) return false;
+            const status = extractInvoiceFromDetail(query.state.data)?.dian_submission_status;
+            return status === "QUEUED" || status === "PROCESSING" ? 3000 : false;
+        },
     });
 }
 

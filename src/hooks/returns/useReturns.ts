@@ -30,7 +30,14 @@ export function useCreditNotesList(options?: { params?: Record<string, any>; ena
     });
 }
 
-export function useCreditNote(id: number | string, enabled = true) {
+function extractCreditNote(data: any) {
+    return data?.data?.credit_note || data?.credit_note || data?.creditNote;
+}
+
+export function useCreditNote(id: number | string, options?: { enabled?: boolean; poll?: boolean }) {
+    const enabled = options?.enabled ?? true;
+    const poll = options?.poll ?? true;
+
     return useQuery<any>({
         queryKey: CREDIT_NOTE_KEY(id),
         queryFn: async () => {
@@ -41,6 +48,13 @@ export function useCreditNote(id: number | string, enabled = true) {
             return res;
         },
         enabled: !!id && enabled,
+        // El envío a la DIAN es asíncrono: mientras esté QUEUED/PROCESSING, refrescamos
+        // cada 3s para recibir el resultado final en cuanto el backend lo procese.
+        refetchInterval: (query) => {
+            if (!poll) return false;
+            const status = extractCreditNote(query.state.data)?.dian_submission_status;
+            return status === "QUEUED" || status === "PROCESSING" ? 3000 : false;
+        },
     });
 }
 
