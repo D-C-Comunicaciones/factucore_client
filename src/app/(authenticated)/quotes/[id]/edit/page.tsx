@@ -458,11 +458,7 @@ export default function EditQuotePage() {
             }
           />
 
-          <CommentsAndReminders
-            comments={formState.comments || []}
-            setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
-            requiresSaveFirst={true}
-          />
+          <CommentsAndReminders type="quotation" commentableId={id} />
           <NewQuoteFooter
             onNavigate={() => router.push(`/quotes/${id}`)}
             onSaveAction={handleSaveAction}

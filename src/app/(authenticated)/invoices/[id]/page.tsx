@@ -31,7 +31,6 @@ export default function InvoiceDetailPage() {
 
     const [isSending, setIsSending] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [comments, setComments] = useState<any[]>([]);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
@@ -279,7 +278,7 @@ export default function InvoiceDetailPage() {
                 invoiceTotal={Number(bill.total || bill.payable_amount || 0)}
             />
 
-            <CommentsAndReminders comments={comments} setComments={setComments} />
+            <CommentsAndReminders type="invoice" commentableId={enabled ? id : null} />
         </div>
     );
 }

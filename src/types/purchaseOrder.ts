@@ -35,19 +35,22 @@ export interface PurchaseOrderLine {
 
 export type PurchaseOrderType = "internal" | "external";
 
+export interface PurchaseOrderContact {
+    id: number;
+    name?: string;
+    registration_name?: string;
+    first_name?: string;
+    last_name?: string;
+    identification_number?: string | number;
+    email?: string;
+    phone1?: string;
+}
+
 export interface PurchaseOrder {
     id: number;
     type: PurchaseOrderType;
     contact_id: number;
-    contact?: {
-        id: number;
-        name?: string;
-        registration_name?: string;
-        first_name?: string;
-        last_name?: string;
-        identification_number?: string;
-        phone1?: string;
-    } | string;
+    contact?: PurchaseOrderContact | string;
     resolution_id?: number | null;
     reference?: string | null;
     prefix?: string;
@@ -83,12 +86,14 @@ export interface PurchaseOrderSummary {
     reference?: string | null;
     prefix?: string;
     number?: string | number;
-    contact: string;
+    contact: PurchaseOrderContact | string | null;
     issue_date: string;
-    created_at: string;
+    created_at?: string;
     total: string | number;
     status: string;
     invoice_id?: number | null;
+    invoice?: { id: number } | null;
+    resolution?: { id: number } | null;
 }
 
 export interface PurchaseOrderPagination {

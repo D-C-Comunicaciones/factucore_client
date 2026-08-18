@@ -31,7 +31,11 @@ export function InvoiceDetailDocument({
         : (bill.pending_amount !== undefined
             ? Number(bill.pending_amount)
             : Number(bill.payable_amount || bill.total || 0));
-    const isCobrada = bill.is_paid || pendingAmount <= 0;
+    // La retención es dinero que el cliente nunca paga en efectivo/transferencia:
+    // si lo que falta por cobrar coincide con lo retenido, la factura ya quedó
+    // saldada aunque `pendingAmount` (por cobrar - cobrado) no sea exactamente 0.
+    const withholdingsTotal = Number(bill.withholdings_total || 0);
+    const isCobrada = bill.is_paid || (pendingAmount - withholdingsTotal) <= 0.01;
     const isAccepted = ["ACEPTADA", "PROCESADO CORRECTAMENTE", "APROBADA", "AUTORIZADA"].includes((dianStatus || '').toUpperCase());
 
     const getNestedValue = (obj: any, key: string) => obj?.[key] ?? obj?.legal_monetary_total?.[key] ?? 0;

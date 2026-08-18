@@ -15,19 +15,7 @@ export function usePurchaseOrdersList(options?: { params?: Record<string, any>; 
 
     return useQuery({
         queryKey: [...PURCHASE_ORDERS_KEY, "list", paramsKey, fetchKey],
-
-        queryFn: async () => {
-            const res = await PurchaseOrdersService.list(options?.params);
-
-            if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al obtener órdenes de compra");
-            }
-
-            return res;
-        },
-
-        select: (res: any) => res.data,
-
+        queryFn: () => PurchaseOrdersService.list(options?.params),
         enabled,
         staleTime: 0,
         refetchOnWindowFocus: false,
@@ -42,15 +30,7 @@ export function usePurchaseOrdersList(options?: { params?: Record<string, any>; 
 export function usePurchaseOrder(id: number | string, enabled = true) {
     return useQuery({
         queryKey: PURCHASE_ORDER_KEY(id),
-        queryFn: async () => {
-            const res: any = await PurchaseOrdersService.getById(id);
-
-            if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al obtener la orden de compra");
-            }
-
-            return res;
-        },
+        queryFn: () => PurchaseOrdersService.getById(id),
         enabled: !!id && enabled,
     });
 }
@@ -62,15 +42,7 @@ export function useCreatePurchaseOrder() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (data: Partial<PurchaseOrder>) => {
-            const res = await PurchaseOrdersService.create(data);
-
-            if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al crear la orden de compra");
-            }
-
-            return res.data;
-        },
+        mutationFn: (data: Partial<PurchaseOrder>) => PurchaseOrdersService.create(data),
 
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_KEY });
@@ -85,15 +57,8 @@ export function useUpdatePurchaseOrder() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number | string; data: Partial<PurchaseOrder> }) => {
-            const res = await PurchaseOrdersService.update(id, data);
-
-            if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al actualizar la orden de compra");
-            }
-
-            return res.data;
-        },
+        mutationFn: ({ id, data }: { id: number | string; data: Partial<PurchaseOrder> }) =>
+            PurchaseOrdersService.update(id, data),
 
         onSuccess: (_data, vars) => {
             queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_KEY });
@@ -109,7 +74,7 @@ export function useDeletePurchaseOrder() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (id: number | string) => PurchaseOrdersService.delete(id),
+        mutationFn: (id: number | string) => PurchaseOrdersService.delete(id),
 
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_KEY });

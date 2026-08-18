@@ -13,7 +13,7 @@ import { useCatalogs } from "@/hooks/useCatalogs";
 import { useResolutions } from "@/hooks/useResolutions";
 import { showToast } from "@/components/sonner/CustomToaster";
 
-function toDateInput(dateStr?: string): Date {
+function toDateInput(dateStr?: string | null): Date {
   if (!dateStr) return new Date();
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? new Date() : d;
@@ -27,8 +27,7 @@ export default function EditInternalPurchaseOrderPage() {
   const catalogData = useCatalogs();
   const builder = usePurchaseOrderBuilder();
   const updatePurchaseOrder = useUpdatePurchaseOrder();
-  const { data, isLoading, isError } = usePurchaseOrder(id);
-  const purchaseOrder = data?.data?.purchase_order || data?.data;
+  const { data: purchaseOrder, isLoading, isError } = usePurchaseOrder(id);
 
   const purchaseOrderTypeResolution = (catalogData.typeResolutions || []).find((t: any) => /orden.*compra|purchase.*order/i.test(t.name || ""));
   const { resolutions } = useResolutions({ type_resolution: purchaseOrderTypeResolution?.id, is_active: true });
@@ -82,8 +81,8 @@ export default function EditInternalPurchaseOrderPage() {
         .filter((ac: any) => ac.scope === "global")
         .map((ac: any) => ({
           id: crypto.randomUUID(),
-          type: ac.charge_indicator ? "charge" : "discount",
-          valueType: ac.value_type === "fixed" ? "fixed" : "percentage",
+          type: (ac.charge_indicator ? "charge" : "discount") as "charge" | "discount",
+          valueType: (ac.value_type === "fixed" ? "fixed" : "percentage") as "fixed" | "percentage",
           value: Number(ac.value) || 0,
           reason: ac.reason || "",
         }));
@@ -132,7 +131,7 @@ export default function EditInternalPurchaseOrderPage() {
   };
 
   const handleSave = async () => {
-    if (!validate()) return;
+    if (!validate() || !purchaseOrder) return;
 
     setLoadingSave(true);
     try {
@@ -146,6 +145,9 @@ export default function EditInternalPurchaseOrderPage() {
         cost_center_id: selectedCostCenter,
         notes: formState.notes,
         terms_and_conditions: formState.terms_and_conditions,
+        // Sin esto, cada edición reenvía status:"open" por defecto y pisa el
+        // estado real de la orden (ej. "closed") — se preserva el existente.
+        status: purchaseOrder.status,
       });
 
       // El backend no permite cambiar type/resolution_id/prefix/number al editar

@@ -190,8 +190,8 @@
     "semantic_hash": "212d3fa6df4126adcd331f1a58fa0cf1"
   },
   "src/app/(authenticated)/payments/new/page.tsx": {
-    "mtime": 1787030876.4717498,
-    "ast_hash": "dd6d91ada417a35107ee65619b19e421",
+    "mtime": 1787015183.2871876,
+    "ast_hash": "e028cbdeffef5ff5f7f5e021156d7e0b",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/payments/page.tsx": {
@@ -690,8 +690,8 @@
     "semantic_hash": "c4da1b5c51c60341352b568403d64be4"
   },
   "src/components/invoice/details/InvoiceDetailDocument.tsx": {
-    "mtime": 1787030882.3177922,
-    "ast_hash": "d25e062eca3b6b7c7a17fc56f0547f9a",
+    "mtime": 1785768739.374985,
+    "ast_hash": "050260d1fca8a245aad281e4db3cd8c9",
     "semantic_hash": ""
   },
   "src/components/invoice/details/InvoiceDetailExtraInfo.tsx": {
@@ -720,8 +720,8 @@
     "semantic_hash": ""
   },
   "src/components/invoice/details/InvoiceDianStatus.tsx": {
-    "mtime": 1787030890.1703317,
-    "ast_hash": "1abd2509e63446a43c71da75523d9562",
+    "mtime": 1785768739.3793821,
+    "ast_hash": "cbb772b8aa247d7fbf16061915e7eaff",
     "semantic_hash": ""
   },
   "src/components/invoice/new/EditResolutionModal.tsx": {
@@ -1345,8 +1345,8 @@
     "semantic_hash": ""
   },
   "src/components/shared/CommentsAndReminders.tsx": {
-    "mtime": 1787032200.4777935,
-    "ast_hash": "9b594c87597362b4eb66d3b40543cb5d",
+    "mtime": 1787030014.2809908,
+    "ast_hash": "6a1578ede20d9b99ffdd3d972b220f08",
     "semantic_hash": ""
   },
   "src/components/shared/CompanyHeaderPdfStyle.tsx": {
@@ -2540,13 +2540,13 @@
     "semantic_hash": ""
   },
   "src/app/(authenticated)/purchase-orders/[id]/edit/page.tsx": {
-    "mtime": 1787032480.0531723,
-    "ast_hash": "7e27d876c7e696c4dc20310be106db1b",
+    "mtime": 1787010736.9845772,
+    "ast_hash": "2f937472ebd6a187dd4766fb31f9ac81",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/purchase-orders/[id]/page.tsx": {
-    "mtime": 1787032478.368731,
-    "ast_hash": "bd6aa01bf135d36c899ad73bcf0b07a9",
+    "mtime": 1787010730.5349035,
+    "ast_hash": "65c5228c88fcd61cbd364c57d3e5cc93",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/purchase-orders/new/page.tsx": {
@@ -2580,8 +2580,8 @@
     "semantic_hash": ""
   },
   "src/components/purchase-order/new/NewPurchaseOrderForm.tsx": {
-    "mtime": 1787032493.5781195,
-    "ast_hash": "32212d7a145f36032aa98f9ce238d4aa",
+    "mtime": 1787015062.6003199,
+    "ast_hash": "40bdca8755c2e6b5b3ff8b8ee700f8b8",
     "semantic_hash": ""
   },
   "src/components/purchase-order/table/PurchaseOrderTableBody.tsx": {
@@ -2595,8 +2595,8 @@
     "semantic_hash": ""
   },
   "src/components/purchase-order/table/columns.tsx": {
-    "mtime": 1787032448.7284749,
-    "ast_hash": "bf661efbac6ba5370a50e1d26157c3fb",
+    "mtime": 1787011984.8665085,
+    "ast_hash": "7913109535fd324375e84e5dfb75f6c3",
     "semantic_hash": ""
   },
   "src/components/users/UserInfoPanel.tsx": {
@@ -2615,13 +2615,13 @@
     "semantic_hash": ""
   },
   "src/hooks/purchaseOrders/usePurchaseOrderBuilder.ts": {
-    "mtime": 1787032515.402943,
-    "ast_hash": "e0517a7ff180f6d044f93118757634db",
+    "mtime": 1787013012.8451552,
+    "ast_hash": "c49ff0a29c71d953978767b0b8dd81e1",
     "semantic_hash": ""
   },
   "src/hooks/purchaseOrders/usePurchaseOrders.ts": {
-    "mtime": 1787032471.640086,
-    "ast_hash": "2dd81fe0852173753c00e23eaf571172",
+    "mtime": 1787010519.7124836,
+    "ast_hash": "e4f95d96b07beaf861ffee1d79b3a8d5",
     "semantic_hash": ""
   },
   "src/lib/echo.ts": {
@@ -2630,13 +2630,13 @@
     "semantic_hash": ""
   },
   "src/lib/notifications.ts": {
-    "mtime": 1787031495.3087592,
-    "ast_hash": "4727c439914df3badca509961ade7c94",
+    "mtime": 1787009369.5985298,
+    "ast_hash": "154edfbfe25a8e2c70a71c8a9bb3f908",
     "semantic_hash": ""
   },
   "src/lib/purchaseOrders.ts": {
-    "mtime": 1787032461.4120574,
-    "ast_hash": "b50992a3d23e43671cff03d9d720b1bb",
+    "mtime": 1787010508.0242977,
+    "ast_hash": "ec4b995960c9fdbdb72e8cb8f76cab9d",
     "semantic_hash": ""
   },
   "src/types/notification.ts": {
@@ -2645,8 +2645,13 @@
     "semantic_hash": ""
   },
   "src/types/purchaseOrder.ts": {
-    "mtime": 1787032434.279909,
-    "ast_hash": "7ff25200e7dbd7e44d53b7ce5271cddf",
+    "mtime": 1787013258.7207353,
+    "ast_hash": "cfdafab5afe4c5f0e2d8cd253dd22577",
+    "semantic_hash": ""
+  },
+  "comments-notifications.md": {
+    "mtime": 1787029499.8282602,
+    "ast_hash": "d83a65b7700678a6f2197e22c372776b",
     "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
@@ -2685,18 +2690,18 @@
     "semantic_hash": ""
   },
   "src/app/(authenticated)/expenses/purchase-orders/[id]/edit/page.tsx": {
-    "mtime": 1787032564.6594844,
-    "ast_hash": "84f3b81df892395dd00d12dcd47f918c",
+    "mtime": 1787013240.7347035,
+    "ast_hash": "761bf2049c3f0a1e27d67e41a9aca0d1",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/expenses/purchase-orders/[id]/page.tsx": {
-    "mtime": 1787032481.6329594,
-    "ast_hash": "2da535aa94dcdd6ab6b5618593755c5c",
+    "mtime": 1787011984.446244,
+    "ast_hash": "739eeb9a8d6ac60836878543d5df943b",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/expenses/purchase-orders/new/page.tsx": {
-    "mtime": 1787032500.878808,
-    "ast_hash": "756676c5779bddea92d121be80ff4540",
+    "mtime": 1787013211.8108022,
+    "ast_hash": "e0ce65d5718fd112e020070a48bbcd26",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/expenses/purchase-orders/page.tsx": {
@@ -2735,18 +2740,13 @@
     "semantic_hash": ""
   },
   "src/lib/comments.ts": {
-    "mtime": 1787032215.4223728,
-    "ast_hash": "6ffdee3069139c258be726f09fdc09bf",
+    "mtime": 1787029895.1199555,
+    "ast_hash": "3ebe87470ec42ee4f186dd05013b002b",
     "semantic_hash": ""
   },
   "src/types/comment.ts": {
     "mtime": 1787029886.323228,
     "ast_hash": "ad441ed0b2bc0499d522b9657e74339d",
-    "semantic_hash": ""
-  },
-  "purchase-orders-endpoints.md": {
-    "mtime": 1787032191.079203,
-    "ast_hash": "e202696a68face44d84200ef167b906e",
     "semantic_hash": ""
   }
 }

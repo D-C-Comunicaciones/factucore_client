@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { NewPaymentForm } from "@/components/payments/new/NewPaymentForm";
 import { PaymentTabs } from "@/components/payments/new/PaymentTabs";
@@ -21,6 +22,7 @@ export default function NewPaymentPage() {
 function NewPaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const customerId = searchParams.get('customer_id');
 
   const [loadingGuardar, setLoadingGuardar] = useState(false);
@@ -153,7 +155,21 @@ function NewPaymentPageContent() {
     try {
       const res: any = await PaymentsService.create(payload);
       showToast("Pagos registrados exitosamente", "success");
-      
+
+      // El detalle de cada factura queda cacheado hasta 24h (staleTime global) y no
+      // se refresca solo al navegar de vuelta — sin esto, el pago recién creado no
+      // aparece en /invoices/[id] hasta que el usuario refresque manualmente. Se usa
+      // `predicate` porque la queryKey de /invoices/[id] guarda el id como string
+      // (viene de la URL) mientras que aquí es un número.
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      paymentsPayload.forEach((p) => {
+        if (p.invoice_id) {
+          queryClient.invalidateQueries({
+            predicate: (query) => query.queryKey[0] === "invoice" && String(query.queryKey[1]) === String(p.invoice_id),
+          });
+        }
+      });
+
       const paymentId = res?.data?.payment?.id || res?.data?.id || res?.data?.[0]?.id || res?.data?.payments?.[0]?.id || res?.id || res?.[0]?.id;
       if (paymentId) {
         router.push(`/payments/${paymentId}`);

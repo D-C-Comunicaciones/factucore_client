@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { PurchaseOrderSummary } from "@/types/purchaseOrder";
+import type { PurchaseOrderContact, PurchaseOrderSummary } from "@/types/purchaseOrder";
 import { showToast } from "@/components/sonner/CustomToaster";
 import {
   AlertDialog,
@@ -25,6 +25,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+// La API devuelve `contact` como objeto ({id, registration_name, ...}), no como
+// string — renderizarlo directo tira "Objects are not valid as a React child".
+function contactLabel(contact: PurchaseOrderContact | string | null | undefined): string {
+  if (!contact) return "NO ESPECIFICADO";
+  if (typeof contact === "string") return contact;
+  return (
+    contact.registration_name ||
+    `${contact.first_name || ""} ${contact.last_name || ""}`.trim() ||
+    contact.name ||
+    "NO ESPECIFICADO"
+  );
+}
 
 export function PurchaseOrderStatusBadge({ status }: { status: any }) {
   const estadoStr = typeof status === "string" ? status : status?.name || "";
@@ -189,7 +202,7 @@ export function getColumns(variant: "internal" | "external" = "external"): Colum
     {
       accessorKey: "contact",
       header: variant === "internal" ? "Proveedor" : "Cliente",
-      cell: ({ row }) => <span className="text-xs text-gray-900">{row.original.contact ?? "NO ESPECIFICADO"}</span>,
+      cell: ({ row }) => <span className="text-xs text-gray-900">{contactLabel(row.original.contact)}</span>,
     },
     {
       accessorKey: "issue_date",

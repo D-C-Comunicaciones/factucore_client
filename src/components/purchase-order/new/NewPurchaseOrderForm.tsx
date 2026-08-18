@@ -180,13 +180,15 @@ export function NewPurchaseOrderForm({
         reference,
         issue_date: toDateStr(issueDate),
         notes,
+        // Sin esto, cada edición reenvía status:"open" por defecto y pisa el
+        // estado real de la orden (ej. "closed") — se preserva el existente.
+        status: initialData?.status,
       });
 
       if (mode === "create") {
-        const created: any = await createPurchaseOrder.mutateAsync(payload);
+        const created = await createPurchaseOrder.mutateAsync(payload);
         showToast("Orden de compra creada correctamente", "success");
-        const id = created?.purchase_order?.id || created?.id;
-        router.push(id ? `/purchase-orders/${id}` : "/purchase-orders");
+        router.push(created?.id ? `/purchase-orders/${created.id}` : "/purchase-orders");
       } else if (purchaseOrderId) {
         // El backend no permite cambiar type/resolution_id/prefix/number al editar
         delete payload.type;

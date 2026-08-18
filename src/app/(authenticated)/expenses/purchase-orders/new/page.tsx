@@ -134,10 +134,9 @@ export default function NewInternalPurchaseOrderPage() {
         terms_and_conditions: formState.terms_and_conditions,
       });
 
-      const created: any = await createPurchaseOrder.mutateAsync(payload);
+      const created = await createPurchaseOrder.mutateAsync(payload);
       showToast("Orden de compra creada correctamente", "success");
-      const id = created?.purchase_order?.id || created?.id;
-      router.push(id ? `/expenses/purchase-orders/${id}` : "/expenses/purchase-orders");
+      router.push(created?.id ? `/expenses/purchase-orders/${created.id}` : "/expenses/purchase-orders");
     } catch (error: any) {
       const backendErrors = error.response?.data?.errors;
       if (backendErrors) {

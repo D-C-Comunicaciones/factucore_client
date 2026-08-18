@@ -193,8 +193,13 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                         {(bill?.payments && bill.payments.length > 0) && (
                             <div className="flex flex-col items-center flex-1">
                                 {(() => {
-                                    const pendingAmount = Number(bill?.pending_amount || 0);
-                                    const isPaid = pendingAmount <= 0 || ['Pagada', 'Cobrada'].includes(bill?.payment_status || '') || ['Pagada', 'Cobrada'].includes(bill?.status?.name || '');
+                                    // `pending_amount` no existe en la respuesta real (es `pending_to_collect`) —
+                                    // con el nombre viejo esto daba siempre 0 y mostraba "COBRADA" de más.
+                                    const pendingAmount = Number(bill?.pending_to_collect ?? bill?.pending_amount ?? 0);
+                                    const withholdingsTotal = Number(bill?.withholdings_total || 0);
+                                    // La retención resta del efectivo a cobrar: si lo pendiente coincide con lo
+                                    // retenido, ya no queda nada más por recaudar.
+                                    const isPaid = bill?.is_paid || (pendingAmount - withholdingsTotal) <= 0.01 || ['Pagada', 'Cobrada'].includes(bill?.payment_status || '') || ['Pagada', 'Cobrada'].includes(bill?.status?.name || '');
                                     const hasPayments = true;
                                     const isOverdue = bill?.payment_due_date && new Date(bill.payment_due_date) < new Date() && !isPaid;
 
