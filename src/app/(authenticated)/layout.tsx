@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar/Sidebar';
 import { Header } from '@/components/header/Header';
 import { useAuth } from '@/contexts/auth-context';
+import { usePermissions } from '@/hooks/usePermissions';
 import { showToast } from '@/components/sonner/CustomToaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Home, FileText, ShoppingBag, Users, Package, Building2, BarChart3, CheckSquare, Settings, ArrowDownLeft, Inbox, Tags, Layers, Warehouse, Sliders, ClipboardList, ListTree, Puzzle } from 'lucide-react';
@@ -16,6 +17,7 @@ export default function AuthenticatedLayout({
     children: React.ReactNode;
 }) {
     const { isAuthenticated, isLoading, user } = useAuth();
+    const { hasModule, hasPermission } = usePermissions();
     const router = useRouter();
 
     // STATE
@@ -86,7 +88,9 @@ export default function AuthenticatedLayout({
                 { prefix: '/contacts', module: 'contacts' },
                 { prefix: '/inventario', module: 'inventory' },
                 { prefix: '/items', module: 'items' },
-                { prefix: '/integrations', permission: 'integrations.view' }
+                { prefix: '/integrations', permission: 'integrations.view' },
+                { prefix: '/configuration/users', permission: 'users.view' },
+                { prefix: '/configuration/roles', permission: 'roles.view' },
             ];
 
             const match = routeGuards.find(g => pathname.startsWith(g.prefix));
@@ -103,17 +107,6 @@ export default function AuthenticatedLayout({
     }, [isAuthenticated, isLoading, user, router]);
 
     if (isLoading || !isAuthenticated) return null;
-
-    // FUNCIONES DE VERIFICACIÓN
-    const hasModule = useCallback((moduleCode?: string) => {
-        if (!moduleCode) return true;
-        return user?.modules?.includes(moduleCode) ?? true; // fallback to true if no modules array
-    }, [user]);
-
-    const hasPermission = useCallback((permission?: string) => {
-        if (!permission) return true;
-        return user?.permissions?.some(p => p.name === permission) ?? true;
-    }, [user]);
 
     // MENU CONFIG
     const rawMenuItems: SidebarMenuItem[] = [
