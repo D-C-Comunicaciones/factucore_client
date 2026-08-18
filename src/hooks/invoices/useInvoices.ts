@@ -45,7 +45,12 @@ export function useInvoicesList(options?: { params?: Record<string, any>; enable
         staleTime: 0,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
-        refetchOnMount: false,
+        // El default global es `refetchOnMount: false` (queryClient.ts) — si se
+        // hereda aquí, una factura invalidada (p.ej. tras registrar un pago) no se
+        // vuelve a pedir al remontar el listado y se ve el estado viejo hasta un
+        // refresh manual. Forzamos true para que sí refetchee cuando la query quedó
+        // marcada como stale/invalidada.
+        refetchOnMount: true,
     });
 }
 // =========================
@@ -93,6 +98,11 @@ export function useInvoice(id: number | string, options?: { enabled?: boolean; p
             return res;
         },
         enabled: !!id && enabled,
+        // Igual que en useInvoicesList: el default global es refetchOnMount:false,
+        // así que sin esto el detalle de una factura invalidada (p.ej. tras un pago
+        // registrado desde /payments/new) se queda con el estado viejo al volver a
+        // /invoices/[id] hasta que el usuario refresque el navegador.
+        refetchOnMount: true,
         // El envío a la DIAN es asíncrono: mientras esté QUEUED/PROCESSING, refrescamos
         // cada 3s para recibir el resultado final en cuanto el backend lo procese.
         refetchInterval: (query) => {

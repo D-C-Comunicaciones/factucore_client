@@ -12,18 +12,55 @@
 const SERVICE_CODE = "SERVICE";
 const COMBO_CODE = "COMBO";
 
+// GET /items (listado) trae el ítem aplanado (type_item_id, is_inventoriable,
+// stock_quantity al nivel raíz). POST/GET /items/{id} (respuesta de creación/detalle)
+// lo devuelve anidado bajo `basic_info`/`inventory`. Sin este fallback, un ítem
+// recién creado desde el selector rápido de la factura (que inserta la respuesta
+// cruda de creación, no la del listado) no se reconoce como servicio y cae en la
+// validación de stock por defecto -> aparece "agotado" aunque sea un servicio.
+function getTypeCode(item: any): string | undefined {
+    return item?.type_item?.code || item?.basic_info?.type_item?.code;
+}
+
+function getTypeItemId(item: any): number | undefined {
+    return item?.type_item_id ?? item?.basic_info?.type_item_id;
+}
+
+function getInventoryInfo(item: any): {
+    is_inventoriable?: boolean;
+    allow_negative_stock?: boolean;
+    stock_quantity?: number;
+} {
+    if (!item) return {};
+    if (item.inventory) {
+        const stocks = item.inventory.inventory_stocks || [];
+        return {
+            is_inventoriable: item.inventory.is_inventoriable,
+            allow_negative_stock: item.inventory.allow_negative_stock,
+            stock_quantity: stocks.length
+                ? stocks.reduce((sum: number, s: any) => sum + Number(s?.stock_quantity ?? 0), 0)
+                : undefined,
+        };
+    }
+    return {
+        is_inventoriable: item.is_inventoriable,
+        allow_negative_stock: item.allow_negative_stock,
+        stock_quantity: item.stock_quantity,
+    };
+}
+
 export function isServiceItem(item: any): boolean {
     if (!item) return false;
-    const code = item.type_item?.code;
+    const code = getTypeCode(item);
     if (code) return code === SERVICE_CODE;
-    return item.type_item_id === 2;
+    return getTypeItemId(item) === 2;
 }
 
 export function isComboItem(item: any): boolean {
     if (!item) return false;
-    const code = item.type_item?.code;
+    const code = getTypeCode(item);
     if (code) return code === COMBO_CODE;
-    return item.type_item_id === 3;
+    return getTypeItemId(item) === 3;
 }
 
 /**
@@ -31,9 +68,10 @@ export function isComboItem(item: any): boolean {
  */
 export function requiresOwnStockCheck(item: any): boolean {
     if (!item || isServiceItem(item) || isComboItem(item)) return false;
-    const isInventoriable = item.is_inventoriable ?? true;
+    const { is_inventoriable, allow_negative_stock } = getInventoryInfo(item);
+    const isInventoriable = is_inventoriable ?? true;
     if (!isInventoriable) return false;
-    if (item.allow_negative_stock) return false;
+    if (allow_negative_stock) return false;
     return true;
 }
 
@@ -95,11 +133,11 @@ export function resolveStockFields(rawItem: any): {
         return { is_inventoriable: true, allow_negative_stock: false, stock_quantity: comboUnits };
     }
 
-    const isInventoriable = rawItem?.is_inventoriable ?? true;
+    const { is_inventoriable, allow_negative_stock, stock_quantity } = getInventoryInfo(rawItem);
     return {
-        is_inventoriable: isInventoriable,
-        allow_negative_stock: rawItem?.allow_negative_stock ?? false,
-        stock_quantity: rawItem?.stock_quantity ?? null,
+        is_inventoriable: is_inventoriable ?? true,
+        allow_negative_stock: allow_negative_stock ?? false,
+        stock_quantity: stock_quantity ?? null,
     };
 }
 
