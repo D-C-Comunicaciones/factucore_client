@@ -17,7 +17,8 @@ import { useRemission } from "@/hooks/remissions/useRemissions";
 import { mapQuoteItemsToLines, mapQuoteGlobalAdjustments } from "@/lib/quoteLineMapping";
 import { mapRemissionItemsToLines, mapRemissionGlobalAdjustments } from "@/lib/remissionLineMapping";
 import { InvoicesService } from "@/lib/invoices";
-import { shouldValidateLineStock } from "@/lib/itemStock";
+import { itemsApi } from "@/lib/items";
+import { shouldValidateLineStock, resolveStockFields } from "@/lib/itemStock";
 import { AuthService } from "@/lib/auth";
 import { getSession } from "@/common/interfaces/session";
 import { useResolutions } from "@/hooks/useResolutions";
@@ -116,6 +117,60 @@ function NewInvoicePageContent() {
   // Initialize the builder hook
   const invoiceBuilder = useInvoiceBuilder();
 
+  // Al convertir una cotización/remisión a factura, las líneas se prellenan con el
+  // "snapshot" del documento origen (nombre/precio al momento de crearlo), que no trae
+  // stock en vivo. Por eso quoteLineMapping/remissionLineMapping dejan la línea sin
+  // validar (is_inventoriable: false) y este efecto consulta el stock REAL de cada ítem
+  // justo después, para que "agotado" solo se muestre si de verdad no hay stock — nunca
+  // apenas se hace clic en "Convertir a factura".
+  //
+  // El stock es por bodega (igual que en la selección manual de ítems, ver
+  // ItemRow.handleItemSelect en InvoiceItemsTable.tsx), así que se busca la fila de
+  // `inventory_stocks` de la bodega de la cotización/remisión en vez de sumar todas las
+  // bodegas — y también se rellenan minimum_stock/maximum_stock, que si quedan sin
+  // definir hacen que la tabla use un umbral por defecto de "agotado" con <= 5 unidades.
+  const refreshLineStockFromCatalog = async (
+    lines: { id: string; item_id: number | null }[],
+    warehouseId?: number | string | null
+  ) => {
+    const uniqueItemIds = Array.from(new Set(lines.map((l) => l.item_id).filter((id): id is number => !!id)));
+
+    await Promise.all(
+      uniqueItemIds.map(async (itemId) => {
+        try {
+          const res: any = await itemsApi.getItemById(itemId);
+          const freshItem = res?.data?.item || res?.data;
+          if (!freshItem) return;
+
+          const { is_inventoriable, allow_negative_stock } = resolveStockFields(freshItem);
+          const stocks: any[] = freshItem?.inventory?.inventory_stocks || [];
+          const matchedWarehouseStock = warehouseId
+            ? stocks.find((s: any) => String(s.warehouse_id ?? s.warehouse?.id) === String(warehouseId))
+            : undefined;
+
+          const stockQuantity = matchedWarehouseStock
+            ? Number(matchedWarehouseStock.stock_quantity ?? 0)
+            : stocks.reduce((sum: number, s: any) => sum + Number(s?.stock_quantity ?? 0), 0);
+          const minimumStock = matchedWarehouseStock?.minimum_stock != null ? Number(matchedWarehouseStock.minimum_stock) : undefined;
+          const maximumStock = matchedWarehouseStock?.maximum_stock != null ? Number(matchedWarehouseStock.maximum_stock) : undefined;
+
+          lines
+            .filter((l) => l.item_id === itemId)
+            .forEach((l) => {
+              invoiceBuilder.updateItem(l.id, "stock_quantity", is_inventoriable ? stockQuantity : null);
+              invoiceBuilder.updateItem(l.id, "is_inventoriable", is_inventoriable);
+              invoiceBuilder.updateItem(l.id, "allow_negative_stock", allow_negative_stock);
+              invoiceBuilder.updateItem(l.id, "minimum_stock" as any, minimumStock);
+              invoiceBuilder.updateItem(l.id, "maximum_stock" as any, maximumStock);
+            });
+        } catch {
+          // Si falla la consulta del ítem, se deja el estado neutro (sin validar) en vez
+          // de bloquear al usuario con un falso "agotado".
+        }
+      })
+    );
+  };
+
   // Prefill items, discounts and charges when creating an invoice from a quote ("Convertir a factura")
   const quoteDataForInvoice = quoteResponse?.data?.quotation || quoteResponse?.data?.quote || quoteResponse?.data?.bill;
   const quoteItemsForInvoice = (quoteResponse?.data as any)?.items || quoteDataForInvoice?.lines || quoteDataForInvoice?.quote_lines || [];
@@ -123,10 +178,12 @@ function NewInvoicePageContent() {
   useEffect(() => {
     if (!quotePrefillAppliedRef.current && quoteId && quoteDataForInvoice) {
       quotePrefillAppliedRef.current = true;
-      invoiceBuilder.setItems(mapQuoteItemsToLines(quoteItemsForInvoice) as any);
+      const mappedLines = mapQuoteItemsToLines(quoteItemsForInvoice) as any;
+      invoiceBuilder.setItems(mappedLines);
       invoiceBuilder.setGlobalAdjustments(mapQuoteGlobalAdjustments(quoteDataForInvoice) as any);
 
       const warehouseId = quoteDataForInvoice.warehouse?.id ?? quoteDataForInvoice.warehouse_id;
+      refreshLineStockFromCatalog(mappedLines, warehouseId);
       const priceListId = quoteDataForInvoice.price_list?.id ?? quoteDataForInvoice.price_list_id;
       const costCenterId = quoteDataForInvoice.cost_center?.id ?? quoteDataForInvoice.cost_center_id;
       const sellerIdRaw = quoteDataForInvoice.seller?.id ?? quoteDataForInvoice.seller_id;
@@ -154,10 +211,12 @@ function NewInvoicePageContent() {
   useEffect(() => {
     if (!remissionPrefillAppliedRef.current && remissionId && remissionDataForInvoice) {
       remissionPrefillAppliedRef.current = true;
-      invoiceBuilder.setItems(mapRemissionItemsToLines(remissionItemsForInvoice) as any);
+      const mappedLines = mapRemissionItemsToLines(remissionItemsForInvoice) as any;
+      invoiceBuilder.setItems(mappedLines);
       invoiceBuilder.setGlobalAdjustments(mapRemissionGlobalAdjustments(remissionDataForInvoice) as any);
 
       const warehouseId = remissionDataForInvoice.warehouse?.id ?? remissionDataForInvoice.warehouse_id;
+      refreshLineStockFromCatalog(mappedLines, warehouseId);
       const priceListId = remissionDataForInvoice.price_list?.id ?? remissionDataForInvoice.price_list_id;
       const costCenterId = remissionDataForInvoice.cost_center?.id ?? remissionDataForInvoice.cost_center_id;
       const sellerIdRaw = remissionDataForInvoice.seller?.id ?? remissionDataForInvoice.seller_id;
