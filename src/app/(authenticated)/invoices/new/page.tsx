@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { NewInvoiceFooter } from "@/components/invoice/new/NewInvoiceFooter";
 import { NewInvoiceHeader } from "@/components/invoice/new/NewInvoiceHeader";
@@ -28,6 +28,14 @@ import { costCentersApi } from "@/lib/costCenters";
 import { showToast } from "@/components/sonner/CustomToaster";
 
 export default function NewInvoicePage() {
+  return (
+    <Suspense fallback={null}>
+      <NewInvoicePageContent />
+    </Suspense>
+  );
+}
+
+function NewInvoicePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const quoteId = searchParams?.get("quoteId");

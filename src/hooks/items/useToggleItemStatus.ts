@@ -15,7 +15,7 @@ export function useToggleItemStatus() {
         mutationFn: ({ entityType = "item", ids, isActive }: ToggleStatusParams) =>
             itemsApi.toggleEntityStatus(entityType, ids, isActive),
         onSuccess: (response) => {
-            if (response.data?.status === "success" || response.status === 200) {
+            if (response.data?.status === "success" || response.code === 200) {
                 queryClient.invalidateQueries({ queryKey: ["items"] });
                 showToast("Estado actualizado exitosamente", "success");
             }

@@ -209,3 +209,35 @@ export function useUpdateQuote() {
     });
 }
 
+// =========================
+// 📌 SEND TO DIAN
+// =========================
+export function useSendQuote() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: number | string) => {
+            const res: any = await QuotesService.sendQuote(id);
+
+            if (!res || res.status !== "success") {
+                // If there are DIAN errors we can still return res, but maybe the API throws an error
+                // In this case, usually we let the component handle it or throw
+                if (res?.dian && res.dian.estado_documento === "NO APROBADA") {
+                    // Let's attach the response to the error so we can read it
+                    const err = new Error(res.dian.mensaje_dian || "La DIAN no aprobó la quote");
+                    (err as any).dian = res.dian;
+                    throw err;
+                }
+                throw new Error(res?.message || "Error al emitir quote");
+            }
+
+            return res;
+        },
+        onSettled: (_data, _error, id) => {
+            queryClient.invalidateQueries({ queryKey: INVOICES_KEY });
+            if (id) {
+                queryClient.invalidateQueries({ queryKey: INVOICE_KEY(id) });
+            }
+        },
+    });
+}

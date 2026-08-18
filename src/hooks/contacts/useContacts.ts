@@ -38,7 +38,6 @@ export function useContact(id: string | number) {
     return useQuery<ApiResponse<any>, Error, any>({
         queryKey: ["contact", id],
         queryFn: async () => {
-            if (!id) return null;
             const res = await ContactsService.getById(id);
             if (!res || res.status !== "success") {
                 throw new Error(res?.message || "Error al obtener el contacto");

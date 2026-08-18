@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { NewRemissionFooter } from "@/components/remission/new/NewRemissionFooter";
 import { NewRemissionHeader } from "@/components/remission/new/NewRemissionHeader";
@@ -25,6 +25,14 @@ import { useQuery } from "@tanstack/react-query";
 import { showToast } from "@/components/sonner/CustomToaster";
 
 export default function NewRemissionPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewRemissionPageContent />
+    </Suspense>
+  );
+}
+
+function NewRemissionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const cloneId = searchParams?.get("cloneId");

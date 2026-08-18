@@ -197,6 +197,11 @@ export interface InvoiceBillingPeriod {
     end_time: string;
 }
 
+// Estado del procesamiento asíncrono de envío a la DIAN (armado XML/firma/envío en background).
+// QUEUED/PROCESSING: aún no hay resultado final de la DIAN. SENT: ya se envió y respondió.
+// FAILED: error técnico interno (no es un rechazo de la DIAN).
+export type DianSubmissionStatus = "QUEUED" | "PROCESSING" | "SENT" | "FAILED";
+
 export interface InvoiceBill {
     id: number;
     document: {
@@ -207,6 +212,8 @@ export interface InvoiceBill {
     reference_code: string;
     status: number;
     send_email: boolean;
+    dian_submission_status?: DianSubmissionStatus;
+    dian_status_id?: number;
     qr: string;
     cufe: string;
     validated: string;

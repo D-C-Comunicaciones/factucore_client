@@ -18,10 +18,10 @@ export function usePayments(options?: { params?: Record<string, any>; fetchKey?:
             
             return {
                 data: paymentsData,
-                current_page: response.current_page || 1,
-                per_page: response.per_page || 20,
-                total: response.total || paymentsData.length,
-                last_page: response.last_page || 1,
+                current_page: response.data?.current_page || 1,
+                per_page: response.data?.per_page || 20,
+                total: response.data?.total || paymentsData.length,
+                last_page: response.data?.last_page || 1,
             };
         },
     });

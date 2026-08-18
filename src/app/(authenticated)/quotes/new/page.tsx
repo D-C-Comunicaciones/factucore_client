@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { NewQuoteFooter } from "@/components/quote/new/NewQuoteFooter";
 import { NewQuoteHeader } from "@/components/quote/new/NewQuoteHeader";
@@ -24,6 +24,14 @@ import { useQuery } from "@tanstack/react-query";
 import { showToast } from "@/components/sonner/CustomToaster";
 
 export default function NewQuotePage() {
+  return (
+    <Suspense fallback={null}>
+      <NewQuotePageContent />
+    </Suspense>
+  );
+}
+
+function NewQuotePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const cloneId = searchParams?.get("cloneId");
