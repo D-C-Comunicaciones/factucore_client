@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { HelpCircle, Plus } from "lucide-react";
+import { HelpCircle, Plus, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
     Tooltip,
     TooltipContent,
@@ -8,9 +9,11 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { usePurchaseOrdersList } from "@/hooks/purchaseOrders/usePurchaseOrders";
 import { NewWarehouseModal } from "@/components/warehouse/NewWarehouseModal";
 import { NewPriceListModal } from "@/components/price-list/NewPriceListModal";
 import { NewSellerModal } from "@/components/seller/NewSellerModal";
+import { NewCostCenterModal } from "@/components/cost-centers/NewCostCenterModal";
 import { warehousesApi } from "@/lib/warehouses";
 import { queryClient } from "@/lib/queryClient";
 import { QUERY_KEYS } from "@/lib/queryKeys";
@@ -31,6 +34,11 @@ export function NewInvoiceOptions({
     setTipoDoc,
     showRemissionBar,
     setShowRemissionBar,
+    showPurchaseOrderBar,
+    setShowPurchaseOrderBar,
+    purchaseOrderId,
+    setPurchaseOrderId,
+    contactId,
     selectedSeller,
     setSelectedSeller,
     selectedCostCenter,
@@ -50,6 +58,11 @@ export function NewInvoiceOptions({
     setTipoDoc: (tipo: 'factura' | 'tiquete') => void;
     showRemissionBar: boolean;
     setShowRemissionBar: (show: boolean) => void;
+    showPurchaseOrderBar?: boolean;
+    setShowPurchaseOrderBar?: (show: boolean) => void;
+    purchaseOrderId?: string | null;
+    setPurchaseOrderId?: (id: string) => void;
+    contactId?: number | string | null;
     selectedSeller?: string | null;
     setSelectedSeller?: (id: string | null) => void;
     selectedCostCenter?: string | null;
@@ -58,6 +71,21 @@ export function NewInvoiceOptions({
     const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
     const [isPriceListModalOpen, setIsPriceListModalOpen] = useState(false);
     const [isSellerModalOpen, setIsSellerModalOpen] = useState(false);
+    const [isCostCenterModalOpen, setIsCostCenterModalOpen] = useState(false);
+    const [optimisticCostCenters, setOptimisticCostCenters] = useState<{ value: string; label: string; description?: string }[]>([]);
+    const combinedCostCenterOptions = [...costCenterOptions, ...optimisticCostCenters];
+
+    const { data: purchaseOrdersListData } = usePurchaseOrdersList({
+        params: { contact_id: contactId },
+        enabled: !!contactId,
+    });
+    const purchaseOrdersRaw = Array.isArray(purchaseOrdersListData?.purchase_orders)
+        ? purchaseOrdersListData.purchase_orders
+        : (Array.isArray(purchaseOrdersListData) ? purchaseOrdersListData : []);
+    const purchaseOrderOptions = purchaseOrdersRaw.map((po: any) => ({
+        value: String(po.id),
+        label: `${po.prefix || ""}${po.number || po.id}`,
+    }));
 
     const handleCreateWarehouse = async (data: { name: string; address: string; observations: string }) => {
         try {
@@ -77,6 +105,31 @@ export function NewInvoiceOptions({
             showToast("Bodega creada exitosamente", "success");
         } catch (error) {
             showToast("Error al crear la bodega", "error");
+        }
+    };
+
+    const handleCreateCostCenter = async (data: { name: string; code: string; description: string }, createNew?: boolean) => {
+        try {
+            const { costCentersApi } = await import("@/lib/costCenters");
+            const res = await costCentersApi.createCostCenter({
+                name: data.name,
+                code: data.code,
+                description: data.description,
+            });
+            await queryClient.invalidateQueries({ queryKey: ['costCenters'] });
+
+            const newCostCenter = res?.data?.costCenter || res?.data || res;
+            if (newCostCenter?.id) {
+                setOptimisticCostCenters(prev => [...prev, { value: String(newCostCenter.id), label: newCostCenter.name || String(newCostCenter.id), description: newCostCenter.description || "" }]);
+                setSelectedCostCenter?.(String(newCostCenter.id));
+            }
+            if (!createNew) {
+                setIsCostCenterModalOpen(false);
+            }
+            showToast("Centro de costo creado exitosamente", "success");
+        } catch (error) {
+            showToast("Error al crear el centro de costo", "error");
+            throw error;
         }
     };
 
@@ -240,15 +293,24 @@ export function NewInvoiceOptions({
                     <SearchableSelect
                         value={selectedCostCenter || ""}
                         onValueChange={setSelectedCostCenter as any}
-                        options={costCenterOptions}
+                        options={combinedCostCenterOptions}
                         placeholder="Seleccionar centro de costos"
                         searchPlaceholder="Buscar centro de costos..."
+                        footer={
+                            <button
+                                className="w-full text-left px-3 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-1"
+                                onClick={() => setIsCostCenterModalOpen(true)}
+                            >
+                                <Plus className="w-4 h-4" />
+                                Nuevo centro de costos
+                            </button>
+                        }
                     />
                 </div>
 
                 <div className="shrink-0 flex items-end h-[38px] gap-2">
                     <button
-                        onClick={() => { }}
+                        onClick={() => setShowPurchaseOrderBar?.(!showPurchaseOrderBar)}
                         className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors cursor-pointer whitespace-nowrap h-full"
                     >
                         <Plus className="w-4 h-4 shrink-0" />
@@ -263,6 +325,38 @@ export function NewInvoiceOptions({
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
+                    </button>
+                </div>
+            </div>
+
+            {/* ORDEN DE COMPRA BAR */}
+            <div className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                showPurchaseOrderBar ? "max-h-24 opacity-100 mt-4" : "max-h-0 opacity-0"
+            )}>
+                <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-primary">Orden de compra</span>
+                        {contactId ? (
+                            <div className="w-[240px]">
+                                <SearchableSelect
+                                    value={purchaseOrderId || ""}
+                                    onValueChange={(val) => setPurchaseOrderId?.(val)}
+                                    options={purchaseOrderOptions}
+                                    placeholder="Buscar"
+                                    searchPlaceholder="Buscar orden de compra..."
+                                    className="w-full bg-white h-9"
+                                    emptyMessage="Sin resultados"
+                                />
+                            </div>
+                        ) : (
+                            <span className="text-sm font-medium text-destructive">
+                                Por favor seleccione un cliente para poder consultar sus órdenes de compra registradas
+                            </span>
+                        )}
+                    </div>
+                    <button onClick={() => setShowPurchaseOrderBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors">
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
             </div>
@@ -288,6 +382,13 @@ export function NewInvoiceOptions({
                 onSave={(data: any) => {
                     if (data?.id) setSelectedSeller?.(String(data.id));
                 }}
+            />
+
+            <NewCostCenterModal
+                open={isCostCenterModalOpen}
+                onOpenChange={setIsCostCenterModalOpen}
+                onSave={handleCreateCostCenter}
+                onCancel={() => setIsCostCenterModalOpen(false)}
             />
         </div>
     );

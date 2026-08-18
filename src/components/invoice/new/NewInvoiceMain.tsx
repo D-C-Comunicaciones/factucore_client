@@ -21,6 +21,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { useRemissionsList } from "@/hooks/remissions/useRemissions";
 
 // Reusable component for currency formatting without cursor jumps
 function FormattedInput({ value, onChange, placeholder, className }: any) {
@@ -87,6 +88,8 @@ export function NewInvoiceMain({
     setFormState,
     showRemissionBar,
     setShowRemissionBar,
+    showPurchaseOrderBar,
+    setShowPurchaseOrderBar,
     errors,
     onRefetchResolutions,
     initialContactId,
@@ -107,6 +110,8 @@ export function NewInvoiceMain({
     setFormState: React.Dispatch<React.SetStateAction<any>>;
     showRemissionBar?: boolean;
     setShowRemissionBar?: (show: boolean) => void;
+    showPurchaseOrderBar?: boolean;
+    setShowPurchaseOrderBar?: (show: boolean) => void;
     errors?: Record<string, string>;
     onRefetchResolutions?: () => void;
     initialContactId?: number | string | null;
@@ -150,6 +155,15 @@ export function NewInvoiceMain({
         return () => clearInterval(timer);
     }, []);
     const [cliente, setCliente] = useState<string>("");
+
+    const { data: remissionsListData } = useRemissionsList({
+        params: { contact_id: cliente },
+        enabled: !!cliente,
+    });
+    const remissionOptions = (remissionsListData?.remissions || []).map((r: any) => ({
+        value: String(r.id),
+        label: `${(r as any).prefix || ""}${r.number || r.id}`,
+    }));
     const [medioPago, setMedioPago] = useState<string>("");
     const [docType, setDocType] = useState<string>("");
 
@@ -1081,23 +1095,50 @@ export function NewInvoiceMain({
                     <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
                         <div className="flex items-center gap-3">
                             <span className="text-sm font-semibold text-primary">Remisión</span>
-                            <div className="w-[240px]">
-                                <SearchableSelect
-                                    value={formState.remission_id || ""}
-                                    onValueChange={(val) => setFormState((prev: any) => ({ ...prev, remission_id: val }))}
-                                    options={[]}
-                                    placeholder="Buscar"
-                                    searchPlaceholder="Buscar remisión..."
-                                    className="w-full bg-white h-9"
-                                    emptyMessage={cliente ? "Sin resultados" : "Debe seleccionar primero un cliente para la factura"}
-                                />
-                            </div>
+                            {cliente ? (
+                                <div className="w-[240px]">
+                                    <SearchableSelect
+                                        value={formState.remission_id || ""}
+                                        onValueChange={(val) => setFormState((prev: any) => ({ ...prev, remission_id: val }))}
+                                        options={remissionOptions}
+                                        placeholder="Buscar"
+                                        searchPlaceholder="Buscar remisión..."
+                                        className="w-full bg-white h-9"
+                                        emptyMessage="Sin resultados"
+                                    />
+                                </div>
+                            ) : (
+                                <span className="text-sm font-medium text-destructive">
+                                    Por favor seleccione un cliente para poder consultar sus remisiones registradas
+                                </span>
+                            )}
                         </div>
                         <button onClick={() => setShowRemissionBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors">
                             <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
+
+                {/* ORDEN DE COMPRA AGREGADA */}
+                {formState.purchase_order_id && (
+                    <div className="mt-6">
+                        <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm font-semibold text-primary">Orden de compra</span>
+                                <span className="text-sm text-foreground">N° {formState.purchase_order_id}</span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setFormState((prev: any) => ({ ...prev, purchase_order_id: "" }));
+                                    setShowPurchaseOrderBar?.(false);
+                                }}
+                                className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* FOOTER & TOTALS */}
                 <div className="mt-8 border-t border-border pt-8">

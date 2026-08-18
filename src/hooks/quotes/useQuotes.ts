@@ -1,13 +1,7 @@
 ﻿import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { QuotesService } from "@/lib/quotes";
 
-import type {
-    Quote,
-    QuoteDetailResponse,
-    QuoteSummary,
-    QuoteListData,
-    QuoteFindAllSuccess,
-} from "@/types/quote";
+import type { Quote, QuoteDetailResponse, QuoteSummary, QuoteListData, QuoteFindAllSuccess } from "@/types/quote";
 
 import type { ApiResponse } from "@/types/api";
 
@@ -124,7 +118,7 @@ export function useCreateQuote() {
             const res = await QuotesService.create(data);
 
             if (!res || res.status !== "success") {
-                throw new Error(res?.message || "Error al crear quote");
+                throw new Error(res?.message || "Error al crear cotización");
             }
 
             return res.data;
@@ -216,7 +210,7 @@ export function useUpdateQuote() {
 }
 
 // =========================
-// ðŸ“Œ SEND TO DIAN
+// 📌 SEND TO DIAN
 // =========================
 export function useSendQuote() {
     const queryClient = useQueryClient();
@@ -230,7 +224,7 @@ export function useSendQuote() {
                 // In this case, usually we let the component handle it or throw
                 if (res?.dian && res.dian.estado_documento === "NO APROBADA") {
                     // Let's attach the response to the error so we can read it
-                    const err = new Error(res.dian.mensaje_dian || "La DIAN no aprobÃ³ la quote");
+                    const err = new Error(res.dian.mensaje_dian || "La DIAN no aprobó la quote");
                     (err as any).dian = res.dian;
                     throw err;
                 }
@@ -247,4 +241,3 @@ export function useSendQuote() {
         },
     });
 }
-

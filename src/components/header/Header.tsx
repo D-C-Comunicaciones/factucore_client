@@ -6,7 +6,6 @@ import {
   Search,
   Plus,
   HelpCircle,
-  Bell,
   Grid3x3,
   ChevronDown,
 } from "lucide-react";
@@ -14,6 +13,7 @@ import { UserMenu } from "../UserMenu";
 import { HelpCenterPopover } from "./HelpCenterPopover";
 import { SolutionsPopover } from "./SolutionsPopover";
 import { AccountSwitcher } from "./AccountSwitcher";
+import { NotificationBell } from "./NotificationBell";
 import { AuthService } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import {
@@ -141,11 +141,15 @@ export function Header({
               <FileBox className="mr-2 h-4 w-4 text-gray-500" />
               <span>Remisión</span>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/purchase-orders/new')} className="cursor-pointer focus:bg-gray-100">
+              <ShoppingCart className="mr-2 h-4 w-4 text-gray-500" />
+              <span>Orden de compra recibida</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/supplier-invoices/new')} className="cursor-pointer focus:bg-gray-100">
               <FileDown className="mr-2 h-4 w-4 text-gray-500" />
               <span>Factura de proveedor</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/purchase-order/new')} className="cursor-pointer focus:bg-gray-100">
+            <DropdownMenuItem onClick={() => router.push('/expenses/purchase-orders/new')} className="cursor-pointer focus:bg-gray-100">
               <ShoppingCart className="mr-2 h-4 w-4 text-gray-500" />
               <span>Orden de compra</span>
             </DropdownMenuItem>
@@ -195,9 +199,7 @@ export function Header({
           )}
         </div>
 
-        <button className="p-1 hover:bg-gray-100 rounded-lg">
-          <Bell className="w-4 h-4" />
-        </button>
+        <NotificationBell />
 
         <div className="relative hidden sm:block">
           <button
@@ -289,6 +291,7 @@ export function Header({
                   { parent: "Ingresos", title: "Notas débito", path: "/debit-notes", keywords: ["ingresos", "notas", "debito", "debitos", "debit-notes"] },
                   { parent: "Ingresos", title: "Cotizaciones", path: "/quotes", keywords: ["ingresos", "cotizaciones", "presupuestos", "quotes"] },
                   { parent: "Ingresos", title: "Remisiones", path: "/remissions", keywords: ["ingresos", "remisiones", "despachos", "entregas", "remissions"] },
+                  { parent: "Ingresos", title: "Órdenes de compra recibidas", path: "/purchase-orders", keywords: ["ingresos", "ordenes", "compra", "recibidas", "clientes", "purchase-orders"] },
 
                   // Gastos
                   { parent: "Gastos", title: "Facturas de compra", path: "/gastos/facturas-compra", keywords: ["gastos", "compras", "facturas", "proveedores"] },
@@ -297,7 +300,7 @@ export function Header({
                   { parent: "Gastos", title: "Pagos", path: "/gastos/pagos", keywords: ["gastos", "pagos", "egresos", "desembolsos"] },
                   { parent: "Gastos", title: "Pagos recurrentes", path: "/gastos/pagos-recurrentes", keywords: ["gastos", "pagos", "recurrentes", "suscripciones"] },
                   { parent: "Gastos", title: "Notas débito", path: "/gastos/notas-debito", keywords: ["gastos", "notas", "debito", "devoluciones compra"] },
-                  { parent: "Gastos", title: "Órdenes de compra", path: "/gastos/ordenes-compra", keywords: ["gastos", "ordenes", "compra", "pedidos"] },
+                  { parent: "Gastos", title: "Órdenes de compra", path: "/expenses/purchase-orders", keywords: ["gastos", "ordenes", "compra", "pedidos"] },
                   { parent: "Gastos", title: "Recepción de comprobantes", path: "/gastos/recepcion-comprobantes", keywords: ["gastos", "recepcion", "comprobantes", "xml", "dian"] },
 
                   // Contactos

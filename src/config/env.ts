@@ -5,6 +5,8 @@ export const envs = {
     testUserEmail: process.env.NEXT_PUBLIC_TEST_USER_EMAIL || '',
     testUserPassword: process.env.NEXT_PUBLIC_TEST_USER_PASSWORD || '',
     defaultCurrency: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || 'COP',
+    reverbAppKey: process.env.NEXT_PUBLIC_REVERB_APP_KEY || '',
+    reverbHost: process.env.NEXT_PUBLIC_REVERB_HOST || '',
 } as const
 
 // Validate required environment variables

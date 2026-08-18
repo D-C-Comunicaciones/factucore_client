@@ -132,6 +132,7 @@ export default function AuthenticatedLayout({
                 { icon: FileText, label: 'Notas débito', path: '/debit-notes', moduleCode: 'credit_notes' },
                 { icon: FileText, label: 'Cotizaciones', path: '/quotes' },
                 { icon: FileText, label: 'Remisiones', path: '/remissions' },
+                { icon: FileText, label: 'Órd. de compra recibidas', path: '/purchase-orders' },
             ]
         },
         {
@@ -146,7 +147,7 @@ export default function AuthenticatedLayout({
                 { icon: ShoppingBag, label: 'Pagos', path: '/gastos/pagos' },
                 { icon: ShoppingBag, label: 'Pagos recurrentes', path: '/gastos/pagos-recurrentes' },
                 { icon: ShoppingBag, label: 'Notas débito', path: '/gastos/notas-debito' },
-                { icon: ShoppingBag, label: 'Órdenes de compra', path: '/gastos/ordenes-compra' },
+                { icon: ShoppingBag, label: 'Órdenes de compra', path: '/expenses/purchase-orders' },
                 { icon: ShoppingBag, label: 'Recepción de comprobantes', path: '/gastos/recepcion-comprobantes' },
             ]
         },
