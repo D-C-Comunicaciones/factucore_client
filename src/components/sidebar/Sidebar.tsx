@@ -163,7 +163,8 @@ function SidebarMenuItems({
                           sub.label === "Pagos recibidos" ||
                           sub.label === "Devoluciones en venta" ||
                           sub.label === "Cotizaciones" ||
-                          sub.label === "Remisiones") && (
+                          sub.label === "Remisiones" ||
+                          sub.label === "Órdenes de compra recibidas") && (
                             <Link
                               href={sub.path + '/new'}
                               className="

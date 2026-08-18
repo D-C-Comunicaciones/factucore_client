@@ -175,8 +175,8 @@
     "semantic_hash": ""
   },
   "src/app/(authenticated)/layout.tsx": {
-    "mtime": 1787012612.2972312,
-    "ast_hash": "43f0f8e300fe99baf0c5bbb54c5324e1",
+    "mtime": 1787011823.2723987,
+    "ast_hash": "b2876f910280a362474506fd64d255a9",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/payments/[id]/page.tsx": {
@@ -640,8 +640,8 @@
     "semantic_hash": ""
   },
   "src/components/header/Header.tsx": {
-    "mtime": 1787012055.3239694,
-    "ast_hash": "761be4955fcc0c1258804d50b68394cf",
+    "mtime": 1787010807.2848122,
+    "ast_hash": "b94d7c51200c87773c2059c8317b0c80",
     "semantic_hash": ""
   },
   "src/components/header/HelpCenterPopover.tsx": {
@@ -2570,23 +2570,28 @@
     "semantic_hash": ""
   },
   "src/components/purchase-order/PurchaseOrderTable.tsx": {
-    "mtime": 1787011984.772781,
-    "ast_hash": "feb11ee8c93b0407b8c484f6acc62878",
+    "mtime": 1787011668.1260252,
+    "ast_hash": "5481a1fbfafd4968ab6ac027a4162252",
     "semantic_hash": ""
   },
   "src/components/purchase-order/details/PurchaseOrderDetailView.tsx": {
-    "mtime": 1787013642.4069982,
-    "ast_hash": "0505b9370d29cd50563ffcf2eeb15a78",
+    "mtime": 1787010706.1326208,
+    "ast_hash": "6e9955d3c687bafc5bd00288d03b4a82",
     "semantic_hash": ""
   },
   "src/components/purchase-order/new/NewPurchaseOrderForm.tsx": {
-    "mtime": 1787013621.9713898,
-    "ast_hash": "e6f1605b4a6285f280615a3a3e02350d",
+    "mtime": 1787010747.5498931,
+    "ast_hash": "8063d16a64fb95aa79a2e5b80a2c0353",
+    "semantic_hash": ""
+  },
+  "src/components/purchase-order/new/PurchaseOrderItemsTable.tsx": {
+    "mtime": 1787010555.429737,
+    "ast_hash": "6f983667990db71526e2e00d7be0bdb8",
     "semantic_hash": ""
   },
   "src/components/purchase-order/table/PurchaseOrderTableBody.tsx": {
-    "mtime": 1787011984.9604764,
-    "ast_hash": "4e8440b30964e01874efeba954d6b314",
+    "mtime": 1787011648.9302044,
+    "ast_hash": "77d76bb67a9a1687953bf5ffe828aaf3",
     "semantic_hash": ""
   },
   "src/components/purchase-order/table/PurchaseOrderTablePagination.tsx": {
@@ -2595,8 +2600,8 @@
     "semantic_hash": ""
   },
   "src/components/purchase-order/table/columns.tsx": {
-    "mtime": 1787011984.8665085,
-    "ast_hash": "7913109535fd324375e84e5dfb75f6c3",
+    "mtime": 1787011625.3946643,
+    "ast_hash": "9af81b7c69a2678c64feaab48fe626e5",
     "semantic_hash": ""
   },
   "src/components/users/UserInfoPanel.tsx": {
@@ -2615,8 +2620,8 @@
     "semantic_hash": ""
   },
   "src/hooks/purchaseOrders/usePurchaseOrderBuilder.ts": {
-    "mtime": 1787013012.8451552,
-    "ast_hash": "c49ff0a29c71d953978767b0b8dd81e1",
+    "mtime": 1787010530.390693,
+    "ast_hash": "63fbcae0ac2c187287b6a143df3747a7",
     "semantic_hash": ""
   },
   "src/hooks/purchaseOrders/usePurchaseOrders.ts": {
@@ -2645,8 +2650,8 @@
     "semantic_hash": ""
   },
   "src/types/purchaseOrder.ts": {
-    "mtime": 1787013258.7207353,
-    "ast_hash": "cfdafab5afe4c5f0e2d8cd253dd22577",
+    "mtime": 1787011455.2717042,
+    "ast_hash": "771c0806878e8e9fd6da7372e5557427",
     "semantic_hash": ""
   },
   "comments-notifications.md": {
@@ -2660,13 +2665,38 @@
     "semantic_hash": ""
   },
   "prompt.md": {
-    "mtime": 1787012898.637195,
-    "ast_hash": "403177850550dc882f95e07772aa431b",
+    "mtime": 1787008973.3828678,
+    "ast_hash": "d4671d218ba4262f5cbfa29f55ac186f",
+    "semantic_hash": ""
+  },
+  "src/app/(authenticated)/gastos/ordenes-compra/[id]/edit/page.tsx": {
+    "mtime": 1787011834.5612578,
+    "ast_hash": "466f62f1c03f3a632bf7224531e190d7",
+    "semantic_hash": ""
+  },
+  "src/app/(authenticated)/gastos/ordenes-compra/[id]/page.tsx": {
+    "mtime": 1787011743.0851293,
+    "ast_hash": "1bea20123e3731b8d8ed892311def028",
+    "semantic_hash": ""
+  },
+  "src/app/(authenticated)/gastos/ordenes-compra/new/page.tsx": {
+    "mtime": 1787011723.342945,
+    "ast_hash": "c9c8fa3602fa75f201bd43b78f8c0beb",
+    "semantic_hash": ""
+  },
+  "src/app/(authenticated)/gastos/ordenes-compra/page.tsx": {
+    "mtime": 1787011735.7914531,
+    "ast_hash": "2f087c4725b925d31ebbd79275c80e38",
     "semantic_hash": ""
   },
   "src/components/purchase-order/internal/InternalPurchaseOrderDetailView.tsx": {
-    "mtime": 1787013692.9428685,
-    "ast_hash": "4e9bb99b42d97a935bb8e9327a9c7cd9",
+    "mtime": 1787011697.9725158,
+    "ast_hash": "f72ce7ce8d435db3adc7819ca6baae37",
+    "semantic_hash": ""
+  },
+  "src/components/purchase-order/internal/InternalPurchaseOrderItemsTable.tsx": {
+    "mtime": 1787011515.7833755,
+    "ast_hash": "a03f859e17e4ee08ed0bae902da12127",
     "semantic_hash": ""
   },
   "src/components/purchase-order/internal/NewInternalPurchaseOrderFooter.tsx": {
@@ -2675,13 +2705,13 @@
     "semantic_hash": ""
   },
   "src/components/purchase-order/internal/NewInternalPurchaseOrderHeader.tsx": {
-    "mtime": 1787013670.2017717,
-    "ast_hash": "7333980ee02db8d130df1b21d710b31a",
+    "mtime": 1787011527.4208715,
+    "ast_hash": "fb45c1c6749f389a18c6df671316e187",
     "semantic_hash": ""
   },
   "src/components/purchase-order/internal/NewInternalPurchaseOrderMain.tsx": {
-    "mtime": 1787013724.3030949,
-    "ast_hash": "011c9d3909b1282a2104fdffed94d13f",
+    "mtime": 1787011799.6318002,
+    "ast_hash": "e737f5d3cb93fd3fd42ea3515ddafb48",
     "semantic_hash": ""
   },
   "src/components/purchase-order/internal/NewInternalPurchaseOrderOptions.tsx": {
@@ -2689,34 +2719,9 @@
     "ast_hash": "80b75a0707a708d62dcbb8d1f2c847dd",
     "semantic_hash": ""
   },
-  "src/app/(authenticated)/expenses/purchase-orders/[id]/edit/page.tsx": {
-    "mtime": 1787013240.7347035,
-    "ast_hash": "761bf2049c3f0a1e27d67e41a9aca0d1",
-    "semantic_hash": ""
-  },
-  "src/app/(authenticated)/expenses/purchase-orders/[id]/page.tsx": {
-    "mtime": 1787011984.446244,
-    "ast_hash": "739eeb9a8d6ac60836878543d5df943b",
-    "semantic_hash": ""
-  },
-  "src/app/(authenticated)/expenses/purchase-orders/new/page.tsx": {
-    "mtime": 1787013211.8108022,
-    "ast_hash": "e0ce65d5718fd112e020070a48bbcd26",
-    "semantic_hash": ""
-  },
-  "src/app/(authenticated)/expenses/purchase-orders/page.tsx": {
-    "mtime": 1787012682.062926,
-    "ast_hash": "ca8cf8f500049f1c1c61198b45ad52a9",
-    "semantic_hash": ""
-  },
-  "src/components/purchase-order/PurchaseOrderGlobalAdjustments.tsx": {
-    "mtime": 1787013103.809746,
-    "ast_hash": "0bd8bc92fefef1fa2d1f8bd06301c16a",
-    "semantic_hash": ""
-  },
-  "src/components/purchase-order/PurchaseOrderLineItemsTable.tsx": {
-    "mtime": 1787013069.7703083,
-    "ast_hash": "e68e4ecece8d66eddb2a08e7610f325a",
+  "src/hooks/purchaseOrders/useInternalPurchaseOrderBuilder.ts": {
+    "mtime": 1787011482.1457913,
+    "ast_hash": "ce909f4673cfed31e3e2813b2b3f6880",
     "semantic_hash": ""
   }
 }

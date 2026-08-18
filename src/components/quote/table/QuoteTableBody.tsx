@@ -154,14 +154,14 @@ export function QuoteTableBody({ table, columns, loading, showNoDataMessage = fa
                       Aún no tienes cotizaciones!
                     </div>
                     <div className="mt-2 mb-6 text-center text-sm text-gray-500 max-w-md">
-                      Crea tu primera quote y empieza a tomar el control de tus ingresos.
+                      Crea tu primera cotización y empieza a tomar el control de tus ingresos.
                     </div>
                     <button
                       type="button"
                       className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
                       onClick={() => router.push("/quotes/new")}
                     >
-                      Crear primera quote
+                      Crear primera cotización
                     </button>
                   </div>
                 ) : (

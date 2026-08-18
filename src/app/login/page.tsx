@@ -131,16 +131,18 @@ export default function LoginPage() {
                     </div>
                   </Field>
 
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={fillTestUser}
-                    disabled={isLoading}
-                    className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-                  >
-                    <IconUser className="size-4 text-gray-600" />
-                    Usar usuario de prueba
-                  </Button>
+                  {process.env.NODE_ENV === "development" && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={fillTestUser}
+                      disabled={isLoading}
+                      className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+                    >
+                      <IconUser className="size-4 text-gray-600" />
+                      Usar usuario de prueba
+                    </Button>
+                  )}
 
                   <Field>
                     <Button type="submit" className="w-full" disabled={isLoading}>

@@ -102,6 +102,7 @@ export default function NewInvoicePage() {
   const [showWarehouse, setShowWarehouse] = useState(true);
   const [showPriceList, setShowPriceList] = useState(true);
   const [showRemissionBar, setShowRemissionBar] = useState(false);
+  const [showPurchaseOrderBar, setShowPurchaseOrderBar] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Initialize the builder hook
@@ -455,6 +456,8 @@ export default function NewInvoicePage() {
         items,
         allowance_charges,
         seller_id,
+        remission_id,
+        purchase_order_id,
         ...restRaw
       } = rawPayload;
 
@@ -487,9 +490,17 @@ export default function NewInvoicePage() {
         finalPayload.quotation_id = Number(quoteId);
       }
 
-      // Si la factura se está creando a partir de una remisión ("Convertir a factura"), enlazarla
-      if (remissionId) {
+      // Remisión asociada: la seleccionada manualmente en el formulario tiene prioridad sobre
+      // la remisión de origen ("Convertir a factura") pasada por query param
+      if (remission_id) {
+        finalPayload.remission_id = Number(remission_id);
+      } else if (remissionId) {
         finalPayload.remission_id = Number(remissionId);
+      }
+
+      // Orden de compra asociada a esta factura
+      if (purchase_order_id) {
+        finalPayload.purchase_order_id = Number(purchase_order_id);
       }
 
       // Remove undefined values cleanly
@@ -595,6 +606,11 @@ export default function NewInvoicePage() {
             setTipoDoc={setTipoDoc}
             showRemissionBar={showRemissionBar}
             setShowRemissionBar={setShowRemissionBar}
+            showPurchaseOrderBar={showPurchaseOrderBar}
+            setShowPurchaseOrderBar={setShowPurchaseOrderBar}
+            purchaseOrderId={formState.purchase_order_id}
+            setPurchaseOrderId={(val) => setFormState((prev: any) => ({ ...prev, purchase_order_id: val }))}
+            contactId={formState.contact_id}
             costCenterOptions={costCenterOptions}
             selectedCostCenter={selectedCostCenter}
             setSelectedCostCenter={setSelectedCostCenter}
@@ -618,6 +634,8 @@ export default function NewInvoicePage() {
             onNotesChange={(val: string) => setFormState((prev: any) => ({ ...prev, notes: val }))}
             showRemissionBar={showRemissionBar}
             setShowRemissionBar={setShowRemissionBar}
+            showPurchaseOrderBar={showPurchaseOrderBar}
+            setShowPurchaseOrderBar={setShowPurchaseOrderBar}
             errors={errors}
           />
           <NewInvoicePayment
