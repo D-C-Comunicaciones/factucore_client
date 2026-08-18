@@ -190,6 +190,7 @@ export function usePurchaseOrderBuilder() {
                 const taxRate = Number(item.taxObj.rate || item.taxObj.percentage || 0);
                 itemObj.taxes = [
                     {
+                        tax_rate_id: Number(item.taxObj.tax_rate_id || item.taxObj.id || item.taxObj.tax_id || 0) || undefined,
                         rate: taxRate,
                         type: item.taxObj.type === "fixed" ? "fixed" : "percentage",
                         name: item.taxObj.name || `IVA (${taxRate}%)`,

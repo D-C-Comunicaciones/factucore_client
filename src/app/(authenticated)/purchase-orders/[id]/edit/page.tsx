@@ -10,9 +10,7 @@ export default function EditPurchaseOrderPage() {
   const router = useRouter();
   const id = params?.id as string;
 
-  const { data, isLoading, isError } = usePurchaseOrder(id);
-
-  const purchaseOrder = data?.data?.purchase_order || data?.data;
+  const { data: purchaseOrder, isLoading, isError } = usePurchaseOrder(id);
 
   if (isLoading) {
     return (

@@ -22,7 +22,6 @@ export default function QuoteDetailPage() {
     const { data, isLoading, isError, isFetching, refetch } = useQuote(enabled ? id : "");
 
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [comments, setComments] = useState<any[]>([]);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
@@ -172,7 +171,7 @@ export default function QuoteDetailPage() {
 
             <QuoteDetailExtraInfo quote={quote} invoices={invoices} />
 
-            <CommentsAndReminders comments={comments} setComments={setComments} />
+            <CommentsAndReminders type="quotation" commentableId={enabled ? id : null} />
         </div>
     );
 }

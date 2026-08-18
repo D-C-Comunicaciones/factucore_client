@@ -441,11 +441,7 @@ export default function EditRemissionPage() {
             errors={errors}
           />
 
-          <CommentsAndReminders
-            comments={formState.comments || []}
-            setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
-            requiresSaveFirst={true}
-          />
+          <CommentsAndReminders type="remission" commentableId={id} />
           <NewRemissionFooter
             onNavigate={() => router.push(`/remissions/${id}`)}
             onSaveAction={handleSaveAction}

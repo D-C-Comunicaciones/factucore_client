@@ -40,6 +40,13 @@ export function useNotificationsSocket() {
             }));
             queryClient.invalidateQueries({ queryKey: ["notifications", "list"] });
 
+            // Si el hilo mencionado está abierto en pantalla, refréscalo también.
+            if (notification?.commentable_type && notification?.commentable_id) {
+                queryClient.invalidateQueries({
+                    queryKey: ["comments", notification.commentable_type, String(notification.commentable_id)],
+                });
+            }
+
             if (notification?.mentioned_by?.name) {
                 showToast(
                     notification.excerpt || "Tienes una nueva mención",

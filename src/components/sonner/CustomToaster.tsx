@@ -1,7 +1,7 @@
 "use client";
 
 import { Toaster as SonnerToaster, toast } from "sonner";
-import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from "lucide-react";
+import { AlertCircle, CheckCircle, Info, AlertTriangle, X, CalendarClock, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ToastType = "success" | "error" | "warning" | "info";
@@ -130,6 +130,56 @@ export const showToastWithAction = (
   ), {
     duration: 8000,
     position: "top-right",
+  });
+};
+
+// Toast oscuro dedicado a recordatorios (distinto del genérico showToast) —
+// aparece abajo a la derecha, con la fecha/hora en una píldora y un link de
+// "Ver detalles" opcional.
+export const showReminderToast = (params: {
+  title: string;
+  dateTimeLabel: string;
+  onViewDetails?: () => void;
+}) => {
+  const { title, dateTimeLabel, onViewDetails } = params;
+
+  toast.custom((t) => (
+    <div className={cn(
+      "w-[340px] bg-[#0f172a] rounded-2xl p-5 shadow-2xl",
+      "animate-in slide-in-from-bottom-4 fade-in duration-300 ease-out",
+      "data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-bottom-4 data-[state=closed]:duration-200"
+    )}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+            <CalendarClock className="w-4 h-4 text-white" />
+          </div>
+          <h4 className="text-[15px] font-bold text-white truncate">Recordatorio</h4>
+        </div>
+        <button
+          onClick={() => toast.dismiss(t)}
+          className="text-slate-400 hover:text-slate-200 transition-colors shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="pl-[42px] mt-2 space-y-2.5">
+        <p className="text-sm text-slate-300 leading-snug break-words">{title}</p>
+        <span className="inline-flex items-center gap-1.5 bg-emerald-400/10 text-emerald-400 text-xs font-medium px-2.5 py-1 rounded-full">
+          <Bell className="w-3 h-3" /> {dateTimeLabel}
+        </span>
+        <button
+          onClick={() => { toast.dismiss(t); onViewDetails?.(); }}
+          className="block text-[#2dd4bf] hover:text-[#5eead4] text-sm font-semibold transition-colors"
+        >
+          Ver detalles
+        </button>
+      </div>
+    </div>
+  ), {
+    duration: 6000,
+    position: "bottom-right",
   });
 };
 

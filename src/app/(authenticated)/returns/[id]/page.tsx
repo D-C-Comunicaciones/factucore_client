@@ -28,7 +28,6 @@ export default function ReturnDetailPage() {
 
     const [isSending, setIsSending] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [comments, setComments] = useState<any[]>([]);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
     const [isDownloadingXml, setIsDownloadingXml] = useState(false);
@@ -271,7 +270,7 @@ export default function ReturnDetailPage() {
 
             <ReturnDetailTabs creditNote={creditNote} />
 
-            <CommentsAndReminders comments={comments} setComments={setComments} />
+            <CommentsAndReminders type="credit_note" commentableId={enabled ? id : null} />
         </div>
     );
 }

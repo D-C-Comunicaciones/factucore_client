@@ -656,6 +656,7 @@ function NewInvoicePageContent() {
           <CommentsAndReminders
             comments={formState.comments || []}
             setComments={(newComments) => setFormState({ ...formState, comments: newComments })}
+            requiresSaveFirst={true}
           />
           <NewInvoiceFooter
             onNavigate={() => router.push("/invoices")}

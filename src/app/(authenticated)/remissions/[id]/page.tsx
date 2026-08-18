@@ -22,7 +22,6 @@ export default function RemissionDetailPage() {
     const { data, isLoading, isError, isFetching, refetch } = useRemission(enabled ? id : "");
 
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [comments, setComments] = useState<any[]>([]);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
@@ -175,7 +174,7 @@ export default function RemissionDetailPage() {
 
             <RemissionDetailExtraInfo remission={remission} invoices={invoices} quotes={quotes} />
 
-            <CommentsAndReminders comments={comments} setComments={setComments} />
+            <CommentsAndReminders type="remission" commentableId={enabled ? id : null} />
         </div>
     );
 }
