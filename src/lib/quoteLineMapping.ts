@@ -1,5 +1,3 @@
-import { resolveStockFields } from "@/lib/itemStock";
-
 interface MappedLine {
     id: string;
     item_id: number | null;
@@ -86,10 +84,14 @@ export function mapQuoteItemsToLines(items: any[]): MappedLine[] {
             type: rawTax?.type || 'percentage',
         } : null;
 
-        // is_inventoriable / allow_negative_stock / stock_quantity no vienen planos en la línea:
-        // están anidados en item_snapshot (o item) del documento de origen.
-        const itemDetail = item.item_snapshot || item.item || item;
-        const { is_inventoriable, allow_negative_stock, stock_quantity } = resolveStockFields(itemDetail);
+        // item_snapshot es una foto de nombre/precio al momento de crear la cotización,
+        // NO trae stock en vivo — usarlo para resolver stock hacía que todo ítem convertido
+        // a factura apareciera "agotado" de inmediato (stock_quantity quedaba null -> 0).
+        // Se deja la línea en estado neutro (sin validar) hasta que se refresque con el
+        // stock real del ítem (ver el efecto de refresco en invoices/new/page.tsx).
+        const is_inventoriable = false;
+        const allow_negative_stock = false;
+        const stock_quantity: number | null = null;
 
         return {
             id: crypto.randomUUID(),
