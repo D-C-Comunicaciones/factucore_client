@@ -82,10 +82,24 @@ export function NewInvoiceOptions({
     const purchaseOrdersRaw = Array.isArray(purchaseOrdersListData?.purchase_orders)
         ? purchaseOrdersListData.purchase_orders
         : (Array.isArray(purchaseOrdersListData) ? purchaseOrdersListData : []);
-    const purchaseOrderOptions = purchaseOrdersRaw.map((po: any) => ({
-        value: String(po.id),
-        label: `${po.prefix || ""}${po.number || po.id}`,
-    }));
+    const purchaseOrderOptions = purchaseOrdersRaw.map((po: any) => {
+        // Las órdenes de compra externas (recibidas) no traen prefix/number —
+        // solo `reference` (digitada a mano) — así que sin este fallback el
+        // label quedaba mostrando el id crudo de la base de datos.
+        const label = po.reference || `${po.prefix || ""}${po.number || po.id}`;
+        const contactName = typeof po.contact === "string"
+            ? po.contact
+            : po.contact?.registration_name
+                || `${po.contact?.first_name || ""} ${po.contact?.last_name || ""}`.trim()
+                || po.contact?.name;
+        const total = po.total != null ? `$ ${Number(po.total).toLocaleString("es-CO")}` : "";
+        const description = [contactName, po.issue_date, total].filter(Boolean).join(" · ");
+        return { value: String(po.id), label, description: description || undefined };
+    });
+    const selectedPurchaseOrder = purchaseOrdersRaw.find((po: any) => String(po.id) === purchaseOrderId);
+    const selectedPurchaseOrderInfo = selectedPurchaseOrder
+        ? purchaseOrderOptions.find((o) => o.value === String(selectedPurchaseOrder.id))?.description
+        : undefined;
 
     const handleCreateWarehouse = async (data: { name: string; address: string; observations: string }) => {
         try {
@@ -332,22 +346,29 @@ export function NewInvoiceOptions({
             {/* ORDEN DE COMPRA BAR */}
             <div className={cn(
                 "overflow-hidden transition-all duration-300 ease-in-out",
-                showPurchaseOrderBar ? "max-h-24 opacity-100 mt-4" : "max-h-0 opacity-0"
+                showPurchaseOrderBar ? "max-h-32 opacity-100 mt-4" : "max-h-0 opacity-0"
             )}>
-                <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-primary">Orden de compra</span>
+                <div className="bg-slate-50 flex items-start justify-between gap-4 p-3 border border-border rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <span className="text-sm font-semibold text-primary mt-1.5 shrink-0">Orden de compra</span>
                         {contactId ? (
-                            <div className="w-[240px]">
-                                <SearchableSelect
-                                    value={purchaseOrderId || ""}
-                                    onValueChange={(val) => setPurchaseOrderId?.(val)}
-                                    options={purchaseOrderOptions}
-                                    placeholder="Buscar"
-                                    searchPlaceholder="Buscar orden de compra..."
-                                    className="w-full bg-white h-9"
-                                    emptyMessage="Sin resultados"
-                                />
+                            <div className="flex flex-col gap-1">
+                                <div className="w-[240px]">
+                                    <SearchableSelect
+                                        value={purchaseOrderId || ""}
+                                        onValueChange={(val) => setPurchaseOrderId?.(val)}
+                                        options={purchaseOrderOptions}
+                                        placeholder="Buscar"
+                                        searchPlaceholder="Buscar orden de compra..."
+                                        className="w-full bg-white h-9"
+                                        emptyMessage="Sin resultados"
+                                    />
+                                </div>
+                                {selectedPurchaseOrderInfo && (
+                                    <p className="text-xs text-muted-foreground truncate max-w-[320px]">
+                                        {selectedPurchaseOrderInfo}
+                                    </p>
+                                )}
                             </div>
                         ) : (
                             <span className="text-sm font-medium text-destructive">
@@ -355,7 +376,7 @@ export function NewInvoiceOptions({
                             </span>
                         )}
                     </div>
-                    <button onClick={() => setShowPurchaseOrderBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors">
+                    <button onClick={() => setShowPurchaseOrderBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors shrink-0">
                         <X className="w-4 h-4" />
                     </button>
                 </div>

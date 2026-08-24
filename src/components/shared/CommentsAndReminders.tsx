@@ -10,8 +10,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getSession } from "@/common/interfaces/session";
 import { useCommentsList, useCreateComment, useUpdateComment, useDeleteComment, useMentionableUsers } from "@/hooks/comments/useComments";
+import { useCommentsSocket } from "@/hooks/comments/useCommentsSocket";
 import type { CommentableType, Comment as ApiComment, CommentReply, MentionableUser } from "@/types/comment";
 import { RemindersPanel } from "./reminder/RemindersPanel";
+import { LegacyRemindersPanel } from "./reminder/LegacyRemindersPanel";
 
 function stripHtml(html: string): string {
   if (typeof document === "undefined") return html.replace(/<[^>]*>/g, "");
@@ -47,37 +49,107 @@ function initialsOf(name?: string) {
   return (name || "?").trim().charAt(0).toUpperCase() || "?";
 }
 
-const HELP_POPOVER = (
-  <Popover>
-    <PopoverTrigger asChild>
-      <button className="ml-1.5 mb-0.5 text-primary hover:text-primary/80 transition-colors cursor-help">
-        <HelpCircle className="w-3.5 h-3.5" />
-      </button>
-    </PopoverTrigger>
-    <PopoverContent side="bottom" align="center" sideOffset={8} className="w-[320px] p-0 rounded-xl overflow-hidden shadow-lg border-border">
-      <div className="bg-[#DFF5F2] p-4 flex justify-center items-center relative">
-        <div className="w-full max-w-[240px] bg-white rounded shadow-sm opacity-60 flex flex-col gap-2.5 p-3">
-          <div className="w-1/2 h-2.5 bg-slate-200 rounded mb-1"></div>
-          <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
-          <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
-          <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
-          <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+// Tooltip de ayuda de una pestaña (Comentarios/Recordatorios): se abre al
+// pasar el mouse por el ícono "?" (no al hacer clic), no al hacer clic.
+function TabHelpTooltip({
+  step,
+  title,
+  description,
+  illustration,
+  actionLabel,
+  onAction,
+}: {
+  step: string;
+  title?: React.ReactNode;
+  description: string;
+  illustration: React.ReactNode;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="ml-1.5 mb-0.5 text-primary hover:text-primary/80 transition-colors cursor-help"
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="bottom"
+        align="center"
+        sideOffset={8}
+        className="w-[320px] p-0 rounded-xl overflow-hidden shadow-lg border-border"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+      >
+        <div className="bg-primary/10 p-4 flex justify-center items-center relative">
+          {illustration}
         </div>
-      </div>
-      <div className="p-4 bg-white">
-        <h4 className="font-bold text-slate-800 flex items-center gap-1.5 mb-1.5 text-base">
-          Control total 📋 <span className="text-[#F59E0B]">⚡</span>
-        </h4>
-        <p className="text-sm text-slate-500 mb-5">Revisa y crea recordatorios en segundos.</p>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-400 font-medium">2 de 2</span>
-          <button className="bg-[#36B3A4] hover:bg-[#2C9C8F] text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
-            Finalizar <span className="text-base leading-none">→</span>
-          </button>
+        <div className="p-4 bg-white">
+          {title && (
+            <h4 className="font-bold text-slate-800 flex items-center gap-1.5 mb-1.5 text-base">
+              {title}
+            </h4>
+          )}
+          <p className="text-sm text-slate-500 mb-5">{description}</p>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-400 font-medium">{step}</span>
+            <button
+              onClick={() => {
+                onAction();
+                setOpen(false);
+              }}
+              className="bg-primary hover:bg-primary/90 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
+            >
+              {actionLabel} <span className="text-base leading-none">→</span>
+            </button>
+          </div>
         </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+const REMINDERS_HELP_ILLUSTRATION = (
+  <div className="w-full max-w-[240px] bg-white rounded shadow-sm opacity-60 flex flex-col gap-2.5 p-3">
+    <div className="w-1/2 h-2.5 bg-slate-200 rounded mb-1"></div>
+    <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+    <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+    <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+    <div className="flex justify-between items-center"><div className="w-4 h-4 rounded-full bg-slate-200"></div><div className="w-4/5 h-2 bg-slate-100 rounded"></div></div>
+  </div>
+);
+
+const COMMENTS_HELP_ILLUSTRATION = (
+  <div className="w-full max-w-[240px] bg-white rounded shadow-sm opacity-60 flex flex-col gap-2.5 p-3">
+    <div className="flex items-start gap-2">
+      <div className="w-5 h-5 rounded-full bg-slate-200 shrink-0"></div>
+      <div className="flex-1 flex flex-col gap-1">
+        <div className="w-1/3 h-2 bg-slate-200 rounded"></div>
+        <div className="w-4/5 h-2 bg-slate-100 rounded"></div>
       </div>
-    </PopoverContent>
-  </Popover>
+    </div>
+    <div className="flex items-start gap-2 ml-6">
+      <div className="w-5 h-5 rounded-full bg-slate-200 shrink-0"></div>
+      <div className="flex-1 flex flex-col gap-1">
+        <div className="w-1/4 h-2 bg-slate-200 rounded"></div>
+        <div className="w-3/5 h-2 bg-slate-100 rounded"></div>
+      </div>
+    </div>
+    <div className="flex items-start gap-2">
+      <div className="w-5 h-5 rounded-full bg-slate-200 shrink-0"></div>
+      <div className="flex-1 flex flex-col gap-1">
+        <div className="w-1/3 h-2 bg-slate-200 rounded"></div>
+        <div className="w-4/5 h-2 bg-slate-100 rounded"></div>
+      </div>
+    </div>
+  </div>
 );
 
 const EDITOR_STYLE = (
@@ -393,6 +465,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
   const currentUserId: number | undefined = session?.user?.id;
 
   const { data: comments = [], isLoading } = useCommentsList(type, commentableId);
+  useCommentsSocket(type, commentableId);
   const createMutation = useCreateComment(type, commentableId);
   const updateMutation = useUpdateComment(type, commentableId);
   const deleteMutation = useDeleteComment(type, commentableId);
@@ -547,12 +620,21 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
       {EDITOR_STYLE}
       {/* Tabs */}
       <div className="flex items-center gap-6 px-6 border-b border-gray-200 bg-white">
-        <button
-          className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'comments' ? 'border-primary text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          onClick={() => setActiveTab('comments')}
-        >
-          Comentarios
-        </button>
+        <div className="relative flex items-center gap-1.5">
+          <button
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'comments' ? 'border-primary text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            onClick={() => setActiveTab('comments')}
+          >
+            Comentarios
+          </button>
+          <TabHelpTooltip
+            step="1 de 2"
+            description="Comenta documentos y menciona usuarios en tus comentarios."
+            illustration={COMMENTS_HELP_ILLUSTRATION}
+            actionLabel="Siguiente"
+            onAction={() => setActiveTab('reminders')}
+          />
+        </div>
         <div className="relative flex items-center gap-1.5">
           <button
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reminders' ? 'border-primary text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
@@ -560,7 +642,14 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
           >
             Recordatorios
           </button>
-          {HELP_POPOVER}
+          <TabHelpTooltip
+            step="2 de 2"
+            title={<>Control total 📋 <span className="text-[#F59E0B]">⚡</span></>}
+            description="Revisa y crea recordatorios en segundos."
+            illustration={REMINDERS_HELP_ILLUSTRATION}
+            actionLabel="Finalizar"
+            onAction={() => {}}
+          />
           {remindersCount > 0 && (
             <span className="inline-flex items-center justify-center text-[11px] font-semibold rounded-full bg-slate-100 text-slate-600 px-1.5 py-0.5 min-w-[20px]">
               {remindersCount}
@@ -570,7 +659,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
       </div>
 
       {activeTab === 'reminders' ? (
-        <RemindersPanel onCountChange={setRemindersCount} />
+        <RemindersPanel type={type} remindableId={commentableId} onCountChange={setRemindersCount} />
       ) : (
         <>
       {/* Toolbar */}
@@ -677,7 +766,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deletingId !== null} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <DialogContent className="sm:max-w-[425px]" aria-describedby={undefined}>
+        <DialogContent className="sm:max-w-[425px] bg-white" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Eliminar comentario</DialogTitle>
           </DialogHeader>
@@ -700,7 +789,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
             )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeletingId(null)} className="rounded-lg border-gray-300 font-medium text-slate-700">
+            <Button variant="outline" onClick={() => setDeletingId(null)} className="rounded-lg border-gray-300 font-medium text-slate-700 hover:bg-gray-100">
               Cancelar
             </Button>
             <Button variant="destructive" onClick={handleDelete} className="rounded-lg bg-[#E11D48] hover:bg-[#BE123C] font-medium text-white">
@@ -798,12 +887,21 @@ function LegacyCommentsAndReminders({
       {EDITOR_STYLE}
       {/* Tabs */}
       <div className="flex items-center gap-6 px-6 border-b border-gray-200 bg-white">
-        <button
-          className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'comments' ? 'border-primary text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          onClick={() => setActiveTab('comments')}
-        >
-          Comentarios
-        </button>
+        <div className="relative flex items-center gap-1.5">
+          <button
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'comments' ? 'border-primary text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            onClick={() => setActiveTab('comments')}
+          >
+            Comentarios
+          </button>
+          <TabHelpTooltip
+            step="1 de 2"
+            description="Comenta documentos y menciona usuarios en tus comentarios."
+            illustration={COMMENTS_HELP_ILLUSTRATION}
+            actionLabel="Siguiente"
+            onAction={() => setActiveTab('reminders')}
+          />
+        </div>
         <div className="relative flex items-center gap-1.5">
           <button
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reminders' ? 'border-primary text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
@@ -811,7 +909,14 @@ function LegacyCommentsAndReminders({
           >
             Recordatorios
           </button>
-          {HELP_POPOVER}
+          <TabHelpTooltip
+            step="2 de 2"
+            title={<>Control total 📋 <span className="text-[#F59E0B]">⚡</span></>}
+            description="Revisa y crea recordatorios en segundos."
+            illustration={REMINDERS_HELP_ILLUSTRATION}
+            actionLabel="Finalizar"
+            onAction={() => {}}
+          />
           {remindersCount > 0 && (
             <span className="inline-flex items-center justify-center text-[11px] font-semibold rounded-full bg-slate-100 text-slate-600 px-1.5 py-0.5 min-w-[20px]">
               {remindersCount}
@@ -821,7 +926,7 @@ function LegacyCommentsAndReminders({
       </div>
 
       {activeTab === 'reminders' ? (
-        <RemindersPanel onCountChange={setRemindersCount} />
+        <LegacyRemindersPanel onCountChange={setRemindersCount} />
       ) : (
         <>
       {/* Toolbar */}
@@ -937,7 +1042,7 @@ function LegacyCommentsAndReminders({
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deletingIndex !== null} onOpenChange={(open) => !open && setDeletingIndex(null)}>
-        <DialogContent className="sm:max-w-[425px]" aria-describedby={undefined}>
+        <DialogContent className="sm:max-w-[425px] bg-white" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Eliminar comentario</DialogTitle>
           </DialogHeader>
@@ -960,7 +1065,7 @@ function LegacyCommentsAndReminders({
             )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeletingIndex(null)} className="rounded-lg border-gray-300 font-medium text-slate-700">
+            <Button variant="outline" onClick={() => setDeletingIndex(null)} className="rounded-lg border-gray-300 font-medium text-slate-700 hover:bg-gray-100">
               Cancelar
             </Button>
             <Button variant="destructive" onClick={handleDelete} className="rounded-lg bg-[#E11D48] hover:bg-[#BE123C] font-medium text-white">

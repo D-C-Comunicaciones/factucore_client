@@ -26,7 +26,7 @@ class ApiClient {
 
         // 🔥 INTERCEPTOR REQUEST (debug opcional y bearer token)
         this.client.interceptors.request.use(
-            (config) => {
+            async (config) => {
                 // 1. Obtener el token de localStorage (evitando dependencias circulares)
                 let token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
                 
@@ -46,6 +46,22 @@ class ApiClient {
                 // 2. Inyectar Bearer Token si existe
                 if (token) {
                     config.headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                // 3. Excluir este mismo socket del broadcast de lo que se está creando
+                // (comentarios en vivo) — si no, al usuario le llega su propio
+                // comentario duplicado (uno de la respuesta HTTP, otro del WebSocket).
+                if (typeof window !== 'undefined') {
+                    try {
+                        // Import perezoso para evitar inicializar Echo (y su conexión)
+                        // en cada request si nunca se usó el chat en tiempo real.
+                        const { getEcho } = await import('./echo');
+                        const echo = getEcho();
+                        const socketId = echo?.socketId?.();
+                        if (socketId) {
+                            config.headers['X-Socket-Id'] = socketId;
+                        }
+                    } catch (e) {}
                 }
 
                 if (process.env.NODE_ENV === "development") {

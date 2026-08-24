@@ -5,18 +5,23 @@ import { Bell, CalendarClock, MoreHorizontal, Pencil, Plus, Trash2 } from "lucid
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { NewReminderModal } from "./NewReminderModal";
-import { useRemindersList, useCreateReminder, useUpdateReminder, useDeleteReminder } from "@/hooks/reminders/useReminders";
-import { useRemindersSocket } from "@/hooks/reminders/useRemindersSocket";
-import type { ReminderableType, Reminder } from "@/types/reminder";
+import { showToast, showReminderToast } from "@/components/sonner/CustomToaster";
+import { NewLegacyReminderModal, type LegacyReminder } from "./NewLegacyReminderModal";
 
-function formatReminderDateTime(dueAt: string) {
-  const d = new Date(dueAt);
-  if (isNaN(d.getTime())) return "";
-  const day = d.getDate();
-  const month = d.toLocaleDateString("es-CO", { month: "short" }).replace(".", "");
-  const time = d.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit", hour12: true });
-  return `${day} ${month.charAt(0).toUpperCase() + month.slice(1)}, ${time}`;
+const MONTHS_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+function formatReminderDateTime(date: string, time: string) {
+  if (!date) return time || "";
+  const [, m, d] = date.split("-").map(Number);
+  const month = MONTHS_ES[(m || 1) - 1] || "";
+  let timeLabel = "";
+  if (time) {
+    const [hh, mm] = time.split(":").map(Number);
+    const period = hh >= 12 ? "pm" : "am";
+    const h12 = hh % 12 === 0 ? 12 : hh % 12;
+    timeLabel = `, ${h12}:${String(mm).padStart(2, "0")} ${period}`;
+  }
+  return `${d} ${month}${timeLabel}`;
 }
 
 function ReminderCard({
@@ -24,7 +29,7 @@ function ReminderCard({
   onEdit,
   onDelete,
 }: {
-  reminder: Reminder;
+  reminder: LegacyReminder;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -35,14 +40,9 @@ function ReminderCard({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-slate-800 truncate">{reminder.title}</p>
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium px-2.5 py-1 rounded-full">
-            <Bell className="w-3 h-3" /> {formatReminderDateTime(reminder.due_at)}
-          </span>
-          {reminder.user && (
-            <span className="text-xs text-slate-400 truncate">para {reminder.user.name}</span>
-          )}
-        </div>
+        <span className="inline-flex items-center gap-1.5 mt-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium px-2.5 py-1 rounded-full">
+          <Bell className="w-3 h-3" /> {formatReminderDateTime(reminder.date, reminder.time)}
+        </span>
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -64,28 +64,16 @@ function ReminderCard({
 }
 
 // ---------------------------------------------------------------------------
-// Panel de recordatorios conectado al backend real (ver recordatorios.md):
-// listado, creación, edición (con reasignación) y borrado vía API, más
-// actualización en vivo por WebSocket mientras la pantalla está abierta.
+// Panel de recordatorios "solo UI" — sin backend, para módulos que todavía no
+// están habilitados como "remindable" en el API (hoy: contactos). No confundir
+// con RemindersPanel (la versión conectada, usada por invoices/remissions/
+// quotations/payments/returns/purchase-orders — ver recordatorios.md).
 // ---------------------------------------------------------------------------
-export function RemindersPanel({
-  type,
-  remindableId,
-  onCountChange,
-}: {
-  type: ReminderableType;
-  remindableId: number | string | null | undefined;
-  onCountChange?: (count: number) => void;
-}) {
-  const { data: reminders = [], isLoading } = useRemindersList(type, remindableId);
-  useRemindersSocket(type, remindableId);
-  const createMutation = useCreateReminder(type, remindableId ?? "");
-  const updateMutation = useUpdateReminder(type, remindableId ?? "");
-  const deleteMutation = useDeleteReminder(type, remindableId ?? "");
-
+export function LegacyRemindersPanel({ onCountChange }: { onCountChange?: (count: number) => void }) {
+  const [reminders, setReminders] = useState<LegacyReminder[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editingReminder, setEditingReminder] = useState<LegacyReminder | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     onCountChange?.(reminders.length);
@@ -96,29 +84,32 @@ export function RemindersPanel({
     setModalOpen(true);
   };
 
-  const openEditModal = (reminder: Reminder) => {
+  const openEditModal = (reminder: LegacyReminder) => {
     setEditingReminder(reminder);
     setModalOpen(true);
   };
 
-  const handleSubmit = (data: { title: string; date: string; time: string; user_id: number }) => {
+  const handleSubmit = (reminder: LegacyReminder) => {
     if (editingReminder) {
-      updateMutation.mutate(
-        { id: editingReminder.id, payload: data },
-        { onSuccess: () => setModalOpen(false) }
-      );
+      setReminders((prev) => prev.map((r) => (r.id === reminder.id ? reminder : r)));
+      showToast("Recordatorio actualizado correctamente", "success");
     } else {
-      createMutation.mutate(data, { onSuccess: () => setModalOpen(false) });
+      setReminders((prev) => [reminder, ...prev]);
+      showReminderToast({
+        title: reminder.title,
+        dateTimeLabel: formatReminderDateTime(reminder.date, reminder.time),
+      });
     }
   };
 
   const handleDelete = () => {
-    if (deletingId == null) return;
-    deleteMutation.mutate(deletingId, { onSuccess: () => setDeletingId(null) });
+    if (!deletingId) return;
+    setReminders((prev) => prev.filter((r) => r.id !== deletingId));
+    setDeletingId(null);
+    showToast("Recordatorio cancelado correctamente", "success");
   };
 
   const deletingReminder = reminders.find((r) => r.id === deletingId) || null;
-  const submitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-col">
@@ -134,11 +125,7 @@ export function RemindersPanel({
       </div>
 
       <div className="bg-white min-h-[250px] max-h-[520px] overflow-y-auto p-4">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full text-slate-400 pt-10 text-sm">
-            Cargando recordatorios...
-          </div>
-        ) : reminders.length === 0 ? (
+        {reminders.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-500 pt-10">
             <Bell className="w-12 h-12 mb-3 text-primary" strokeWidth={1.5} />
             <span className="text-sm font-medium">No hay recordatorios</span>
@@ -157,12 +144,11 @@ export function RemindersPanel({
         )}
       </div>
 
-      <NewReminderModal
+      <NewLegacyReminderModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         reminder={editingReminder}
-        submitting={submitting}
       />
 
       {/* Delete Confirmation Modal */}
@@ -180,16 +166,16 @@ export function RemindersPanel({
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-800 truncate">{deletingReminder.title}</p>
-                  <p className="text-xs text-slate-400">{formatReminderDateTime(deletingReminder.due_at)}</p>
+                  <p className="text-xs text-slate-400">{formatReminderDateTime(deletingReminder.date, deletingReminder.time)}</p>
                 </div>
               </div>
             )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeletingId(null)} disabled={deleteMutation.isPending} className="rounded-lg border-gray-300 font-medium text-slate-700">
+            <Button variant="outline" onClick={() => setDeletingId(null)} className="rounded-lg border-gray-300 font-medium text-slate-700">
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending} className="rounded-lg bg-[#E11D48] hover:bg-[#BE123C] font-medium text-white">
+            <Button variant="destructive" onClick={handleDelete} className="rounded-lg bg-[#E11D48] hover:bg-[#BE123C] font-medium text-white">
               Eliminar
             </Button>
           </DialogFooter>
