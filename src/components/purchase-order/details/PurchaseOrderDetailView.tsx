@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PurchaseOrderDetailHeader } from "@/components/purchase-order/details/PurchaseOrderDetailHeader";
 import { PurchaseOrderDetailDocument } from "@/components/purchase-order/details/PurchaseOrderDetailDocument";
+import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { useDeletePurchaseOrder } from "@/hooks/purchaseOrders/usePurchaseOrders";
 import { showToast } from "@/components/sonner/CustomToaster";
 import type { PurchaseOrder } from "@/types/purchaseOrder";
@@ -49,6 +50,8 @@ export function PurchaseOrderDetailView({ purchaseOrder }: { purchaseOrder: Purc
       />
 
       <PurchaseOrderDetailDocument purchaseOrder={purchaseOrder} />
+
+      <CommentsAndReminders type="purchase_order" commentableId={purchaseOrder.id} />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="bg-white">

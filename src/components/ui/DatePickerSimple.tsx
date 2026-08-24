@@ -9,6 +9,7 @@ import {
     ChevronUp,
     ChevronLeft,
     ChevronRight,
+    X,
 } from "lucide-react";
 
 import { Calendar } from "@/components/ui/calendar";
@@ -21,7 +22,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-export function DatePickerSimple({ value, onChange, className }: { value?: Date, onChange?: (date: Date) => void, className?: string } = {}) {
+export function DatePickerSimple({ value, onChange, onClear, className }: { value?: Date, onChange?: (date: Date) => void, onClear?: () => void, className?: string } = {}) {
     const [date, setDate] = React.useState<Date | undefined>(value);
     const [tempDate, setTempDate] = React.useState<Date>(value || new Date());
     const [open, setOpen] = React.useState(false);
@@ -60,12 +61,30 @@ export function DatePickerSimple({ value, onChange, className }: { value?: Date,
                     {date
                         ? format(date, "dd/MM/yyyy", { locale: es })
                         : "dd/mm/aaaa"}
-                    <CalendarIcon className="ml-auto h-4 w-4 text-foreground" />
+                    <span className="ml-auto flex items-center gap-1">
+                        {date && onClear && (
+                            <span
+                                role="button"
+                                tabIndex={-1}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDate(undefined);
+                                    onClear();
+                                }}
+                                className="p-0.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </span>
+                        )}
+                        <CalendarIcon className="h-4 w-4 text-foreground" />
+                    </span>
                 </Button>
             </PopoverTrigger>
 
             <PopoverContent
                 align="start"
+                side="bottom"
+                avoidCollisions={false}
                 className="w-[260px] p-0 rounded-xl border border-border shadow-lg"
             >
                 <div className="p-2 flex flex-col h-[390px]">

@@ -37,7 +37,11 @@ interface MappedGlobalAdjustment {
 export function mapQuoteItemsToLines(items: any[]): MappedLine[] {
     return (items || []).map((item: any) => {
         const itemName = item.name || item.item_name || item.item?.name || item.description || '';
-        const itemId = item.item_id || item.id || item.item?.id || null;
+        // OJO: `item.id` es el id de la LÍNEA de la cotización, no del ítem del catálogo
+        // (por eso no se usa aquí) — usarlo como fallback hacía que se enviara un item_id
+        // inexistente al convertir a factura (ej. línea 1 -> item_id 1, aunque el producto
+        // real tenga otro id), y el backend rechazaba la factura con 422.
+        const itemId = item.item_id || item.item?.id || null;
         const itemRef = item.code_reference || item.item_code || item.standard_item_code || item.code || '';
         const itemPrice = Number(item.price || item.price_amount || 0);
         const itemQty = Number(item.quantity || 1);

@@ -46,6 +46,10 @@ export default function LoginPage() {
       // Redirige solo después de login exitoso
       router.replace("/dashboard")
     } catch (error: any) {
+      if (error?.reason === "unverified_email") {
+        router.push(`/account-not-activated?email=${encodeURIComponent(email)}`)
+        return
+      }
       setError(error?.message || "Login error")
     } finally {
       setIsLoading(false)

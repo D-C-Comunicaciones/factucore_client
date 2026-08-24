@@ -46,7 +46,10 @@ function ItemRow({ item, builder, taxes, errors }: { item: any; builder: any; ta
   const rawItemsList = data?.data || [];
   // El backend puede devolver el mismo item más de una vez (variantes agrupadas
   // bajo el mismo id); se deduplica para evitar keys repetidas en el listado.
-  const itemsList = Array.from(new Map(rawItemsList.map((i: any) => [i.id, i])).values());
+  const dedupedItemsList = Array.from(new Map(rawItemsList.map((i: any) => [i.id, i])).values());
+  // Las órdenes de compra solo admiten productos (inventariables); los servicios
+  // (type_item_id 2) no se listan porque no tienen stock que reponer.
+  const itemsList = dedupedItemsList.filter((i: any) => i.type_item_id === 1);
   const options = itemsList.map((i: any) => ({
     value: i.id.toString(),
     label: `${i.reference ? i.reference + " - " : ""}${i.name}`,

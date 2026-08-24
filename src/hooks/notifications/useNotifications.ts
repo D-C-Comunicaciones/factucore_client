@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { NotificationsService } from "@/lib/notifications";
+import { NotificationsService, DOCUMENT_ROUTES } from "@/lib/notifications";
 import { getEcho } from "@/lib/echo";
 import { getSession } from "@/common/interfaces/session";
-import { showToast } from "@/components/sonner/CustomToaster";
+import { showMentionNotificationToast, showReminderToast, showToast } from "@/components/sonner/CustomToaster";
 import type { NotificationData } from "@/types/notification";
 
 const UNREAD_COUNT_KEY = ["notifications", "unread-count"] as const;
@@ -11,6 +12,17 @@ const LIST_KEY = (filter: string) => ["notifications", "list", filter] as const;
 
 // Polling de respaldo solo mientras el socket esté caído (ver comments-notifications.md)
 const FALLBACK_POLL_INTERVAL = 45_000;
+
+// Igual que parseApiDate/formatDateTime en NotificationBell.tsx y RemindersPanel.tsx
+// (due_at sí es ISO, pero el formato de salida debe verse igual en los 3 lugares).
+function formatDueAt(iso: string): string {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const day = d.getDate();
+    const month = d.toLocaleDateString("es-CO", { month: "short" }).replace(".", "");
+    const time = d.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit", hour12: true });
+    return `${day} ${month.charAt(0).toUpperCase() + month.slice(1)}, ${time}`;
+}
 
 function getChannelName(): string | null {
     const session = getSession() as any;
@@ -24,6 +36,8 @@ function getChannelName(): string | null {
 // el evento por WebSocket, sin volver a pedir /unread-count.
 export function useNotificationsSocket() {
     const queryClient = useQueryClient();
+    const router = useRouter();
+    const markAsRead = useMarkNotificationRead();
     const [socketConnected, setSocketConnected] = useState(false);
 
     useEffect(() => {
@@ -40,19 +54,69 @@ export function useNotificationsSocket() {
             }));
             queryClient.invalidateQueries({ queryKey: ["notifications", "list"] });
 
-            // Si el hilo mencionado está abierto en pantalla, refréscalo también.
-            if (notification?.commentable_type && notification?.commentable_id) {
+            if (notification.type === "comment_mention") {
+                // Si el hilo mencionado está abierto en pantalla, refréscalo también.
                 queryClient.invalidateQueries({
                     queryKey: ["comments", notification.commentable_type, String(notification.commentable_id)],
                 });
+
+                const basePath = DOCUMENT_ROUTES[notification.commentable_type];
+                const navigateToDocument = () => {
+                    if (basePath) router.push(`${basePath}/${notification.commentable_id}`);
+                };
+
+                // El evento del socket trae los mismos campos que GET /notifications
+                // PERO sin el `id` (uuid) de la notificación — solo el endpoint REST
+                // lo trae — así que se resuelve pidiendo la más reciente (ésta) justo
+                // antes de armar las acciones "Ver"/"Marcar como leída" del toast.
+                NotificationsService.list({ filter: "all", per_page: 1 })
+                    .then((res) => {
+                        const notificationId = res.data?.[0]?.id;
+
+                        showMentionNotificationToast({
+                            mentionedByName: notification.mentioned_by.name,
+                            commentableLabel: notification.commentable_label,
+                            excerptHtml: notification.excerpt,
+                            onView: () => {
+                                if (notificationId) markAsRead.mutate(notificationId);
+                                navigateToDocument();
+                            },
+                            onMarkRead: () => {
+                                if (notificationId) markAsRead.mutate(notificationId);
+                            },
+                        });
+                    })
+                    .catch(() => {
+                        // Si falla la consulta, se muestra igual el toast pero sin poder
+                        // resolver el id real — "Ver" sigue navegando al documento.
+                        showMentionNotificationToast({
+                            mentionedByName: notification.mentioned_by.name,
+                            commentableLabel: notification.commentable_label,
+                            excerptHtml: notification.excerpt,
+                            onView: navigateToDocument,
+                            onMarkRead: () => {},
+                        });
+                    });
+                return;
             }
 
-            if (notification?.mentioned_by?.name) {
-                showToast(
-                    notification.excerpt || "Tienes una nueva mención",
-                    "info",
-                    `${notification.mentioned_by.name} te mencionó en ${notification.commentable_label}`
-                );
+            // Recordatorios (ver recordatorios.md §3): reminder_due es el aviso "de
+            // verdad" — el que dispara el popup en el momento exacto de vencimiento.
+            // Las otras 3 variantes (assigned/unassigned/deleted) solo se avisan con
+            // un toast simple, reusando el `message` que ya viene armado del backend.
+            const basePath = DOCUMENT_ROUTES[notification.remindable_type];
+            const navigateToReminder = () => {
+                if (basePath) router.push(`${basePath}/${notification.remindable_id}`);
+            };
+
+            if (notification.type === "reminder_due") {
+                showReminderToast({
+                    title: notification.title,
+                    dateTimeLabel: notification.due_at ? formatDueAt(notification.due_at) : "",
+                    onViewDetails: navigateToReminder,
+                });
+            } else {
+                showToast(notification.message, "info");
             }
         });
 

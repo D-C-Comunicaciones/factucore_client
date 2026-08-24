@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PurchaseOrderStatusBadge } from "@/components/purchase-order/table/columns";
+import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { useDeletePurchaseOrder } from "@/hooks/purchaseOrders/usePurchaseOrders";
 import { showToast } from "@/components/sonner/CustomToaster";
 import type { PurchaseOrder } from "@/types/purchaseOrder";
@@ -251,6 +252,8 @@ export function InternalPurchaseOrderDetailView({ purchaseOrder }: { purchaseOrd
           )}
         </div>
       </div>
+
+      <CommentsAndReminders type="purchase_order" commentableId={purchaseOrder.id} />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

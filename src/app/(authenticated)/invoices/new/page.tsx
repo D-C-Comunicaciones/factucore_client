@@ -178,7 +178,11 @@ function NewInvoicePageContent() {
   useEffect(() => {
     if (!quotePrefillAppliedRef.current && quoteId && quoteDataForInvoice) {
       quotePrefillAppliedRef.current = true;
+      // eslint-disable-next-line no-console
+      console.log("[DEBUG convertir-a-factura] quoteItemsForInvoice RAW:", JSON.stringify(quoteItemsForInvoice, null, 2));
       const mappedLines = mapQuoteItemsToLines(quoteItemsForInvoice) as any;
+      // eslint-disable-next-line no-console
+      console.log("[DEBUG convertir-a-factura] mappedLines:", JSON.stringify(mappedLines, null, 2));
       invoiceBuilder.setItems(mappedLines);
       invoiceBuilder.setGlobalAdjustments(mapQuoteGlobalAdjustments(quoteDataForInvoice) as any);
 
@@ -211,7 +215,11 @@ function NewInvoicePageContent() {
   useEffect(() => {
     if (!remissionPrefillAppliedRef.current && remissionId && remissionDataForInvoice) {
       remissionPrefillAppliedRef.current = true;
+      // eslint-disable-next-line no-console
+      console.log("[DEBUG convertir-a-factura] remissionItemsForInvoice RAW:", JSON.stringify(remissionItemsForInvoice, null, 2));
       const mappedLines = mapRemissionItemsToLines(remissionItemsForInvoice) as any;
+      // eslint-disable-next-line no-console
+      console.log("[DEBUG convertir-a-factura] mappedLines:", JSON.stringify(mappedLines, null, 2));
       invoiceBuilder.setItems(mappedLines);
       invoiceBuilder.setGlobalAdjustments(mapRemissionGlobalAdjustments(remissionDataForInvoice) as any);
 
@@ -588,7 +596,7 @@ function NewInvoicePageContent() {
           return;
         }
 
-        showToast("Factura validada correctamente por la DIAN", "success");
+        showToast("Factura guardada correctamente", "success");
         router.push(`/invoices/${id}`);
 
       } else if (actionType === "DRAFT") {

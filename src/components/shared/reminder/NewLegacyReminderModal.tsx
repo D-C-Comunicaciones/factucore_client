@@ -8,7 +8,23 @@ import { DatePickerSimple } from "@/components/ui/DatePickerSimple";
 import { TimePickerSimple } from "@/components/ui/TimePickerSimple";
 import { useMentionableUsers } from "@/hooks/comments/useComments";
 import type { MentionableUser } from "@/types/comment";
-import type { Reminder } from "@/types/reminder";
+
+// Recordatorio "solo UI", sin backend — ver LegacyRemindersPanel. No confundir
+// con el tipo Reminder real de @/types/reminder (usado por RemindersPanel).
+export interface LegacyReminderRecipient {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface LegacyReminder {
+  id: string;
+  title: string;
+  date: string; // yyyy-mm-dd (formato de <input type="date">)
+  time: string; // HH:mm
+  recipient: LegacyReminderRecipient;
+  done?: boolean;
+}
 
 function initialsOf(name?: string) {
   return (name || "?").trim().charAt(0).toUpperCase() || "?";
@@ -39,40 +55,19 @@ function localDateToIso(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// due_at (ISO, con offset del backend) -> {date, time} locales para prellenar
-// el formulario al editar. El input de fecha/hora es local del navegador —
-// usar los componentes de la fecha en LOCAL time, no en UTC.
-function splitDueAt(dueAt: string): { date: string; time: string } {
-  const d = new Date(dueAt);
-  if (isNaN(d.getTime())) return { date: todayISO(), time: nowHHMM() };
-  return {
-    date: localDateToIso(d),
-    time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
-  };
-}
-
 const fieldClass =
   "w-full h-9 rounded-md border border-gray-300 px-3 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors placeholder:text-slate-400";
 
-export interface ReminderFormData {
-  title: string;
-  date: string;
-  time: string;
-  user_id: number;
-}
-
-export function NewReminderModal({
+export function NewLegacyReminderModal({
   open,
   onClose,
   onSubmit,
   reminder,
-  submitting = false,
 }: {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: ReminderFormData) => void;
-  reminder?: Reminder | null;
-  submitting?: boolean;
+  onSubmit: (reminder: LegacyReminder) => void;
+  reminder?: LegacyReminder | null;
 }) {
   const isEdit = !!reminder;
 
@@ -86,11 +81,10 @@ export function NewReminderModal({
 
   useEffect(() => {
     if (open) {
-      const initial = reminder?.due_at ? splitDueAt(reminder.due_at) : { date: todayISO(), time: nowHHMM() };
       setTitle(reminder?.title || "");
-      setDate(initial.date);
-      setTime(initial.time);
-      setRecipient(reminder?.user || null);
+      setDate(reminder?.date || todayISO());
+      setTime(reminder?.time || nowHHMM());
+      setRecipient(reminder?.recipient || null);
       setRecipientQuery("");
       setShowRecipientDropdown(false);
     }
@@ -105,16 +99,18 @@ export function NewReminderModal({
 
   const { data: users = [], isLoading } = useMentionableUsers(debouncedQuery, showRecipientDropdown);
 
-  const canSubmit = !!(title.trim() && recipient && date && time);
+  const canSubmit = !!(title.trim() && recipient);
 
   const handleSubmit = () => {
     if (!canSubmit || !recipient) return;
     onSubmit({
+      id: reminder?.id || crypto.randomUUID(),
       title: title.trim(),
       date,
       time,
-      user_id: recipient.id,
+      recipient,
     });
+    onClose();
   };
 
   return (
@@ -228,14 +224,13 @@ export function NewReminderModal({
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={submitting}
             className="rounded-lg border-gray-300 font-medium text-slate-700 cursor-pointer hover:bg-gray-100"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!canSubmit || submitting}
+            disabled={!canSubmit}
             className="rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium cursor-pointer"
           >
             {isEdit ? "Guardar cambios" : "Crear recordatorio"}
