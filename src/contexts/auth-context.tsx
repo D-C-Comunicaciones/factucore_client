@@ -169,6 +169,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const data = error.response.data;
                 errorMsg = data.message || errorMsg;
 
+                // Cuenta creada pero email_verified_at aún null (ver AuthController::loginMaster()/
+                // loginTenant()) — no es un error de credenciales, así que no se muestra el toast
+                // genérico acá: la pantalla de login intercepta este "reason" y cambia a la vista
+                // de "cuenta no activada" con el botón de reenviar correo.
+                if (data.details?.reason === "unverified_email") {
+                    const unverifiedError: any = new Error(errorMsg);
+                    unverifiedError.reason = "unverified_email";
+                    throw unverifiedError;
+                }
+
                 if (data.errors) {
                     let parsedErrors = data.errors;
                     if (typeof data.errors === "string") {

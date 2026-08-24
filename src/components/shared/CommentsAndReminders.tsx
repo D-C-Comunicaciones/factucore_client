@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MessageCircle, Search, Sparkles, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, AtSign, Send, HelpCircle, Type, Edit2, Copy, Trash2, ChevronDown, Reply, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showToast } from "@/components/sonner/CustomToaster";
@@ -186,6 +187,8 @@ function CommentEditor({
   submitting?: boolean;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const mentionAnchorRef = useRef<HTMLDivElement>(null);
+  const [mentionDropdownPos, setMentionDropdownPos] = useState<{ left: number; bottom: number; width: number } | null>(null);
   const [html, setHtml] = useState(initialHtml);
   const [charCount, setCharCount] = useState(() => stripHtml(initialHtml).length);
   const [showFormatting, setShowFormatting] = useState(showFormattingByDefault);
@@ -215,6 +218,37 @@ function CommentEditor({
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(mentionQuery ?? ""), 250);
     return () => clearTimeout(t);
+  }, [mentionQuery]);
+
+  // El dropdown de menciones se porta a document.body (ver render más abajo) para no quedar
+  // recortado por el overflow-hidden de la tarjeta de comentarios, o por el overflow-y-auto del
+  // panel de hilos cuando se responde a un comentario que no está pegado al borde inferior —
+  // acá se calcula su posición en coordenadas de viewport (position: fixed), no relativas a
+  // ningún ancestro. Se recalcula si la página hace scroll o cambia de tamaño mientras está
+  // abierto (ej. el usuario scrollea el hilo de comentarios con el dropdown abierto).
+  useLayoutEffect(() => {
+    if (mentionQuery === null) {
+      setMentionDropdownPos(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const rect = mentionAnchorRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMentionDropdownPos({
+        left: rect.left,
+        bottom: window.innerHeight - rect.top + 4,
+        width: Math.max(rect.width, 256),
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
   }, [mentionQuery]);
 
   const syncHtml = () => {
@@ -326,12 +360,11 @@ function CommentEditor({
 
   return (
     <div>
-      {/* Envoltorio propio para el textarea: el dropdown de menciones se
-          posiciona relativo a ESTE div (no al bloque completo con toolbar
-          y botones), y se abre hacia arriba para no quedar recortado por
-          el `overflow-hidden` de la tarjeta cuando el editor está pegado
-          al borde inferior (el composer de comentario nuevo). */}
-      <div className="relative">
+      {/* mentionAnchorRef ancla la posición del dropdown de menciones, que se renderiza en
+          un portal a document.body (ver más abajo) — así nunca queda recortado por el
+          overflow-hidden de la tarjeta de comentarios ni por el overflow-y-auto del hilo
+          cuando se responde a un comentario que no está pegado al borde inferior. */}
+      <div className="relative" ref={mentionAnchorRef}>
         <div
           ref={editorRef}
           contentEditable
@@ -343,10 +376,14 @@ function CommentEditor({
           data-placeholder={placeholder}
         />
 
-        {mentionQuery !== null && (
-          <div className="absolute z-30 left-0 bottom-full mb-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+        {mentionQuery !== null && mentionDropdownPos && typeof document !== "undefined" && createPortal(
+          <div
+            className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+            style={{ left: mentionDropdownPos.left, bottom: mentionDropdownPos.bottom, width: mentionDropdownPos.width }}
+          >
             <MentionResults search={debouncedQuery} onSelect={insertMention} />
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 

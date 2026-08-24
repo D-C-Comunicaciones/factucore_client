@@ -14,6 +14,7 @@ import { envs } from "@/config/env"
 import { Eye, EyeOff } from "lucide-react"
 import { LogoHorizontal } from "@/components/logos/LogoHorizontal"
 import { TwoFactorChallengeForm } from "@/components/auth/TwoFactorChallengeForm"
+import { AccountNotActivatedNotice } from "@/components/auth/AccountNotActivatedNotice"
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -24,6 +25,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [twoFactorChallenge, setTwoFactorChallenge] = useState<{ token: string; expiresIn: number } | null>(null)
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
 
   // Mantener el tamaño original para el login
   useEffect(() => {
@@ -46,6 +48,10 @@ export default function LoginPage() {
       // Redirige solo después de login exitoso
       router.replace("/dashboard")
     } catch (error: any) {
+      if (error?.reason === "unverified_email") {
+        setUnverifiedEmail(email)
+        return
+      }
       setError(error?.message || "Login error")
     } finally {
       setIsLoading(false)
@@ -68,6 +74,13 @@ export default function LoginPage() {
                   challengeToken={twoFactorChallenge.token}
                   onSuccess={() => router.replace("/dashboard")}
                   onBackToLogin={() => setTwoFactorChallenge(null)}
+                />
+              </div>
+            ) : unverifiedEmail ? (
+              <div className="px-8 py-5 md:px-8 md:py-6 flex flex-col justify-center">
+                <AccountNotActivatedNotice
+                  email={unverifiedEmail}
+                  onBackToLogin={() => setUnverifiedEmail(null)}
                 />
               </div>
             ) : (
