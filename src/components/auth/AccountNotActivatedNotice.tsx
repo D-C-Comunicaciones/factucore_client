@@ -55,7 +55,13 @@ export function AccountNotActivatedNotice({ email, onBackToLogin }: AccountNotAc
                 {sent ? "Reenviar de nuevo" : "Reenviar correo de activación"}
             </Button>
 
-            <Button type="button" variant="ghost" className="w-full" onClick={onBackToLogin} disabled={isSending}>
+            <Button
+                type="button"
+                variant="ghost"
+                className="w-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={onBackToLogin}
+                disabled={isSending}
+            >
                 Volver al inicio de sesión
             </Button>
         </FieldGroup>
