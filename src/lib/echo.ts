@@ -40,16 +40,29 @@ export function getEcho(): ReverbEcho | null {
         authorizer: (channel: { name: string }) => ({
             authorize: (socketId: string, callback: (error: boolean, data: any) => void) => {
                 // getSession() lee la misma clave localStorage("session") que ya usan
-                // useCommentsSocket.ts/useNotifications.ts para tenantId/userId, y que
-                // api-client.ts usa (con fallback) para el Authorization header de las
-                // peticiones REST. Antes esto llamaba a AuthService.getToken(), que lee
-                // localStorage("access_token") — una clave que ningún flujo de login
-                // escribe (applyLoginSession en auth-context.tsx solo guarda "session");
-                // getToken() devolvía null SIEMPRE, así que el authorizer fallaba rápido
-                // sin siquiera intentar la petición a /broadcasting/auth. Ninguna
-                // suscripción a canal privado autorizaba jamás: cero comentarios/
-                // menciones/recordatorios en tiempo real, para nadie, en ninguna sesión.
-                const token = getSession()?.token;
+                // useCommentsSocket.ts/useNotifications.ts para tenantId/userId. Antes esto
+                // llamaba a AuthService.getToken(), que lee localStorage("access_token") —
+                // una clave que ningún flujo de login escribe (applyLoginSession en
+                // auth-context.tsx solo guarda "session"); getToken() devolvía null SIEMPRE.
+                //
+                // session.token en sí NO es siempre un string a pesar de que SessionData lo
+                // tipa como tal: api-client.ts ya lo maneja de forma defensiva ("La API
+                // retorna token como objeto { access_token: "..." } o como string") porque
+                // segun el flujo de login (normal vs challenge 2FA) el backend lo devuelve de
+                // una forma u otra. Al usar session?.token directo sin este mismo
+                // desempaquetado, cuando token venia como objeto el header terminaba en
+                // literalmente "Bearer [object Object]" (confirmado en el payload de la
+                // petición fallida) — visible en consola como 401 "Token inválido o
+                // expirado", NO como "no hay sesión activa" (ese único log ya delataba que SÍ
+                // había topado con un valor, solo que mal extraído). Mismo desempaquetado que
+                // api-client.ts para no repetir el mismo tipo de bug dos veces.
+                const session = getSession();
+                const rawToken = session?.token as unknown;
+                const token = typeof rawToken === "string"
+                    ? rawToken
+                    : (rawToken as { access_token?: string } | undefined)?.access_token
+                        ?? (session as unknown as { access_token?: string } | undefined)?.access_token
+                        ?? null;
 
                 // Sin token no hay forma de que /broadcasting/auth autorice nada — pasa
                 // durante el instante entre que se limpia la sesión (401 en cualquier otra
