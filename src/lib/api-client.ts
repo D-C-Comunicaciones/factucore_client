@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
 import { envs } from "@/config/env"
+import { getEcho, disconnectEcho } from "@/lib/echo"
 import type { ApiResponse } from "@/types/api"
 
 const API_BASE_URL = envs.apiUrl
@@ -53,9 +54,13 @@ class ApiClient {
                 // comentario duplicado (uno de la respuesta HTTP, otro del WebSocket).
                 if (typeof window !== 'undefined') {
                     try {
-                        // Import perezoso para evitar inicializar Echo (y su conexión)
-                        // en cada request si nunca se usó el chat en tiempo real.
-                        const { getEcho } = await import('./echo');
+                        // getEcho() no conecta nada nuevo si ya existe una conexión — solo
+                        // devuelve el singleton (o lo crea la primera vez). Import estático a
+                        // proposito: mezclar import() dinamico con require() para el mismo
+                        // módulo (como estaba antes) puede resolver a una instancia de módulo
+                        // distinta según cómo el bundler particione el código, duplicando el
+                        // singleton de Echo — exactamente lo que causaba que se crearan varias
+                        // conexiones sueltas sin canales suscritos.
                         const echo = getEcho();
                         const socketId = echo?.socketId?.();
                         if (socketId) {
@@ -100,7 +105,6 @@ class ApiClient {
                                 // durante el instante entre limpiar la sesión y que la navegación a
                                 // /login termine de desmontar la página, y cualquier canal que
                                 // intente (re)autorizarse en ese hueco manda un Bearer vacío.
-                                const { disconnectEcho } = require("./echo")
                                 disconnectEcho()
 
                                 localStorage.clear()

@@ -50,6 +50,25 @@ function initialsOf(name?: string) {
   return (name || "?").trim().charAt(0).toUpperCase() || "?";
 }
 
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// insertMention() (más abajo, en CommentEditor) inserta la mención como texto plano "@Nombre "
+// dentro del contentEditable — no hay ningún marcador en el HTML guardado que distinga una
+// mención de texto normal. Se resalta acá, en el momento de mostrarlo, buscando "@Nombre" por
+// cada usuario mencionado (dato que sí viene aparte, en item.mentions) — así también se colorean
+// los comentarios ya guardados antes de este cambio, sin tener que tocar el editor ni re-guardar nada.
+function highlightMentions(html: string, mentions?: { name: string }[]): string {
+  if (!mentions || mentions.length === 0) return html;
+
+  return mentions.reduce((result, mention) => {
+    if (!mention.name) return result;
+    const pattern = new RegExp(`@${escapeRegExp(mention.name)}`, "g");
+    return result.replace(pattern, `<span class="text-primary font-medium">@${mention.name}</span>`);
+  }, html);
+}
+
 // Tooltip de ayuda de una pestaña (Comentarios/Recordatorios): se abre al
 // pasar el mouse por el ícono "?" (no al hacer clic), no al hacer clic.
 function TabHelpTooltip({
@@ -589,7 +608,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
     showToast("Comentario copiado exitosamente", "success", "Comentario copiado");
   };
 
-  const findComment = (id: number): { comment: string; created_at: string } | undefined => {
+  const findComment = (id: number): { comment: string; created_at: string; mentions?: { name: string }[] } | undefined => {
     for (const c of comments) {
       if (c.id === id) return c;
       const reply = c.replies?.find((r) => r.id === id);
@@ -625,7 +644,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
               <span className="text-xs font-medium text-slate-600">{item.user?.name || "Usuario"}</span>
               <span className="text-[11px] text-slate-400 font-medium">{formatDateTime(item.created_at)}</span>
             </div>
-            <div className="text-sm text-slate-700 whitespace-pre-wrap editor-content [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 text-left" dangerouslySetInnerHTML={{ __html: item.comment }}></div>
+            <div className="text-sm text-slate-700 whitespace-pre-wrap editor-content [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 text-left" dangerouslySetInnerHTML={{ __html: highlightMentions(item.comment, item.mentions) }}></div>
 
             {!opts.isReply && (
               <button
@@ -843,7 +862,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
                   <div className="text-[11px] text-slate-400 font-medium mb-1">
                     {formatDateTime(deletingComment.created_at)}
                   </div>
-                  <div className="text-sm text-slate-700 editor-content [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 text-left" dangerouslySetInnerHTML={{ __html: deletingComment.comment }}></div>
+                  <div className="text-sm text-slate-700 editor-content [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 text-left" dangerouslySetInnerHTML={{ __html: highlightMentions(deletingComment.comment, deletingComment.mentions) }}></div>
                 </div>
               </div>
             )}
