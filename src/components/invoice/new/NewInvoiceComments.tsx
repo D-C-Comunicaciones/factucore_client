@@ -461,7 +461,7 @@ export function NewInvoiceComments({
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deletingIndex !== null} onOpenChange={(open) => !open && setDeletingIndex(null)}>
-        <DialogContent className="sm:max-w-[425px]" aria-describedby={undefined}>
+        <DialogContent className="sm:max-w-[425px] bg-white" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Eliminar comentario</DialogTitle>
           </DialogHeader>
@@ -484,7 +484,7 @@ export function NewInvoiceComments({
             )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeletingIndex(null)} className="rounded-lg border-gray-300 font-medium text-slate-700">
+            <Button variant="outline" onClick={() => setDeletingIndex(null)} className="rounded-lg border-gray-300 font-medium text-slate-700 hover:bg-gray-100">
               Cancelar
             </Button>
             <Button variant="destructive" onClick={handleDelete} className="rounded-lg bg-[#E11D48] hover:bg-[#BE123C] font-medium text-white">

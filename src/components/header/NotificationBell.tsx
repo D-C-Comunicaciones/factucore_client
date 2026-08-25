@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, AtSign, CheckCheck, Clock } from "lucide-react";
+import { Bell, AtSign, CalendarClock, CheckCheck } from "lucide-react";
 import {
     useNotificationsSocket,
     useUnreadNotificationsCount,
@@ -10,16 +10,26 @@ import {
     useMarkNotificationRead,
     useMarkAllNotificationsRead,
 } from "@/hooks/notifications/useNotifications";
+import { DOCUMENT_ROUTES } from "@/lib/notifications";
 import type { AppNotification } from "@/types/notification";
 
-const DOCUMENT_ROUTES: Record<string, string> = {
-    invoice: "/invoices",
-    quotation: "/quotes",
-    remission: "/remissions",
-};
+// El backend manda fechas como "DD/MM/YYYY HH:mm" (no ISO) — new Date() nativo
+// las interpreta como MM/DD y devuelve "Invalid Date" (de ahí el "Hace NaN d").
+function parseApiDate(dateString?: string): Date | null {
+    if (!dateString) return null;
+    const match = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (match) {
+        const [, day, month, year, hour, minute, second] = match;
+        return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second || 0));
+    }
+    const d = new Date(dateString);
+    return isNaN(d.getTime()) ? null : d;
+}
 
 function timeAgo(dateStr: string): string {
-    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const parsed = parseApiDate(dateStr);
+    if (!parsed) return "";
+    const diffMs = Date.now() - parsed.getTime();
     const minutes = Math.floor(diffMs / 60000);
     if (minutes < 1) return "Ahora";
     if (minutes < 60) return `Hace ${minutes} min`;
@@ -52,12 +62,12 @@ export function NotificationBell() {
         if (!notification.read_at) {
             markAsRead.mutate(notification.id);
         }
-        // Menciones en comentarios traen commentable_type/id; recordatorios traen
-        // remindable_type/id — misma idea, distinto nombre de campo según el origen.
-        const type = notification.data.commentable_type ?? notification.data.remindable_type;
-        const id = notification.data.commentable_id ?? notification.data.remindable_id;
-        const basePath = type ? DOCUMENT_ROUTES[type] : undefined;
-        if (basePath && id) {
+        const data = notification.data;
+        const [type, id] = data.type === "comment_mention"
+            ? [data.commentable_type, data.commentable_id]
+            : [data.remindable_type, data.remindable_id];
+        const basePath = DOCUMENT_ROUTES[type];
+        if (basePath) {
             router.push(`${basePath}/${id}`);
         }
         setOpen(false);
@@ -99,10 +109,8 @@ export function NotificationBell() {
                             <div className="p-6 text-center text-sm text-gray-400">No tienes notificaciones</div>
                         ) : (
                             notifications.map((notification) => {
-                                // App\Notifications\ReminderNotification manda el texto ya armado
-                                // en 'message'; las menciones de comentarios no traen ese campo y
-                                // se arman acá con mentioned_by/commentable_label/excerpt.
-                                const isReminder = Boolean(notification.data.message);
+                                const data = notification.data;
+                                const isReminder = data.type !== "comment_mention";
 
                                 return (
                                     <button
@@ -113,25 +121,26 @@ export function NotificationBell() {
                                     >
                                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                             {isReminder ? (
-                                                <Clock className="w-4 h-4 text-primary" />
+                                                <CalendarClock className="w-4 h-4 text-primary" />
                                             ) : (
                                                 <AtSign className="w-4 h-4 text-primary" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             {isReminder ? (
-                                                <p className="text-[13px] text-gray-900 leading-snug">{notification.data.message}</p>
+                                                <p className="text-[13px] text-gray-900 leading-snug">{data.message}</p>
                                             ) : (
                                                 <>
                                                     <p className="text-[13px] text-gray-900 leading-snug">
-                                                        <span className="font-semibold">{notification.data.mentioned_by?.name}</span>{" "}
+                                                        <span className="font-semibold">{data.mentioned_by?.name}</span>{" "}
                                                         te mencionó en{" "}
-                                                        <span className="font-medium">{notification.data.commentable_label}</span>
+                                                        <span className="font-medium">{data.commentable_label}</span>
                                                     </p>
-                                                    {notification.data.excerpt && (
-                                                        <p className="text-[12px] text-gray-500 truncate mt-0.5">
-                                                            {notification.data.excerpt}
-                                                        </p>
+                                                    {data.excerpt && (
+                                                        <p
+                                                            className="text-[12px] text-gray-500 truncate mt-0.5 [&_*]:inline [&_*]:m-0"
+                                                            dangerouslySetInnerHTML={{ __html: data.excerpt }}
+                                                        />
                                                     )}
                                                 </>
                                             )}

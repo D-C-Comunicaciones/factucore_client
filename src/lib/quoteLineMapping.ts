@@ -1,5 +1,3 @@
-import { resolveStockFields } from "@/lib/itemStock";
-
 interface MappedLine {
     id: string;
     item_id: number | null;
@@ -39,7 +37,11 @@ interface MappedGlobalAdjustment {
 export function mapQuoteItemsToLines(items: any[]): MappedLine[] {
     return (items || []).map((item: any) => {
         const itemName = item.name || item.item_name || item.item?.name || item.description || '';
-        const itemId = item.item_id || item.id || item.item?.id || null;
+        // OJO: `item.id` es el id de la LÍNEA de la cotización, no del ítem del catálogo
+        // (por eso no se usa aquí) — usarlo como fallback hacía que se enviara un item_id
+        // inexistente al convertir a factura (ej. línea 1 -> item_id 1, aunque el producto
+        // real tenga otro id), y el backend rechazaba la factura con 422.
+        const itemId = item.item_id || item.item?.id || null;
         const itemRef = item.code_reference || item.item_code || item.standard_item_code || item.code || '';
         const itemPrice = Number(item.price || item.price_amount || 0);
         const itemQty = Number(item.quantity || 1);
@@ -86,10 +88,14 @@ export function mapQuoteItemsToLines(items: any[]): MappedLine[] {
             type: rawTax?.type || 'percentage',
         } : null;
 
-        // is_inventoriable / allow_negative_stock / stock_quantity no vienen planos en la línea:
-        // están anidados en item_snapshot (o item) del documento de origen.
-        const itemDetail = item.item_snapshot || item.item || item;
-        const { is_inventoriable, allow_negative_stock, stock_quantity } = resolveStockFields(itemDetail);
+        // item_snapshot es una foto de nombre/precio al momento de crear la cotización,
+        // NO trae stock en vivo — usarlo para resolver stock hacía que todo ítem convertido
+        // a factura apareciera "agotado" de inmediato (stock_quantity quedaba null -> 0).
+        // Se deja la línea en estado neutro (sin validar) hasta que se refresque con el
+        // stock real del ítem (ver el efecto de refresco en invoices/new/page.tsx).
+        const is_inventoriable = false;
+        const allow_negative_stock = false;
+        const stock_quantity: number | null = null;
 
         return {
             id: crypto.randomUUID(),

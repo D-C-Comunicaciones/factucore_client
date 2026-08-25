@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { usePayment } from "@/hooks/payments/usePayment";
 import { PaymentDetailHeader } from "@/components/payments/details/PaymentDetailHeader";
@@ -16,14 +15,6 @@ export default function PaymentDetailPage() {
   const id = params?.id as string;
 
   const { data: payment, isLoading, error } = usePayment(id);
-  const [comments, setComments] = useState<any[]>([]);
-
-  // Update comments state when payment data loads if it contains comments
-  React.useEffect(() => {
-    if (payment?.comments) {
-      setComments(payment.comments);
-    }
-  }, [payment]);
 
   if (isLoading) {
     return (
@@ -77,10 +68,7 @@ export default function PaymentDetailPage() {
 
       <PaymentDetailTabs payment={payment} />
 
-      <CommentsAndReminders 
-        comments={comments} 
-        setComments={setComments} 
-      />
+      <CommentsAndReminders type="payment" commentableId={payment.id} />
     </div>
   );
 }

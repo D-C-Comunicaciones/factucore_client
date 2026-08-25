@@ -1,5 +1,5 @@
 // Tipos habilitados hoy en el backend (Comment::commentableTypeMap()) — ver comments-notifications.md
-export type CommentableType = "invoice" | "credit_note" | "quotation" | "remission";
+export type CommentableType = "invoice" | "credit_note" | "quotation" | "remission" | "payment" | "purchase_order";
 
 export interface CommentUser {
     id: number;

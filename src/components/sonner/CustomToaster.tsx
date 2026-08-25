@@ -1,7 +1,7 @@
 "use client";
 
 import { Toaster as SonnerToaster, toast } from "sonner";
-import { AlertCircle, CheckCircle, Info, AlertTriangle, X, CalendarClock, Bell } from "lucide-react";
+import { AlertCircle, CheckCircle, Info, AlertTriangle, X, CalendarClock, Bell, AtSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ToastType = "success" | "error" | "warning" | "info";
@@ -24,9 +24,9 @@ const ToastIcon = ({ type }: { type: ToastType }) => {
   const { icon: Icon, color, light } = icons[type];
 
   return (
-    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", light)}>
-      <div className={cn("w-7 h-7 rounded-full flex items-center justify-center", color)}>
-        <Icon className="w-4 h-4 text-white" />
+    <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", light)}>
+      <div className={cn("w-[22px] h-[22px] rounded-full flex items-center justify-center", color)}>
+        <Icon className="w-3.5 h-3.5 text-white" />
       </div>
     </div>
   );
@@ -49,25 +49,25 @@ export const showToast = (message: string | React.ReactNode, type: ToastType = "
 
   toast.custom((t) => (
     <div className={cn(
-      "w-[420px] border rounded-[24px] py-6 px-7 flex items-start gap-4 shadow-2xl",
+      "w-[340px] border rounded-2xl py-3.5 px-4 flex items-start gap-3 shadow-2xl",
       "animate-in slide-in-from-right-[120%] duration-500 ease-in-out",
       "data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right-[120%] data-[state=closed]:duration-300",
       typeStyles[type]
     )}>
       <ToastIcon type={type} />
       <div className="flex-1 min-w-0">
-        <h4 className="text-[17px] font-bold text-[#123159] mb-0.5 truncate">
+        <h4 className="text-[14px] font-bold text-[#123159] mb-0.5 truncate">
           {title || defaultTitles[type]}
         </h4>
-        <p className="text-[14px] font-medium text-[#475569] leading-snug">
+        <p className="text-[13px] font-medium text-[#475569] leading-snug">
           {message}
         </p>
       </div>
-      <button 
+      <button
         onClick={() => toast.dismiss(t)}
-        className="text-[#94a3b8] hover:text-[#64748b] transition-colors pt-1 shrink-0"
+        className="text-[#94a3b8] hover:text-[#64748b] transition-colors pt-0.5 shrink-0"
       >
-        <X className="w-5 h-5" />
+        <X className="w-4 h-4" />
       </button>
     </div>
   ), {
@@ -98,23 +98,23 @@ export const showToastWithAction = (
 
   toast.custom((t) => (
     <div className={cn(
-      "w-[420px] border rounded-[24px] py-6 px-7 flex items-start gap-4 shadow-2xl",
+      "w-[340px] border rounded-2xl py-3.5 px-4 flex items-start gap-3 shadow-2xl",
       "animate-in slide-in-from-right-[120%] duration-500 ease-in-out",
       "data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right-[120%] data-[state=closed]:duration-300",
       typeStyles[type]
     )}>
       <ToastIcon type={type} />
       <div className="flex-1 min-w-0">
-        <h4 className="text-[17px] font-bold text-[#123159] mb-0.5 truncate">
+        <h4 className="text-[14px] font-bold text-[#123159] mb-0.5 truncate">
           {title}
         </h4>
-        <p className="text-[14px] font-medium text-[#475569] leading-snug">
+        <p className="text-[13px] font-medium text-[#475569] leading-snug">
           {message}
         </p>
         {action && (
           <button
             onClick={() => { toast.dismiss(t); action.onClick(); }}
-            className={cn("mt-2 text-[14px] font-semibold transition-colors", actionColors[type])}
+            className={cn("mt-1.5 text-[13px] font-semibold transition-colors", actionColors[type])}
           >
             {action.label}
           </button>
@@ -122,9 +122,9 @@ export const showToastWithAction = (
       </div>
       <button
         onClick={() => toast.dismiss(t)}
-        className="text-[#94a3b8] hover:text-[#64748b] transition-colors pt-1 shrink-0"
+        className="text-[#94a3b8] hover:text-[#64748b] transition-colors pt-0.5 shrink-0"
       >
-        <X className="w-5 h-5" />
+        <X className="w-4 h-4" />
       </button>
     </div>
   ), {
@@ -179,6 +179,73 @@ export const showReminderToast = (params: {
     </div>
   ), {
     duration: 6000,
+    position: "bottom-right",
+  });
+};
+
+// Toast de mención en tiempo real (llega por WebSocket) — mismo estilo que
+// showReminderToast, pero con dos acciones: "Ver" (navega al documento y
+// marca como leída) y "Marcar como leída" (solo la marca), ambas ligadas a
+// las mismas mutaciones que usa la campanita de notificaciones.
+export const showMentionNotificationToast = (params: {
+  mentionedByName: string;
+  commentableLabel: string;
+  excerptHtml?: string;
+  onView: () => void;
+  onMarkRead: () => void;
+}) => {
+  const { mentionedByName, commentableLabel, excerptHtml, onView, onMarkRead } = params;
+
+  toast.custom((t) => (
+    <div className={cn(
+      "w-[360px] bg-[#0f172a] rounded-2xl p-5 shadow-2xl",
+      "animate-in slide-in-from-bottom-4 fade-in duration-300 ease-out",
+      "data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-bottom-4 data-[state=closed]:duration-200"
+    )}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+            <AtSign className="w-4 h-4 text-white" />
+          </div>
+          <h4 className="text-[15px] font-bold text-white truncate">Te mencionaron</h4>
+        </div>
+        <button
+          onClick={() => toast.dismiss(t)}
+          className="text-slate-400 hover:text-slate-200 transition-colors shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="pl-[42px] mt-2 space-y-2.5">
+        <p className="text-sm text-slate-300 leading-snug break-words">
+          <span className="font-semibold text-white">{mentionedByName}</span> te mencionó en{" "}
+          <span className="font-medium text-white">{commentableLabel}</span>
+        </p>
+        {excerptHtml && (
+          <div
+            className="text-xs text-slate-400 leading-snug line-clamp-2 [&_*]:inline [&_*]:m-0"
+            dangerouslySetInnerHTML={{ __html: excerptHtml }}
+          />
+        )}
+        <div className="flex items-center gap-4 pt-0.5">
+          <button
+            onClick={() => { toast.dismiss(t); onView(); }}
+            className="text-[#2dd4bf] hover:text-[#5eead4] text-sm font-semibold transition-colors"
+          >
+            Ver
+          </button>
+          <button
+            onClick={() => { toast.dismiss(t); onMarkRead(); }}
+            className="text-slate-300 hover:text-white text-sm font-medium transition-colors"
+          >
+            Marcar como leída
+          </button>
+        </div>
+      </div>
+    </div>
+  ), {
+    duration: 8000,
     position: "bottom-right",
   });
 };
