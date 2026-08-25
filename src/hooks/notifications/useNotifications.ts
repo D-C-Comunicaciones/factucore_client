@@ -14,11 +14,25 @@ const LIST_KEY = (filter: string) => ["notifications", "list", filter] as const;
 // Polling de respaldo solo mientras el socket esté caído (ver comments-notifications.md)
 const FALLBACK_POLL_INTERVAL = 45_000;
 
-// Igual que parseApiDate/formatDateTime en NotificationBell.tsx y RemindersPanel.tsx
-// (due_at sí es ISO, pero el formato de salida debe verse igual en los 3 lugares).
+// El backend manda fechas como "DD/MM/YYYY HH:mm" (no ISO, ver
+// App\Traits\FormatsDates::formatSingleDate()) — new Date() nativo las interpreta como
+// MM/DD y devuelve "Invalid Date". Mismo parseApiDate que ya usan NotificationBell.tsx,
+// CommentsAndReminders.tsx y RemindersPanel.tsx (el formato de salida debe verse igual
+// en los 4 lugares).
+function parseApiDate(dateString?: string): Date | null {
+    if (!dateString) return null;
+    const match = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (match) {
+        const [, day, month, year, hour, minute, second] = match;
+        return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second || 0));
+    }
+    const d = new Date(dateString);
+    return isNaN(d.getTime()) ? null : d;
+}
+
 function formatDueAt(iso: string): string {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "";
+    const d = parseApiDate(iso);
+    if (!d) return "";
     const day = d.getDate();
     const month = d.toLocaleDateString("es-CO", { month: "short" }).replace(".", "");
     const time = d.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit", hour12: true });
