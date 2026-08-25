@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, AtSign, CheckCheck } from "lucide-react";
+import { Bell, AtSign, CheckCheck, Clock } from "lucide-react";
 import {
     useNotificationsSocket,
     useUnreadNotificationsCount,
@@ -52,9 +52,13 @@ export function NotificationBell() {
         if (!notification.read_at) {
             markAsRead.mutate(notification.id);
         }
-        const basePath = DOCUMENT_ROUTES[notification.data.commentable_type];
-        if (basePath) {
-            router.push(`${basePath}/${notification.data.commentable_id}`);
+        // Menciones en comentarios traen commentable_type/id; recordatorios traen
+        // remindable_type/id — misma idea, distinto nombre de campo según el origen.
+        const type = notification.data.commentable_type ?? notification.data.remindable_type;
+        const id = notification.data.commentable_id ?? notification.data.remindable_id;
+        const basePath = type ? DOCUMENT_ROUTES[type] : undefined;
+        if (basePath && id) {
+            router.push(`${basePath}/${id}`);
         }
         setOpen(false);
     };
@@ -94,34 +98,51 @@ export function NotificationBell() {
                         ) : !notifications || notifications.length === 0 ? (
                             <div className="p-6 text-center text-sm text-gray-400">No tienes notificaciones</div>
                         ) : (
-                            notifications.map((notification) => (
-                                <button
-                                    key={notification.id}
-                                    onClick={() => handleNotificationClick(notification)}
-                                    className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${!notification.read_at ? "bg-primary/5" : ""
-                                        }`}
-                                >
-                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                        <AtSign className="w-4 h-4 text-primary" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[13px] text-gray-900 leading-snug">
-                                            <span className="font-semibold">{notification.data.mentioned_by?.name}</span>{" "}
-                                            te mencionó en{" "}
-                                            <span className="font-medium">{notification.data.commentable_label}</span>
-                                        </p>
-                                        {notification.data.excerpt && (
-                                            <p className="text-[12px] text-gray-500 truncate mt-0.5">
-                                                {notification.data.excerpt}
-                                            </p>
+                            notifications.map((notification) => {
+                                // App\Notifications\ReminderNotification manda el texto ya armado
+                                // en 'message'; las menciones de comentarios no traen ese campo y
+                                // se arman acá con mentioned_by/commentable_label/excerpt.
+                                const isReminder = Boolean(notification.data.message);
+
+                                return (
+                                    <button
+                                        key={notification.id}
+                                        onClick={() => handleNotificationClick(notification)}
+                                        className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${!notification.read_at ? "bg-primary/5" : ""
+                                            }`}
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                            {isReminder ? (
+                                                <Clock className="w-4 h-4 text-primary" />
+                                            ) : (
+                                                <AtSign className="w-4 h-4 text-primary" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            {isReminder ? (
+                                                <p className="text-[13px] text-gray-900 leading-snug">{notification.data.message}</p>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[13px] text-gray-900 leading-snug">
+                                                        <span className="font-semibold">{notification.data.mentioned_by?.name}</span>{" "}
+                                                        te mencionó en{" "}
+                                                        <span className="font-medium">{notification.data.commentable_label}</span>
+                                                    </p>
+                                                    {notification.data.excerpt && (
+                                                        <p className="text-[12px] text-gray-500 truncate mt-0.5">
+                                                            {notification.data.excerpt}
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                            <p className="text-[11px] text-gray-400 mt-1">{timeAgo(notification.created_at)}</p>
+                                        </div>
+                                        {!notification.read_at && (
+                                            <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />
                                         )}
-                                        <p className="text-[11px] text-gray-400 mt-1">{timeAgo(notification.created_at)}</p>
-                                    </div>
-                                    {!notification.read_at && (
-                                        <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />
-                                    )}
-                                </button>
-                            ))
+                                    </button>
+                                );
+                            })
                         )}
                     </div>
                 </div>
