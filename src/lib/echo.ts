@@ -37,10 +37,21 @@ export function getEcho(): ReverbEcho | null {
         // privado siempre falla con 401.
         authorizer: (channel: { name: string }) => ({
             authorize: (socketId: string, callback: (error: boolean, data: any) => void) => {
+                const token = AuthService.getToken();
+
+                // Sin token no hay forma de que /broadcasting/auth autorice nada — pasa
+                // durante el instante entre que se limpia la sesión (401 en cualquier otra
+                // petición, ver api-client.ts) y que la navegación a /login termina de
+                // desmontar la página. Fallar acá evita mandar un "Bearer " vacío al backend.
+                if (!token) {
+                    callback(true, { error: "No hay sesión activa." });
+                    return;
+                }
+
                 fetch(`${envs.apiUrl}/broadcasting/auth`, {
                     method: "POST",
                     headers: {
-                        Authorization: `Bearer ${AuthService.getToken() ?? ""}`,
+                        Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                         Accept: "application/json",
                     },

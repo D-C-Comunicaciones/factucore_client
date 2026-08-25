@@ -9,10 +9,11 @@ export interface MentionNotificationData {
     created_at: string;
 }
 
-// Ver recordatorios.md §3 — "type" indica cuál de las 4 variantes es, "message"
+// Ver recordatorios.md §3 — "type" indica cuál de las 5 variantes es, "message"
 // ya viene armado en español desde el backend, listo para mostrar tal cual.
+// 'reminder_updated': se edita título/fecha sin reasignar (ver App\Notifications\ReminderNotification::UPDATED).
 export interface ReminderNotificationData {
-    type: "reminder_assigned" | "reminder_unassigned" | "reminder_deleted" | "reminder_due";
+    type: "reminder_assigned" | "reminder_unassigned" | "reminder_updated" | "reminder_deleted" | "reminder_due";
     reminder_id: number;
     title: string;
     due_at: string | null;

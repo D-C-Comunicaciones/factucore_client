@@ -96,6 +96,13 @@ class ApiClient {
                     if (status === 401) {
                         if (typeof window !== "undefined") {
                             if (window.location.pathname !== "/login") {
+                                // Corta la conexión de WebSocket YA — si no, el socket sigue vivo
+                                // durante el instante entre limpiar la sesión y que la navegación a
+                                // /login termine de desmontar la página, y cualquier canal que
+                                // intente (re)autorizarse en ese hueco manda un Bearer vacío.
+                                const { disconnectEcho } = require("./echo")
+                                disconnectEcho()
+
                                 localStorage.clear()
                                 sessionStorage.clear()
 

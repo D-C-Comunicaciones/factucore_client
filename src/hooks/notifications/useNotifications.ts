@@ -5,6 +5,7 @@ import { NotificationsService, DOCUMENT_ROUTES } from "@/lib/notifications";
 import { getEcho } from "@/lib/echo";
 import { getSession } from "@/common/interfaces/session";
 import { showMentionNotificationToast, showReminderToast, showToast } from "@/components/sonner/CustomToaster";
+import { playNotificationSound } from "@/lib/notificationSound";
 import type { NotificationData } from "@/types/notification";
 
 const UNREAD_COUNT_KEY = ["notifications", "unread-count"] as const;
@@ -49,6 +50,11 @@ export function useNotificationsSocket() {
 
         const channel = echo.private(channelName);
         channel.notification((notification: NotificationData) => {
+            // Único punto por el que pasan TODAS las notificaciones en tiempo real (menciones,
+            // recordatorios asignados/actualizados/vencidos...) — el sonido va acá para que
+            // cubra cualquier tipo sin tener que tocarlo de nuevo cuando se agregue uno nuevo.
+            playNotificationSound();
+
             queryClient.setQueryData<{ count: number }>(UNREAD_COUNT_KEY, (old) => ({
                 count: (old?.count ?? 0) + 1,
             }));

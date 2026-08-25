@@ -10,6 +10,7 @@ import { getSession } from "@/common/interfaces/session"
 import { prefetchAllCatalogs } from "@/hooks/useCatalogs";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AuthFlowService } from "@/lib/authFlow";
+import { disconnectEcho } from "@/lib/echo";
 import { extractErrorMessage } from "@/lib/errors";
 import type { TwoFactorChallengePayload } from "@/types/auth";
 
@@ -245,6 +246,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 logoutMsg = error.response.data.message;
             }
         }
+        // Corta el WebSocket ANTES de limpiar el storage — el logout es navegación en cliente
+        // (router.push, no window.location), así que el singleton de Echo y sus canales
+        // privados abiertos (notificaciones, comentarios del documento) sobreviven la
+        // navegación; sin esto, quedan conectados con la sesión ya cerrada y cualquier
+        // intento de (re)autorizar un canal manda un Bearer vacío.
+        disconnectEcho()
+
         // Clear client-side session storage
         try {
             // Remove known session key
