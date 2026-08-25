@@ -351,12 +351,24 @@ function CommentEditor({
   };
 
   const handleSubmit = () => {
+    if (submitting) return;
     const plain = editorRef.current?.innerText || "";
     if (!plain.trim() && !html.includes('<img')) return;
     onSubmit(html, Array.from(mentionMapRef.current.keys()));
   };
 
   const canSubmit = !!(editorRef.current?.innerText?.trim() || html.includes('<img'));
+
+  // Enter envía/guarda; Shift+Enter sigue insertando salto de línea (comportamiento
+  // nativo del contentEditable). Si el dropdown de menciones está abierto, Enter no
+  // debe enviar — todavía no hay selección por teclado ahí, así que se deja pasar
+  // como salto de línea normal en vez de mandar el comentario a medio escribir.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" && !e.shiftKey && mentionQuery === null) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
 
   return (
     <div>
@@ -369,6 +381,7 @@ function CommentEditor({
           ref={editorRef}
           contentEditable
           onInput={handleInput}
+          onKeyDown={handleKeyDown}
           onKeyUp={() => { updateActiveFormats(); detectMentionQuery(); }}
           onMouseUp={() => { updateActiveFormats(); detectMentionQuery(); }}
           onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
@@ -515,6 +528,12 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // El CommentEditor de comentario nuevo (a diferencia del de responder/editar) nunca se
+  // desmonta, así que nada lo limpia solo tras publicar — es "uncontrolled" a propósito
+  // (ver comentario en CommentEditor). Cambiarle la key fuerza un remount con initialHtml
+  // vacío, que es la forma estándar de resetear un uncontrolled component en React.
+  const [commentEditorKey, setCommentEditorKey] = useState(0);
+
   const visibleComments = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -541,7 +560,10 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
   };
 
   const handlePost = (html: string, mentionIds: number[]) => {
-    createMutation.mutate({ comment: html, mentions: mentionIds });
+    createMutation.mutate(
+      { comment: html, mentions: mentionIds },
+      { onSuccess: () => setCommentEditorKey((k) => k + 1) }
+    );
   };
 
   const handleReply = (parentId: number, html: string, mentionIds: number[]) => {
@@ -789,6 +811,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
             <div className="p-4 bg-white border-t border-gray-200">
               <div className="border border-primary rounded-xl p-3 focus-within:ring-1 focus-within:ring-primary/40 transition-shadow">
                 <CommentEditor
+                  key={commentEditorKey}
                   placeholder={"Escribe un comentario\nMenciona con @, asigna tareas o agenda recordatorios para tu equipo"}
                   submitLabel="__send-icon__"
                   submitting={createMutation.isPending}
@@ -861,6 +884,11 @@ function LegacyCommentsAndReminders({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Ver comentario equivalente en ConnectedCommentsAndReminders: el editor de comentario
+  // nuevo nunca se desmonta, así que hay que forzar un remount (via key) para limpiarlo
+  // tras publicar.
+  const [commentEditorKey, setCommentEditorKey] = useState(0);
+
   // Cada item conserva su índice original: editingIndex/deletingIndex se
   // manejan sobre `comments` (el array real), no sobre la vista filtrada/ordenada.
   const visibleComments = useMemo(() => {
@@ -885,6 +913,7 @@ function LegacyCommentsAndReminders({
       ...comments,
       { comment: html, is_internal: true, created_at: new Date().toISOString() },
     ]);
+    setCommentEditorKey((k) => k + 1);
   };
 
   const handleCopy = (htmlString: string) => {
@@ -1068,6 +1097,7 @@ function LegacyCommentsAndReminders({
       <div className="p-4 bg-white border-t border-gray-200">
         <div className="border border-primary rounded-xl p-3 focus-within:ring-1 focus-within:ring-primary/40 transition-shadow">
           <CommentEditor
+            key={commentEditorKey}
             placeholder={"Escribe un comentario\nMenciona con @, asigna tareas o agenda recordatorios para tu equipo"}
             submitLabel="__send-icon__"
             onSubmit={handlePostComment}
