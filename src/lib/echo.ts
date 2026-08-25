@@ -1,7 +1,7 @@
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 import { envs } from "@/config/env";
-import { AuthService } from "@/lib/auth";
+import { getSession } from "@/common/interfaces/session";
 
 // Cliente WebSocket real (Laravel Reverb, protocolo compatible con Pusher).
 // No es polling: se abre una conexión persistente y los eventos llegan
@@ -39,7 +39,17 @@ export function getEcho(): ReverbEcho | null {
         // privado siempre falla con 401.
         authorizer: (channel: { name: string }) => ({
             authorize: (socketId: string, callback: (error: boolean, data: any) => void) => {
-                const token = AuthService.getToken();
+                // getSession() lee la misma clave localStorage("session") que ya usan
+                // useCommentsSocket.ts/useNotifications.ts para tenantId/userId, y que
+                // api-client.ts usa (con fallback) para el Authorization header de las
+                // peticiones REST. Antes esto llamaba a AuthService.getToken(), que lee
+                // localStorage("access_token") — una clave que ningún flujo de login
+                // escribe (applyLoginSession en auth-context.tsx solo guarda "session");
+                // getToken() devolvía null SIEMPRE, así que el authorizer fallaba rápido
+                // sin siquiera intentar la petición a /broadcasting/auth. Ninguna
+                // suscripción a canal privado autorizaba jamás: cero comentarios/
+                // menciones/recordatorios en tiempo real, para nadie, en ninguna sesión.
+                const token = getSession()?.token;
 
                 // Sin token no hay forma de que /broadcasting/auth autorice nada — pasa
                 // durante el instante entre que se limpia la sesión (401 en cualquier otra

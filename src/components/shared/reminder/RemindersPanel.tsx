@@ -10,9 +10,25 @@ import { useRemindersList, useCreateReminder, useUpdateReminder, useDeleteRemind
 import { useRemindersSocket } from "@/hooks/reminders/useRemindersSocket";
 import type { ReminderableType, Reminder } from "@/types/reminder";
 
+// El backend manda fechas como "DD/MM/YYYY HH:mm" (no ISO, ver
+// App\Traits\FormatsDates::formatSingleDate()) — new Date() nativo las
+// interpreta como MM/DD y devuelve "Invalid Date" (por eso el pill de fecha
+// se veía vacío, con solo el ícono de campana). Mismo parser que ya usan
+// NotificationBell.tsx y CommentsAndReminders.tsx.
+function parseApiDate(dateString?: string): Date | null {
+  if (!dateString) return null;
+  const match = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (match) {
+    const [, day, month, year, hour, minute, second] = match;
+    return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second || 0));
+  }
+  const d = new Date(dateString);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function formatReminderDateTime(dueAt: string) {
-  const d = new Date(dueAt);
-  if (isNaN(d.getTime())) return "";
+  const d = parseApiDate(dueAt);
+  if (!d) return "";
   const day = d.getDate();
   const month = d.toLocaleDateString("es-CO", { month: "short" }).replace(".", "");
   const time = d.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit", hour12: true });
