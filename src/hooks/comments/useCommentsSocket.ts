@@ -5,17 +5,34 @@ import { getSession } from "@/common/interfaces/session";
 import { COMMENTS_KEY } from "./useComments";
 import type { CommentableType, Comment, CommentReply, CommentsListResponse } from "@/types/comment";
 
+// App\Events\CommentPosted::broadcastWith() manda los campos envueltos bajo 'comment' — igual
+// convención que App\Events\ReminderBroadcastEvent (ver useRemindersSocket.ts, que ya lee
+// payload.reminder.*). Antes este archivo leía los campos sueltos en el payload (payload.id,
+// payload.user.id...), que nunca existieron ahí — payload.user era undefined y tronaba con un
+// TypeError apenas llegaba un comentario nuevo, dejando el evento sin aplicar (silencioso desde
+// afuera: el listener no vuelve a intentarlo, así que solo se veía el comentario tras refrescar).
 interface LiveCommentPayload {
-    id: number;
-    parent_id: number | null;
-    comment: string;
-    is_internal: boolean;
-    commentable_type: string;
-    commentable_id: number;
-    created_at: string;
-    updated_at: string;
-    user: { id: number; name: string; email: string };
-    mentions: { id: number; name: string; email: string }[];
+    comment: {
+        id: number;
+        parent_id: number | null;
+        comment: string;
+        is_internal: boolean;
+        commentable_type: string;
+        commentable_id: number;
+        created_at: string;
+        updated_at: string;
+        user: { id: number; name: string; email: string };
+        mentions: { id: number; name: string; email: string }[];
+    };
+}
+
+// App\Events\CommentDeleted manda un payload minimo (solo id/parent_id) — alcanza para
+// quitarlo de la cache sin pedir nada mas al backend.
+interface LiveCommentDeletedPayload {
+    comment: {
+        id: number;
+        parent_id: number | null;
+    };
 }
 
 // Suscripción al canal en vivo de un documento (ver comentarios_tiempo_real.md):
@@ -40,24 +57,26 @@ export function useCommentsSocket(type: CommentableType, commentableId: number |
         // El punto antes de "comment.created" es intencional: el evento se manda
         // con broadcastAs(), así que Echo NO debe anteponerle el namespace PHP.
         channel.listen(".comment.created", (payload: LiveCommentPayload) => {
+            const incoming = payload.comment;
+
             queryClient.setQueryData<CommentsListResponse>(COMMENTS_KEY(type, commentableId), (old) => {
                 if (!old) return old;
 
-                if (payload.parent_id == null) {
+                if (incoming.parent_id == null) {
                     // Comentario raíz nuevo. Se descarta si ya está (por si llega dos
                     // veces, ej. el propio si X-Socket-Id no alcanzó a excluirlo).
-                    if (old.data.some((c) => c.id === payload.id)) return old;
+                    if (old.data.some((c) => c.id === incoming.id)) return old;
                     const newComment: Comment = {
-                        id: payload.id,
-                        user_id: payload.user.id,
-                        commentable_type: payload.commentable_type,
-                        commentable_id: payload.commentable_id,
+                        id: incoming.id,
+                        user_id: incoming.user.id,
+                        commentable_type: incoming.commentable_type,
+                        commentable_id: incoming.commentable_id,
                         parent_id: null,
-                        comment: payload.comment,
-                        is_internal: payload.is_internal,
-                        created_at: payload.created_at,
-                        user: payload.user,
-                        mentions: payload.mentions || [],
+                        comment: incoming.comment,
+                        is_internal: incoming.is_internal,
+                        created_at: incoming.created_at,
+                        user: incoming.user,
+                        mentions: incoming.mentions || [],
                         replies: [],
                     };
                     return { ...old, data: [newComment, ...old.data], total: old.total + 1 };
@@ -67,24 +86,45 @@ export function useCommentsSocket(type: CommentableType, commentableId: number |
                 // de la lista raíz.
                 let foundParent = false;
                 const data = old.data.map((c) => {
-                    if (c.id !== payload.parent_id) return c;
+                    if (c.id !== incoming.parent_id) return c;
                     foundParent = true;
-                    if ((c.replies || []).some((r) => r.id === payload.id)) return c;
+                    if ((c.replies || []).some((r) => r.id === incoming.id)) return c;
                     const newReply: CommentReply = {
-                        id: payload.id,
-                        user_id: payload.user.id,
-                        commentable_type: payload.commentable_type,
-                        commentable_id: payload.commentable_id,
-                        parent_id: payload.parent_id as number,
-                        comment: payload.comment,
-                        is_internal: payload.is_internal,
-                        created_at: payload.created_at,
-                        user: payload.user,
-                        mentions: payload.mentions || [],
+                        id: incoming.id,
+                        user_id: incoming.user.id,
+                        commentable_type: incoming.commentable_type,
+                        commentable_id: incoming.commentable_id,
+                        parent_id: incoming.parent_id as number,
+                        comment: incoming.comment,
+                        is_internal: incoming.is_internal,
+                        created_at: incoming.created_at,
+                        user: incoming.user,
+                        mentions: incoming.mentions || [],
                     };
                     return { ...c, replies: [...(c.replies || []), newReply] };
                 });
                 if (!foundParent) return old;
+                return { ...old, data };
+            });
+        });
+
+        channel.listen(".comment.deleted", (payload: LiveCommentDeletedPayload) => {
+            const { id, parent_id } = payload.comment;
+
+            queryClient.setQueryData<CommentsListResponse>(COMMENTS_KEY(type, commentableId), (old) => {
+                if (!old) return old;
+
+                if (parent_id == null) {
+                    // Comentario raíz: se quita de la lista (junto con sus respuestas).
+                    if (!old.data.some((c) => c.id === id)) return old;
+                    return { ...old, data: old.data.filter((c) => c.id !== id), total: Math.max(0, old.total - 1) };
+                }
+
+                // Respuesta: se quita solo del array de replies de su padre.
+                const data = old.data.map((c) => {
+                    if (c.id !== parent_id || !c.replies) return c;
+                    return { ...c, replies: c.replies.filter((r) => r.id !== id) };
+                });
                 return { ...old, data };
             });
         });
