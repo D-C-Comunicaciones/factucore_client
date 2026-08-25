@@ -22,14 +22,16 @@ export function getEcho(): ReverbEcho | null {
 
     (window as any).Pusher = Pusher;
 
+    const forceTLS = envs.reverbScheme === "https";
+
     echoInstance = new Echo({
         broadcaster: "reverb",
         key: envs.reverbAppKey,
         wsHost: envs.reverbHost,
-        wsPort: 443,
-        wssPort: 443,
-        forceTLS: true,
-        enabledTransports: ["ws", "wss"],
+        wsPort: envs.reverbPort,
+        wssPort: envs.reverbPort,
+        forceTLS,
+        enabledTransports: forceTLS ? ["ws", "wss"] : ["ws"],
 
         // Esta API usa Bearer token (no cookies de sesión Sanctum SPA), así que
         // Echo necesita un authorizer a medida que mande el Authorization header
