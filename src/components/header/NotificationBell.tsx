@@ -45,7 +45,7 @@ export function NotificationBell() {
 
     useNotificationsSocket();
     const { data: unreadData } = useUnreadNotificationsCount();
-    const { data: notifications, isLoading } = useNotificationsList("all", open);
+    const { data: notifications, isLoading } = useNotificationsList("all");
     const markAsRead = useMarkNotificationRead();
     const markAllAsRead = useMarkAllNotificationsRead();
 
@@ -82,7 +82,7 @@ export function NotificationBell() {
                 <Bell className="w-4 h-4 text-gray-700" />
                 {unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">
-                        {unreadCount > 9 ? "9+" : unreadCount}
+                        {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                 )}
             </button>
