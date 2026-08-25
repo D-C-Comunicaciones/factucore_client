@@ -54,10 +54,17 @@ export function useCommentsSocket(type: CommentableType, commentableId: number |
         const channelName = `tenant.${tenantId}.comments.${type}.${commentableId}`;
         const channel = echo.private(channelName);
 
+        // channelName lleva type+commentableId: dos documentos distintos (ej. invoice/2 vs
+        // invoice/3, o invoice/2 vs remission/2) nunca comparten canal, así que un evento de
+        // uno no puede aparecer en la vista del otro — ver también useRemindersSocket.ts.
+        channel.subscribed(() => console.log(`[comments-socket] suscrito: "${channelName}"`));
+        channel.error((err: unknown) => console.error(`[comments-socket] error suscribiendo "${channelName}"`, err));
+
         // El punto antes de "comment.created" es intencional: el evento se manda
         // con broadcastAs(), así que Echo NO debe anteponerle el namespace PHP.
         channel.listen(".comment.created", (payload: LiveCommentPayload) => {
             const incoming = payload.comment;
+            console.log(`[comments-socket] comment.created en "${channelName}"`, { id: incoming.id, parent_id: incoming.parent_id });
 
             queryClient.setQueryData<CommentsListResponse>(COMMENTS_KEY(type, commentableId), (old) => {
                 if (!old) return old;
@@ -110,6 +117,7 @@ export function useCommentsSocket(type: CommentableType, commentableId: number |
 
         channel.listen(".comment.deleted", (payload: LiveCommentDeletedPayload) => {
             const { id, parent_id } = payload.comment;
+            console.log(`[comments-socket] comment.deleted en "${channelName}"`, { id, parent_id });
 
             queryClient.setQueryData<CommentsListResponse>(COMMENTS_KEY(type, commentableId), (old) => {
                 if (!old) return old;

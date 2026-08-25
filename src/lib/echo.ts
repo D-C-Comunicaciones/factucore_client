@@ -56,6 +56,7 @@ export function getEcho(): ReverbEcho | null {
                 // petición, ver api-client.ts) y que la navegación a /login termina de
                 // desmontar la página. Fallar acá evita mandar un "Bearer " vacío al backend.
                 if (!token) {
+                    console.warn(`[echo] auth omitida para "${channel.name}": no hay sesión activa.`);
                     callback(true, { error: "No hay sesión activa." });
                     return;
                 }
@@ -69,12 +70,31 @@ export function getEcho(): ReverbEcho | null {
                     },
                     body: JSON.stringify({ socket_id: socketId, channel_name: channel.name }),
                 })
-                    .then((res) => res.json())
-                    .then((data) => callback(false, data))
-                    .catch((error) => callback(true, error));
+                    .then((res) => res.json().then((data) => ({ ok: res.ok, status: res.status, data })))
+                    .then(({ ok, status, data }) => {
+                        if (ok) {
+                            console.log(`[echo] canal autorizado: "${channel.name}"`);
+                        } else {
+                            console.warn(`[echo] /broadcasting/auth respondió ${status} para "${channel.name}"`, data);
+                        }
+                        callback(!ok, data);
+                    })
+                    .catch((error) => {
+                        console.error(`[echo] error de red autorizando "${channel.name}"`, error);
+                        callback(true, error);
+                    });
             },
         }),
     } as any) as ReverbEcho;
+
+    // Log del ciclo de vida de la conexión base (no depende de ningún canal
+    // privado: es el handshake con Reverb en sí). Sirve para distinguir en
+    // consola "el socket nunca conectó" de "conectó pero ningún canal
+    // autorizó" — dos fallas con síntomas idénticos desde el usuario pero
+    // causas y arreglos totalmente distintos.
+    echoInstance.connector.onConnectionChange((status) => {
+        console.log(`[echo] conexión: ${status}`, { socketId: echoInstance?.connector.socketId() });
+    });
 
     return echoInstance;
 }
