@@ -63,7 +63,16 @@ export function useNotificationsSocket() {
         if (!echo) return;
 
         const channel = echo.private(channelName);
+        // channelName lleva tenantId+userId (ver getChannelName arriba): es el canal
+        // PERSONAL del usuario logueado, nunca el de un documento — no se mezcla con
+        // useCommentsSocket.ts/useRemindersSocket.ts (esos son por tenant+tipo+id de
+        // documento). Un usuario nunca recibe acá las menciones/recordatorios de otro.
+        channel.subscribed(() => console.log(`[notifications-socket] suscrito: "${channelName}"`));
+        channel.error((err: unknown) => console.error(`[notifications-socket] error suscribiendo "${channelName}"`, err));
+
         channel.notification((notification: NotificationData) => {
+            console.log(`[notifications-socket] notificación recibida en "${channelName}"`, { type: notification.type });
+
             // Único punto por el que pasan TODAS las notificaciones en tiempo real (menciones,
             // recordatorios asignados/actualizados/vencidos...) — el sonido va acá para que
             // cubra cualquier tipo sin tener que tocarlo de nuevo cuando se agregue uno nuevo.
