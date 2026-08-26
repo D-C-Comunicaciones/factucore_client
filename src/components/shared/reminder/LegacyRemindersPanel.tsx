@@ -153,7 +153,12 @@ export function LegacyRemindersPanel({ onCountChange }: { onCountChange?: (count
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deletingId !== null} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <DialogContent className="sm:max-w-[425px]" aria-describedby={undefined}>
+        <DialogContent
+          className="sm:max-w-[425px] bg-white"
+          aria-describedby={undefined}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>¿Eliminar recordatorio?</DialogTitle>
           </DialogHeader>

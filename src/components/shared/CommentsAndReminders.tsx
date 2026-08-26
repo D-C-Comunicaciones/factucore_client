@@ -870,7 +870,12 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deletingId !== null} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <DialogContent className="sm:max-w-[425px] bg-white" aria-describedby={undefined}>
+        <DialogContent
+          className="sm:max-w-[425px] bg-white"
+          aria-describedby={undefined}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Eliminar comentario</DialogTitle>
           </DialogHeader>
@@ -1153,7 +1158,12 @@ function LegacyCommentsAndReminders({
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deletingIndex !== null} onOpenChange={(open) => !open && setDeletingIndex(null)}>
-        <DialogContent className="sm:max-w-[425px] bg-white" aria-describedby={undefined}>
+        <DialogContent
+          className="sm:max-w-[425px] bg-white"
+          aria-describedby={undefined}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Eliminar comentario</DialogTitle>
           </DialogHeader>

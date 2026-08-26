@@ -119,6 +119,7 @@ export function NewLegacyReminderModal({
         className="sm:max-w-[420px] bg-white"
         aria-describedby={undefined}
         onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar recordatorio" : "Nuevo recordatorio"}</DialogTitle>
@@ -152,7 +153,7 @@ export function NewLegacyReminderModal({
 
           <div className="relative">
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Destinatario <span className="text-primary">*</span>
+              Asignar a: <span className="text-primary">*</span>
             </label>
 
             {recipient ? (
