@@ -35,6 +35,20 @@ interface LiveCommentDeletedPayload {
     };
 }
 
+// App\Events\CommentUpdated::broadcastWith() — sin created_at ni user (no cambian al editar).
+interface LiveCommentUpdatedPayload {
+    comment: {
+        id: number;
+        parent_id: number | null;
+        comment: string;
+        is_internal: boolean;
+        commentable_type: string;
+        commentable_id: number;
+        updated_at: string;
+        mentions: { id: number; name: string; email: string }[];
+    };
+}
+
 // Suscripción al canal en vivo de un documento (ver comentarios_tiempo_real.md):
 // cualquiera con la pantalla de detalle abierta ve los comentarios/respuestas
 // nuevos aparecer al instante, sin recargar ni volver a pedir la lista.
@@ -168,6 +182,41 @@ export function useCommentsSocket(type: CommentableType, commentableId: number |
                 });
             }, DELETED_PLACEHOLDER_MS);
             pendingRemovals.push(timer);
+        });
+
+        // Edición en vivo: solo se reemplaza el texto/menciones del comentario existente en su
+        // sitio — sin aviso ni indicador de "editado" para quien lo está viendo (a propósito,
+        // ver App\Events\CommentUpdated).
+        channel.listen(".comment.updated", (payload: LiveCommentUpdatedPayload) => {
+            const incoming = payload.comment;
+            console.log(`[comments-socket] comment.updated en "${channelName}"`, { id: incoming.id, parent_id: incoming.parent_id });
+
+            queryClient.setQueryData<CommentsListResponse>(COMMENTS_KEY(type, commentableId), (old) => {
+                if (!old) return old;
+
+                if (incoming.parent_id == null) {
+                    if (!old.data.some((c) => c.id === incoming.id)) return old;
+                    const data = old.data.map((c) =>
+                        c.id === incoming.id
+                            ? { ...c, comment: incoming.comment, is_internal: incoming.is_internal, mentions: incoming.mentions || [] }
+                            : c
+                    );
+                    return { ...old, data };
+                }
+
+                let found = false;
+                const data = old.data.map((c) => {
+                    if (c.id !== incoming.parent_id || !c.replies) return c;
+                    const replies = c.replies.map((r) => {
+                        if (r.id !== incoming.id) return r;
+                        found = true;
+                        return { ...r, comment: incoming.comment, is_internal: incoming.is_internal, mentions: incoming.mentions || [] };
+                    });
+                    return { ...c, replies };
+                });
+                if (!found) return old;
+                return { ...old, data };
+            });
         });
 
         return () => {

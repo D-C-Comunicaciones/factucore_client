@@ -56,7 +56,7 @@ function ReminderCard({
             <Bell className="w-3 h-3" /> {formatReminderDateTime(reminder.due_at)}
           </span>
           {reminder.user && (
-            <span className="text-xs text-slate-400 truncate">para {reminder.user.name}</span>
+            <span className="text-xs text-slate-400 truncate">Para: {reminder.user.name}</span>
           )}
         </div>
       </div>
@@ -183,7 +183,12 @@ export function RemindersPanel({
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deletingId !== null} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <DialogContent className="sm:max-w-[425px]" aria-describedby={undefined}>
+        <DialogContent
+          className="sm:max-w-[425px] bg-white"
+          aria-describedby={undefined}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>¿Eliminar recordatorio?</DialogTitle>
           </DialogHeader>
