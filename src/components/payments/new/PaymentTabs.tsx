@@ -5,10 +5,11 @@ export function PaymentTabs() {
   const [comments, setComments] = useState<any[]>([]);
 
   return (
-    <div className="mt-8 -mb-8">
-      <CommentsAndReminders 
+    <div className="mt-8">
+      <CommentsAndReminders
         comments={comments}
         setComments={setComments}
+        requiresSaveFirst={true}
       />
     </div>
   );

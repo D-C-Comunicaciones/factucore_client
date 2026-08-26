@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Table as TanTable, ColumnDef, flexRender } from "@tanstack/react-table";
 import {
@@ -11,6 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  SelectAllCheckbox,
+  SelectRowCheckbox,
+} from "@/components/ui/selection-checkbox";
 
 interface ContactTableBodyProps {
   table: TanTable<any>;
@@ -18,6 +23,9 @@ interface ContactTableBodyProps {
   loading?: boolean;
   rowSelection?: Record<string, boolean>;
   onToggleSelection?: (id: number) => void;
+  allSelected?: boolean;
+  someSelected?: boolean;
+  onToggleSelectAll?: (value: boolean) => void;
   activeTab?: "all" | "customer" | "provider";
   searchTerm?: string;
   onAddContact?: () => void;
@@ -28,11 +36,15 @@ export function ContactTableBody({
   columns,
   loading,
   rowSelection = {},
-  onToggleSelection,
+  onToggleSelection = () => {},
+  allSelected = false,
+  someSelected = false,
+  onToggleSelectAll = () => {},
   activeTab = "all",
   searchTerm = "",
   onAddContact,
 }: ContactTableBodyProps) {
+  const router = useRouter();
   const hasSearch = Boolean(searchTerm.trim());
   const showEmptyByTab = !hasSearch;
 
@@ -49,7 +61,7 @@ export function ContactTableBody({
     );
 
     if (interactiveElement) return;
-    onToggleSelection?.(row.original.id);
+    router.push(`/contacts/${row.original.id}`);
   };
 
   return (
@@ -74,12 +86,18 @@ export function ContactTableBody({
                       ${isActions ? "w-20 text-right" : ""}
                     `}
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
+                    {isSelect ? (
+                      <SelectAllCheckbox
+                        allSelected={allSelected}
+                        someSelected={someSelected}
+                        onToggle={onToggleSelectAll}
+                      />
+                    ) : header.isPlaceholder ? null : (
+                      flexRender(
                         header.column.columnDef.header,
                         header.getContext(),
-                      )}
+                      )
+                    )}
                   </TableHead>
                 );
               })}
@@ -122,9 +140,16 @@ export function ContactTableBody({
                           ${isType ? "" : "text-foreground"}
                         `}
                       >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
+                        {isSelect ? (
+                          <SelectRowCheckbox
+                            checked={isSelected}
+                            onToggle={() => onToggleSelection(row.original.id)}
+                          />
+                        ) : (
+                          flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )
                         )}
                       </TableCell>
                     );

@@ -13,7 +13,8 @@ export function NewRemissionFooter({
     onPreview?: () => void;
 }) {
     return (
-        <div className="p-6">
+        <div className="sticky bottom-0 z-30 pt-6">
+        <div className="bg-white border border-border rounded-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)] p-6">
             <div className="flex items-center justify-end gap-3">
                 <Button
                     variant="outline"
@@ -32,6 +33,7 @@ export function NewRemissionFooter({
                     {loadingGuardar ? "Guardando..." : "Guardar"}
                 </Button>
             </div>
+        </div>
         </div>
     );
 }

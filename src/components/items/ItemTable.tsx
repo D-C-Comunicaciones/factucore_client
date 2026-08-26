@@ -19,6 +19,8 @@ import {
 
 import { getItemColumns } from "@/components/items/table/columns";
 
+import { useTableSelection } from "@/hooks/use-table-selection";
+
 import { ItemTableToolbar } from "@/components/items/table/ItemTableToolbar";
 
 import { ItemFilterChips } from "@/components/items/table/ItemFilterChips";
@@ -78,9 +80,6 @@ interface ItemTableProps {
   emptyMessage?: string;
 }
 
-type SelectionState =
-  Record<string, boolean>;
-
 export function ItemTable({
   items,
   loading,
@@ -107,49 +106,19 @@ export function ItemTable({
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
 
-  const [selection, setSelection] =
-    React.useState<SelectionState>({});
-
   const getRowUniqueId = React.useCallback(
     (item: ItemListResponse) => `${item.entity_type || "item"}-${item.id}`,
     []
   );
 
-  const toggleSelection =
-    React.useCallback((uniqueId: string) => {
-      setSelection((prev) => {
-        const next = { ...prev };
-
-        if (next[uniqueId]) {
-          delete next[uniqueId];
-        } else {
-          next[uniqueId] = true;
-        }
-
-        return next;
-      });
-    }, []);
-
-  const toggleSelectAll = React.useCallback(
-    (value: boolean) => {
-      setSelection((prev) => {
-        const next = { ...prev };
-        if (value) {
-          // Select all visible items
-          items.forEach((item) => {
-            next[getRowUniqueId(item)] = true;
-          });
-        } else {
-          // Deselect all visible items
-          items.forEach((item) => {
-            delete next[getRowUniqueId(item)];
-          });
-        }
-        return next;
-      });
-    },
-    [items, getRowUniqueId]
-  );
+  const {
+    selection,
+    setSelection,
+    toggle: toggleSelection,
+    toggleAll: toggleSelectAll,
+    allSelected,
+    someSelected,
+  } = useTableSelection(items, getRowUniqueId);
 
   // Adaptador: columns.tsx llama con un único id; aquí lo envolvemos en array
   // y lo forwarded hacia el onToggleActive de la prop (que acepta ids | ids[])
@@ -160,36 +129,15 @@ export function ItemTable({
     [onToggleActive]
   );
 
-  const allSelected =
-    items.length > 0 &&
-    items.every((item) => selection[getRowUniqueId(item)] === true);
-
-  const someSelected =
-    items.length > 0 &&
-    items.some((item) => selection[getRowUniqueId(item)] === true);
-
   const columns = React.useMemo(
     () =>
       getItemColumns(
         onView,
         onEdit,
         handleToggleActiveRow,
-        onDelete,
-        toggleSelection,
-        toggleSelectAll,
-        allSelected,
-        someSelected
+        onDelete
       ),
-    [
-      onView,
-      onEdit,
-      handleToggleActiveRow,
-      onDelete,
-      toggleSelection,
-      toggleSelectAll,
-      allSelected,
-      someSelected,
-    ]
+    [onView, onEdit, handleToggleActiveRow, onDelete]
   );
 
   const table =
@@ -366,6 +314,9 @@ export function ItemTable({
           onToggleSelection={
             toggleSelection
           }
+          allSelected={allSelected}
+          someSelected={someSelected}
+          onToggleSelectAll={toggleSelectAll}
           searchTerm={search}
           onNewItem={onNewItem}
           emptyMessage={emptyMessage}

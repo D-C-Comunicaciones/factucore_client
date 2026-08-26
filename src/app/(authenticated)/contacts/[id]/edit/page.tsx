@@ -2,14 +2,16 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ContactsService } from "@/lib/contacts";
 import { ContactFormProvider, useContactForm } from "@/components/contact/new/ContactFormProvider";
 import { ContactAdvancedForm } from "@/components/contact/new/ContactAdvancedForm";
 import { ContactSidebar } from "@/components/contact/new/ContactSidebar";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { showToast } from "@/components/sonner/CustomToaster";
+import { isConsumerFinal } from "@/utils/is-consumer-final";
 
 function EditContactContent() {
   const params = useParams();
@@ -49,6 +51,12 @@ function EditContactContent() {
         const res = await ContactsService.getById(id);
         const contact = res?.data?.contact || res?.data || res;
         if (contact) {
+          if (isConsumerFinal(contact.identification_number)) {
+            showToast('El contacto "Consumidor final" no se puede editar.', "error");
+            router.replace(`/contacts/${id}`);
+            return;
+          }
+
           if (contact.type_document_identification_id) setDocType(contact.type_document_identification_id.toString());
           if (contact.identification_number) setDocNumber(contact.identification_number.toString());
           if (contact.first_name) setFirstName(contact.first_name);
@@ -79,10 +87,13 @@ function EditContactContent() {
     fetchContact();
   }, [id, setMode, setDocType, setDocNumber, setFirstName, setLastName, setRegistrationName, setEmail, setMobile, setPhone1, setAddress, setMunicipalityId, setContactTypes]);
 
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   const handleSave = async () => {
     const cleanNum = docNumber.trim();
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
+    const cleanEmail = email.trim();
 
     const fullName = `${cleanFirstName} ${cleanLastName}`.trim();
     const finalRegistrationName = registrationName.trim() || fullName;
@@ -91,7 +102,8 @@ function EditContactContent() {
       docType: !docType,
       docNumber: !cleanNum,
       firstName: !cleanFirstName && !registrationName.trim(),
-      lastName: !cleanLastName && !registrationName.trim()
+      lastName: !cleanLastName && !registrationName.trim(),
+      email: !cleanEmail ? true : (!isValidEmail(cleanEmail) ? "invalid" : false),
     };
 
     if (Object.values(newErrors).some(Boolean)) {
@@ -116,7 +128,7 @@ function EditContactContent() {
         last_name: cleanLastName || null,
         identification_number: Number(cleanNum) || cleanNum,
         type_document_identification_id: Number(docType),
-        email: email.trim() || null,
+        email: cleanEmail,
         phone1: mobile.trim() || phone1.trim() || null,
         address: address.trim() || null,
         type_contact_id: typeContactIds.length > 0 ? typeContactIds : null,
@@ -155,8 +167,43 @@ function EditContactContent() {
 
   if (loadingContact) {
     return (
-      <div className="w-full h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="w-full min-h-screen text-foreground pb-12 pt-6">
+        <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
+          <div className="mb-6 flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded-md" />
+            <Skeleton className="h-7 w-48" />
+          </div>
+
+          <div className="flex flex-col md:flex-row min-h-[600px] gap-6 items-start">
+            <div className="flex-1 w-full bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+              <Skeleton className="h-5 w-40" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                ))}
+              </div>
+              <Skeleton className="h-5 w-40" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="w-full md:w-[320px] bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -179,7 +226,7 @@ function EditContactContent() {
 
         {/* FORM */}
         <div className="bg-transparent flex flex-col md:flex-row min-h-[600px] gap-6 items-start">
-          <ContactAdvancedForm catalogData={catalogData} onAutocomplete={() => showToast("Autocompletado no disponible en edición", "info")} />
+          <ContactAdvancedForm catalogData={catalogData} onAutocomplete={() => showToast("Autocompletado no disponible en edición", "info")} contactId={id} />
           <ContactSidebar 
             onSave={handleSave} 
             onCancel={handleCancel}

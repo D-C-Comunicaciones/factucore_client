@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { ArrowUp, ArrowDown, Printer, Pencil, Minus, Coins, Eye } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InvoicesService } from "@/lib/invoices";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -47,7 +46,7 @@ function SortableHeader({
 
   return (
     <button
-      className={`flex items-center justify-center gap-1 w-full px-2 py-1 rounded group transition-colors duration-100 cursor-pointer ${isSorted ? "bg-primary/10" : "hover:bg-accent"
+      className={`flex items-center justify-center gap-1 w-full px-2 py-1 rounded group transition-colors duration-100 cursor-pointer ${isSorted ? "bg-primary/10" : "hover:bg-gray-100"
         }`}
       onClick={handleSort}
       tabIndex={0}
@@ -342,48 +341,9 @@ export function getColumns(
   return [
     {
       id: "select",
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={
-            table.getRowModel().rows.length > 0 &&
-            table.getRowModel().rows.every(
-              row => row.getIsSelected()
-            )
-          }
-          ref={(el) => {
-            if (!el) return;
-
-            const rows = table.getRowModel().rows;
-            const selected = rows.filter(
-              row => row.getIsSelected()
-            ).length;
-
-            el.indeterminate =
-              selected > 0 &&
-              selected < rows.length;
-          }}
-          onChange={(e) => {
-            const checked = e.target.checked;
-
-            table.getRowModel().rows.forEach(
-              row => row.toggleSelected(checked)
-            );
-          }}
-        />
-      ),
-      cell: ({ row }) => (
-        <>
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            onChange={(e) => {
-              row.toggleSelected(e.target.checked);
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </>
-      ),
+      // Renderizado directamente en InvoiceTableBody (no via flexRender)
+      header: () => null,
+      cell: () => null,
       enableSorting: false,
       enableHiding: false,
       size: 48,

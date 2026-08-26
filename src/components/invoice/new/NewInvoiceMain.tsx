@@ -21,8 +21,8 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { InlineDocumentSelector } from "@/components/invoice/new/InlineDocumentSelector";
 import { useRemissionsList } from "@/hooks/remissions/useRemissions";
-import { usePurchaseOrdersList } from "@/hooks/purchaseOrders/usePurchaseOrders";
 
 // Reusable component for currency formatting without cursor jumps
 function FormattedInput({ value, onChange, placeholder, className }: any) {
@@ -161,47 +161,10 @@ export function NewInvoiceMain({
         params: { contact_id: cliente },
         enabled: !!cliente,
     });
-    const remissionOptions = (remissionsListData?.remissions || []).map((r: any) => {
-        const label = r.reference || `${r.prefix || ""}${r.number || r.id}`;
-        const total = r.total != null ? `$ ${Number(r.total).toLocaleString("es-CO")}` : "";
-        const description = [r.contact, r.created_at, total].filter(Boolean).join(" · ");
-        return { value: String(r.id), label, description: description || undefined };
-    });
-    const selectedRemission = (remissionsListData?.remissions || []).find((r: any) => String(r.id) === formState.remission_id);
-    const selectedRemissionInfo = selectedRemission
-        ? remissionOptions.find((o) => o.value === String(selectedRemission.id))?.description
-        : undefined;
-
-    // Mismo query (misma queryKey/params) que ya dispara NewInvoiceOptions para su
-    // propio selector — React Query reusa la caché, no duplica la petición — solo
-    // para poder mostrar más que el id crudo en la tarjeta "Orden de compra agregada".
-    const { data: purchaseOrdersListDataForSummary } = usePurchaseOrdersList({
-        params: { contact_id: formState.contact_id },
-        enabled: !!formState.contact_id,
-    });
-    const purchaseOrdersForSummary = Array.isArray(purchaseOrdersListDataForSummary?.purchase_orders)
-        ? purchaseOrdersListDataForSummary.purchase_orders
-        : (Array.isArray(purchaseOrdersListDataForSummary) ? purchaseOrdersListDataForSummary : []);
-    const selectedPurchaseOrderForSummary = purchaseOrdersForSummary.find(
-        (po: any) => String(po.id) === String(formState.purchase_order_id)
-    );
-    const selectedPurchaseOrderSummaryLabel = selectedPurchaseOrderForSummary
-        ? selectedPurchaseOrderForSummary.reference
-            || `${selectedPurchaseOrderForSummary.prefix || ""}${selectedPurchaseOrderForSummary.number || selectedPurchaseOrderForSummary.id}`
-        : formState.purchase_order_id;
-    const selectedPurchaseOrderSummaryInfo = selectedPurchaseOrderForSummary
-        ? [
-            typeof selectedPurchaseOrderForSummary.contact === "string"
-                ? selectedPurchaseOrderForSummary.contact
-                : selectedPurchaseOrderForSummary.contact?.registration_name
-                    || `${selectedPurchaseOrderForSummary.contact?.first_name || ""} ${selectedPurchaseOrderForSummary.contact?.last_name || ""}`.trim()
-                    || selectedPurchaseOrderForSummary.contact?.name,
-            selectedPurchaseOrderForSummary.issue_date,
-            selectedPurchaseOrderForSummary.total != null
-                ? `$ ${Number(selectedPurchaseOrderForSummary.total).toLocaleString("es-CO")}`
-                : "",
-        ].filter(Boolean).join(" · ")
-        : undefined;
+    const remissionOptions = (remissionsListData?.remissions || []).map((r: any) => ({
+        value: String(r.id),
+        label: r.reference || `${r.prefix || ""}${r.number || r.id}`,
+    }));
 
     const [medioPago, setMedioPago] = useState<string>("");
     const [docType, setDocType] = useState<string>("");
@@ -1126,96 +1089,6 @@ export function NewInvoiceMain({
                     </div>
                 </div>
 
-                {/* REMISIÓN BAR */}
-                <div className={cn(
-                    "overflow-hidden transition-all duration-300 ease-in-out",
-                    showRemissionBar ? "max-h-32 opacity-100 mt-6" : "max-h-0 opacity-0"
-                )}>
-                    <div className="bg-slate-50 flex items-start justify-between gap-4 p-3 border border-border rounded-lg">
-                        <div className="flex items-start gap-3">
-                            <span className="text-sm font-semibold text-primary mt-1.5 shrink-0">Remisión</span>
-                            {cliente ? (
-                                <div className="flex flex-col gap-1">
-                                    <div className="w-[240px]">
-                                        <SearchableSelect
-                                            value={formState.remission_id || ""}
-                                            onValueChange={(val) => setFormState((prev: any) => ({ ...prev, remission_id: val }))}
-                                            options={remissionOptions}
-                                            placeholder="Buscar"
-                                            searchPlaceholder="Buscar remisión..."
-                                            className="w-full bg-white h-9"
-                                            emptyMessage="Sin resultados"
-                                        />
-                                    </div>
-                                    {selectedRemissionInfo && (
-                                        <p className="text-xs text-muted-foreground truncate max-w-[320px]">
-                                            {selectedRemissionInfo}
-                                        </p>
-                                    )}
-                                </div>
-                            ) : (
-                                <span className="text-sm font-medium text-destructive">
-                                    Por favor seleccione un cliente para poder consultar sus remisiones registradas
-                                </span>
-                            )}
-                        </div>
-                        <button onClick={() => setShowRemissionBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors shrink-0">
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* REMISIÓN AGREGADA — visible aunque se colapse la barra de arriba */}
-                {formState.remission_id && !showRemissionBar && (
-                    <div className="mt-6">
-                        <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm font-semibold text-primary">Remisión</span>
-                                <div className="flex flex-col">
-                                    <span className="text-sm text-foreground font-medium">
-                                        {remissionOptions.find((o) => o.value === formState.remission_id)?.label || formState.remission_id}
-                                    </span>
-                                    {selectedRemissionInfo && (
-                                        <span className="text-xs text-muted-foreground">{selectedRemissionInfo}</span>
-                                    )}
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setFormState((prev: any) => ({ ...prev, remission_id: "" }))}
-                                className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* ORDEN DE COMPRA AGREGADA — visible aunque se colapse la barra de arriba */}
-                {formState.purchase_order_id && !showPurchaseOrderBar && (
-                    <div className="mt-6">
-                        <div className="bg-slate-50 flex items-center justify-between gap-4 p-3 border border-border rounded-lg">
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm font-semibold text-primary">Orden de compra</span>
-                                <div className="flex flex-col">
-                                    <span className="text-sm text-foreground font-medium">{selectedPurchaseOrderSummaryLabel}</span>
-                                    {selectedPurchaseOrderSummaryInfo && (
-                                        <span className="text-xs text-muted-foreground">{selectedPurchaseOrderSummaryInfo}</span>
-                                    )}
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setFormState((prev: any) => ({ ...prev, purchase_order_id: "" }));
-                                    setShowPurchaseOrderBar?.(false);
-                                }}
-                                className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                )}
-
                 {/* FOOTER & TOTALS */}
                 <div className="mt-8 border-t border-border pt-8">
                     {/* Primera fila: Firma y Totales */}
@@ -1249,13 +1122,14 @@ export function NewInvoiceMain({
                             </div>
 
                             <div className="flex flex-wrap justify-end gap-3 mb-4">
-                                <button
-                                    onClick={() => setShowRemissionBar?.(!showRemissionBar)}
-                                    className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors cursor-pointer"
-                                >
-                                    <Plus className="w-4 h-4 shrink-0" />
-                                    Agregar remisión
-                                </button>
+                                <InlineDocumentSelector
+                                    label="Agregar Remisión"
+                                    value={formState.remission_id || ""}
+                                    onChange={(val) => setFormState((prev: any) => ({ ...prev, remission_id: val }))}
+                                    options={remissionOptions}
+                                    disabledReason={!cliente ? "Seleccione un cliente para ver sus remisiones" : undefined}
+                                    displayPrefix="Remisión Asociada:"
+                                />
                             </div>
 
                             <div className="flex justify-between text-sm">

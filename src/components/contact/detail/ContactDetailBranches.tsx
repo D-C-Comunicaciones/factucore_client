@@ -12,7 +12,7 @@ export function ContactDetailBranches({ contact }: ContactDetailBranchesProps) {
     const branches = contact.branches || [];
 
     return (
-        <section className="mt-12">
+        <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 className="text-[17px] font-bold text-[#0F2843] mb-1">Sucursales</h2>
             <p className="text-sm text-slate-500 mb-6">
                 Registra las sucursales de tu cliente y úsalas para que tus facturas queden asociadas a la sede que corresponde.

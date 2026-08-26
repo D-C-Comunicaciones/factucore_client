@@ -10,8 +10,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Checkbox } from "@/components/ui/checkbox";
-
 import { Button } from "@/components/ui/button";
 
 import {
@@ -206,64 +204,18 @@ export function getItemColumns(
     entityType?: "item" | "variant"
   ) => void,
 
-  onDelete: (id: number) => void,
-
-  onToggle?: (uniqueId: string) => void,
-
-  onToggleAll?: (value: boolean) => void,
-
-  allSelected?: boolean,
-
-  someSelected?: boolean
+  onDelete: (id: number) => void
 ): ColumnDef<ItemListResponse>[] {
   return [
-    /* CHECKBOX */
+    /* CHECKBOX — renderizado directamente en ItemTableBody (no via flexRender) */
     {
       id: "select",
 
       size: 48,
 
-      header: () => {
-        const showIndeterminate = someSelected && !allSelected;
+      header: () => null,
 
-        return (
-          <Checkbox
-            checked={
-              allSelected
-                ? true
-                : showIndeterminate
-                  ? "indeterminate"
-                  : false
-            }
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-            onCheckedChange={(value) =>
-              onToggleAll && onToggleAll(!!value)
-            }
-          />
-        );
-      },
-
-      cell: ({ row }) => {
-        const isSelected = row.getIsSelected();
-
-        return (
-          <div
-            data-no-row-select="true"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={() =>
-                onToggle
-                  ? onToggle(row.id)
-                  : row.toggleSelected()
-              }
-            />
-          </div>
-        );
-      },
+      cell: () => null,
 
       enableSorting: false,
     },
