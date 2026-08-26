@@ -7,11 +7,11 @@ interface ContactDetailGeneralProps {
 }
 
 export function ContactDetailGeneral({ contact }: ContactDetailGeneralProps) {
-    const isCustomer = contact.type_contact_ids?.includes(1) || contact.type_contacts?.some((tc: any) => tc.id === 1) || true;
-    const isProvider = contact.type_contact_ids?.includes(2) || contact.type_contacts?.some((tc: any) => tc.id === 2) || false;
-    
-    // We determine the active radio based on type. Defaults to 'cliente' if it's both or customer.
-    const contactType = isCustomer ? "cliente" : "proveedor";
+    const isCustomer = Boolean(contact.type_contact_ids?.includes(1) || contact.type_contacts?.some((tc: any) => tc.id === 1));
+    const isProvider = Boolean(contact.type_contact_ids?.includes(2) || contact.type_contacts?.some((tc: any) => tc.id === 2));
+
+    // Determina el radio activo según el tipo. Por defecto "cliente" si es ambos o ninguno.
+    const contactType = isProvider && !isCustomer ? "proveedor" : "cliente";
 
     const Field = ({ label, value }: { label: string, value: string }) => (
         <div className="flex flex-col border-b border-slate-100 pb-2">
@@ -21,11 +21,11 @@ export function ContactDetailGeneral({ contact }: ContactDetailGeneralProps) {
     );
 
     return (
-        <div className="space-y-12">
+        <div className="space-y-6">
             {/* Datos generales */}
-            <section>
+            <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <h2 className="text-[17px] font-bold text-[#0F2843] mb-6">Datos generales</h2>
-                
+
                 <div className="mb-6 flex items-center gap-6">
                     <RadioGroup defaultValue={contactType} className="flex gap-4">
                         <div className="flex items-center space-x-2">
@@ -44,12 +44,12 @@ export function ContactDetailGeneral({ contact }: ContactDetailGeneralProps) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                    <Field label="Tipo de identificación" value={contact.identification_document?.name || "CC - Cédula de ciudadanía"} />
+                    <Field label="Tipo de identificación" value={contact.type_document_identification?.name || ''} />
                     <Field label="Número de identificación" value={contact.identification_number || contact.identification || ''} />
                     <Field label="Municipio / Departamento" value={contact.municipality?.name ? `${contact.municipality.name}, ${contact.municipality.department?.name || ''}` : ''} />
-                    
+
                     <Field label="Código postal" value={contact.postal_code || ''} />
-                    <Field label="País" value={contact.country || "Colombia"} />
+                    <Field label="País" value={contact.country?.name || "Colombia"} />
                     <div className="hidden md:block"></div>
                 </div>
 
@@ -59,7 +59,7 @@ export function ContactDetailGeneral({ contact }: ContactDetailGeneralProps) {
             </section>
 
             {/* Información de contacto */}
-            <section>
+            <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <h2 className="text-[17px] font-bold text-[#0F2843] mb-6">Información de contacto</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
                     <Field label="Correo electrónico" value={contact.email || ''} />
@@ -73,7 +73,7 @@ export function ContactDetailGeneral({ contact }: ContactDetailGeneralProps) {
             </section>
 
             {/* Información comercial */}
-            <section>
+            <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <h2 className="text-[17px] font-bold text-[#0F2843] mb-6">Información comercial</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
                     <Field label="Plazo de pago" value={contact.payment_term?.name || "Ninguno"} />
@@ -86,11 +86,11 @@ export function ContactDetailGeneral({ contact }: ContactDetailGeneralProps) {
             </section>
 
             {/* Configuración para contabilidad */}
-            <section>
+            <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <h2 className="text-[17px] font-bold text-[#0F2843] mb-6">Configuración para contabilidad</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-                    <Field label="Cuenta por cobrar" value={contact.account_receivable?.name || "Cuentas por cobrar clientes nacionales"} />
-                    <Field label="Cuenta por pagar" value={contact.account_payable?.name || "Cuentas por pagar a proveedores naci..."} />
+                    <Field label="Cuenta por cobrar" value={contact.accounts_receivable_account?.name || "Cuentas por cobrar clientes nacionales"} />
+                    <Field label="Cuenta por pagar" value={contact.accounts_payable_account?.name || "Cuentas por pagar a proveedores naci..."} />
                 </div>
             </section>
         </div>

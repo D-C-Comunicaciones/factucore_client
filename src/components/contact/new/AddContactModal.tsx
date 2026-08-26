@@ -179,10 +179,13 @@ function ModalContent({
     }
   };
 
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   const handleSubmit = async () => {
     const cleanNum = docNumber.trim();
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
+    const cleanEmail = email.trim();
 
     const selectedDocTypeObj = catalogData?.typeDocumentIdentifications?.find(
       (d: any) => d.id.toString() === docType
@@ -193,7 +196,7 @@ function ModalContent({
     const isForeignerNit = normalizedDocName.includes("NIT DE OTRO PAIS");
     const useRegistrationName = (isNit || isForeignerNit) && typeOrganizationId !== "2";
 
-    const newErrors: { [key: string]: boolean } = {
+    const newErrors: { [key: string]: boolean | string } = {
       docType: !docType,
       docNumber: !cleanNum,
       firstName: !useRegistrationName && !cleanFirstName,
@@ -201,6 +204,7 @@ function ModalContent({
       registrationName: useRegistrationName && !registrationName.trim(),
       typeOrganizationId: isNit && !typeOrganizationId,
       typeRegimeId: isNit && !typeRegimeId,
+      email: !cleanEmail ? true : (!isValidEmail(cleanEmail) ? "invalid" : false),
     };
 
     if (Object.values(newErrors).some(v => v)) {
@@ -252,7 +256,7 @@ function ModalContent({
         identification_number: Number(cleanNum) || cleanNum,
         verification_digit: dvValue !== null ? Number(dvValue) : null,
         type_document_identification_id: docType ? Number(docType) : null,
-        email: email.trim() || null,
+        email: cleanEmail,
         phone1: phone1.trim() || null,
         phone2: phone2.trim() || null,
         mobile: mobile.trim() || null,

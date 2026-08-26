@@ -216,26 +216,28 @@ function NewPaymentPageContent() {
           formErrors={formErrors}
         />
 
-        {/* BOTTOM ACTIONS */}
-        <div className="flex justify-end items-center gap-4 mt-8">
-          <Button
-            variant="outline"
-            className="btn-base cursor-pointer bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-            onClick={handleCancelClick}
-          >
-            Cancelar
-          </Button>
-          <Button
-            className="btn-base cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground focus:bg-primary/90 focus:text-primary-foreground"
-            onClick={handleSave}
-            disabled={loadingGuardar}
-          >
-            {loadingGuardar ? "Guardando..." : "Guardar"}
-          </Button>
-        </div>
-
         {/* COMMENTS SECTION */}
         <PaymentTabs />
+
+        {/* BOTTOM ACTIONS */}
+        <div className="sticky bottom-0 z-30 pt-6">
+          <div className="bg-white border border-border rounded-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)] p-6 flex items-center justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={handleCancelClick}
+              className="px-6 py-2.5 rounded-lg font-medium border border-border bg-white text-foreground hover:bg-muted hover:border-border cursor-pointer transition-colors"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={loadingGuardar}
+              className="px-6 py-2.5 rounded-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer"
+            >
+              {loadingGuardar ? "Guardando..." : "Guardar"}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* CANCEL MODAL */}

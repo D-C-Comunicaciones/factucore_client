@@ -1,26 +1,24 @@
 "use client";
 
 import * as React from 'react';
-import { Plus, ChevronDown, FileEdit, Upload, Download, Trash2, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, ChevronDown, FileEdit, Upload, Download, Trash2, Clock, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ContactTable } from '@/components/contact/ContactTable';
 import { useContactsList } from '@/hooks/contacts/useContacts';
 import { AddContactModal } from "@/components/contact/new/AddContactModal";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useDebounce } from '@/hooks/useDebounce';
+import { ContactsService } from '@/lib/contacts';
+import { showToast } from '@/components/sonner/CustomToaster';
+import { showContactDeletedToast } from '@/utils/contact-deleted-toast';
+import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  getCoreRowModel,
-  useReactTable,
-  SortingState,
-} from "@tanstack/react-table";
-import { getContactColumns } from "@/components/contact/table/columns";
-
 type ContactType = 'all' | 'customer' | 'provider';
 
 interface Contact {
@@ -29,9 +27,11 @@ interface Contact {
   identification: string;
   phone: string;
   type: 'customer' | 'provider' | 'both';
+  is_active: boolean;
 }
 
 export default function ContactPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<ContactType>('all');
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(1);
@@ -41,7 +41,6 @@ export default function ContactPage() {
 
   const catalogData = useCatalogs();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const debouncedSearch = useDebounce(search, 600);
 
@@ -78,7 +77,8 @@ export default function ContactPage() {
       name: c.registration_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.identification_number || "Sin nombre",
       identification: c.identification_number || "",
       phone: c.phone1 || c.phone2 || "",
-      type: isCustomer && isProvider ? "both" : isProvider ? "provider" : "customer"
+      type: isCustomer && isProvider ? "both" : isProvider ? "provider" : "customer",
+      is_active: c.is_active !== false,
     };
   });
   const serverPagination = data?.pagination ?? data?.meta ?? {
@@ -90,20 +90,40 @@ export default function ContactPage() {
     to: 0,
   };
 
+  const [contactToDelete, setContactToDelete] = React.useState<number | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
+
   const handleDelete = React.useCallback((id: number) => {
-    console.log('Delete contact:', id);
+    setContactToDelete(id);
   }, []);
 
-  const columns = React.useMemo(() => getContactColumns(handleDelete, activeTab), [handleDelete, activeTab]);
+  const confirmDelete = React.useCallback(async () => {
+    if (!contactToDelete) return;
+    setDeleting(true);
+    try {
+      const deletedName = contactsData.find((c: any) => c.id === contactToDelete)?.name || "el contacto";
+      await ContactsService.delete(contactToDelete);
+      showContactDeletedToast(deletedName);
+      await refetch();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Ocurrió un error al eliminar el contacto";
+      showToast(`Error: ${msg}`, "error");
+    } finally {
+      setDeleting(false);
+      setContactToDelete(null);
+    }
+  }, [contactToDelete, refetch, contactsData]);
 
-  const table = useReactTable({
-    data: contactsData,
-    columns,
-    getRowId: (row) => String(row.id),
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-  });
+  const handleToggleActive = React.useCallback(async (id: number, currentlyActive: boolean) => {
+    try {
+      await ContactsService.update(id, { is_active: !currentlyActive });
+      showToast(currentlyActive ? "Contacto desactivado" : "Contacto activado", "success");
+      await refetch();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Ocurrió un error al actualizar el contacto";
+      showToast(`Error: ${msg}`, "error");
+    }
+  }, [refetch]);
 
   const handleRefreshTable = React.useCallback(async () => {
     setIsRefreshing(true);
@@ -137,7 +157,8 @@ export default function ContactPage() {
               {/* Papelera */}
               <Button
                 variant="outline"
-                className="btn-base border-border text-foreground hover:bg-primary/10 hover:text-foreground"
+                className="bg-white btn-base border-border text-foreground hover:bg-gray-100 hover:text-foreground"
+                onClick={() => router.push('/contacts/recycle')}
               >
                 <Trash2 className="w-4 h-4 mr-1 text-foreground" />
                 Papelera
@@ -245,11 +266,21 @@ export default function ContactPage() {
             setPerPage={setPerPage}
             pagination={serverPagination}
             onDelete={handleDelete}
+            onToggleActive={handleToggleActive}
             onAddContact={() => setIsModalOpen(true)}
           />
         </div>
 
       </div>
+
+      <DeleteConfirmDialog
+        open={contactToDelete !== null}
+        onOpenChange={(open) => !open && setContactToDelete(null)}
+        title="¿Eliminar este contacto?"
+        description="El contacto se moverá a la papelera y podrás restaurarlo cuando lo necesites."
+        onConfirm={confirmDelete}
+        loading={deleting}
+      />
 
       <AddContactModal
         isOpen={isModalOpen}

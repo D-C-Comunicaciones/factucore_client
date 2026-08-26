@@ -5,6 +5,7 @@ import { ReturnsTableToolbar } from "./ReturnsTableToolbar";
 import { ReturnsFilterChips } from "./ReturnsFilterChips";
 import { ReturnsTableBody } from "./ReturnsTableBody";
 import { ReturnsTablePagination } from "./ReturnsTablePagination";
+import { useTableSelection } from "@/hooks/use-table-selection";
 
 interface ReturnsTableProps {
   search: string;
@@ -44,6 +45,19 @@ export function ReturnsTable({
   onRefresh,
   items = [],
 }: ReturnsTableProps) {
+  const getRowUniqueId = React.useCallback(
+    (item: any) => String(item.id),
+    []
+  );
+
+  const {
+    selection,
+    toggle: toggleSelection,
+    toggleAll: toggleSelectAll,
+    allSelected,
+    someSelected,
+  } = useTableSelection(items, getRowUniqueId);
+
   const addFilter = (value: string) => {
     if (!activeFilters.includes(value)) {
       setActiveFilters([...activeFilters, value]);
@@ -76,7 +90,15 @@ export function ReturnsTable({
       />
 
       {/* ── BODY / EMPTY STATE ── */}
-      <ReturnsTableBody loading={loading} items={items} />
+      <ReturnsTableBody
+        loading={loading}
+        items={items}
+        selection={selection}
+        onToggleSelection={toggleSelection}
+        allSelected={allSelected}
+        someSelected={someSelected}
+        onToggleSelectAll={toggleSelectAll}
+      />
 
       {/* ── PAGINATION ── */}
       <ReturnsTablePagination

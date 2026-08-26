@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { Printer, X, FileText } from "lucide-react";
 import { getPaymentColumns } from "@/components/payments/table/columns";
+import { useTableSelection } from "@/hooks/use-table-selection";
 import { PaymentTableToolbar } from "@/components/payments/table/PaymentTableToolbar";
 import { PaymentFilterChips } from "@/components/payments/table/PaymentFilterChips";
 import { PaymentTableBody } from "@/components/payments/table/PaymentTableBody";
@@ -45,8 +46,6 @@ interface PaymentTableProps {
   setColumnFilters: React.Dispatch<React.SetStateAction<ColumnFiltersState>>;
 }
 
-type SelectionState = Record<string, boolean>;
-
 export function PaymentTable({
   payments,
   loading,
@@ -67,72 +66,23 @@ export function PaymentTable({
 }: PaymentTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [selection, setSelection] = React.useState<SelectionState>({});
-
   const getRowUniqueId = React.useCallback(
     (payment: Payment) => payment.id.toString(),
     []
   );
 
-  const toggleSelection = React.useCallback((uniqueId: string) => {
-    setSelection((prev) => {
-      const next = { ...prev };
-      if (next[uniqueId]) {
-        delete next[uniqueId];
-      } else {
-        next[uniqueId] = true;
-      }
-      return next;
-    });
-  }, []);
-
-  const toggleSelectAll = React.useCallback(
-    (value: boolean) => {
-      setSelection((prev) => {
-        const next = { ...prev };
-        if (value) {
-          payments.forEach((payment) => {
-            next[getRowUniqueId(payment)] = true;
-          });
-        } else {
-          payments.forEach((payment) => {
-            delete next[getRowUniqueId(payment)];
-          });
-        }
-        return next;
-      });
-    },
-    [payments, getRowUniqueId]
-  );
-
-  const allSelected =
-    payments.length > 0 &&
-    payments.every((payment) => selection[getRowUniqueId(payment)] === true);
-
-  const someSelected =
-    payments.length > 0 &&
-    payments.some((payment) => selection[getRowUniqueId(payment)] === true);
+  const {
+    selection,
+    setSelection,
+    toggle: toggleSelection,
+    toggleAll: toggleSelectAll,
+    allSelected,
+    someSelected,
+  } = useTableSelection(payments, getRowUniqueId);
 
   const columns = React.useMemo(
-    () =>
-      getPaymentColumns(
-        onView,
-        onEdit,
-        onDelete,
-        toggleSelection,
-        toggleSelectAll,
-        allSelected,
-        someSelected
-      ),
-    [
-      onView,
-      onEdit,
-      onDelete,
-      toggleSelection,
-      toggleSelectAll,
-      allSelected,
-      someSelected,
-    ]
+    () => getPaymentColumns(onView, onEdit, onDelete),
+    [onView, onEdit, onDelete]
   );
 
   const table = useReactTable<Payment>({
@@ -232,6 +182,9 @@ export function PaymentTable({
           loading={loading}
           rowSelection={selection}
           onToggleSelection={toggleSelection}
+          allSelected={allSelected}
+          someSelected={someSelected}
+          onToggleSelectAll={toggleSelectAll}
           searchTerm={search}
         />
 

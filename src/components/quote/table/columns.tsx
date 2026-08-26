@@ -46,7 +46,7 @@ function SortableHeader({
 
   return (
     <button
-      className={`flex items-center justify-center gap-1 w-full px-2 py-1 rounded group transition-colors duration-100 cursor-pointer ${isSorted ? "bg-primary/10" : "hover:bg-accent"
+      className={`flex items-center justify-center gap-1 w-full px-2 py-1 rounded group transition-colors duration-100 cursor-pointer ${isSorted ? "bg-primary/10" : "hover:bg-gray-100"
         }`}
       onClick={handleSort}
       tabIndex={0}
