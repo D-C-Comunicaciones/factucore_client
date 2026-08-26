@@ -8,7 +8,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { NewReminderModal } from "./NewReminderModal";
 import { useRemindersList, useCreateReminder, useUpdateReminder, useDeleteReminder } from "@/hooks/reminders/useReminders";
 import { useRemindersSocket } from "@/hooks/reminders/useRemindersSocket";
-import type { ReminderableType, Reminder } from "@/types/reminder";
+import { getSession } from "@/common/interfaces/session";
+import { getReminderCreatorId, type ReminderableType, type Reminder } from "@/types/reminder";
 
 // El backend manda fechas como "DD/MM/YYYY HH:mm" (no ISO, ver
 // App\Traits\FormatsDates::formatSingleDate()) — new Date() nativo las
@@ -37,10 +38,12 @@ function formatReminderDateTime(dueAt: string) {
 
 function ReminderCard({
   reminder,
+  isCreator,
   onEdit,
   onDelete,
 }: {
   reminder: Reminder;
+  isCreator: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -60,21 +63,26 @@ function ReminderCard({
           )}
         </div>
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors shrink-0">
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
-            <Pencil className="w-4 h-4 mr-2 text-slate-600" /> Editar
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onDelete} className="cursor-pointer text-destructive focus:text-destructive">
-            <Trash2 className="w-4 h-4 mr-2" /> Eliminar
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Editar/eliminar solo para quien creó el recordatorio (ver ReminderService::update()/
+          delete() en el backend, que ya exigen lo mismo del lado del servidor) — igual criterio
+          que los comentarios. */}
+      {isCreator && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors shrink-0">
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
+              <Pencil className="w-4 h-4 mr-2 text-slate-600" /> Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDelete} className="cursor-pointer text-destructive focus:text-destructive">
+              <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }
@@ -95,6 +103,8 @@ export function RemindersPanel({
 }) {
   const { data: reminders = [], isLoading } = useRemindersList(type, remindableId);
   useRemindersSocket(type, remindableId);
+  const session = getSession() as any;
+  const currentUserId: number | undefined = session?.user?.id;
   const createMutation = useCreateReminder(type, remindableId ?? "");
   const updateMutation = useUpdateReminder(type, remindableId ?? "");
   const deleteMutation = useDeleteReminder(type, remindableId ?? "");
@@ -165,6 +175,7 @@ export function RemindersPanel({
               <ReminderCard
                 key={r.id}
                 reminder={r}
+                isCreator={currentUserId != null && getReminderCreatorId(r) === currentUserId}
                 onEdit={() => openEditModal(r)}
                 onDelete={() => setDeletingId(r.id)}
               />
