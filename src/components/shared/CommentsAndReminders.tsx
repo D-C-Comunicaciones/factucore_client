@@ -23,6 +23,14 @@ function stripHtml(html: string): string {
   return tempDiv.innerText;
 }
 
+// Vista previa del comentario citado en el badge "Respuesta a:" — texto plano (sin el HTML del
+// editor enriquecido) y recortado para que no desborde la tarjeta cuando el comentario original
+// es largo.
+function previewText(html: string, maxLength = 60): string {
+  const plain = stripHtml(html).replace(/\s+/g, " ").trim();
+  return plain.length > maxLength ? `${plain.slice(0, maxLength).trimEnd()}…` : plain;
+}
+
 // El backend manda fechas como "DD/MM/YYYY HH:mm" (no ISO) — new Date() nativo
 // las interpreta como MM/DD y devuelve "Invalid Date".
 function parseApiDate(dateString?: string): Date | null {
@@ -617,7 +625,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
     return undefined;
   };
 
-  const renderCard = (item: ApiComment | CommentReply, opts: { isReply: boolean; parentId?: number; replyingToName?: string }) => {
+  const renderCard = (item: ApiComment | CommentReply, opts: { isReply: boolean; parentId?: number; replyingToName?: string; replyingToText?: string }) => {
     const isAuthor = currentUserId != null && item.user_id === currentUserId;
     const isEditing = editingId === item.id;
 
@@ -662,7 +670,9 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
               <span className="text-xs font-medium text-slate-600">{item.user?.name || "Usuario"}</span>
               <span className="text-[11px] text-slate-400 font-medium">{formatDateTime(item.created_at)}</span>
               {opts.isReply && opts.replyingToName && (
-                <span className="text-[11px] text-primary/70 font-medium">Respuesta a: {opts.replyingToName}</span>
+                <span className="text-[11px] text-primary/70 font-medium truncate">
+                  Respuesta a: {opts.replyingToText ? previewText(opts.replyingToText) : ""} de: {opts.replyingToName}
+                </span>
               )}
             </div>
             <div className="text-sm text-slate-700 whitespace-pre-wrap editor-content [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 text-left" dangerouslySetInnerHTML={{ __html: highlightMentions(item.comment, item.mentions) }}></div>
@@ -825,7 +835,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
             {visibleComments.map((c) => (
               <div key={c.id}>
                 {renderCard(c, { isReply: false })}
-                {c.replies?.map((r) => renderCard(r, { isReply: true, parentId: c.id, replyingToName: c.user?.name }))}
+                {c.replies?.map((r) => renderCard(r, { isReply: true, parentId: c.id, replyingToName: c.user?.name, replyingToText: c.comment }))}
                 {replyingTo === c.id && (
                   <div className="ml-12 mt-4 bg-white border border-primary rounded-xl p-4 shadow-sm">
                     <CommentEditor

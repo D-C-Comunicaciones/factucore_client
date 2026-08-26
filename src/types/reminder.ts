@@ -28,10 +28,26 @@ export interface Reminder {
     remindable_type: string; // alias corto en eventos de socket; FQCN completo en respuestas HTTP normales
     remindable_id: number;
     user: ReminderUser | null;
-    created_by: ReminderCreator | null;
+    // Forma inconsistente entre el fetch inicial (GET /reminders, modelo Eloquent crudo: aquí
+    // created_by es el entero de la columna FK, y el objeto del creador viaja aparte en
+    // `creator`) y los eventos en vivo (App\Events\ReminderBroadcastEvent::broadcastWith(), que
+    // arma `created_by` como {id,name} y no manda `creator`). getReminderCreatorId() de abajo
+    // abstrae la diferencia — no leer created_by/creator directo fuera de ese helper.
+    created_by: ReminderCreator | number | null;
+    creator?: ReminderCreator | null;
     notified_at: string | null;
     created_at: string;
     updated_at: string;
+}
+
+// Ver el comentario en Reminder.created_by: el id de quien creó el recordatorio puede venir
+// como número crudo (fetch inicial) o como objeto (eventos en vivo) — este helper normaliza
+// ambos casos para saber si el usuario actual puede editar/eliminar (ver ReminderService::
+// update()/delete() en el backend, que ya exigen lo mismo del lado del servidor).
+export function getReminderCreatorId(reminder: Reminder): number | undefined {
+    if (typeof reminder.created_by === "number") return reminder.created_by;
+    if (reminder.created_by && typeof reminder.created_by === "object") return reminder.created_by.id;
+    return reminder.creator?.id;
 }
 
 export interface CreateReminderPayload {
