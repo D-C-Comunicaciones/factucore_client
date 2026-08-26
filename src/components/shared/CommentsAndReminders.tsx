@@ -2,7 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MessageCircle, Search, Sparkles, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, AtSign, Send, HelpCircle, Type, Edit2, Copy, Trash2, ChevronDown, Reply, X } from "lucide-react";
+import { MessageCircle, Search, Sparkles, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, AtSign, Send, HelpCircle, Type, Edit2, Copy, Trash2, ChevronDown, Reply, X, MessageSquareX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -617,9 +617,27 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
     return undefined;
   };
 
-  const renderCard = (item: ApiComment | CommentReply, opts: { isReply: boolean; parentId?: number }) => {
+  const renderCard = (item: ApiComment | CommentReply, opts: { isReply: boolean; parentId?: number; replyingToName?: string }) => {
     const isAuthor = currentUserId != null && item.user_id === currentUserId;
     const isEditing = editingId === item.id;
+
+    // Placeholder temporal tras un comment.deleted en vivo (ver useCommentsSocket.ts): se
+    // muestra en vez del contenido real por unos segundos antes de que la tarjeta desaparezca
+    // del todo — evita que el comentario se esfume de golpe para quien lo tenía en pantalla.
+    if (item._justDeleted) {
+      return (
+        <div key={item.id} className={`flex items-start gap-4 ${opts.isReply ? 'ml-12 mt-4' : ''}`}>
+          <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-white text-sm font-bold shrink-0 mt-1">
+            {initialsOf(item.user?.name)}
+          </div>
+          <div className="flex-1 bg-slate-50 border border-dashed border-gray-300 rounded-xl p-4">
+            <p className="text-sm text-slate-400 italic flex items-center gap-1.5">
+              <MessageSquareX /> Comentario eliminado por el autor
+            </p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div key={item.id} className={`flex items-start gap-4 ${opts.isReply ? 'ml-12 mt-4' : ''}`}>
@@ -640,9 +658,12 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
           </div>
         ) : (
           <div className="flex-1 bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all rounded-xl p-4 relative group">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-xs font-medium text-slate-600">{item.user?.name || "Usuario"}</span>
               <span className="text-[11px] text-slate-400 font-medium">{formatDateTime(item.created_at)}</span>
+              {opts.isReply && opts.replyingToName && (
+                <span className="text-[11px] text-primary/70 font-medium">Respuesta a: {opts.replyingToName}</span>
+              )}
             </div>
             <div className="text-sm text-slate-700 whitespace-pre-wrap editor-content [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 text-left" dangerouslySetInnerHTML={{ __html: highlightMentions(item.comment, item.mentions) }}></div>
 
@@ -655,7 +676,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
               </button>
             )}
 
-            {/* Hover actions */}
+            {/* Hover actions — editar/eliminar solo para el autor (ver CommentService::delete()/update() en el backend, que ya exigen lo mismo del lado del servidor) */}
             <div className="absolute top-3 right-3 hidden group-hover:flex items-center bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
               {isAuthor && (
                 <>
@@ -676,14 +697,18 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
               >
                 <Copy className="w-4 h-4" />
               </button>
-              <div className="w-px h-5 bg-gray-200"></div>
-              <button
-                onClick={() => setDeletingId(item.id)}
-                className="p-2 text-slate-500 hover:text-red-600 hover:bg-slate-50 transition-colors"
-                title="Eliminar"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {isAuthor && (
+                <>
+                  <div className="w-px h-5 bg-gray-200"></div>
+                  <button
+                    onClick={() => setDeletingId(item.id)}
+                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-slate-50 transition-colors"
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -800,7 +825,7 @@ function ConnectedCommentsAndReminders({ type, commentableId }: { type: Commenta
             {visibleComments.map((c) => (
               <div key={c.id}>
                 {renderCard(c, { isReply: false })}
-                {c.replies?.map((r) => renderCard(r, { isReply: true, parentId: c.id }))}
+                {c.replies?.map((r) => renderCard(r, { isReply: true, parentId: c.id, replyingToName: c.user?.name }))}
                 {replyingTo === c.id && (
                   <div className="ml-12 mt-4 bg-white border border-primary rounded-xl p-4 shadow-sm">
                     <CommentEditor

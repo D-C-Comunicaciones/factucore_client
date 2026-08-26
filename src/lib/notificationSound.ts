@@ -21,3 +21,21 @@ export function playNotificationSound(): void {
     // catch solo evita un error sin manejar en la consola si por lo que sea no puede.
     audio.play().catch(() => {});
 }
+
+// Sonido dedicado y más notorio para el popup de recordatorio vencido (ver
+// DueReminderPopup.tsx) — distinto del genérico de arriba porque este SÍ necesita
+// llamar la atención de inmediato (el resto de tipos de notificación solo suman al
+// contador de la campana). Requiere public/sounds/reminder-sound.mp3.
+let reminderAudio: HTMLAudioElement | null = null;
+
+export function playReminderDueSound(): void {
+    if (typeof window === "undefined") return;
+
+    if (!reminderAudio) {
+        reminderAudio = new Audio("/sounds/reminder-sound.mp3");
+        reminderAudio.volume = 0.7;
+    }
+
+    reminderAudio.currentTime = 0;
+    reminderAudio.play().catch(() => {});
+}

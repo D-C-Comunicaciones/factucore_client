@@ -20,6 +20,10 @@ export interface CommentReply {
     created_at: string;
     user: CommentUser;
     mentions: CommentMention[];
+    // Client-only, nunca viene de la API: useCommentsSocket.ts lo marca por 3s tras un
+    // comment.deleted en vivo (de OTRO usuario) antes de quitarlo de la lista, para mostrar
+    // "este comentario ha sido eliminado por el autor" en vez de que desaparezca de golpe.
+    _justDeleted?: boolean;
 }
 
 // Comentario de primer nivel: trae sus respuestas ya resueltas en `replies`
@@ -36,6 +40,7 @@ export interface Comment {
     user: CommentUser;
     mentions: CommentMention[];
     replies: CommentReply[];
+    _justDeleted?: boolean;
 }
 
 export interface CommentsListResponse {

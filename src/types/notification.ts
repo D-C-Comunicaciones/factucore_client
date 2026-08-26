@@ -9,6 +9,22 @@ export interface MentionNotificationData {
     created_at: string;
 }
 
+// Ver App\Notifications\CommentReplied — se manda SIEMPRE que hay una respuesta a un
+// comentario propio, sin que quien responde tenga que "@mencionar" a mano (a diferencia de
+// MentionNotificationData, que sí requiere el "@Nombre" explícito en el texto).
+export interface ReplyNotificationData {
+    type: "comment_reply";
+    comment_id: number;
+    parent_comment_id: number;
+    commentable_type: string;
+    commentable_id: number;
+    commentable_label: string;
+    original_excerpt: string;
+    reply_excerpt: string;
+    replied_by: { id: number; name: string };
+    created_at: string;
+}
+
 // Ver recordatorios.md §3 — "type" indica cuál de las 5 variantes es, "message"
 // ya viene armado en español desde el backend, listo para mostrar tal cual.
 // 'reminder_updated': se edita título/fecha sin reasignar (ver App\Notifications\ReminderNotification::UPDATED).
@@ -22,7 +38,7 @@ export interface ReminderNotificationData {
     message: string;
 }
 
-export type NotificationData = MentionNotificationData | ReminderNotificationData;
+export type NotificationData = MentionNotificationData | ReplyNotificationData | ReminderNotificationData;
 
 export function isReminderNotification(data: NotificationData): data is ReminderNotificationData {
     return data.type.startsWith("reminder_");

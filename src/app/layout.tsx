@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 import { CustomToaster } from '@/components/sonner/CustomToaster'
+import { DueReminderPopup } from '@/components/reminders/DueReminderPopup'
 import { AuthProvider } from '@/contexts/auth-context'
 import { ThemeProvider } from "@/components/ui/theme-provider"
 
@@ -54,6 +55,7 @@ export default function RootLayout({
                         </AuthProvider>
 
                         <CustomToaster />
+                        <DueReminderPopup />
                     </Providers>
                 </ThemeProvider>
             </body>

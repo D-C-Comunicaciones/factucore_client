@@ -4,9 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { NotificationsService, DOCUMENT_ROUTES } from "@/lib/notifications";
 import { getEcho } from "@/lib/echo";
 import { getSession } from "@/common/interfaces/session";
-import { showMentionNotificationToast, showReminderToast, showToast } from "@/components/sonner/CustomToaster";
+import { showMentionNotificationToast, showReplyNotificationToast, showToast } from "@/components/sonner/CustomToaster";
 import { playNotificationSound } from "@/lib/notificationSound";
-import type { AppNotification, NotificationData } from "@/types/notification";
+import { emitDueReminder } from "@/lib/dueReminderBus";
+import type { NotificationData, NotificationsListResponse } from "@/types/notification";
 
 const UNREAD_COUNT_KEY = ["notifications", "unread-count"] as const;
 const LIST_KEY = (filter: string) => ["notifications", "list", filter] as const;
@@ -74,9 +75,14 @@ export function useNotificationsSocket() {
             console.log(`[notifications-socket] notificación recibida en "${channelName}"`, { type: notification.type });
 
             // Único punto por el que pasan TODAS las notificaciones en tiempo real (menciones,
-            // recordatorios asignados/actualizados/vencidos...) — el sonido va acá para que
-            // cubra cualquier tipo sin tener que tocarlo de nuevo cuando se agregue uno nuevo.
-            playNotificationSound();
+            // recordatorios asignados/actualizados/vencidos, respuestas...) — el sonido va acá
+            // para que cubra cualquier tipo sin tener que tocarlo de nuevo cuando se agregue uno
+            // nuevo. reminder_due es la excepción: DueReminderPopup (ver más abajo) ya reproduce
+            // su propio sonido dedicado (reminder-sound.mp3) al montarse — sonarían los dos a la
+            // vez si este también sonara acá.
+            if (notification.type !== "reminder_due") {
+                playNotificationSound();
+            }
 
             queryClient.setQueryData<{ count: number }>(UNREAD_COUNT_KEY, (old) => ({
                 count: (old?.count ?? 0) + 1,
@@ -94,10 +100,24 @@ export function useNotificationsSocket() {
                 .then((res) => {
                     const fresh = res.data?.[0];
                     if (fresh) {
-                        const prepend = (old: AppNotification[] | undefined) =>
-                            old ? [fresh, ...old.filter((n) => n.id !== fresh.id)] : old;
-                        queryClient.setQueryData<AppNotification[]>(LIST_KEY("all"), prepend);
-                        queryClient.setQueryData<AppNotification[]>(LIST_KEY("unread"), prepend);
+                        // BUG: esto operaba como si el cache guardado en LIST_KEY fuera
+                        // directamente AppNotification[], pero lo que React Query tiene
+                        // cacheado (antes de que useNotificationsList le aplique su `select`)
+                        // es el NotificationsListResponse completo ({current_page, data: [...]})
+                        // — la forma real que devuelve NotificationsService.list(). Llamar
+                        // old.filter(...) sobre ese objeto tiraba un TypeError silencioso
+                        // (atrapado por el .catch() de esta misma promesa), así que la fila
+                        // nueva NUNCA se insertaba: el toast y el contador de la campana sí
+                        // funcionaban (ambos corren fuera de este .then), pero la lista de la
+                        // campanita se quedaba congelada en lo que tenía desde el último GET
+                        // real — para CUALQUIER tipo (mención, respuesta o recordatorio).
+                        const prepend = (old: NotificationsListResponse | undefined) => {
+                            if (!old) return old;
+                            if (old.data.some((n) => n.id === fresh.id)) return old;
+                            return { ...old, data: [fresh, ...old.data] };
+                        };
+                        queryClient.setQueryData<NotificationsListResponse>(LIST_KEY("all"), prepend);
+                        queryClient.setQueryData<NotificationsListResponse>(LIST_KEY("unread"), prepend);
                     }
 
                     const notificationId = fresh?.id;
@@ -112,6 +132,25 @@ export function useNotificationsSocket() {
                             mentionedByName: notification.mentioned_by.name,
                             commentableLabel: notification.commentable_label,
                             excerptHtml: notification.excerpt,
+                            onView: () => {
+                                if (notificationId) markAsRead.mutate(notificationId);
+                                navigateToDocument();
+                            },
+                            onMarkRead: () => {
+                                if (notificationId) markAsRead.mutate(notificationId);
+                            },
+                        });
+                    } else if (notification.type === "comment_reply") {
+                        const basePath = DOCUMENT_ROUTES[notification.commentable_type];
+                        const navigateToDocument = () => {
+                            if (basePath) router.push(`${basePath}/${notification.commentable_id}`);
+                        };
+
+                        showReplyNotificationToast({
+                            repliedByName: notification.replied_by.name,
+                            commentableLabel: notification.commentable_label,
+                            originalExcerptHtml: notification.original_excerpt,
+                            replyExcerptHtml: notification.reply_excerpt,
                             onView: () => {
                                 if (notificationId) markAsRead.mutate(notificationId);
                                 navigateToDocument();
@@ -136,31 +175,41 @@ export function useNotificationsSocket() {
                             },
                             onMarkRead: () => {},
                         });
+                    } else if (notification.type === "comment_reply") {
+                        const basePath = DOCUMENT_ROUTES[notification.commentable_type];
+                        showReplyNotificationToast({
+                            repliedByName: notification.replied_by.name,
+                            commentableLabel: notification.commentable_label,
+                            originalExcerptHtml: notification.original_excerpt,
+                            replyExcerptHtml: notification.reply_excerpt,
+                            onView: () => {
+                                if (basePath) router.push(`${basePath}/${notification.commentable_id}`);
+                            },
+                            onMarkRead: () => {},
+                        });
                     }
                 });
 
-            if (notification.type === "comment_mention") {
-                // Si el hilo mencionado está abierto en pantalla, refréscalo también.
+            if (notification.type === "comment_mention" || notification.type === "comment_reply") {
+                // Si el hilo está abierto en pantalla, refréscalo también.
                 queryClient.invalidateQueries({
                     queryKey: ["comments", notification.commentable_type, String(notification.commentable_id)],
                 });
                 return;
             }
 
-            // Recordatorios (ver recordatorios.md §3): reminder_due es el aviso "de
-            // verdad" — el que dispara el popup en el momento exacto de vencimiento.
-            // Las otras 3 variantes (assigned/unassigned/deleted) solo se avisan con
+            // Recordatorios (ver recordatorios.md §3): reminder_due es el aviso "de verdad" —
+            // el que dispara el POPUP a pantalla completa (DueReminderPopup, vía dueReminderBus)
+            // en el momento exacto de vencimiento, no un toast que se puede perder de vista.
+            // Las otras 3 variantes (assigned/unassigned/updated/deleted) solo se avisan con
             // un toast simple, reusando el `message` que ya viene armado del backend.
-            const basePath = DOCUMENT_ROUTES[notification.remindable_type];
-            const navigateToReminder = () => {
-                if (basePath) router.push(`${basePath}/${notification.remindable_id}`);
-            };
-
             if (notification.type === "reminder_due") {
-                showReminderToast({
+                emitDueReminder({
+                    reminderId: notification.reminder_id,
                     title: notification.title,
-                    dateTimeLabel: notification.due_at ? formatDueAt(notification.due_at) : "",
-                    onViewDetails: navigateToReminder,
+                    dueAtLabel: notification.due_at ? formatDueAt(notification.due_at) : "",
+                    remindableType: notification.remindable_type,
+                    remindableId: notification.remindable_id,
                 });
             } else {
                 showToast(notification.message, "info");
@@ -228,11 +277,15 @@ export function useMarkNotificationRead() {
             queryClient.setQueryData<{ count: number }>(UNREAD_COUNT_KEY, (old) => ({
                 count: Math.max(0, (old?.count ?? 1) - 1),
             }));
-            queryClient.setQueryData<AppNotification[]>(LIST_KEY("all"), (old) =>
-                old?.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
+            // Mismo bug que en useNotificationsSocket: old es NotificationsListResponse
+            // ({current_page, data: [...]}), no AppNotification[] directo — old?.map/.filter
+            // tronaba en silencio y la campanita nunca reflejaba "marcado como leído" ni
+            // quitaba la fila de la pestaña "no leídas" hasta el siguiente refresh completo.
+            queryClient.setQueryData<NotificationsListResponse>(LIST_KEY("all"), (old) =>
+                old ? { ...old, data: old.data.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)) } : old
             );
-            queryClient.setQueryData<AppNotification[]>(LIST_KEY("unread"), (old) =>
-                old?.filter((n) => n.id !== id)
+            queryClient.setQueryData<NotificationsListResponse>(LIST_KEY("unread"), (old) =>
+                old ? { ...old, data: old.data.filter((n) => n.id !== id) } : old
             );
         },
     });
@@ -246,10 +299,12 @@ export function useMarkAllNotificationsRead() {
         onSuccess: () => {
             const now = new Date().toISOString();
             queryClient.setQueryData(UNREAD_COUNT_KEY, { count: 0 });
-            queryClient.setQueryData<AppNotification[]>(LIST_KEY("all"), (old) =>
-                old?.map((n) => (n.read_at ? n : { ...n, read_at: now }))
+            queryClient.setQueryData<NotificationsListResponse>(LIST_KEY("all"), (old) =>
+                old ? { ...old, data: old.data.map((n) => (n.read_at ? n : { ...n, read_at: now })) } : old
             );
-            queryClient.setQueryData<AppNotification[]>(LIST_KEY("unread"), []);
+            queryClient.setQueryData<NotificationsListResponse>(LIST_KEY("unread"), (old) =>
+                old ? { ...old, data: [] } : old
+            );
         },
     });
 }
