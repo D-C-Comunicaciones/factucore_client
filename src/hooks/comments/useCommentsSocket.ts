@@ -38,11 +38,20 @@ interface LiveCommentDeletedPayload {
 // Suscripción al canal en vivo de un documento (ver comentarios_tiempo_real.md):
 // cualquiera con la pantalla de detalle abierta ve los comentarios/respuestas
 // nuevos aparecer al instante, sin recargar ni volver a pedir la lista.
+// Cuánto se muestra "este comentario ha sido eliminado por el autor" antes de
+// quitarlo de la lista para siempre (ver channel.listen(".comment.deleted") abajo).
+const DELETED_PLACEHOLDER_MS = 3000;
+
 export function useCommentsSocket(type: CommentableType, commentableId: number | string | null | undefined) {
     const queryClient = useQueryClient();
 
     useEffect(() => {
         if (!commentableId) return;
+
+        // Timers del placeholder "eliminado" pendientes de esta suscripción — se limpian al
+        // desmontar (cambio de documento, o se cierra la pantalla) para no intentar tocar la
+        // query de un documento que ya no está montado.
+        const pendingRemovals: ReturnType<typeof setTimeout>[] = [];
 
         const session = getSession() as any;
         const tenantId = session?.tenant_id;
@@ -119,25 +128,50 @@ export function useCommentsSocket(type: CommentableType, commentableId: number |
             const { id, parent_id } = payload.comment;
             console.log(`[comments-socket] comment.deleted en "${channelName}"`, { id, parent_id });
 
+            // No se quita de una vez: primero se marca _justDeleted para que renderCard()
+            // muestre "este comentario ha sido eliminado por el autor" por unos segundos —
+            // desaparecer de golpe confundía (parecía un glitch) a quien lo tenía en pantalla
+            // en simultáneo. El propio autor no pasa por acá: su borrado ya se refleja al
+            // instante vía la mutación REST (useDeleteComment invalida la query directo).
             queryClient.setQueryData<CommentsListResponse>(COMMENTS_KEY(type, commentableId), (old) => {
                 if (!old) return old;
 
                 if (parent_id == null) {
-                    // Comentario raíz: se quita de la lista (junto con sus respuestas).
                     if (!old.data.some((c) => c.id === id)) return old;
-                    return { ...old, data: old.data.filter((c) => c.id !== id), total: Math.max(0, old.total - 1) };
+                    return { ...old, data: old.data.map((c) => (c.id === id ? { ...c, _justDeleted: true } : c)) };
                 }
 
-                // Respuesta: se quita solo del array de replies de su padre.
                 const data = old.data.map((c) => {
                     if (c.id !== parent_id || !c.replies) return c;
-                    return { ...c, replies: c.replies.filter((r) => r.id !== id) };
+                    return {
+                        ...c,
+                        replies: c.replies.map((r) => (r.id === id ? { ...r, _justDeleted: true } : r)),
+                    };
                 });
                 return { ...old, data };
             });
+
+            const timer = setTimeout(() => {
+                queryClient.setQueryData<CommentsListResponse>(COMMENTS_KEY(type, commentableId), (old) => {
+                    if (!old) return old;
+
+                    if (parent_id == null) {
+                        if (!old.data.some((c) => c.id === id)) return old;
+                        return { ...old, data: old.data.filter((c) => c.id !== id), total: Math.max(0, old.total - 1) };
+                    }
+
+                    const data = old.data.map((c) => {
+                        if (c.id !== parent_id || !c.replies) return c;
+                        return { ...c, replies: c.replies.filter((r) => r.id !== id) };
+                    });
+                    return { ...old, data };
+                });
+            }, DELETED_PLACEHOLDER_MS);
+            pendingRemovals.push(timer);
         });
 
         return () => {
+            pendingRemovals.forEach(clearTimeout);
             echo.leave(channelName);
         };
     }, [type, commentableId, queryClient]);

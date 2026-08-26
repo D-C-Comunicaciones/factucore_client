@@ -1,7 +1,7 @@
 "use client";
 
 import { Toaster as SonnerToaster, toast } from "sonner";
-import { AlertCircle, CheckCircle, Info, AlertTriangle, X, CalendarClock, Bell, AtSign } from "lucide-react";
+import { AlertCircle, CheckCircle, Info, AlertTriangle, X, CalendarClock, Bell, AtSign, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ToastType = "success" | "error" | "warning" | "info";
@@ -231,13 +231,87 @@ export const showMentionNotificationToast = (params: {
         <div className="flex items-center gap-4 pt-0.5">
           <button
             onClick={() => { toast.dismiss(t); onView(); }}
-            className="text-[#2dd4bf] hover:text-[#5eead4] text-sm font-semibold transition-colors"
+            className="cursor-pointer text-primary hover:text-primary/80 text-sm font-semibold transition-colors"
           >
             Ver
           </button>
           <button
             onClick={() => { toast.dismiss(t); onMarkRead(); }}
-            className="text-slate-300 hover:text-white text-sm font-medium transition-colors"
+            className="cursor-pointer text-slate-300 hover:text-white text-sm font-medium transition-colors"
+          >
+            Marcar como leída
+          </button>
+        </div>
+      </div>
+    </div>
+  ), {
+    duration: 8000,
+    position: "bottom-right",
+  });
+};
+
+// Toast de "te respondieron" en tiempo real — mismo look que showMentionNotificationToast,
+// pero con el comentario original y la respuesta como dos líneas separadas (ver
+// App\Notifications\CommentReplied): a diferencia de una mención, esto se dispara SIEMPRE que
+// alguien responde un comentario propio, mencionado explícitamente o no.
+export const showReplyNotificationToast = (params: {
+  repliedByName: string;
+  commentableLabel: string;
+  originalExcerptHtml?: string;
+  replyExcerptHtml?: string;
+  onView: () => void;
+  onMarkRead: () => void;
+}) => {
+  const { repliedByName, commentableLabel, originalExcerptHtml, replyExcerptHtml, onView, onMarkRead } = params;
+
+  toast.custom((t) => (
+    <div className={cn(
+      "w-[360px] bg-[#0f172a] rounded-2xl p-5 shadow-2xl",
+      "animate-in slide-in-from-bottom-4 fade-in duration-300 ease-out",
+      "data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-bottom-4 data-[state=closed]:duration-200"
+    )}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+            <Reply className="w-4 h-4 text-white" />
+          </div>
+          <h4 className="text-[15px] font-bold text-white truncate">Te respondieron</h4>
+        </div>
+        <button
+          onClick={() => toast.dismiss(t)}
+          className="cursor-pointer text-slate-400 hover:text-slate-200 transition-colors shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="pl-[42px] mt-2 space-y-2">
+        <p className="text-sm text-slate-300 leading-snug break-words">
+          <span className="font-semibold text-white">{repliedByName}</span> respondió tu comentario en{" "}
+          <span className="font-medium text-white">{commentableLabel}</span>
+        </p>
+        {originalExcerptHtml && (
+          <div
+            className="text-xs text-slate-500 leading-snug line-clamp-1 [&_*]:inline [&_*]:m-0"
+            dangerouslySetInnerHTML={{ __html: originalExcerptHtml }}
+          />
+        )}
+        {replyExcerptHtml && (
+          <div className="text-xs text-slate-400 leading-snug line-clamp-2">
+            <span className="font-medium text-slate-300">Respuesta: </span>
+            <span className="[&_*]:inline [&_*]:m-0" dangerouslySetInnerHTML={{ __html: replyExcerptHtml }} />
+          </div>
+        )}
+        <div className="flex items-center gap-4 pt-0.5">
+          <button
+            onClick={() => { toast.dismiss(t); onView(); }}
+            className="cursor-pointer text-primary hover:text-primary/80 text-sm font-semibold transition-colors"
+          >
+            Ver
+          </button>
+          <button
+            onClick={() => { toast.dismiss(t); onMarkRead(); }}
+            className="cursor-pointer text-slate-300 hover:text-white text-sm font-medium transition-colors"
           >
             Marcar como leída
           </button>

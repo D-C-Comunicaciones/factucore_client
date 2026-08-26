@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, AtSign, CalendarClock, CheckCheck } from "lucide-react";
+import { Bell, AtSign, Reply, CalendarClock, CheckCheck } from "lucide-react";
 import {
     useNotificationsSocket,
     useUnreadNotificationsCount,
@@ -63,7 +63,7 @@ export function NotificationBell() {
             markAsRead.mutate(notification.id);
         }
         const data = notification.data;
-        const [type, id] = data.type === "comment_mention"
+        const [type, id] = data.type === "comment_mention" || data.type === "comment_reply"
             ? [data.commentable_type, data.commentable_id]
             : [data.remindable_type, data.remindable_id];
         const basePath = DOCUMENT_ROUTES[type];
@@ -110,26 +110,25 @@ export function NotificationBell() {
                         ) : (
                             notifications.map((notification) => {
                                 const data = notification.data;
-                                const isReminder = data.type !== "comment_mention";
 
                                 return (
                                     <button
                                         key={notification.id}
                                         onClick={() => handleNotificationClick(notification)}
-                                        className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${!notification.read_at ? "bg-primary/5" : ""
+                                        className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 cursor-pointer ${!notification.read_at ? "bg-primary/5" : ""
                                             }`}
                                     >
                                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                            {isReminder ? (
-                                                <CalendarClock className="w-4 h-4 text-primary" />
-                                            ) : (
+                                            {data.type === "comment_mention" ? (
                                                 <AtSign className="w-4 h-4 text-primary" />
+                                            ) : data.type === "comment_reply" ? (
+                                                <Reply className="w-4 h-4 text-primary" />
+                                            ) : (
+                                                <CalendarClock className="w-4 h-4 text-primary" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            {isReminder ? (
-                                                <p className="text-[13px] text-gray-900 leading-snug">{data.message}</p>
-                                            ) : (
+                                            {data.type === "comment_mention" ? (
                                                 <>
                                                     <p className="text-[13px] text-gray-900 leading-snug">
                                                         <span className="font-semibold">{data.mentioned_by?.name}</span>{" "}
@@ -143,6 +142,22 @@ export function NotificationBell() {
                                                         />
                                                     )}
                                                 </>
+                                            ) : data.type === "comment_reply" ? (
+                                                <>
+                                                    <p className="text-[13px] text-gray-900 leading-snug">
+                                                        <span className="font-semibold">{data.replied_by?.name}</span>{" "}
+                                                        respondió tu comentario en{" "}
+                                                        <span className="font-medium">{data.commentable_label}</span>
+                                                    </p>
+                                                    {data.reply_excerpt && (
+                                                        <p
+                                                            className="text-[12px] text-gray-500 truncate mt-0.5 [&_*]:inline [&_*]:m-0"
+                                                            dangerouslySetInnerHTML={{ __html: data.reply_excerpt }}
+                                                        />
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <p className="text-[13px] text-gray-900 leading-snug">{data.message}</p>
                                             )}
                                             <p className="text-[11px] text-gray-400 mt-1">{timeAgo(notification.created_at)}</p>
                                         </div>
