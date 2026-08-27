@@ -22,7 +22,7 @@ import type { Payment } from "@/types/payments";
 /* -----------------------------------------------------------------------
    Celda de acciones
 ------------------------------------------------------------------------ */
-function PaymentActionsCell({
+export function PaymentActionsCell({
   payment,
   onView,
   onEdit,

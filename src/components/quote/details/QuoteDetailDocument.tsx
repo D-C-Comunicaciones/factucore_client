@@ -51,6 +51,62 @@ export function QuoteDetailDocument({
     }, 0);
     const finalTaxes = Number(getNestedValue(quote, 'tax_total') || getNestedValue(quote, 'tax_totals') || quote.tax_amount || taxAmountTotal);
 
+    // Resuelve cada línea una sola vez para que la tabla (desktop) y las
+    // tarjetas (móvil) lean exactamente los mismos valores.
+    const resolvedLines = items.map((item: any, idx: number) => {
+        const itemName = item.name || item.item_name || item.item?.name || item.description;
+        const itemId = item.item_id || item.id || item.item?.id;
+        const itemRef = item.code_reference || item.item_code || item.standard_item_code || item.code;
+        const itemPrice = item.price || item.price_amount;
+        const itemQty = item.quantity;
+        const itemTotal = item.total || item.total_line || item.line_extension_amount;
+        const taxRate = item.tax_rate || (item.tax_totals?.[0]?.percent) || (item.taxes?.[0]?.percent) || 0;
+
+        const taxName =
+            item.tax_name ||
+            item.tax_totals?.[0]?.tax_name || item.tax_totals?.[0]?.name ||
+            item.taxes?.[0]?.name ||
+            item.taxes?.[0]?.tax?.name ||
+            'IVA';
+
+        const discountAmount = item.discounts?.length
+            ? item.discounts.reduce((sum: number, d: any) => sum + Number(d.calculated_amount ?? d.amount ?? d.value ?? 0), 0)
+            : item.allowance_charges?.filter((ac: any) => ac.charge_indicator === false)?.reduce((sum: number, ac: any) => sum + Number(ac.amount || ac.value || 0), 0)
+            || Number(item.discount_amount || 0);
+
+        const totalGross = Number(itemPrice || 0) * Number(itemQty || 1);
+        let discountPercent = 0;
+        if (item.discounts?.length > 0 && item.discounts[0].percent) {
+            discountPercent = Number(item.discounts[0].percent);
+        } else if (discountAmount > 0 && totalGross > 0) {
+            discountPercent = (discountAmount / totalGross) * 100;
+        }
+
+        const taxAmount = item.taxes?.length
+            ? item.taxes.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
+            : item.tax_totals?.length
+                ? item.tax_totals.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
+                : Number(item.tax_amount || 0);
+
+        const itemLabel = itemRef ? `${itemName} - ${itemRef}` : itemName;
+        const taxLabel = taxName.includes('%') ? taxName : `${taxName} ${Number(taxRate)}%`;
+
+        return {
+            key: idx,
+            itemId,
+            itemLabel,
+            description: item.description || '',
+            itemQty: Number(itemQty || 0),
+            itemPrice: Number(itemPrice || 0),
+            itemTotal: Number(itemTotal || 0),
+            taxRate: Number(taxRate || 0),
+            taxAmount,
+            taxLabel,
+            discountAmount,
+            discountPercent,
+        };
+    });
+
     return (
         <div className="filter drop-shadow-sm">
             <div
@@ -74,31 +130,31 @@ export function QuoteDetailDocument({
                     />
                 </div>
 
-                <div className="p-10">
+                <div className="p-5 sm:p-8 md:p-10">
                     {/* Doc Header */}
-                    <div className="flex justify-between items-start mb-10 border-b pb-8 border-slate-100">
+                    <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6 mb-10 border-b pb-8 border-slate-100 text-center md:text-left">
                         {/* Logo */}
-                        <div className="w-1/3 pl-8">
-                            <div className="w-64 h-24 relative flex items-center justify-start">
+                        <div className="w-full md:w-1/3 md:pl-8 flex justify-center md:justify-start">
+                            <div className="w-64 h-24 relative flex items-center justify-center md:justify-start">
                                 <FactucoreLogo
                                     variant="icon"
                                     alt="Logo de empresa"
-                                    className="w-full h-full object-left"
+                                    className="w-full h-full object-contain md:object-left"
                                 />
                             </div>
                         </div>
 
                         {/* Empresa (Centro) */}
-                        <div className="w-1/3 pt-2 flex flex-col justify-center">
+                        <div className="w-full md:w-1/3 md:pt-2 flex flex-col justify-center items-center md:items-stretch">
                             <CompanyHeaderPdfStyle companyProp={company} />
                         </div>
 
                         {/* Cotización No & Estado (Derecha) */}
-                        <div className="w-1/3 text-right flex flex-col items-end pt-2">
+                        <div className="w-full md:w-1/3 flex flex-col items-center md:items-end md:pt-2">
                             <div className="text-slate-500 text-xl font-light text-primary">
                                 Cotización No. <span className="font-semibold">{quote.prefix || ''}{quote.number || quote.id}</span>
                             </div>
-                            <div className="mt-2 flex items-center justify-end gap-2 uppercase">
+                            <div className="mt-2 flex items-center justify-center md:justify-end gap-2 uppercase">
                                 <span className="text-xs text-slate-400">Estado:</span>
                                 <StatusBadge status={quote.quotation_status || quote.status} />
                             </div>
@@ -108,7 +164,7 @@ export function QuoteDetailDocument({
                     {/* Customer Info */}
                     <div className="mb-10 text-slate-600">
                         <h3 className="font-bold text-slate-800 mb-4">Información de la cotización</h3>
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
                             <div>
                                 <div className="font-bold text-slate-700 mb-1">Cliente</div>
                                 <Link href={`/contacts/${customer?.id || quote?.contact_id || ''}`} className="font-medium text-slate-800 underline cursor-pointer hover:bg-slate-100 px-2 py-1 rounded -ml-2 transition-colors inline-block w-fit">
@@ -136,9 +192,61 @@ export function QuoteDetailDocument({
                         </div>
                     </div>
 
-                    {/* Items Table */}
+                    {/* Items — tarjetas en móvil */}
                     <h3 className="font-bold text-slate-800 mb-4">Productos y servicios</h3>
-                    <div className="mb-10 relative overflow-x-auto border-b border-gray-200">
+                    <div className="mb-10 md:hidden border border-gray-200 rounded-lg divide-y divide-gray-200 overflow-hidden">
+                        {resolvedLines.length === 0 ? (
+                            <div className="h-24 flex items-center justify-center text-center text-slate-400 text-sm">
+                                No hay productos en esta cotización
+                            </div>
+                        ) : (
+                            resolvedLines.map((line) => (
+                                <div key={line.key} className="p-4 bg-white">
+                                    <div className="flex items-start justify-between gap-3">
+                                        {line.itemId ? (
+                                            <Link href={`/items/${line.itemId}`} className="text-slate-800 font-medium text-sm">
+                                                {line.itemLabel}
+                                            </Link>
+                                        ) : (
+                                            <span className="text-slate-800 font-medium text-sm">{line.itemLabel}</span>
+                                        )}
+                                        <span className="text-sm font-semibold text-slate-900 shrink-0">
+                                            $ {line.itemTotal.toLocaleString()}
+                                        </span>
+                                    </div>
+                                    {line.description && (
+                                        <div className="text-xs text-slate-500 mt-1">{line.description}</div>
+                                    )}
+                                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                        <div>
+                                            <div className="text-slate-400">Precio</div>
+                                            <div className="text-slate-700 font-medium">$ {line.itemPrice.toLocaleString()}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-400">Cantidad</div>
+                                            <div className="text-slate-700 font-medium">{line.itemQty}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-400">Descuento</div>
+                                            <div className="text-slate-700 font-medium">
+                                                {line.discountAmount > 0
+                                                    ? `${line.discountPercent % 1 !== 0 ? line.discountPercent.toFixed(2) : line.discountPercent}%`
+                                                    : '-'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {(line.taxRate > 0 || line.taxAmount > 0) && (
+                                        <div className="mt-2 text-xs text-slate-500">
+                                            {line.taxLabel} (${line.taxAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Items Table — sm y superior */}
+                    <div className="mb-10 relative overflow-x-auto border-b border-gray-200 hidden md:block">
                         <Table className="[&_td]:border-b-0">
                             <TableHeader>
                                 <TableRow className="bg-gray-50/50">
@@ -151,93 +259,52 @@ export function QuoteDetailDocument({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {items.map((item: any, idx: number) => {
-                                    const itemName = item.name || item.item_name || item.item?.name || item.description;
-                                    const itemId = item.item_id || item.id || item.item?.id;
-                                    const itemRef = item.code_reference || item.item_code || item.standard_item_code || item.code;
-                                    const itemPrice = item.price || item.price_amount;
-                                    const itemQty = item.quantity;
-                                    const itemTotal = item.total || item.total_line || item.line_extension_amount;
-                                    const taxRate = item.tax_rate || (item.tax_totals?.[0]?.percent) || (item.taxes?.[0]?.percent) || 0;
-                                    
-                                    const taxName =
-                                        item.tax_name ||
-                                        item.tax_totals?.[0]?.tax_name || item.tax_totals?.[0]?.name ||
-                                        item.taxes?.[0]?.name ||
-                                        item.taxes?.[0]?.tax?.name ||
-                                        'IVA';
-
-                                    // Discount calculations
-                                    const discountAmount = item.discounts?.length
-                                        ? item.discounts.reduce((sum: number, d: any) => sum + Number(d.calculated_amount ?? d.amount ?? d.value ?? 0), 0)
-                                        : item.allowance_charges?.filter((ac: any) => ac.charge_indicator === false)?.reduce((sum: number, ac: any) => sum + Number(ac.amount || ac.value || 0), 0)
-                                        || Number(item.discount_amount || 0);
-                                    
-                                    const totalGross = Number(itemPrice || 0) * Number(itemQty || 1);
-                                    let discountPercent = 0;
-                                    if (item.discounts?.length > 0 && item.discounts[0].percent) {
-                                        discountPercent = Number(item.discounts[0].percent);
-                                    } else if (discountAmount > 0 && totalGross > 0) {
-                                        discountPercent = (discountAmount / totalGross) * 100;
-                                    }
-
-                                    // Tax calculations
-                                    const taxAmount = item.taxes?.length
-                                        ? item.taxes.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
-                                        : item.tax_totals?.length 
-                                            ? item.tax_totals.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
-                                            : Number(item.tax_amount || 0);
-
-                                    const itemLabel = itemRef ? `${itemName} - ${itemRef}` : itemName;
-                                    const taxLabel = taxName.includes('%') ? taxName : `${taxName} ${Number(taxRate)}%`;
-
-                                    return (
-                                        <TableRow key={idx} className="hover:bg-transparent border-0 border-b-0">
-                                            <TableCell className="border-l border-gray-200">
-                                                <div className="flex flex-col pl-2">
-                                                    {itemId ? (
-                                                        <Link href={`/items/${itemId}`} className="text-slate-800 font-medium cursor-pointer hover:bg-slate-200 px-2 py-1 -ml-2 rounded transition-colors inline-block w-fit">
-                                                            {itemLabel}
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="text-slate-800 font-medium">{itemLabel}</span>
-                                                    )}
-                                                    {item.description && (
-                                                        <span className="text-slate-500 text-xs">{item.description}</span>
-                                                    )}
+                                {resolvedLines.map((line) => (
+                                    <TableRow key={line.key} className="hover:bg-transparent border-0 border-b-0">
+                                        <TableCell className="border-l border-gray-200">
+                                            <div className="flex flex-col pl-2">
+                                                {line.itemId ? (
+                                                    <Link href={`/items/${line.itemId}`} className="text-slate-800 font-medium cursor-pointer hover:bg-slate-200 px-2 py-1 -ml-2 rounded transition-colors inline-block w-fit">
+                                                        {line.itemLabel}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="text-slate-800 font-medium">{line.itemLabel}</span>
+                                                )}
+                                                {line.description && (
+                                                    <span className="text-slate-500 text-xs">{line.description}</span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center">{line.itemQty}</TableCell>
+                                        <TableCell className="text-right">$ {line.itemPrice.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right">
+                                            {line.discountAmount > 0 ? (
+                                                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                                                    <span>{line.discountPercent % 1 !== 0 ? line.discountPercent.toFixed(2) : line.discountPercent}%</span>
+                                                    <span className="text-slate-500 text-xs">
+                                                        (${line.discountAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                                    </span>
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="text-center">{Number(itemQty)}</TableCell>
-                                            <TableCell className="text-right">$ {Number(itemPrice || 0).toLocaleString()}</TableCell>
-                                            <TableCell className="text-right">
-                                                {discountAmount > 0 ? (
-                                                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
-                                                        <span>{discountPercent % 1 !== 0 ? discountPercent.toFixed(2) : discountPercent}%</span>
-                                                        <span className="text-slate-500 text-xs">
-                                                            (${discountAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {Number(taxRate) > 0 || taxAmount > 0 ? (
-                                                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
-                                                        <span>{taxLabel}</span>
-                                                        <span className="text-slate-500 text-xs">
-                                                            (${taxAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-right border-r border-gray-200">$ {Number(itemTotal || 0).toLocaleString()}</TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                                {items.length === 0 && (
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {line.taxRate > 0 || line.taxAmount > 0 ? (
+                                                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                                                    <span>{line.taxLabel}</span>
+                                                    <span className="text-slate-500 text-xs">
+                                                        (${line.taxAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right border-r border-gray-200">$ {line.itemTotal.toLocaleString()}</TableCell>
+                                    </TableRow>
+                                ))}
+                                {resolvedLines.length === 0 && (
                                     <TableRow className="hover:bg-transparent">
                                         <TableCell colSpan={6} className="h-24 text-center text-slate-400 border-l border-r border-gray-200">No hay productos en esta cotización</TableCell>
                                     </TableRow>
@@ -248,7 +315,7 @@ export function QuoteDetailDocument({
 
                     {/* Adjustments and Subtotals */}
                     <div className="flex justify-end text-slate-600 border-t border-slate-100 pt-8">
-                        <div className="w-1/3 space-y-6 text-right flex flex-col justify-end">
+                        <div className="w-full sm:w-1/2 md:w-1/3 space-y-6 text-right flex flex-col justify-end">
                             <div className="space-y-3">
                                 <div className="flex justify-between">
                                     <span className="text-slate-500">Subtotal</span>
@@ -285,8 +352,8 @@ export function QuoteDetailDocument({
                     </div>
 
                     {/* Additional Info and Notes */}
-                    <div className="flex justify-between mt-16 text-sm text-slate-600 gap-12">
-                        <div className="w-1/2 space-y-10">
+                    <div className="flex flex-col md:flex-row justify-between mt-16 text-sm text-slate-600 gap-8 md:gap-12">
+                        <div className="w-full md:w-1/2 space-y-10">
                             {/* Elaborado por */}
                             <div className="flex flex-col items-center">
                                 <div className="mb-2">
@@ -306,7 +373,7 @@ export function QuoteDetailDocument({
                             </div>
                         </div>
 
-                        <div className="w-1/2 space-y-4">
+                        <div className="w-full md:w-1/2 space-y-4">
                             <div>
                                 <h3 className="text-black font-bold mb-2 text-xs uppercase">Notas:</h3>
                                 <div className="bg-gray-50 rounded-md p-3 text-xs text-black leading-relaxed min-h-[60px] border border-gray-200 whitespace-pre-wrap">

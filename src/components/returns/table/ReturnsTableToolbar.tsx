@@ -31,7 +31,7 @@ export function ReturnsTableToolbar({
   const allFiltersActive = available.length === 0;
 
   return (
-    <div className="h-12 px-4 border-b border-gray-200 flex items-center gap-2">
+    <div className="min-h-12 px-4 py-2 border-b border-gray-200 flex flex-wrap items-center gap-2">
       {/* Search */}
       <div className="relative w-full md:w-65">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />

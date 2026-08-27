@@ -18,10 +18,10 @@ export default function PaymentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto py-8 space-y-6">
+      <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
         <div className="flex flex-col space-y-4 mb-6">
           <Skeleton className="h-4 w-48" />
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-3">
             <Skeleton className="h-8 w-64" />
             <div className="flex gap-2">
               <Skeleton className="h-9 w-9 rounded-md" />
@@ -47,7 +47,7 @@ export default function PaymentDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-8">
+    <div className="max-w-5xl mx-auto py-8 px-4">
       <PaymentDetailHeader paymentNumber={payment.full_number || payment.id?.toString()} />
 
       <PaymentDetailTotal amount={payment.amount || 0} />

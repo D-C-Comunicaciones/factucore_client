@@ -1,7 +1,7 @@
 export function ReturnDetailSkeleton() {
     return (
         <div className="max-w-[1200px] mx-auto py-8 px-4 space-y-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
                 <div className="space-y-2">
                     <div className="h-4 w-48 bg-slate-200 rounded animate-pulse"></div>
                     <div className="h-8 w-64 bg-slate-200 rounded animate-pulse"></div>

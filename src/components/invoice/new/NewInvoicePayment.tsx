@@ -87,8 +87,8 @@ export function NewInvoicePayment({
     }, [showPayment, paymentMethod, paymentNumeration, paymentAccount, paymentDate, paymentValue]);
 
     return (
-        <div className="bg-white rounded-lg border border-border p-6 mb-8">
-            <div className="flex items-start justify-between">
+        <div className="bg-white rounded-lg border border-border p-4 sm:p-6 mb-8">
+            <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h3 className="font-semibold text-lg mb-1 text-foreground">
                         Pago recibido
@@ -122,15 +122,9 @@ export function NewInvoicePayment({
             >
                 <div className="min-h-0">
                     <div className="border border-border/50 rounded-lg overflow-hidden">
-                        <div className="grid grid-cols-5 gap-4 bg-[#f8fafc] px-4 py-3 border-b border-border/50">
-                            <span className="text-[13px] font-semibold text-slate-700">Numeración *</span>
-                            <span className="text-[13px] font-semibold text-slate-700">Fecha *</span>
-                            <span className="text-[13px] font-semibold text-slate-700">Cuenta bancaria *</span>
-                            <span className="text-[13px] font-semibold text-slate-700">Método de pago *</span>
-                            <span className="text-[13px] font-semibold text-slate-700">Valor *</span>
-                        </div>
-                        <div className="grid grid-cols-5 gap-4 px-4 py-4 bg-white items-start">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 px-4 py-4 bg-white items-start">
                             <div className="flex flex-col gap-1">
+                                <span className="text-[13px] font-semibold text-slate-700">Numeración *</span>
                                 <div className={errors?.payment_resolution ? "border border-red-500 rounded-md" : ""}>
                                     <SearchableSelect
                                         value={paymentNumeration}
@@ -146,12 +140,14 @@ export function NewInvoicePayment({
                                 {errors?.payment_resolution && <span className="text-xs text-red-500">{errors.payment_resolution}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
+                                <span className="text-[13px] font-semibold text-slate-700">Fecha *</span>
                                 <div className={errors?.payment_date ? "border border-red-500 rounded-md" : ""}>
                                     <DatePickerSimple value={paymentDate as any} onChange={setPaymentDate} />
                                 </div>
                                 {errors?.payment_date && <span className="text-xs text-red-500">{errors.payment_date}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
+                                <span className="text-[13px] font-semibold text-slate-700">Cuenta bancaria *</span>
                                 <div className={errors?.payment_account ? "border border-red-500 rounded-md" : ""}>
                                     <SearchableSelect
                                         value={paymentAccount}
@@ -164,6 +160,7 @@ export function NewInvoicePayment({
                                 {errors?.payment_account && <span className="text-xs text-red-500">{errors.payment_account}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
+                                <span className="text-[13px] font-semibold text-slate-700">Método de pago *</span>
                                 <div className={errors?.payment_method ? "border border-red-500 rounded-md" : ""}>
                                     <SearchableSelect
                                         value={paymentMethod}
@@ -176,6 +173,7 @@ export function NewInvoicePayment({
                                 {errors?.payment_method && <span className="text-xs text-red-500">{errors.payment_method}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
+                                <span className="text-[13px] font-semibold text-slate-700">Valor *</span>
                                 <div className="relative">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                                     <FormattedInput

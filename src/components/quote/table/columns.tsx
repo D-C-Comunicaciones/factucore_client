@@ -165,7 +165,7 @@ export function StatusBadge({ status }: { status: any }) {
 /* -----------------------------------------------------------------------
    Celda de acciones (descarga PDF)
    ----------------------------------------------------------------------- */
-function ActionsCell({ quote }: { quote: QuoteSummary }) {
+export function ActionsCell({ quote }: { quote: QuoteSummary }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);

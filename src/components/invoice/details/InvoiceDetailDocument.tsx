@@ -78,7 +78,66 @@ export function InvoiceDetailDocument({
     }, {});
     const withholdingsArray = Object.values(groupedWithholdings);
 
+    // Resuelve cada línea una sola vez (soporta tanto item de BD como item del
+    // snapshot XML) para que la tabla (desktop) y las tarjetas (móvil) lean
+    // exactamente los mismos valores sin duplicar la lógica de fallback.
+    const resolvedLines = items.map((item: any, idx: number) => {
+        const itemName = item.name || item.item_name || item.item?.name || item.description;
+        const itemId = item.item_id || item.id || item.item?.id;
+        const itemRef = item.code_reference || item.item_code || item.standard_item_code || item.code;
+        const itemPrice = item.price || item.price_amount;
+        const itemQty = item.quantity;
+        const itemTotal = item.total || item.total_line || item.line_extension_amount;
+        const taxRate = item.tax_rate || (item.tax_totals?.[0]?.percent) || (item.taxes?.[0]?.percent) || 0;
+        const lineTaxCode = item.tax_totals?.[0]?.tax_code || item.taxes?.[0]?.tax_code || '';
+        const snapshotTaxTotals = bill.invoice_snapshot?.template_data?.taxTotals || [];
+        const snapshotLineTaxes = bill.invoice_snapshot?.template_data?.lines?.find(
+            (_: any, i: number) => i === idx
+        )?.tax_totals || [];
+        const taxName =
+            item.tax_name ||
+            item.tax_totals?.[0]?.tax_name || item.tax_totals?.[0]?.name ||
+            item.taxes?.[0]?.name ||
+            item.taxes?.[0]?.tax?.name ||
+            snapshotLineTaxes.find((t: any) => t.tax_code === lineTaxCode)?.tax_name ||
+            snapshotTaxTotals.find((t: any) => t.tax_code === lineTaxCode)?.tax_name ||
+            '';
+        const taxNameStr = taxName || 'IVA';
 
+        const discountAmount = item.discounts?.length
+            ? item.discounts.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0)
+            : Number(item.discount_amount || 0);
+
+        const totalGross = Number(itemPrice || 0) * Number(itemQty || 1);
+        let discountPercent = 0;
+        if (item.discounts?.length > 0 && item.discounts[0].percent) {
+            discountPercent = Number(item.discounts[0].percent);
+        } else if (discountAmount > 0 && totalGross > 0) {
+            discountPercent = (discountAmount / totalGross) * 100;
+        }
+
+        const taxAmount = item.taxes?.length
+            ? item.taxes.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
+            : item.tax_totals?.length
+                ? item.tax_totals.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
+                : Number(item.tax_amount || 0);
+
+        return {
+            key: idx,
+            itemName,
+            itemId,
+            itemRef,
+            itemPrice: Number(itemPrice || 0),
+            itemQty: Number(itemQty || 0),
+            itemTotal: Number(itemTotal || 0),
+            taxRate: Number(taxRate || 0),
+            taxNameStr,
+            taxAmount,
+            discountAmount,
+            discountPercent,
+            description: item.description || '',
+        };
+    });
 
     return (
         <div className="filter drop-shadow-sm">
@@ -108,31 +167,31 @@ export function InvoiceDetailDocument({
                     />
                 </div>
 
-                <div className="p-10">
+                <div className="p-5 sm:p-8 md:p-10">
                     {/* Doc Header */}
-                    <div className="flex justify-between items-start mb-10 border-b pb-8 border-slate-100">
+                    <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6 mb-10 border-b pb-8 border-slate-100 text-center md:text-left">
                         {/* Logo */}
-                        <div className="w-1/3 pl-8">
-                            <div className="w-64 h-24 relative flex items-center justify-start">
+                        <div className="w-full md:w-1/3 md:pl-8 flex justify-center md:justify-start">
+                            <div className="w-64 h-24 relative flex items-center justify-center md:justify-start">
                                 <FactucoreLogo
                                     variant="icon"
                                     alt="Logo de empresa"
-                                    className="w-full h-full object-left"
+                                    className="w-full h-full object-contain md:object-left"
                                 />
                             </div>
                         </div>
 
                         {/* Empresa (Centro) */}
-                        <div className="w-1/3 pt-2 flex flex-col justify-center">
+                        <div className="w-full md:w-1/3 md:pt-2 flex flex-col justify-center items-center md:items-stretch">
                             <CompanyHeaderPdfStyle companyProp={company} />
                         </div>
 
                         {/* Factura No & DIAN (Derecha) */}
-                        <div className="w-1/3 text-right flex flex-col items-end pt-2">
+                        <div className="w-full md:w-1/3 flex flex-col items-center md:items-end md:pt-2">
                             <div className="text-slate-500 text-xl font-light text-primary">
                                 No. <span className="font-semibold">{bill.prefix || ''}{bill.number || bill.id}</span>
                             </div>
-                            <div className="mt-2 flex items-center justify-end gap-2 uppercase">
+                            <div className="mt-2 flex items-center justify-center md:justify-end gap-2 uppercase">
                                 <span className="text-xs text-slate-400">Estado DIAN:</span>
                                 <DianStatusBadge status={dianStatus || 'NO APROBADA'} />
                             </div>
@@ -140,16 +199,16 @@ export function InvoiceDetailDocument({
                     </div>
 
                     {/* Customer Info */}
-                    <div className="grid grid-cols-2 gap-4 mb-10 text-slate-600">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 text-slate-600">
                         <div className="space-y-2 border-b border-slate-100 pb-2">
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Cliente:</span>
-                                <Link href={`/contacts/${customer?.id || bill?.contact_id || ''}`} className="font-medium text-slate-800 cursor-pointer hover:bg-slate-100 px-2 py-1 rounded -ml-2 transition-colors">
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">Cliente:</span>
+                                <Link href={`/contacts/${customer?.id || bill?.contact_id || ''}`} className="font-medium text-slate-800 cursor-pointer hover:bg-slate-100 px-2 py-1 rounded sm:-ml-2 -ml-2 transition-colors self-start">
                                     {customer?.names || customer?.company || customer?.name || customer?.registration_name || ''}
                                 </Link>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">
                                     {(() => {
                                         const orgCode = customer?.type_organization?.code || bill?.contact?.type_organization_id || customer?.type_organization_id;
                                         const isJuridica = String(orgCode) === "1";
@@ -168,29 +227,84 @@ export function InvoiceDetailDocument({
                                     })()}
                                 </span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Teléfono:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">Teléfono:</span>
                                 <span>{customer?.phone1 || customer?.phone || ''}</span>
                             </div>
                         </div>
                         <div className="space-y-2 border-b border-slate-100 pb-2">
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-32 shrink-0">Creación:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-32 shrink-0">Creación:</span>
                                 <span>{bill.created_at || ''}</span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-32 shrink-0">Vencimiento:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-32 shrink-0">Vencimiento:</span>
                                 <span>{bill.payment_due_date || bill.billing_reference?.payment_due_date || bill.created_at || ''}</span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-32 shrink-0">Plazo de pago:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-32 shrink-0">Plazo de pago:</span>
                                 <span>{bill.payment_term?.name || 'De contado'}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Items Table */}
-                    <div className="mb-10 relative overflow-x-auto border-b border-gray-200">
+                    {/* Items — tarjetas en móvil */}
+                    <div className="mb-10 md:hidden border border-gray-200 rounded-lg divide-y divide-gray-200 overflow-hidden">
+                        {resolvedLines.length === 0 ? (
+                            <div className="h-24 flex items-center justify-center text-center text-slate-400 text-sm">
+                                No hay productos en esta factura
+                            </div>
+                        ) : (
+                            resolvedLines.map((line) => (
+                                <div key={line.key} className="p-4 bg-white">
+                                    <div className="flex items-start justify-between gap-3">
+                                        {line.itemId ? (
+                                            <Link href={`/items/${line.itemId}`} className="text-slate-800 font-medium text-sm">
+                                                {line.itemName}
+                                            </Link>
+                                        ) : (
+                                            <span className="text-slate-800 font-medium text-sm">{line.itemName}</span>
+                                        )}
+                                        <span className="text-sm font-semibold text-slate-900 shrink-0">
+                                            $ {line.itemTotal.toLocaleString()}
+                                        </span>
+                                    </div>
+                                    {line.itemRef && (
+                                        <div className="text-xs text-slate-400 mt-0.5">Ref. {line.itemRef}</div>
+                                    )}
+                                    {line.description && (
+                                        <div className="text-xs text-slate-500 mt-1">{line.description}</div>
+                                    )}
+                                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                        <div>
+                                            <div className="text-slate-400">Precio</div>
+                                            <div className="text-slate-700 font-medium">$ {line.itemPrice.toLocaleString()}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-400">Cantidad</div>
+                                            <div className="text-slate-700 font-medium">{line.itemQty}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-400">Descuento</div>
+                                            <div className="text-slate-700 font-medium">
+                                                {line.discountAmount > 0
+                                                    ? `${line.discountPercent % 1 !== 0 ? line.discountPercent.toFixed(2) : line.discountPercent}%`
+                                                    : '-'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {(line.taxRate > 0 || line.taxAmount > 0) && (
+                                        <div className="mt-2 text-xs text-slate-500">
+                                            {line.taxNameStr} {line.taxRate}% (${line.taxAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Items Table — sm y superior */}
+                    <div className="mb-10 relative overflow-x-auto border-b border-gray-200 hidden md:block">
                         <Table className="[&_td]:border-b-0">
                             <TableHeader>
                                 <TableRow className="bg-gray-50/50">
@@ -205,96 +319,49 @@ export function InvoiceDetailDocument({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {items.map((item: any, idx: number) => {
-                                    // Soportar tanto item de BD como item del snapshot XML
-                                    const itemName = item.name || item.item_name || item.item?.name || item.description;
-                                    const itemId = item.item_id || item.id || item.item?.id;
-                                    const itemRef = item.code_reference || item.item_code || item.standard_item_code || item.code;
-                                    const itemPrice = item.price || item.price_amount;
-                                    const itemQty = item.quantity;
-                                    const itemTotal = item.total || item.total_line || item.line_extension_amount;
-                                    const taxRate = item.tax_rate || (item.tax_totals?.[0]?.percent) || (item.taxes?.[0]?.percent) || 0;
-                                    const lineTaxCode = item.tax_totals?.[0]?.tax_code || item.taxes?.[0]?.tax_code || '';
-                                    // Resolve tax name: line-level → snapshot line tax_totals → snapshot global taxTotals by tax_code
-                                    const snapshotTaxTotals = bill.invoice_snapshot?.template_data?.taxTotals || [];
-                                    const snapshotLineTaxes = bill.invoice_snapshot?.template_data?.lines?.find(
-                                        (_: any, i: number) => i === idx
-                                    )?.tax_totals || [];
-                                    const taxName =
-                                        item.tax_name ||
-                                        item.tax_totals?.[0]?.tax_name || item.tax_totals?.[0]?.name ||
-                                        item.taxes?.[0]?.name ||
-                                        item.taxes?.[0]?.tax?.name ||
-                                        snapshotLineTaxes.find((t: any) => t.tax_code === lineTaxCode)?.tax_name ||
-                                        snapshotTaxTotals.find((t: any) => t.tax_code === lineTaxCode)?.tax_name ||
-                                        '';
-
-                                    const taxNameStr = taxName || 'IVA';
-                                    
-                                    // Discount calculations
-                                    const discountAmount = item.discounts?.length
-                                        ? item.discounts.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0)
-                                        : Number(item.discount_amount || 0);
-                                    
-                                    const totalGross = Number(itemPrice || 0) * Number(itemQty || 1);
-                                    let discountPercent = 0;
-                                    if (item.discounts?.length > 0 && item.discounts[0].percent) {
-                                        discountPercent = Number(item.discounts[0].percent);
-                                    } else if (discountAmount > 0 && totalGross > 0) {
-                                        discountPercent = (discountAmount / totalGross) * 100;
-                                    }
-
-                                    // Tax calculations
-                                    const taxAmount = item.taxes?.length
-                                        ? item.taxes.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
-                                        : item.tax_totals?.length 
-                                            ? item.tax_totals.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
-                                            : Number(item.tax_amount || 0);
-
-                                    return (
-                                        <TableRow key={idx} className="hover:bg-transparent border-0 border-b-0">
-                                            <TableCell className="border-l border-gray-200">
-                                                {itemId ? (
-                                                    <Link href={`/items/${itemId}`} className="text-slate-800 font-medium cursor-pointer hover:bg-slate-200 px-2 py-1 rounded -ml-2 transition-colors inline-block">
-                                                        {itemName}
-                                                    </Link>
-                                                ) : (
-                                                    <span className="text-slate-800 font-medium">{itemName}</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>{itemRef}</TableCell>
-                                            <TableCell className="text-right">$ {Number(itemPrice || 0).toLocaleString()}</TableCell>
-                                            <TableCell className="text-right">
-                                                {discountAmount > 0 ? (
-                                                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
-                                                        <span>{discountPercent % 1 !== 0 ? discountPercent.toFixed(2) : discountPercent}%</span>
-                                                        <span className="text-slate-500 text-xs">
-                                                            (${discountAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {Number(taxRate) > 0 || taxAmount > 0 ? (
-                                                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
-                                                        <span>{taxNameStr} {Number(taxRate)}%</span>
-                                                        <span className="text-slate-500 text-xs">
-                                                            (${taxAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>{item.description || ''}</TableCell>
-                                            <TableCell className="text-center">{Number(itemQty)}</TableCell>
-                                            <TableCell className="text-right border-r border-gray-200">$ {Number(itemTotal || 0).toLocaleString()}</TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                                {items.length === 0 && (
+                                {resolvedLines.map((line) => (
+                                    <TableRow key={line.key} className="hover:bg-transparent border-0 border-b-0">
+                                        <TableCell className="border-l border-gray-200">
+                                            {line.itemId ? (
+                                                <Link href={`/items/${line.itemId}`} className="text-slate-800 font-medium cursor-pointer hover:bg-slate-200 px-2 py-1 rounded -ml-2 transition-colors inline-block">
+                                                    {line.itemName}
+                                                </Link>
+                                            ) : (
+                                                <span className="text-slate-800 font-medium">{line.itemName}</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>{line.itemRef}</TableCell>
+                                        <TableCell className="text-right">$ {line.itemPrice.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right">
+                                            {line.discountAmount > 0 ? (
+                                                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                                                    <span>{line.discountPercent % 1 !== 0 ? line.discountPercent.toFixed(2) : line.discountPercent}%</span>
+                                                    <span className="text-slate-500 text-xs">
+                                                        (${line.discountAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {line.taxRate > 0 || line.taxAmount > 0 ? (
+                                                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                                                    <span>{line.taxNameStr} {line.taxRate}%</span>
+                                                    <span className="text-slate-500 text-xs">
+                                                        (${line.taxAmount.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>{line.description}</TableCell>
+                                        <TableCell className="text-center">{line.itemQty}</TableCell>
+                                        <TableCell className="text-right border-r border-gray-200">$ {line.itemTotal.toLocaleString()}</TableCell>
+                                    </TableRow>
+                                ))}
+                                {resolvedLines.length === 0 && (
                                     <TableRow className="hover:bg-transparent">
                                         <TableCell colSpan={8} className="h-24 text-center text-slate-400 border-l border-r border-gray-200">No hay productos en esta factura</TableCell>
                                     </TableRow>
@@ -304,8 +371,8 @@ export function InvoiceDetailDocument({
                     </div>
 
                     {/* Signature, Adjustments and Subtotals */}
-                    <div className="flex justify-between text-slate-600 border-t border-slate-100 pt-8">
-                        <div className="w-1/3 flex flex-col items-center justify-end pb-4">
+                    <div className="flex flex-col md:flex-row justify-between text-slate-600 border-t border-slate-100 pt-8 gap-8 md:gap-0">
+                        <div className="w-full md:w-1/3 flex flex-col items-center justify-end pb-4">
                             <div className="mb-2">
                                 <span
                                     className="text-slate-700"
@@ -322,7 +389,7 @@ export function InvoiceDetailDocument({
                             </div>
                         </div>
 
-                        <div className="w-1/3 space-y-6 text-right flex flex-col justify-end">
+                        <div className="w-full md:w-1/3 space-y-6 text-right flex flex-col justify-end">
                             {(globalDiscounts.length > 0 || globalCharges.length > 0) && (
                                 <div className="border border-slate-100 rounded-lg p-4 bg-slate-50 text-xs">
                                     <h4 className="font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1 text-right">Ajustes Globales</h4>
@@ -437,31 +504,31 @@ export function InvoiceDetailDocument({
 
 
                     {/* Additional Info and Notes */}
-                    <div className="flex justify-between mt-16 text-sm text-slate-600 gap-12">
-                        <div className="w-1/2 space-y-10">
+                    <div className="flex flex-col md:flex-row justify-between mt-16 text-sm text-slate-600 gap-8 md:gap-12">
+                        <div className="w-full md:w-1/2 space-y-10">
                             {/* Información adicional */}
                             <div>
                                 <h3 className="font-bold text-slate-800 mb-4 text-base">Información adicional</h3>
                                 <div className="space-y-3">
-                                    <div className="flex border-b border-slate-100 pb-2">
-                                        <span className="w-1/2 font-bold text-slate-700">Forma de pago</span>
-                                        <span className="w-1/2 font-medium">{bill.payment_form?.name || bill.payment_term?.name || 'Contado'}</span>
+                                    <div className="flex flex-col sm:flex-row border-b border-slate-100 pb-2">
+                                        <span className="sm:w-1/2 font-bold text-slate-700">Forma de pago</span>
+                                        <span className="sm:w-1/2 font-medium">{bill.payment_form?.name || bill.payment_term?.name || 'Contado'}</span>
                                     </div>
-                                    <div className="flex border-b border-slate-100 pb-2">
-                                        <span className="w-1/2 font-bold text-slate-700">Medio de pago</span>
-                                        <span className="w-1/2 font-medium">{bill.payment_method?.name || 'Transferencia débito'}</span>
+                                    <div className="flex flex-col sm:flex-row border-b border-slate-100 pb-2">
+                                        <span className="sm:w-1/2 font-bold text-slate-700">Medio de pago</span>
+                                        <span className="sm:w-1/2 font-medium">{bill.payment_method?.name || 'Transferencia débito'}</span>
                                     </div>
-                                    <div className="flex border-b border-slate-100 pb-2">
-                                        <span className="w-1/2 font-bold text-slate-700">Tipo de factura</span>
-                                        <span className="w-1/2 font-medium">Factura de venta</span>
+                                    <div className="flex flex-col sm:flex-row border-b border-slate-100 pb-2">
+                                        <span className="sm:w-1/2 font-bold text-slate-700">Tipo de factura</span>
+                                        <span className="sm:w-1/2 font-medium">Factura de venta</span>
                                     </div>
-                                    <div className="flex border-b border-slate-100 pb-2">
-                                        <span className="w-1/2 font-bold text-slate-700">Tipo de operación</span>
-                                        <span className="w-1/2 font-medium">Estándar</span>
+                                    <div className="flex flex-col sm:flex-row border-b border-slate-100 pb-2">
+                                        <span className="sm:w-1/2 font-bold text-slate-700">Tipo de operación</span>
+                                        <span className="sm:w-1/2 font-medium">Estándar</span>
                                     </div>
-                                    <div className="flex border-b border-slate-100 pb-2">
-                                        <span className="w-1/2 font-bold text-slate-700">Orden de compra</span>
-                                        <span className="w-1/2 font-medium">{bill.order_reference?.id || bill.order_reference || ''}</span>
+                                    <div className="flex flex-col sm:flex-row border-b border-slate-100 pb-2">
+                                        <span className="sm:w-1/2 font-bold text-slate-700">Orden de compra</span>
+                                        <span className="sm:w-1/2 font-medium">{bill.order_reference?.id || bill.order_reference || ''}</span>
                                     </div>
                                 </div>
                             </div>
@@ -475,7 +542,7 @@ export function InvoiceDetailDocument({
                             </div>
                         </div>
 
-                        <div className="w-1/2 space-y-4">
+                        <div className="w-full md:w-1/2 space-y-4">
                             <div>
                                 <h3 className="text-black font-bold mb-2 text-xs uppercase">Notas:</h3>
                                 <div className="bg-gray-50 rounded-md p-3 text-xs text-black leading-relaxed min-h-[60px] border border-gray-200">

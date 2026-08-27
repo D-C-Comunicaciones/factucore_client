@@ -35,8 +35,8 @@ export function NewInvoiceHeader({
         <span className="text-slate-500">{title}</span>
       </div>
 
-      <div className="flex items-center justify-between">
-      <h1 className="text-2xl font-bold text-[#001D4A]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <h1 className="text-xl sm:text-2xl font-bold text-[#001D4A]">
         {title}
       </h1>
 

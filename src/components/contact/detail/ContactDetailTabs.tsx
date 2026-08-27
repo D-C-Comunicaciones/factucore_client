@@ -144,7 +144,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
                 <button
                     type="button"
                     onClick={() => scrollTabs("left")}
-                    className="h-12 w-9 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="self-stretch w-9 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
                     aria-label="Desplazar pestañas a la izquierda"
                 >
                     <ChevronLeft className="w-4 h-4" />
@@ -152,7 +152,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
 
                 <div
                     ref={scrollRef}
-                    className="flex-1 overflow-x-auto scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                    className="flex-1 overflow-x-hidden overflow-y-hidden scroll-smooth"
                 >
                     <div className="flex">
                         {tabs.map((tab) => (
@@ -184,7 +184,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
                 <button
                     type="button"
                     onClick={() => scrollTabs("right")}
-                    className="h-12 w-9 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="self-stretch w-9 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
                     aria-label="Desplazar pestañas a la derecha"
                 >
                     <ChevronRight className="w-4 h-4" />

@@ -24,7 +24,7 @@ export function InvoicePageHeader({ onNavigate }: InvoicePageHeaderProps) {
           Facturas de venta
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
 
           {/* Más acciones */}
           <DropdownMenu>

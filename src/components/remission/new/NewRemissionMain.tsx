@@ -555,7 +555,7 @@ export function NewRemissionMain({
     return (
         <div className="filter drop-shadow-sm">
             <div
-                className="relative bg-white rounded-lg border border-border p-8 overflow-hidden"
+                className="relative bg-white rounded-lg border border-border p-4 sm:p-6 md:p-8 overflow-hidden"
                 style={{
                     clipPath: 'polygon(0 0, calc(100% - 40px) 0, 100% 40px, 100% 100%, 0 100%)'
                 }}
@@ -576,8 +576,8 @@ export function NewRemissionMain({
                 </div>
 
             {/* HEADER */}
-            <div className="grid grid-cols-3 items-start mb-8">
-                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center justify-self-start flex items-center justify-center min-w-[160px] min-h-[100px]">
+            <div className="flex flex-col md:grid md:grid-cols-3 items-center md:items-start gap-6 md:gap-0 mb-8 text-center md:text-left">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center md:justify-self-start flex items-center justify-center min-w-[160px] min-h-[100px]">
                     <FactucoreLogo
                         variant="icon"
                         className="max-h-[80px] w-auto"
@@ -589,8 +589,8 @@ export function NewRemissionMain({
                     <CompanyHeaderPdfStyle />
                 </div>
 
-                <div className="text-right justify-self-end">
-                    <div className="inline-flex flex-col items-end gap-1">
+                <div className="text-center md:text-right md:justify-self-end">
+                    <div className="inline-flex flex-col items-center md:items-end gap-1">
                         <div className="grid grid-cols-[160px_auto] gap-x-2 gap-y-1 items-center">
                             <span className="text-sm text-muted-foreground whitespace-nowrap text-center col-start-1">
                                 {activeResolution?.name || (activeResolution?.is_main ? "Numeración Principal" : "Numeración")}
@@ -616,7 +616,7 @@ export function NewRemissionMain({
                                 <Settings className="w-4 h-4 text-muted-foreground" />
                             </button>
                         </div>
-                        <div className="flex items-center justify-end w-full gap-2 mt-1">
+                        <div className="flex items-center justify-center md:justify-end w-full gap-2 mt-1">
                             <div className="flex items-center gap-1">
                                 <span className="text-sm text-muted-foreground">No.</span>
                                 {mainData.invoiceNumber ? (

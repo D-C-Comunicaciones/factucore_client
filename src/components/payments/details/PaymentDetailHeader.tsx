@@ -31,11 +31,11 @@ export function PaymentDetailHeader({ paymentNumber }: PaymentDetailHeaderProps)
         Volver a mis pagos recibidos
       </button>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-semibold text-slate-800">
           Pago recibido No. {paymentNumber}
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9 bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-800 focus:border-primary focus:ring-1 focus:ring-primary data-[state=open]:border-primary data-[state=open]:ring-1 data-[state=open]:ring-primary cursor-pointer transition-colors">

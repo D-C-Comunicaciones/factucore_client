@@ -71,7 +71,7 @@ export function AvatarInitials({ name }: { name: string }) {
 
 /* -------------------- actions -------------------- */
 
-function ContactActionsCell({
+export function ContactActionsCell({
   contact,
   onDelete,
   onToggleActive,
@@ -90,7 +90,7 @@ function ContactActionsCell({
         {isFinalConsumer ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex">
+              <span className="inline-flex cursor-not-allowed">
                 <Button variant="ghost" size="icon" className="h-7 w-7 opacity-40 cursor-not-allowed" disabled>
                   <FileEdit className="w-4 h-4" />
                 </Button>
@@ -99,14 +99,19 @@ function ContactActionsCell({
             <TooltipContent className="max-w-64 text-center">{CONSUMER_FINAL_EDIT_TOOLTIP}</TooltipContent>
           </Tooltip>
         ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 hover:bg-gray-100"
-            onClick={() => router.push(`/contacts/${contact.id}/edit`)}
-          >
-            <FileEdit className="w-4 h-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 hover:bg-gray-100"
+                onClick={() => router.push(`/contacts/${contact.id}/edit`)}
+              >
+                <FileEdit className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Editar contacto</TooltipContent>
+          </Tooltip>
         )}
 
         <DropdownMenu>

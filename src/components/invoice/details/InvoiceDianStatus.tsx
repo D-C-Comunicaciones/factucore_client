@@ -141,13 +141,18 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
 
                 {/* Timeline */}
                 <div className="relative mb-8">
+                {/* Difumina el borde derecho en móvil como pista de que el timeline
+                    se puede deslizar cuando hay más pasos de los que caben. */}
+                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-20 sm:hidden" />
+                <div className="overflow-x-auto">
+                <div className="relative px-1 sm:px-0">
                     <div className="absolute top-3 left-[10%] right-[10%] h-0.5 bg-slate-200">
                         {/* Barra verde progresiva según estado. */}
                         <div className="absolute top-0 left-0 h-0.5 bg-[#20c997] transition-all duration-500" style={{ width: isAccepted ? '100%' : '0%' }}></div>
                     </div>
                     <div className="flex justify-between relative">
                         {/* 1. Estado DIAN */}
-                        <div className="flex flex-col items-center flex-1">
+                        <div className="flex flex-col items-center flex-1 min-w-[110px]">
                             {isDianSuccess ? (
                                 <CheckCircle2 className="w-6 h-6 text-[#20c997] bg-white z-10" fill="currentColor" stroke="white" />
                             ) : (
@@ -155,13 +160,16 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                             )}
                             <span className="text-sm text-slate-800 mt-2 font-medium">Estado DIAN</span>
                             <div className="h-4 mt-0.5"></div>
-                            <span className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase text-center whitespace-nowrap ${isDianSuccess ? 'text-[#20c997] border-[#20c997]' : 'text-red-500 border-red-500'}`}>
+                            <span
+                                className={`text-[10px] font-bold border rounded-full px-3 py-0.5 mt-1 uppercase text-center truncate max-w-[110px] ${isDianSuccess ? 'text-[#20c997] border-[#20c997]' : 'text-red-500 border-red-500'}`}
+                                title={bill?.dian_response?.response_data?.status_description || bill?.dian_response?.status_description || dianStatus || 'NO APROBADA'}
+                            >
                                 {bill?.dian_response?.response_data?.status_description || bill?.dian_response?.status_description || dianStatus || 'NO APROBADA'}
                             </span>
                         </div>
 
                         {/* 2. Envío al cliente */}
-                        <div className="flex flex-col items-center flex-1">
+                        <div className="flex flex-col items-center flex-1 min-w-[110px]">
                             {bill?.is_email_sent ? (
                                 <CheckCircle2 className="w-6 h-6 bg-white z-10 text-[#20c997]" fill="currentColor" stroke="white" />
                             ) : (
@@ -178,7 +186,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
 
                         {/* 3. RADIAN (Condicional) */}
                         {bill?.radian?.has_events && (
-                            <div className="flex flex-col items-center flex-1 text-center">
+                            <div className="flex flex-col items-center flex-1 min-w-[110px] text-center">
                                 <CheckCircle2 className="w-6 h-6 text-[#20c997] bg-white z-10" fill="currentColor" stroke="white" />
                                 <span className="text-sm text-slate-800 mt-2 font-medium">RADIAN</span>
                                 <div className="h-4 mt-0.5 w-full flex justify-center">
@@ -191,7 +199,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
 
                         {/* 4. Pago */}
                         {(bill?.payments && bill.payments.length > 0) && (
-                            <div className="flex flex-col items-center flex-1">
+                            <div className="flex flex-col items-center flex-1 min-w-[110px]">
                                 {(() => {
                                     // `pending_amount` no existe en la respuesta real (es `pending_to_collect`) —
                                     // con el nombre viejo esto daba siempre 0 y mostraba "COBRADA" de más.
@@ -239,7 +247,7 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                         )}
 
                         {/* 5. Proceso Finalizado */}
-                        <div className="flex flex-col items-center flex-1">
+                        <div className="flex flex-col items-center flex-1 min-w-[110px]">
                             {(() => {
                                 const isCanceled = bill?.status?.name === 'Anulada' || bill?.status?.name === 'Cancelada' || bill?.invoice_status_id === 3;
                                 const isFinished = bill.number && (!bill.payment_term || bill.payment_term?.name?.toLowerCase() === 'contado' || bill.payment_form?.name?.toLowerCase() === 'contado' || bill.payment_form_id === 1);
@@ -262,9 +270,11 @@ export function InvoiceDianStatus({ bill, company, dianStatus }: InvoiceDianStat
                         </div>
                     </div>
                 </div>
+                </div>
+                </div>
 
                 {showDetails && (
-                    <div className="border-t border-slate-100 pt-6 pb-4 mt-4 flex justify-between gap-4 text-sm px-2">
+                    <div className="border-t border-slate-100 pt-6 pb-4 mt-4 flex flex-col sm:flex-row justify-between gap-6 sm:gap-4 text-sm px-2">
                         {/* Eventos DIAN */}
                         <div className="flex flex-col items-center flex-1">
                             <div className="flex gap-3 items-start justify-center w-full">

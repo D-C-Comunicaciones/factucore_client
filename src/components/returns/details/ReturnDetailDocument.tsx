@@ -39,7 +39,7 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
     const customerDocLabel = customerDoc
         ? (customerDv != null && customerDv !== '' ? `${customerDoc}-${customerDv}` : `${customerDoc}`)
         : '';
-    const lines = creditNote?.lines || [];
+    const lines: any[] = creditNote?.lines || [];
 
     // Helper: fecha puede venir como "22/07/2026" (ya formateada) o ISO
     const formatDate = (dateStr: string | undefined) => {
@@ -100,6 +100,47 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
     const compDv = company?.verification_digit ?? company?.dv ?? company?.company_dv;
     const compEmail = company?.email || '';
 
+    // Resuelve cada línea una sola vez para que la tabla (desktop) y las
+    // tarjetas (móvil) lean exactamente los mismos valores.
+    const resolvedLines = lines.map((line: any, idx: number) => {
+        const qty = parseFloat(line.quantity) || 1;
+        const price = parseFloat(line.price) || 0;
+        const subtotal = parseFloat(line.subtotal) || price * qty;
+        const lineTotal = parseFloat(line.total_line) || parseFloat(line.total) || subtotal;
+
+        const discountAmount = line.discounts?.length
+            ? line.discounts.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0)
+            : Number(line.discount_amount || 0);
+
+        let discountPercentDisplay = parseFloat(line.discount_percentage) || 0;
+        if (line.discounts?.length > 0 && line.discounts[0].percent) {
+            discountPercentDisplay = Number(line.discounts[0].percent);
+        } else if (!discountPercentDisplay && discountAmount > 0 && subtotal > 0) {
+            discountPercentDisplay = (discountAmount / subtotal) * 100;
+        }
+
+        const taxAmount = line.taxes?.length
+            ? line.taxes.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
+            : Number(line.tax_amount || 0);
+
+        const taxLabel = line.taxes && line.taxes.length > 0
+            ? line.taxes.map((t: any) => `${t.name} ${Number(t.percent || t.rate || 0)}%`).join(', ')
+            : 'IVA 0%';
+
+        return {
+            key: idx,
+            description: line.description,
+            qty: Math.round(qty),
+            subtotal,
+            lineTotal,
+            discountAmount,
+            discountPercentDisplay,
+            taxAmount,
+            taxLabel,
+            hasTax: line.taxes?.length > 0 || taxAmount > 0,
+        };
+    });
+
     return (
         <div className="filter drop-shadow-sm">
             <div
@@ -111,31 +152,31 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
                     <div className="w-full h-full bg-gradient-to-bl from-slate-200 via-slate-100 to-white border-l border-b border-slate-200/80" style={{ clipPath: 'polygon(0 0, 0 100%, 100% 100%)' }} />
                 </div>
 
-                <div className="p-10 space-y-8">
+                <div className="p-5 sm:p-8 md:p-10 space-y-8">
                     {/* Doc Header */}
-                    <div className="flex justify-between items-start mb-10 border-b pb-8 border-slate-100">
+                    <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6 mb-10 border-b pb-8 border-slate-100 text-center md:text-left">
                         {/* Logo */}
-                        <div className="w-1/3 pl-8">
-                            <div className="w-64 h-24 relative flex items-center justify-start">
+                        <div className="w-full md:w-1/3 md:pl-8 flex justify-center md:justify-start">
+                            <div className="w-64 h-24 relative flex items-center justify-center md:justify-start">
                                 <FactucoreLogo
                                     variant="icon"
                                     alt="Logo de empresa"
-                                    className="w-full h-full object-left"
+                                    className="w-full h-full object-contain md:object-left"
                                 />
                             </div>
                         </div>
 
                         {/* Empresa (Centro) */}
-                        <div className="w-1/3 pt-2 flex flex-col justify-center">
+                        <div className="w-full md:w-1/3 md:pt-2 flex flex-col justify-center items-center md:items-stretch">
                             <CompanyHeaderPdfStyle companyProp={company} />
                         </div>
 
                         {/* Factura No & DIAN (Derecha) */}
-                        <div className="w-1/3 text-right flex flex-col items-end pt-2">
+                        <div className="w-full md:w-1/3 flex flex-col items-center md:items-end md:pt-2">
                             <div className="text-slate-500 text-xl font-light text-primary">
                                 No. <span className="font-semibold">{creditNote?.prefix || ''}{creditNote?.number || creditNote?.id}</span>
                             </div>
-                            <div className="mt-2 flex items-center justify-end gap-2 uppercase">
+                            <div className="mt-2 flex items-center justify-center md:justify-end gap-2 uppercase">
                                 <span className="text-xs text-slate-400">Estado DIAN:</span>
                                 <DianStatusBadge status={dianStatus || 'NO APROBADA'} />
                             </div>
@@ -143,34 +184,34 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
                     </div>
 
                     {/* Customer Info */}
-                    <div className="grid grid-cols-2 gap-4 mb-10 text-slate-600">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 text-slate-600">
                         <div className="space-y-2 border-b border-slate-100 pb-2">
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Cliente:</span>
-                                <Link href={`/contacts/${creditNote?.customer?.id || creditNote?.contact_id || ''}`} className="font-medium text-slate-800 cursor-pointer hover:bg-slate-100 px-2 py-1 rounded -ml-2 transition-colors">
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">Cliente:</span>
+                                <Link href={`/contacts/${creditNote?.customer?.id || creditNote?.contact_id || ''}`} className="font-medium text-slate-800 cursor-pointer hover:bg-slate-100 px-2 py-1 rounded sm:-ml-2 -ml-2 transition-colors self-start">
                                     {customerName}
                                 </Link>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Cédula de ciudadanía:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">Cédula de ciudadanía:</span>
                                 <span>{customerDocLabel || '—'}</span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Teléfono:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">Teléfono:</span>
                                 <span>{creditNote?.customer?.phone1 || creditNote?.customer?.phone || '—'}</span>
                             </div>
                         </div>
                         <div className="space-y-2 border-b border-slate-100 pb-2">
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Creación:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">Creación:</span>
                                 <span>{formatDate(creditNote?.issue_date)}</span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Tipo de nota crédito:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">Tipo de nota crédito:</span>
                                 <span>{typeName}</span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-bold text-slate-700 w-48 shrink-0">Factura asociada:</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center">
+                                <span className="font-bold text-slate-700 sm:w-48 shrink-0">Factura asociada:</span>
                                 <span>
                                     {creditNote?.invoice
                                         ? `${creditNote.invoice.prefix || ''}${creditNote.invoice.number} | Monto ${formatCurrency(Number(creditNote.invoice.total || 0), currencyCode)}`
@@ -182,8 +223,51 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
                         </div>
                     </div>
 
-                    {/* Tabla de Productos */}
-                    <div className="overflow-x-auto relative mb-10 border-b border-gray-200">
+                    {/* Items — tarjetas en móvil */}
+                    <div className="mb-10 md:hidden border border-gray-200 rounded-lg divide-y divide-gray-200 overflow-hidden">
+                        {resolvedLines.length === 0 ? (
+                            <div className="h-24 flex items-center justify-center text-center text-slate-400 text-sm">
+                                No hay productos en esta devolución
+                            </div>
+                        ) : (
+                            resolvedLines.map((line) => (
+                                <div key={line.key} className="p-4 bg-white">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-slate-700 text-sm">{line.description}</span>
+                                        <span className="text-sm font-medium text-slate-700 shrink-0">
+                                            {formatCurrency(line.lineTotal, currencyCode)}
+                                        </span>
+                                    </div>
+                                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                        <div>
+                                            <div className="text-slate-400">Subtotal</div>
+                                            <div className="text-slate-700 font-medium">{formatCurrency(line.subtotal, currencyCode)}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-400">Cantidad</div>
+                                            <div className="text-slate-700 font-medium">{line.qty}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-400">Descuento</div>
+                                            <div className="text-slate-700 font-medium">
+                                                {line.discountAmount > 0
+                                                    ? `${line.discountPercentDisplay % 1 !== 0 ? line.discountPercentDisplay.toFixed(2) : line.discountPercentDisplay}%`
+                                                    : '-'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {line.hasTax && (
+                                        <div className="mt-2 text-xs text-slate-500">
+                                            {line.taxLabel} ({formatCurrency(line.taxAmount, currencyCode)})
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Tabla de Productos — sm y superior */}
+                    <div className="overflow-x-auto relative mb-10 border-b border-gray-200 hidden md:block">
                         <Table className="[&_td]:border-b-0">
                             <TableHeader>
                                 <TableRow className="bg-gray-50/50">
@@ -196,62 +280,41 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {lines.map((line: any, idx: number) => {
-                                    const qty = parseFloat(line.quantity) || 1;
-                                    const price = parseFloat(line.price) || 0;
-                                    const subtotal = parseFloat(line.subtotal) || price * qty;
-                                    const lineTotal = parseFloat(line.total_line) || parseFloat(line.total) || subtotal;
-                                    
-                                    // Discount calculation
-                                    const discountAmount = line.discounts?.length
-                                        ? line.discounts.reduce((sum: number, d: any) => sum + Number(d.amount || 0), 0)
-                                        : Number(line.discount_amount || 0);
-                                        
-                                    let discountPercentDisplay = parseFloat(line.discount_percentage) || 0;
-                                    if (line.discounts?.length > 0 && line.discounts[0].percent) {
-                                        discountPercentDisplay = Number(line.discounts[0].percent);
-                                    } else if (!discountPercentDisplay && discountAmount > 0 && subtotal > 0) {
-                                        discountPercentDisplay = (discountAmount / subtotal) * 100;
-                                    }
-
-                                    // Tax calculation
-                                    const taxAmount = line.taxes?.length
-                                        ? line.taxes.reduce((sum: number, t: any) => sum + Number(t.tax_amount || 0), 0)
-                                        : Number(line.tax_amount || 0);
-                                        
-                                    return (
-                                        <TableRow key={idx} className="hover:bg-transparent border-0 border-b-0">
-                                            <TableCell className="text-slate-700 border-l border-gray-200">{line.description}</TableCell>
-                                            <TableCell className="text-slate-600">{formatCurrency(subtotal, currencyCode)}</TableCell>
-                                            <TableCell className="text-slate-600 text-center">
-                                                {discountAmount > 0 ? (
-                                                    <div className="flex items-center justify-center gap-1 whitespace-nowrap">
-                                                        <span>{discountPercentDisplay % 1 !== 0 ? discountPercentDisplay.toFixed(2) : discountPercentDisplay}%</span>
-                                                        <span className="text-slate-500 text-xs">({formatCurrency(discountAmount, currencyCode)})</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-slate-600 text-center">
-                                                {line.taxes?.length > 0 || taxAmount > 0 ? (
-                                                    <div className="flex items-center justify-center gap-1 whitespace-nowrap">
-                                                        {line.taxes && line.taxes.length > 0 ? line.taxes.map((t: any, i: number) => (
-                                                            <span key={i}>{t.name} {Number(t.percent || t.rate || 0)}%</span>
-                                                        )) : <span>IVA 0%</span>}
-                                                        <span className="text-slate-500 text-xs">({formatCurrency(taxAmount, currencyCode)})</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-slate-600 text-center">{Math.round(qty)}</TableCell>
-                                            <TableCell className="text-slate-700 font-medium text-right border-r border-gray-200">
-                                                {formatCurrency(lineTotal, currencyCode)}
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
+                                {resolvedLines.map((line) => (
+                                    <TableRow key={line.key} className="hover:bg-transparent border-0 border-b-0">
+                                        <TableCell className="text-slate-700 border-l border-gray-200">{line.description}</TableCell>
+                                        <TableCell className="text-slate-600">{formatCurrency(line.subtotal, currencyCode)}</TableCell>
+                                        <TableCell className="text-slate-600 text-center">
+                                            {line.discountAmount > 0 ? (
+                                                <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                                    <span>{line.discountPercentDisplay % 1 !== 0 ? line.discountPercentDisplay.toFixed(2) : line.discountPercentDisplay}%</span>
+                                                    <span className="text-slate-500 text-xs">({formatCurrency(line.discountAmount, currencyCode)})</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-slate-600 text-center">
+                                            {line.hasTax ? (
+                                                <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                                    <span>{line.taxLabel}</span>
+                                                    <span className="text-slate-500 text-xs">({formatCurrency(line.taxAmount, currencyCode)})</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-slate-600 text-center">{line.qty}</TableCell>
+                                        <TableCell className="text-slate-700 font-medium text-right border-r border-gray-200">
+                                            {formatCurrency(line.lineTotal, currencyCode)}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {resolvedLines.length === 0 && (
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableCell colSpan={6} className="h-24 text-center text-slate-400 border-l border-r border-gray-200">No hay productos en esta devolución</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </div>
@@ -369,7 +432,7 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
                             const horFac = creditNote?.invoice?.issue_time || '';
 
                             return (
-                                <div className="flex items-start gap-4 flex-1">
+                                <div className="flex flex-wrap items-start gap-4 flex-1">
                                     {qrData && (
                                         <div className="p-1 bg-white border border-slate-200 rounded-lg shrink-0 flex items-center justify-center">
                                             <QRCode
@@ -420,8 +483,8 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
                     </div>
 
                     {/* Firmas */}
-                    <div className="flex justify-between mt-16 text-sm text-slate-600 gap-12">
-                        <div className="w-1/2 flex flex-col justify-end">
+                    <div className="flex flex-col items-center md:items-start md:flex-row justify-between mt-16 text-sm text-slate-600 gap-12">
+                        <div className="w-full md:w-1/2 flex flex-col items-center md:items-start justify-end">
                             <div className="w-64">
                                 <div className="mb-2">
                                     <span
@@ -443,7 +506,7 @@ export function ReturnDetailDocument({ creditNote, company, dianStatus }: Return
 
                     {/* Extras */}
                     <div className="mt-10 pt-6 border-t border-slate-100">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                             <div className="flex justify-between py-2 border-b border-slate-100">
                                 <span className="text-slate-500">Lista de precios</span>
                                 <span className="text-slate-700 font-medium">General</span>

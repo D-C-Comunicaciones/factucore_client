@@ -864,12 +864,12 @@ export function NewReturnForm() {
                 {/* Form fields */}
                 <div className="p-6">
                     {/* Header company info */}
-                    <div className="flex justify-between items-end mb-8">
-                        <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-8">
+                        <div className="flex items-center gap-3 flex-wrap">
                             <h2 className="text-lg font-bold text-slate-800">{companyName}</h2>
                             <span className="text-xs font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded">{companyNit}</span>
                         </div>
-                        <div className="text-right flex flex-col items-end">
+                        <div className="text-left sm:text-right flex flex-col items-start sm:items-end">
                             <div className="flex items-center gap-2">
                                 <div className="text-lg font-bold text-slate-800 tracking-tight">No. {currentPrefix}{nextNumber}</div>
                                 <button
@@ -1328,8 +1328,8 @@ export function NewReturnForm() {
 
                     {/* Resumen & Totales */}
                     {selectedInvoices.some(i => i.invoiceId) && addedLines.length > 0 && (
-                        <div className="flex justify-between items-start pt-6 border-t border-slate-100">
-                            <div className="w-1/2 space-y-6">
+                        <div className="flex flex-col lg:flex-row justify-between items-start gap-6 pt-6 border-t border-slate-100">
+                            <div className="w-full lg:w-1/2 space-y-6">
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-slate-700">Razón / Motivo <span className="text-primary">*</span></label>
                                     <textarea
@@ -1350,7 +1350,7 @@ export function NewReturnForm() {
                                 </div>
                             </div>
 
-                            <div className="w-[350px] space-y-4">
+                            <div className="w-full lg:w-[350px] space-y-4">
                                 {(globalDiscounts.length > 0 || globalSurcharges.length > 0) && (
                                     <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
                                         <h3 className="text-sm font-bold text-slate-800 mb-4 pb-3 border-b border-slate-200/60 uppercase tracking-wide">
@@ -1526,7 +1526,7 @@ export function NewReturnForm() {
             </div>
 
             <div className="sticky bottom-0 z-30 pt-6">
-            <div className="bg-white border border-border rounded-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)] p-6 flex justify-end gap-3">
+            <div className="bg-white border border-border rounded-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)] p-4 sm:p-6 flex flex-wrap justify-end gap-3">
                 <button
                     type="button"
                     className="cursor-pointer px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
@@ -1599,7 +1599,7 @@ export function NewReturnForm() {
                     </DialogHeader>
 
                     <div className="p-6">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-slate-700">
                                     Numeración <span className="text-primary">*</span>
