@@ -4,13 +4,12 @@ import * as React from "react";
 import { Table as TanTable, ColumnDef, flexRender } from "@tanstack/react-table";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Payment } from "@/types/payments";
-import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FileText } from "lucide-react";
 import {
   SelectAllCheckbox,
   SelectRowCheckbox,
 } from "@/components/ui/selection-checkbox";
+import { PaymentMobileCard } from "@/components/payments/table/PaymentMobileCard";
 
 interface PaymentTableBodyProps {
   table: TanTable<Payment>;
@@ -22,6 +21,9 @@ interface PaymentTableBodyProps {
   someSelected?: boolean;
   onToggleSelectAll?: (value: boolean) => void;
   searchTerm?: string;
+  onView?: (id: number) => void;
+  onEdit?: (id: number) => void;
+  onDelete?: (id: number) => void;
 }
 
 export function PaymentTableBody({
@@ -34,9 +36,13 @@ export function PaymentTableBody({
   someSelected = false,
   onToggleSelectAll = () => {},
   searchTerm = "",
+  onView = () => {},
+  onEdit = () => {},
+  onDelete = () => {},
 }: PaymentTableBodyProps) {
   const router = useRouter();
-  const hasSearchOrFilters = Boolean(searchTerm.trim()) || table.getState().columnFilters.length > 0;
+  const rows = table.getRowModel().rows;
+  const hasRows = rows.length > 0;
 
   const handleRowClick = (event: React.MouseEvent, row: any) => {
     const target = event.target as HTMLElement;
@@ -47,8 +53,43 @@ export function PaymentTableBody({
     router.push(`/payments/${row.original.id}`);
   };
 
+  const stateContent = loading ? null : (
+    <div className="flex flex-col items-center justify-center h-full py-8">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mb-4 text-slate-400">
+        <rect x="14" y="8" width="20" height="32" rx="4" stroke="currentColor" strokeWidth="2.5" />
+        <path d="M19 16h5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M19 22h10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M19 28h7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      </svg>
+
+      <div className="text-xl font-medium text-[#003B73]">Sin resultados</div>
+      <div className="text-[15px] text-slate-500 mt-1">
+        La búsqueda no arrojó pagos
+      </div>
+    </div>
+  );
+
   return (
-    <div className="relative overflow-x-auto">
+    <div className="relative">
+      {/* Tarjetas — pantallas angostas (below sm) */}
+      <div className="sm:hidden">
+        {hasRows
+          ? rows.map((row) => (
+              <PaymentMobileCard
+                key={`${row.id}-${row.index}`}
+                payment={row.original}
+                selected={Boolean(rowSelection[row.id])}
+                onToggleSelection={() => onToggleSelection(row.id)}
+                onView={onView}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))
+          : <div className="h-64">{stateContent}</div>}
+      </div>
+
+      {/* Tabla — sm y superior */}
+      <div className="hidden sm:block overflow-x-auto">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
@@ -85,8 +126,8 @@ export function PaymentTableBody({
         </TableHeader>
 
         <TableBody>
-          {table.getRowModel().rows.length ? (
-            table.getRowModel().rows.map((row) => {
+          {hasRows ? (
+            rows.map((row) => {
               const isSelected = Boolean(rowSelection[row.id]);
 
               return (
@@ -137,32 +178,13 @@ export function PaymentTableBody({
                 colSpan={columns.length}
                 className="h-64 bg-white text-center align-middle"
               >
-                {loading ? null : (
-                  <div className="flex flex-col items-center justify-center h-full py-8">
-                    <svg
-                      width="48"
-                      height="48"
-                      viewBox="0 0 48 48"
-                      fill="none"
-                      className="mb-4 text-slate-400"
-                    >
-                      <rect x="14" y="8" width="20" height="32" rx="4" stroke="currentColor" strokeWidth="2.5" />
-                      <path d="M19 16h5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M19 22h10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                      <path d="M19 28h7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                    </svg>
-
-                    <div className="text-xl font-medium text-[#003B73]">Sin resultados</div>
-                    <div className="text-[15px] text-slate-500 mt-1">
-                      La búsqueda no arrojó pagos
-                    </div>
-                  </div>
-                )}
+                {stateContent}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+      </div>
 
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/55">

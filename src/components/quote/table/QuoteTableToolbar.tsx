@@ -24,7 +24,7 @@ export function QuoteTableToolbar({
   setPerPage,
 }: QuoteTableToolbarProps) {
   return (
-    <div className="h-12 px-4 border-b border-gray-200 flex items-center justify-between gap-3">
+    <div className="min-h-12 px-4 py-2 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
       <div className="flex w-full md:w-auto items-center gap-2">
         <div className="relative w-full md:w-65">
           <DebouncedInput

@@ -105,14 +105,14 @@ export function Header({
         </button>
 
         {/* Search */}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 min-w-0 max-w-[120px] sm:max-w-[220px] md:max-w-md">
           <Search className="w-3 h-3 md:w-4 md:h-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Buscar (Cmd/Ctrl + K)"
             onClick={() => setSearchOpen(true)}
             readOnly
-            className="w-full pl-7 md:pl-8 pr-3 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+            className="w-full pl-7 md:pl-8 pr-2 md:pr-3 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
           />
         </div>
 
@@ -242,13 +242,13 @@ export function Header({
         </div>
 
         {/* USER MENU */}
-        <div className="relative hidden md:block ml-1">
+        <div className="relative ml-1">
           <button
             onClick={() => {
               setActivePopover(null);
               onToggleUserMenu();
             }}
-            className="w-8 h-8 bg-[#EBF0FF] border-2 border-[#A5C0FE] rounded-full flex items-center justify-center text-[#1E3A8A] text-[14px] font-bold transition-all hover:bg-[#D5DFFE]"
+            className="w-7 h-7 md:w-8 md:h-8 bg-[#EBF0FF] border-2 border-[#A5C0FE] rounded-full flex items-center justify-center text-[#1E3A8A] text-[13px] md:text-[14px] font-bold transition-all hover:bg-[#D5DFFE] shrink-0"
           >
             {initial}
           </button>

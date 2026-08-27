@@ -171,7 +171,7 @@ export function isRemissionInvoiced(status: any): boolean {
 /* -----------------------------------------------------------------------
    Celda de acciones (descarga PDF)
    ----------------------------------------------------------------------- */
-function ActionsCell({ remission }: { remission: RemissionSummary }) {
+export function ActionsCell({ remission }: { remission: RemissionSummary }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);

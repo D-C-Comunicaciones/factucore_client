@@ -168,39 +168,49 @@ export function ContactTable({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="relative">
-        <ContactTableToolbar
-          table={table}
-          search={search}
-          setSearch={setSearch ?? (() => {})}
-          onAddFilter={handleAddFilter}
-        />
+      <div className="relative h-12">
+        <div
+          className={`absolute inset-0 transition-opacity duration-300 ${
+            selectedCount > 0 ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
+        >
+          <ContactTableToolbar
+            table={table}
+            search={search}
+            setSearch={setSearch ?? (() => {})}
+            onAddFilter={handleAddFilter}
+          />
+        </div>
 
-      <div
-        className={`transition-all duration-500 ease-in-out overflow-hidden ${
-          selectedCount > 0
-            ? "max-h-32 opacity-100 translate-y-0 mb-4"
-            : "max-h-0 opacity-0 -translate-y-4 mb-0 pointer-events-none"
-        }`}
-      >
-        <div className="flex items-center justify-between px-4 py-2.5 bg-teal-500 rounded-lg relative z-10">
+        <div
+          className={`absolute inset-0 flex items-center justify-between px-4 bg-primary rounded-t-lg transition-opacity duration-300 ${
+            selectedCount > 0 ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
           <span className="text-sm font-medium text-white">
             {selectedCount} fila{selectedCount > 1 ? 's' : ''} seleccionad{selectedCount > 1 ? 'as' : 'a'}s
           </span>
           <TooltipProvider>
             <div className="flex items-center gap-1">
-              <button
-                className="flex items-center gap-1 px-3 py-1.5 text-sm text-white hover:bg-white/20 rounded transition cursor-pointer"
-                onClick={() => setBulkEditOpen(true)}
-              >
-                <Pencil className="w-4 h-4" />
-                Editar
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-white hover:bg-white/20 rounded transition cursor-pointer"
+                    onClick={() => setBulkEditOpen(true)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Editar
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Editar filas seleccionadas
+                </TooltipContent>
+              </Tooltip>
 
               {selectionIncludesFinalConsumer ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span>
+                    <span className="cursor-not-allowed">
                       <button
                         className="flex items-center gap-1 px-3 py-1.5 text-sm text-white/50 rounded cursor-not-allowed"
                         disabled
@@ -236,7 +246,6 @@ export function ContactTable({
             </div>
           </TooltipProvider>
         </div>
-      </div>
       </div>
 
       <DeleteConfirmDialog
@@ -277,6 +286,8 @@ export function ContactTable({
         activeTab={activeTab}
         searchTerm={search}
         onAddContact={onAddContact}
+        onDelete={onDelete}
+        onToggleActive={onToggleActive}
       />
 
       <ContactTablePagination

@@ -114,7 +114,7 @@ export function DianStatusBadge({ status }: { status: any }) {
 /* -----------------------------------------------------------------------
    Badge de estado interno
    ----------------------------------------------------------------------- */
-function StatusBadge({ status }: { status: any }) {
+export function StatusBadge({ status }: { status: any }) {
   const estadoStr = typeof status === "string" ? status : (status?.name || "");
   const estado = estadoStr.toLowerCase();
 
@@ -163,7 +163,7 @@ function StatusBadge({ status }: { status: any }) {
 /* -----------------------------------------------------------------------
    Celda de acciones (descarga PDF)
    ----------------------------------------------------------------------- */
-function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
+export function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
   const router = useRouter();
   const [showAnularDialog, setShowAnularDialog] = React.useState(false);
   const [isAnulando, setIsAnulando] = React.useState(false);

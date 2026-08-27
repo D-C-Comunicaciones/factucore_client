@@ -127,12 +127,12 @@ export function PaymentTable({
           : "max-h-0 opacity-0 -translate-y-4 mb-0 pointer-events-none"
           }`}
       >
-        <div className="bg-primary rounded-t-xl px-4 py-4 flex items-center justify-between text-white shadow-sm -mb-[1px] relative z-10">
+        <div className="bg-primary rounded-t-xl px-4 py-4 flex flex-wrap items-center justify-between gap-3 text-white shadow-sm -mb-[1px] relative z-10">
           <div className="flex items-center gap-3 font-semibold text-[15px]">
             {selectedCount} Pagos seleccionados
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <button
               className="flex items-center gap-2 text-[14px] font-medium hover:text-white/80 transition-colors"
               onClick={() => {
@@ -186,6 +186,9 @@ export function PaymentTable({
           someSelected={someSelected}
           onToggleSelectAll={toggleSelectAll}
           searchTerm={search}
+          onView={onView}
+          onEdit={onEdit}
+          onDelete={onDelete}
         />
 
         <PaymentTablePagination

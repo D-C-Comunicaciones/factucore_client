@@ -145,7 +145,7 @@ export function NewInvoiceOptions({
 
     return (
         <div className="bg-white rounded-lg border border-border p-4 md:p-6">
-            <div className="flex flex-nowrap items-end gap-3 w-full overflow-x-auto pb-1">
+            <div className="flex flex-wrap md:flex-nowrap items-end gap-3 w-full md:overflow-x-auto pb-1">
 
                 {/* TIPO DOCUMENTO */}
                 <div className="flex-1 min-w-[170px] max-w-[230px]">

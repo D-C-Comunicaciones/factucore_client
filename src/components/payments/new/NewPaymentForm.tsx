@@ -110,8 +110,8 @@ export function NewPaymentForm({ formState, setFormState, formErrors }: NewPayme
     <div className="bg-white rounded-lg border border-border overflow-hidden">
       {/* Top Header Card Info */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
+          <div className="flex items-center gap-3 flex-wrap">
             <h2 className="text-xl font-bold text-[#0f3660]">
               {companyName}
             </h2>
@@ -124,8 +124,8 @@ export function NewPaymentForm({ formState, setFormState, formErrors }: NewPayme
               </>
             )}
           </div>
-          <div className="text-right">
-            <div className="flex items-center justify-end gap-2">
+          <div className="text-left sm:text-right">
+            <div className="flex items-center sm:justify-end gap-2">
               <div className="text-xl font-bold text-foreground">
                 {isLoadingResolutions ? (
                   <Skeleton className="h-7 w-32" />
@@ -143,7 +143,7 @@ export function NewPaymentForm({ formState, setFormState, formErrors }: NewPayme
                 <RefreshCw className={cn("w-4 h-4", isLoadingResolutions && "animate-spin")} />
               </button>
             </div>
-            <div className="flex items-center justify-end mt-1">
+            <div className="flex items-center sm:justify-end mt-1">
               <div
                 className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer hover:text-black transition-colors"
                 onClick={() => setIsNumberingModalOpen(true)}

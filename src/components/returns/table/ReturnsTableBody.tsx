@@ -148,6 +148,90 @@ function ReturnRow({
 }
 
 /* -----------------------------------------------------------------------
+   Tarjeta móvil
+   ----------------------------------------------------------------------- */
+function ReturnMobileCard({
+  item,
+  isSelected,
+  onToggleSelection,
+}: {
+  item: any;
+  isSelected: boolean;
+  onToggleSelection: (id: string) => void;
+}) {
+  const router = useRouter();
+  const customerName =
+    item.customer_name ||
+    item.customer?.registration_name ||
+    item.customer?.name ||
+    "—";
+
+  const currencyCode = item.type_currency_id === 35 || !item.type_currency_id ? "COP" : "USD";
+  const navigateToDetail = () => router.push(`/returns/${item.id}`);
+  const formattedDate = item.issue_date && item.issue_date.includes("-")
+    ? item.issue_date.split("T")[0].split(" ")[0].split("-").reverse().join("/")
+    : (item.issue_date || "—");
+
+  return (
+    <div
+      className={`flex items-start gap-3 border-b border-gray-200 p-4 ${isSelected ? "bg-primary/5" : "bg-white"}`}
+      onClick={navigateToDetail}
+    >
+      <div className="pt-0.5" onClick={(e) => e.stopPropagation()} data-no-row-select="true">
+        <SelectRowCheckbox checked={isSelected} onToggle={() => onToggleSelection(String(item.id))} />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-sm font-semibold text-slate-800">
+            {item.prefix || ""}{item.number}
+          </span>
+          <div onClick={(e) => e.stopPropagation()} className="-mr-2 -mt-1 shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-gray-100 transition-colors"
+                  type="button"
+                >
+                  <MoreVertical className="w-4 h-4 text-gray-500" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={navigateToDetail}>
+                  Ver detalle
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        <div className="mt-0.5 truncate text-xs text-gray-600">{customerName}</div>
+        <div className="text-xs text-gray-400">{formattedDate}</div>
+
+        <div className="mt-3 flex items-end justify-between gap-3">
+          <div>
+            <div className="text-[11px] text-gray-400">Total</div>
+            <div className="text-sm font-medium text-gray-900">
+              {formatCurrency(Number(item.total || 0), currencyCode)}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-[11px] text-gray-400">Por aplicar</div>
+            <div className="text-xs text-gray-600">
+              {formatCurrency(Number(item.balance ?? item.total ?? 0), currencyCode)}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <DianStatusBadge statusId={item.dian_status_id} statusName={item.dian_status_name} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------------
    Componente principal
    ----------------------------------------------------------------------- */
 interface ReturnsTableBodyProps {
@@ -170,9 +254,45 @@ export function ReturnsTableBody({
   onToggleSelectAll = () => {},
 }: ReturnsTableBodyProps) {
   const router = useRouter();
+  const hasRows = items.length > 0;
+
+  const emptyState = (
+    <div className="flex h-full flex-col items-center justify-center py-8">
+      <FileText className="w-10 h-10 text-slate-400 mb-4" strokeWidth={1.5} />
+      <div className="text-center text-xl font-medium text-[#003B73]">
+        ¡Aún no tienes devoluciones!
+      </div>
+      <div className="mt-2 mb-6 text-center text-sm text-gray-500 max-w-md px-4">
+        Crea una devolución para empezar a registrar tus devoluciones en ventas.
+      </div>
+      <button
+        type="button"
+        className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
+        onClick={() => router.push("/returns/new")}
+      >
+        Crear primera devolución
+      </button>
+    </div>
+  );
 
   return (
-    <div className="relative overflow-x-auto">
+    <div className="relative">
+      {/* Tarjetas — pantallas angostas (below sm) */}
+      <div className="sm:hidden">
+        {hasRows
+          ? items.map((item) => (
+              <ReturnMobileCard
+                key={item.id}
+                item={item}
+                isSelected={Boolean(selection[String(item.id)])}
+                onToggleSelection={onToggleSelection}
+              />
+            ))
+          : !loading && <div className="h-64">{emptyState}</div>}
+      </div>
+
+      {/* Tabla — sm y superior */}
+      <div className="hidden sm:block overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-50/50">
@@ -222,27 +342,13 @@ export function ReturnsTableBody({
           ) : (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={8} className="h-64 bg-white text-center align-middle">
-                <div className="flex h-full flex-col items-center justify-center py-8">
-                  <FileText className="w-10 h-10 text-slate-400 mb-4" strokeWidth={1.5} />
-                  <div className="text-center text-xl font-medium text-[#003B73]">
-                    ¡Aún no tienes devoluciones!
-                  </div>
-                  <div className="mt-2 mb-6 text-center text-sm text-gray-500 max-w-md">
-                    Crea una devolución para empezar a registrar tus devoluciones en ventas.
-                  </div>
-                  <button
-                    type="button"
-                    className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
-                    onClick={() => router.push("/returns/new")}
-                  >
-                    Crear primera devolución
-                  </button>
-                </div>
+                {emptyState}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+      </div>
 
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/55">
