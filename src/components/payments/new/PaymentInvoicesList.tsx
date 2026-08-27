@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Info, PenLine, ChevronLeft, ChevronRight, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
 import { InvoicesService } from "@/lib/invoices";
@@ -35,9 +35,10 @@ interface PaymentInvoicesListProps {
   formState: any;
   setFormState: React.Dispatch<React.SetStateAction<any>>;
   formErrors?: Record<string, boolean>;
+  initialInvoiceId?: string | null;
 }
 
-export function PaymentInvoicesList({ contactId, formState, setFormState, formErrors }: PaymentInvoicesListProps) {
+export function PaymentInvoicesList({ contactId, formState, setFormState, formErrors, initialInvoiceId }: PaymentInvoicesListProps) {
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(false);
   
@@ -70,6 +71,7 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
     }
   };
 
+  const appliedInitialInvoiceRef = useRef(false);
   const [focusedInvoice, setFocusedInvoice] = useState<number | null>(null);
   const [editingWithholdingsFor, setEditingWithholdingsFor] = useState<number | null>(null);
 
@@ -145,6 +147,21 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
         });
         
         setInvoices(invoicesWithPendingAmount);
+
+        // Preselecciona (una sola vez) la factura con la que se llegó desde
+        // el listado o el detalle de factura, rellenando el monto recibido
+        // igual que al hacer foco manualmente en su input.
+        if (initialInvoiceId && !appliedInitialInvoiceRef.current) {
+          const preselected = invoicesWithPendingAmount.find((inv) => String(inv.id) === String(initialInvoiceId));
+          if (preselected) {
+            appliedInitialInvoiceRef.current = true;
+            const pending = Number(preselected.pending_amount || 0);
+            updateReceivedAmounts((prev: any) => ({
+              ...prev,
+              [preselected.id]: pending.toLocaleString('es-CO')
+            }));
+          }
+        }
       } catch (err) {
         console.error("Error fetching invoices for contact", err);
       } finally {

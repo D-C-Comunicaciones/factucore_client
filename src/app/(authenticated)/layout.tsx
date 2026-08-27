@@ -122,7 +122,7 @@ export default function AuthenticatedLayout({
                 { icon: FileText, label: 'Factura de venta', path: '/invoices' },
                 { icon: FileText, label: 'Pagos recibidos', path: '/payments' },
                 { icon: FileText, label: 'Devoluciones en venta', path: '/returns' },
-                { icon: FileText, label: 'Notas débito', path: '/debit-notes', moduleCode: 'credit_notes' },
+                { icon: FileText, label: 'Notas débito', path: '/debit-notes', moduleCode: 'debit_notes' },
                 { icon: FileText, label: 'Cotizaciones', path: '/quotes' },
                 { icon: FileText, label: 'Remisiones', path: '/remissions' },
                 { icon: FileText, label: 'Órd. de compra recibidas', path: '/purchase-orders' },

@@ -129,7 +129,7 @@ export function InvoiceDetailHeader({
                     variant="outline" 
                     size="sm" 
                     className={defaultBtnClass}
-                    onClick={() => router.push(`/payments/new?customer_id=${bill?.customer_id || bill?.contact_id || ''}`)}
+                    onClick={() => router.push(`/payments/new?customer_id=${bill?.customer_id || bill?.contact_id || ''}&invoice_id=${bill?.id || ''}`)}
                 >
                     <Plus className="w-4 h-4 mr-2" /> Agregar pago
                 </Button>
@@ -151,7 +151,12 @@ export function InvoiceDetailHeader({
                         >
                             Aplicar nota de crédito
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Aplicar nota de débito</DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="cursor-pointer hover:bg-slate-50"
+                            onClick={() => router.push(`/debit-notes/new?clientId=${bill?.customer_id || bill?.contact_id || ''}&invoiceId=${bill?.id || ''}`)}
+                        >
+                            Aplicar nota de débito
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Adjuntar archivos</DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Convertir a borrador</DropdownMenuItem>
                     </DropdownMenuContent>

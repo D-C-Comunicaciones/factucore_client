@@ -24,6 +24,7 @@ function NewPaymentPageContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const customerId = searchParams.get('customer_id');
+  const invoiceId = searchParams.get('invoice_id');
 
   const [loadingGuardar, setLoadingGuardar] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -214,6 +215,7 @@ function NewPaymentPageContent() {
           formState={formState}
           setFormState={setFormState}
           formErrors={formErrors}
+          initialInvoiceId={invoiceId}
         />
 
         {/* COMMENTS SECTION */}
