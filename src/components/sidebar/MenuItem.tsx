@@ -90,6 +90,7 @@ export function MenuItem({
               cursor-pointer
             "
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               onNavigate('/contacts/new');
             }}

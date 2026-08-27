@@ -1525,7 +1525,8 @@ export function NewReturnForm() {
                 </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="sticky bottom-0 z-30 pt-6">
+            <div className="bg-white border border-border rounded-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)] p-6 flex justify-end gap-3">
                 <button
                     type="button"
                     className="cursor-pointer px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
@@ -1552,6 +1553,7 @@ export function NewReturnForm() {
                 >
                     {isSubmitting ? "Guardando..." : "Guardar"}
                 </button>
+            </div>
             </div>
 
             <Dialog open={!!pendingDocType} onOpenChange={(open) => !open && setPendingDocType(null)}>

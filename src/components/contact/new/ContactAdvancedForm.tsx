@@ -18,9 +18,10 @@ import { validateVerificationDigit } from "@/utils/validate-verification-digit";
 interface ContactAdvancedFormProps {
   catalogData: any;
   onAutocomplete: () => void;
+  contactId?: number | string;
 }
 
-export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdvancedFormProps) {
+export function ContactAdvancedForm({ catalogData, onAutocomplete, contactId }: ContactAdvancedFormProps) {
   const [expandedGen, setExpandedGen] = useState(true);
   const [expandedContact, setExpandedContact] = useState(true);
 
@@ -489,7 +490,7 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
               <div className="p-5 border-t border-gray-100 space-y-4 bg-white">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-                    Correo electrónico
+                    Correo electrónico *
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help" />
@@ -499,13 +500,21 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
                       </TooltipContent>
                     </Tooltip>
                   </label>
-                  <Input
-                    type="email"
-                    placeholder="Ej: correo@empresa.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-white border-gray-300"
-                  />
+                  <div className="relative">
+                    <Input
+                      type="email"
+                      placeholder="Ej: correo@empresa.com"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: false })); }}
+                      className={errors.email ? "border-red-500 pr-8 bg-white" : "border-gray-300 bg-white"}
+                    />
+                    {errors.email && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+                  </div>
+                  {errors.email && (
+                    <span className="text-red-500 text-[10px] mt-1 block">
+                      {errors.email === "invalid" ? "El correo electrónico no tiene un formato válido" : "El correo electrónico es obligatorio"}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -617,7 +626,11 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete }: ContactAdva
         {/* Otras secciones */}
         <ContactCommercialInfo catalogData={catalogData} />
         <ContactAccountingInfo catalogData={catalogData} />
-        <CommentsAndReminders comments={comments} setComments={setComments} />
+        {contactId ? (
+          <CommentsAndReminders type="contact" commentableId={contactId} />
+        ) : (
+          <CommentsAndReminders comments={comments} setComments={setComments} requiresSaveFirst />
+        )}
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

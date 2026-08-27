@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Trash2, FileEdit, Eye, UserX } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { MoreHorizontal, Trash2, FileEdit, Eye, UserX, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,6 +12,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { isConsumerFinal } from "@/utils/is-consumer-final";
+
+const CONSUMER_FINAL_EDIT_TOOLTIP = "Este contacto es predeterminado para facturación a consumidor final y no puede ser editado.";
+const CONSUMER_FINAL_DELETE_TOOLTIP = "Este contacto es predeterminado para facturación a consumidor final y no puede ser eliminado.";
 
 export interface Contact {
   id: number;
@@ -19,6 +24,7 @@ export interface Contact {
   identification: string;
   phone: string;
   type: "customer" | "provider" | "both";
+  is_active?: boolean;
 }
 
 /* -------------------- helpers -------------------- */
@@ -49,7 +55,7 @@ function getColorFromName(name: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function AvatarInitials({ name }: { name: string }) {
+export function AvatarInitials({ name }: { name: string }) {
   return (
     <div
       className={`w-7 h-7 rounded-full ${getColorFromName(
@@ -68,49 +74,109 @@ function AvatarInitials({ name }: { name: string }) {
 function ContactActionsCell({
   contact,
   onDelete,
+  onToggleActive,
 }: {
   contact: Contact;
   onDelete: (id: number) => void;
+  onToggleActive: (id: number, currentlyActive: boolean) => void;
 }) {
+  const router = useRouter();
+  const isActive = contact.is_active !== false;
+  const isFinalConsumer = isConsumerFinal(contact.identification);
+
   return (
-    <div className="flex items-center gap-1" data-no-row-select="true">
-      <Button variant="ghost" size="icon" className="h-7 w-7">
-        <FileEdit className="w-4 h-4" />
-      </Button>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent
-          align="end"
-          className="w-40 bg-popover border border-border"
-        >
-          <DropdownMenuItem className="hover:bg-primary/10 hover:text-primary transition-colors">
-            <Eye className="w-4 h-4 mr-2" />
-            Ver detalle
-          </DropdownMenuItem>
-
-          <DropdownMenuItem className="hover:bg-primary/10 hover:text-primary transition-colors">
-            <UserX className="w-4 h-4 mr-2" />
-            Desactivar
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem
-            onClick={() => onDelete(contact.id)}
-            className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+    <TooltipProvider>
+      <div className="flex items-center gap-1" data-no-row-select="true">
+        {isFinalConsumer ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-40 cursor-not-allowed" disabled>
+                  <FileEdit className="w-4 h-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-64 text-center">{CONSUMER_FINAL_EDIT_TOOLTIP}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 hover:bg-gray-100"
+            onClick={() => router.push(`/contacts/${contact.id}/edit`)}
           >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Eliminar
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+            <FileEdit className="w-4 h-4" />
+          </Button>
+        )}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-gray-100">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            align="end"
+            className="w-40 bg-popover border border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenuItem
+              onClick={() => router.push(`/contacts/${contact.id}`)}
+              className="hover:bg-primary/10 hover:text-primary transition-colors"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Ver detalle
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => onToggleActive(contact.id, isActive)}
+              className="hover:bg-primary/10 hover:text-primary transition-colors"
+            >
+              {isActive ? (
+                <>
+                  <UserX className="w-4 h-4 mr-2" />
+                  Desactivar
+                </>
+              ) : (
+                <>
+                  <UserCheck className="w-4 h-4 mr-2" />
+                  Activar
+                </>
+              )}
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {isFinalConsumer ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <DropdownMenuItem
+                      disabled
+                      className="opacity-40 cursor-not-allowed"
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-64 text-center">{CONSUMER_FINAL_DELETE_TOOLTIP}</TooltipContent>
+              </Tooltip>
+            ) : (
+              <DropdownMenuItem
+                onClick={() => onDelete(contact.id)}
+                className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Eliminar
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </TooltipProvider>
   );
 }
 
@@ -119,44 +185,15 @@ function ContactActionsCell({
 export function getContactColumns(
   onDelete: (id: number) => void,
   activeTab: string = "all",
-  onToggle?: (id: number) => void,
-  onToggleAll?: () => void,
-  allSelected?: boolean,
-  someSelected?: boolean,
-  selection?: Record<string, boolean>
+  onToggleActive: (id: number, currentlyActive: boolean) => void = () => {}
 ): ColumnDef<Contact>[] {
   return [
-    /* CHECKBOX */
+    /* CHECKBOX — renderizado directamente en ContactTableBody (no via flexRender) */
     {
       id: "select",
       size: 48,
-      header: ({ table }) => {
-        const showIndeterminate = someSelected && !allSelected;
-        return (
-          <Checkbox
-            checked={allSelected ? true : showIndeterminate ? "indeterminate" : false}
-            onClick={(e) => e.stopPropagation()}
-            onCheckedChange={() =>
-              onToggleAll ? onToggleAll() : table.toggleAllPageRowsSelected()
-            }
-          />
-        );
-      },
-      cell: ({ row }) => {
-        const isSelected = selection
-          ? !!selection[String(row.original.id)]
-          : row.getIsSelected();
-
-        return (
-          <Checkbox
-            checked={isSelected}
-            onClick={(e) => e.stopPropagation()}
-            onCheckedChange={() =>
-              onToggle ? onToggle(row.original.id) : row.toggleSelected()
-            }
-          />
-        );
-      },
+      header: () => null,
+      cell: () => null,
       enableSorting: false,
     },
 
@@ -236,6 +273,7 @@ export function getContactColumns(
         <ContactActionsCell
           contact={row.original}
           onDelete={onDelete}
+          onToggleActive={onToggleActive}
         />
       ),
     },

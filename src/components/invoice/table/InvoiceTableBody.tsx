@@ -13,6 +13,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { InvoiceSummary } from "@/types/invoice";
+import {
+  SelectAllCheckbox,
+  SelectRowCheckbox,
+} from "@/components/ui/selection-checkbox";
 
 interface InvoiceTableBodyProps {
   table: TanTable<InvoiceSummary>;
@@ -20,9 +24,25 @@ interface InvoiceTableBodyProps {
   loading?: boolean;
   showNoDataMessage?: boolean;
   isError?: boolean;
+  rowSelection?: Record<string, boolean>;
+  onToggleSelection?: (id: string) => void;
+  allSelected?: boolean;
+  someSelected?: boolean;
+  onToggleSelectAll?: (value: boolean) => void;
 }
 
-export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = false, isError = false }: InvoiceTableBodyProps) {
+export function InvoiceTableBody({
+  table,
+  columns,
+  loading,
+  showNoDataMessage = false,
+  isError = false,
+  rowSelection = {},
+  onToggleSelection = () => {},
+  allSelected = false,
+  someSelected = false,
+  onToggleSelectAll = () => {},
+}: InvoiceTableBodyProps) {
   const router = useRouter();
   const sortableIds = ["number", "created_at", "payment_due_date"];
 
@@ -33,6 +53,7 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id} className="bg-gray-50/50">
               {hg.headers.map((header, idx) => {
+                const isSelect = header.column.id === "select";
                 const isActions = header.column.id === "actions";
                 const isSortable = sortableIds.includes(header.column.id);
 
@@ -50,9 +71,15 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
 
                 return (
                   <TableHead key={header.id} className={thClass}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                    {isSelect ? (
+                      <SelectAllCheckbox
+                        allSelected={allSelected}
+                        someSelected={someSelected}
+                        onToggle={onToggleSelectAll}
+                      />
+                    ) : header.isPlaceholder ? null : (
+                      flexRender(header.column.columnDef.header, header.getContext())
+                    )}
                   </TableHead>
                 );
               })}
@@ -63,30 +90,42 @@ export function InvoiceTableBody({ table, columns, loading, showNoDataMessage = 
         <TableBody>
           {table.getRowModel().rows.length ? (
             /* Filas de datos */
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() ? "selected" : undefined}
-                className={`${row.getIsSelected() ? "bg-primary/5" : ""} hover:bg-slate-50`}
-              >
-                {row.getVisibleCells().map((cell) => {
-                  const isClickable = cell.column.id !== "actions" && cell.column.id !== "select";
-                  return (
-                    <TableCell 
-                      key={cell.id}
-                      className={isClickable ? "cursor-pointer" : ""}
-                      onClick={() => {
-                        if (isClickable) {
-                          router.push(`/invoices/${row.original.id}`);
-                        }
-                      }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))
+            table.getRowModel().rows.map((row) => {
+              const isSelected = Boolean(rowSelection[row.id]);
+
+              return (
+                <TableRow
+                  key={row.id}
+                  data-state={isSelected ? "selected" : undefined}
+                  className={`${isSelected ? "bg-primary/5" : ""} hover:bg-slate-50`}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const isSelect = cell.column.id === "select";
+                    const isClickable = cell.column.id !== "actions" && !isSelect;
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={isClickable ? "cursor-pointer" : ""}
+                        onClick={() => {
+                          if (isClickable) {
+                            router.push(`/invoices/${row.original.id}`);
+                          }
+                        }}
+                      >
+                        {isSelect ? (
+                          <SelectRowCheckbox
+                            checked={isSelected}
+                            onToggle={() => onToggleSelection(row.id)}
+                          />
+                        ) : (
+                          flexRender(cell.column.columnDef.cell, cell.getContext())
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })
           ) : loading ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={columns.length} className="h-64 bg-white" />

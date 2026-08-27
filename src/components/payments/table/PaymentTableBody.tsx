@@ -7,6 +7,10 @@ import { Payment } from "@/types/payments";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
+import {
+  SelectAllCheckbox,
+  SelectRowCheckbox,
+} from "@/components/ui/selection-checkbox";
 
 interface PaymentTableBodyProps {
   table: TanTable<Payment>;
@@ -14,6 +18,9 @@ interface PaymentTableBodyProps {
   loading?: boolean;
   rowSelection?: Record<string, boolean>;
   onToggleSelection?: (uniqueId: string) => void;
+  allSelected?: boolean;
+  someSelected?: boolean;
+  onToggleSelectAll?: (value: boolean) => void;
   searchTerm?: string;
 }
 
@@ -22,7 +29,10 @@ export function PaymentTableBody({
   columns,
   loading,
   rowSelection = {},
-  onToggleSelection,
+  onToggleSelection = () => {},
+  allSelected = false,
+  someSelected = false,
+  onToggleSelectAll = () => {},
   searchTerm = "",
 }: PaymentTableBodyProps) {
   const router = useRouter();
@@ -58,9 +68,15 @@ export function PaymentTableBody({
                       ${isAmount ? "text-right after:content-none" : ""}
                     `}
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                    {isSelect ? (
+                      <SelectAllCheckbox
+                        allSelected={allSelected}
+                        someSelected={someSelected}
+                        onToggle={onToggleSelectAll}
+                      />
+                    ) : header.isPlaceholder ? null : (
+                      flexRender(header.column.columnDef.header, header.getContext())
+                    )}
                   </TableHead>
                 );
               })}
@@ -101,7 +117,14 @@ export function PaymentTableBody({
                           ${isAmount ? "text-right" : "text-foreground"}
                         `}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {isSelect ? (
+                          <SelectRowCheckbox
+                            checked={isSelected}
+                            onToggle={() => onToggleSelection(row.id)}
+                          />
+                        ) : (
+                          flexRender(cell.column.columnDef.cell, cell.getContext())
+                        )}
                       </TableCell>
                     );
                   })}

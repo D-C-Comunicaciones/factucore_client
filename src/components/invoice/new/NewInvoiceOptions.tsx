@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { HelpCircle, Plus, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { HelpCircle, Plus } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
@@ -9,6 +8,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { InlineDocumentSelector } from "@/components/invoice/new/InlineDocumentSelector";
 import { usePurchaseOrdersList } from "@/hooks/purchaseOrders/usePurchaseOrders";
 import { NewWarehouseModal } from "@/components/warehouse/NewWarehouseModal";
 import { NewPriceListModal } from "@/components/price-list/NewPriceListModal";
@@ -96,10 +96,6 @@ export function NewInvoiceOptions({
         const description = [contactName, po.issue_date, total].filter(Boolean).join(" · ");
         return { value: String(po.id), label, description: description || undefined };
     });
-    const selectedPurchaseOrder = purchaseOrdersRaw.find((po: any) => String(po.id) === purchaseOrderId);
-    const selectedPurchaseOrderInfo = selectedPurchaseOrder
-        ? purchaseOrderOptions.find((o) => o.value === String(selectedPurchaseOrder.id))?.description
-        : undefined;
 
     const handleCreateWarehouse = async (data: { name: string; address: string; observations: string }) => {
         try {
@@ -322,63 +318,32 @@ export function NewInvoiceOptions({
                     />
                 </div>
 
-                <div className="shrink-0 flex items-end h-[38px] gap-2">
-                    <button
-                        onClick={() => setShowPurchaseOrderBar?.(!showPurchaseOrderBar)}
-                        className="text-primary text-sm font-medium flex items-center gap-1 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors cursor-pointer whitespace-nowrap h-full"
-                    >
-                        <Plus className="w-4 h-4 shrink-0" />
-                        Orden de compra
+                <div className="flex-1 min-w-[110px] max-w-[180px]">
+                    <div className="flex items-center gap-1 mb-2">
+                        <label className="text-sm font-medium text-foreground">
+                            Ord. compra
+                        </label>
                         <TooltipProvider delayDuration={200}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <HelpCircle className="w-3.5 h-3.5 text-primary ml-0.5 shrink-0 cursor-help hover:text-primary/70 transition-colors" />
+                                    <HelpCircle className="w-3.5 h-3.5 text-primary cursor-help hover:text-primary/70 transition-colors" />
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="bg-zinc-800 text-white p-2 text-xs max-w-[200px]">
-                                    Asocia una orden de compra a esta factura.
+                                    Este documento hace referencia a la orden de compra/remisión previamente generada, que se asociará a esta factura.
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
-                    </button>
-                </div>
-            </div>
-
-            {/* ORDEN DE COMPRA BAR */}
-            <div className={cn(
-                "overflow-hidden transition-all duration-300 ease-in-out",
-                showPurchaseOrderBar ? "max-h-32 opacity-100 mt-4" : "max-h-0 opacity-0"
-            )}>
-                <div className="bg-slate-50 flex items-start justify-between gap-4 p-3 border border-border rounded-lg">
-                    <div className="flex items-start gap-3">
-                        <span className="text-sm font-semibold text-primary mt-1.5 shrink-0">Orden de compra</span>
-                        {contactId ? (
-                            <div className="flex flex-col gap-1">
-                                <div className="w-[240px]">
-                                    <SearchableSelect
-                                        value={purchaseOrderId || ""}
-                                        onValueChange={(val) => setPurchaseOrderId?.(val)}
-                                        options={purchaseOrderOptions}
-                                        placeholder="Buscar"
-                                        searchPlaceholder="Buscar orden de compra..."
-                                        className="w-full bg-white h-9"
-                                        emptyMessage="Sin resultados"
-                                    />
-                                </div>
-                                {selectedPurchaseOrderInfo && (
-                                    <p className="text-xs text-muted-foreground truncate max-w-[320px]">
-                                        {selectedPurchaseOrderInfo}
-                                    </p>
-                                )}
-                            </div>
-                        ) : (
-                            <span className="text-sm font-medium text-destructive">
-                                Por favor seleccione un cliente para poder consultar sus órdenes de compra registradas
-                            </span>
-                        )}
                     </div>
-                    <button onClick={() => setShowPurchaseOrderBar?.(false)} className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted/50 rounded transition-colors shrink-0">
-                        <X className="w-4 h-4" />
-                    </button>
+                    <div className="shrink-0 flex items-end">
+                        <InlineDocumentSelector
+                            label="Orden de compra"
+                            value={purchaseOrderId || ""}
+                            onChange={(val) => setPurchaseOrderId?.(val)}
+                            options={purchaseOrderOptions}
+                            disabledReason={!contactId ? "Seleccione un cliente para ver sus órdenes de compra" : undefined}
+                            className="w-full"
+                        />
+                    </div>
                 </div>
             </div>
 

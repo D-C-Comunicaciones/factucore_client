@@ -326,7 +326,7 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-              Correo electrónico
+              Correo electrónico *
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -338,13 +338,21 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
                 </Tooltip>
               </TooltipProvider>
             </label>
-            <Input
-              type="email"
-              placeholder="Ej: correo@empresa.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-white border-gray-300"
-            />
+            <div className="relative">
+              <Input
+                type="email"
+                placeholder="Ej: correo@empresa.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: false })); }}
+                className={`bg-white ${errors.email ? "border-red-500 pr-8" : "border-gray-300"}`}
+              />
+              {errors.email && <AlertCircle className="w-4 h-4 text-red-500 absolute right-3 top-1/2 -translate-y-1/2" />}
+            </div>
+            {errors.email && (
+              <span className="text-red-500 text-[10px] mt-1 block">
+                {errors.email === "invalid" ? "El correo electrónico no tiene un formato válido" : "Este campo es obligatorio"}
+              </span>
+            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600">Teléfono</label>

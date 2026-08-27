@@ -19,7 +19,8 @@ export function NewInvoiceFooter({
     onPreview?: () => void;
 }) {
     return (
-        <div className="p-6">
+        <div className="sticky bottom-0 z-30 pt-6">
+        <div className="bg-white border border-border rounded-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)] p-6">
             {/* BOTONES */}
             <div className="flex items-center justify-end gap-3">
                 {/* CANCELAR */}
@@ -68,7 +69,7 @@ export function NewInvoiceFooter({
                         onClick={() => onSaveAction("SEND")}
                         disabled={loadingGuardar}
                         className="
-                            px-6 py-2.5 rounded-r-none font-medium
+                            px-6 py-2.5 rounded-l-lg rounded-r-none font-medium
                             bg-primary text-primary-foreground
                             hover:bg-primary/90 transition-colors
                         "
@@ -80,7 +81,7 @@ export function NewInvoiceFooter({
                             <Button
                                 disabled={loadingGuardar}
                                 className="
-                                    px-2 py-2.5 rounded-l-none font-medium
+                                    px-2 py-2.5 rounded-r-lg rounded-l-none font-medium
                                     bg-primary text-primary-foreground
                                     hover:bg-primary/90 transition-colors
                                     border-l border-white/20
@@ -103,6 +104,7 @@ export function NewInvoiceFooter({
                     </DropdownMenu>
                 </div>
             </div>
+        </div>
         </div>
     );
 }

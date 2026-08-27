@@ -21,4 +21,12 @@ export class ContactsService {
     static async delete(id: number | string): Promise<ApiResponse<any>> {
         return await apiClient.delete<any>(`/contacts/${id}`);
     }
+
+    static async trashed(params?: Record<string, any>): Promise<ApiResponse<any>> {
+        return await apiClient.get<any>("/contacts/trashed", { params });
+    }
+
+    static async restore(id: number | string): Promise<ApiResponse<any>> {
+        return await apiClient.post<any>(`/contacts/${id}/restore`);
+    }
 }

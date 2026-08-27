@@ -34,6 +34,8 @@ function NewContactContent() {
     errors, setErrors
   } = useContactForm();
 
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   const splitDianName = (fullName: string) => {
     const parts = fullName.trim().split(/\s+/);
     if (parts.length <= 1) return { apellidos: fullName, nombres: "" };
@@ -87,6 +89,7 @@ function NewContactContent() {
     const cleanNum = docNumber.trim();
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
+    const cleanEmail = email.trim();
 
     const fullName = `${cleanFirstName} ${cleanLastName}`.trim();
     const finalRegistrationName = registrationName.trim() || fullName;
@@ -107,6 +110,7 @@ function NewContactContent() {
       registrationName: useRegistrationName && !registrationName.trim(),
       typeOrganizationId: isNit && !typeOrganizationId,
       typeRegimeId: isNit && !typeRegimeId,
+      email: !cleanEmail ? true : (!isValidEmail(cleanEmail) ? "invalid" : false),
     };
 
     if (Object.values(newErrors).some(Boolean)) {
@@ -134,7 +138,7 @@ function NewContactContent() {
         type_organization_id: isNit && typeOrganizationId ? Number(typeOrganizationId) : 2,
         type_regime_id: isNit && typeRegimeId ? Number(typeRegimeId) : 2,
         type_liability_id: isNit && typeLiabilityId ? Number(typeLiabilityId) : null,
-        email: email.trim() || null,
+        email: cleanEmail,
         phone1: mobile.trim() || phone1.trim() || null,
         address: address.trim() || null,
         type_contact_id: typeContactIds.length > 0 ? typeContactIds : null,
@@ -180,6 +184,7 @@ function NewContactContent() {
     const cleanNum = docNumber.trim();
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
+    const cleanEmail = email.trim();
 
     const fullName = `${cleanFirstName} ${cleanLastName}`.trim();
     const finalRegistrationName = registrationName.trim() || fullName;
@@ -200,6 +205,7 @@ function NewContactContent() {
       registrationName: useRegistrationName && !registrationName.trim(),
       typeOrganizationId: isNit && !typeOrganizationId,
       typeRegimeId: isNit && !typeRegimeId,
+      email: !cleanEmail ? true : (!isValidEmail(cleanEmail) ? "invalid" : false),
     };
 
     if (Object.values(newErrors).some(Boolean)) {
@@ -227,7 +233,7 @@ function NewContactContent() {
         type_organization_id: isNit && typeOrganizationId ? Number(typeOrganizationId) : 2,
         type_regime_id: isNit && typeRegimeId ? Number(typeRegimeId) : 2,
         type_liabilities: [5],
-        email: email.trim() || null,
+        email: cleanEmail,
         phone1: mobile.trim() || phone1.trim() || null,
         address: address.trim() || null,
         type_contact_ids: typeContactIds.length > 0 ? typeContactIds : [1],

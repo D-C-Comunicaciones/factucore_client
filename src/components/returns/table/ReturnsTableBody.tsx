@@ -18,7 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  SelectAllCheckbox,
+  SelectRowCheckbox,
+} from "@/components/ui/selection-checkbox";
 
 /* -----------------------------------------------------------------------
    Badge de estado DIAN
@@ -75,7 +78,15 @@ function DianStatusBadge({ statusId, statusName }: { statusId?: number; statusNa
 /* -----------------------------------------------------------------------
    Fila de tabla
    ----------------------------------------------------------------------- */
-function ReturnRow({ item }: { item: any }) {
+function ReturnRow({
+  item,
+  isSelected,
+  onToggleSelection,
+}: {
+  item: any;
+  isSelected: boolean;
+  onToggleSelection: (id: string) => void;
+}) {
   const router = useRouter();
   const customerName =
     item.customer_name ||
@@ -90,7 +101,10 @@ function ReturnRow({ item }: { item: any }) {
   return (
     <TableRow className="hover:bg-slate-50 cursor-pointer" onClick={navigateToDetail}>
       <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
-        <Checkbox />
+        <SelectRowCheckbox
+          checked={isSelected}
+          onToggle={() => onToggleSelection(String(item.id))}
+        />
       </TableCell>
       <TableCell className="font-medium text-slate-800">
         {item.prefix || ""}{item.number}
@@ -139,9 +153,22 @@ function ReturnRow({ item }: { item: any }) {
 interface ReturnsTableBodyProps {
   loading?: boolean;
   items?: any[];
+  selection?: Record<string, boolean>;
+  onToggleSelection?: (id: string) => void;
+  allSelected?: boolean;
+  someSelected?: boolean;
+  onToggleSelectAll?: (value: boolean) => void;
 }
 
-export function ReturnsTableBody({ loading = false, items = [] }: ReturnsTableBodyProps) {
+export function ReturnsTableBody({
+  loading = false,
+  items = [],
+  selection = {},
+  onToggleSelection = () => {},
+  allSelected = false,
+  someSelected = false,
+  onToggleSelectAll = () => {},
+}: ReturnsTableBodyProps) {
   const router = useRouter();
 
   return (
@@ -150,7 +177,11 @@ export function ReturnsTableBody({ loading = false, items = [] }: ReturnsTableBo
         <TableHeader>
           <TableRow className="bg-gray-50/50">
             <TableHead className="w-10 border-l border-gray-200">
-              <Checkbox />
+              <SelectAllCheckbox
+                allSelected={allSelected}
+                someSelected={someSelected}
+                onToggle={onToggleSelectAll}
+              />
             </TableHead>
             <TableHead className="font-medium text-xs text-slate-900">
               <span className="flex items-center gap-1">Número</span>
@@ -177,7 +208,12 @@ export function ReturnsTableBody({ loading = false, items = [] }: ReturnsTableBo
         <TableBody>
           {items.length > 0 ? (
             items.map((item) => (
-              <ReturnRow key={item.id} item={item} />
+              <ReturnRow
+                key={item.id}
+                item={item}
+                isSelected={Boolean(selection[String(item.id)])}
+                onToggleSelection={onToggleSelection}
+              />
             ))
           ) : loading ? (
             <TableRow className="hover:bg-transparent">

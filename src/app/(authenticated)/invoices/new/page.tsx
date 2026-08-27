@@ -41,6 +41,7 @@ function NewInvoicePageContent() {
   const searchParams = useSearchParams();
   const quoteId = searchParams?.get("quoteId");
   const remissionId = searchParams?.get("remissionId");
+  const contactIdParam = searchParams?.get("contactId");
   const createInvoice = useCreateInvoice();
   const catalogData = useCatalogs();
   const { data: sellersData } = useSellersList();
@@ -314,7 +315,13 @@ function NewInvoicePageContent() {
     selectedForm.value?.toLowerCase() === "contado" ||
     selectedForm.value === "1";
 
-  const validateForm = () => {
+  // requireDianFields: solo la emisión real (Guardar y Emitir → save_action
+  // SEND) necesita el perfil DIAN completo del cliente (tipo de documento,
+  // tipo de organización, tipo de régimen) — un borrador/guardado/vista previa
+  // no se envía a la DIAN (dian_status queda NO_ELECTRONICA), así que exigir
+  // esos campos ahí solo bloqueaba guardar una prefactura para un cliente cuyo
+  // perfil tributario aún no está completo.
+  const validateForm = (requireDianFields: boolean) => {
     const newErrors: Record<string, string> = {};
 
     // 1. Contacto
@@ -331,9 +338,11 @@ function NewInvoicePageContent() {
       if (c.type_organization?.code === "1" && !c.registration_name) missing.push("Razón social");
       if (c.type_organization?.code === "2" && (!c.first_name || !c.last_name)) missing.push("Nombres y Apellidos");
       if (!c.email) missing.push("Correo electrónico");
-      if (!c.type_document_identification) missing.push("Tipo de documento");
-      if (!c.type_organization) missing.push("Tipo de organización");
-      if (!c.type_regime) missing.push("Tipo de régimen");
+      if (requireDianFields) {
+        if (!c.type_document_identification) missing.push("Tipo de documento");
+        if (!c.type_organization) missing.push("Tipo de organización");
+        if (!c.type_regime) missing.push("Tipo de régimen");
+      }
 
 
       if (missing.length > 0) {
@@ -445,8 +454,20 @@ function NewInvoicePageContent() {
     return true;
   };
 
+  // El shape de la respuesta de POST /invoices cambia según si el payload se
+  // detectó como "legacy" (isLegacyPayload en InvoicePayloadTrait — requiere
+  // contact_id + lines + type_document_id) o "flexible": esta página envía
+  // `items` en vez de `lines` y no manda type_document_id, así que SIEMPRE cae
+  // en el path flexible, cuya factura llega anidada en `bill` (ver
+  // formatInvoiceLikeExternalResponse) en vez de en la raíz. useCreateInvoice
+  // ya desenvuelve un nivel (retorna res.data del backend), así que acá el id
+  // puede estar en res.id (legacy) o res.bill.id (flexible) — nunca bajo un
+  // res.data adicional, porque ese nivel ya se lo comió el mutationFn.
+  const extractInvoiceId = (res: any): number | string | undefined =>
+    res?.id || res?.bill?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+
   const handleSaveAction = async (actionType: "DRAFT" | "SEND" | "SEND_EMAIL" | "PRINT" | "CREATE_NEW") => {
-    if (!validateForm()) return;
+    if (!validateForm(actionType === "SEND")) return;
 
     if (formState.paymentData && Number(formState.paymentData.amount) > invoiceBuilder.totals.total) {
       const maxAllowed = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(invoiceBuilder.totals.total);
@@ -584,7 +605,7 @@ function NewInvoicePageContent() {
       if (actionType === "SEND") {
         // Emitir directamente a la DIAN: POST /invoices/send (sin save_action)
         const res: any = await InvoicesService.sendDirect(finalPayload);
-        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        const id = extractInvoiceId(res);
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
 
         if (res?.dian && res.dian.estado_documento === "NO APROBADA") {
@@ -603,7 +624,7 @@ function NewInvoicePageContent() {
         // Guardar como borrador: POST /invoices con save_action DRAFT
         const payload = { ...finalPayload, save_action: "DRAFT" };
         const res: any = await createInvoice.mutateAsync(payload);
-        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        const id = extractInvoiceId(res);
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
         showToast("Borrador guardado correctamente", "success");
         router.push(`/invoices/${id}`);
@@ -620,17 +641,59 @@ function NewInvoicePageContent() {
       } else if (actionType === "PRINT") {
         const payload = { ...finalPayload, save_action: "SAVED" };
         const res: any = await createInvoice.mutateAsync(payload);
-        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        const id = extractInvoiceId(res);
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
-        window.open(InvoicesService.getPdfUrl(id), "_blank");
+        
+        showToast("Factura guardada. Preparando impresión...", "success");
+
+        try {
+            const blob = await InvoicesService.printPdfBlob(id);
+            const billInfo = res?.bill || res?.data?.bill || res?.data?.data?.bill || res?.data || res || {};
+            const pdfName = `Factura_${billInfo.prefix || ''}${billInfo.number || id}`;
+            const file = new File([blob], pdfName + ".pdf", { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(file);
+
+            const iframe = document.createElement("iframe");
+            iframe.style.position = "absolute";
+            iframe.style.width = "0";
+            iframe.style.height = "0";
+            iframe.style.border = "none";
+            iframe.src = url;
+
+            iframe.onload = () => {
+                const originalTitle = document.title;
+                document.title = pdfName;
+
+                const win = iframe.contentWindow;
+                if (win) {
+                    setTimeout(() => {
+                        win.print();
+                        const cleanup = () => {
+                            document.title = originalTitle;
+                            if (document.body.contains(iframe)) {
+                                document.body.removeChild(iframe);
+                            }
+                            window.URL.revokeObjectURL(url);
+                        };
+                        win.onafterprint = cleanup;
+                        setTimeout(cleanup, 120000);
+                    }, 100);
+                }
+            };
+            document.body.appendChild(iframe);
+        } catch (printErr) {
+            console.error("Error al imprimir:", printErr);
+            showToast("Factura guardada, pero hubo un error al imprimir.", "warning");
+        }
+
         router.push(`/invoices/${id}`);
 
       } else if (actionType === "SEND_EMAIL") {
-        const payload = { ...finalPayload, save_action: "SAVED", send_email: true };
+        const payload = { ...finalPayload, save_action: "SAVED", send_mail: true };
         const res: any = await createInvoice.mutateAsync(payload);
-        const id = res?.id || res?.data?.id || res?.data?.bill?.id || res?.data?.data?.bill?.id;
+        const id = extractInvoiceId(res);
         if (!id) throw new Error("No se pudo obtener el ID de la factura");
-        showToast("Factura guardada y enviada por correo", "success");
+        showToast("Factura guardada. Se generó la pre-factura y fue enviada por correo al cliente.", "success");
         router.push(`/invoices/${id}`);
       }
 
@@ -702,7 +765,7 @@ function NewInvoicePageContent() {
             selectedResolutionId={selectedResolutionId}
             setSelectedResolutionId={setSelectedResolutionId}
             onRefetchResolutions={refetchResolutions}
-            initialContactId={quoteDataForInvoice?.contact_id ?? remissionDataForInvoice?.contact_id}
+            initialContactId={quoteDataForInvoice?.contact_id ?? remissionDataForInvoice?.contact_id ?? (contactIdParam ? Number(contactIdParam) : undefined)}
             formState={formState}
             setFormState={setFormState}
             notes={formState.notes}
@@ -730,7 +793,7 @@ function NewInvoicePageContent() {
             onSaveAction={handleSaveAction}
             loadingGuardar={loadingGuardar}
             onPreview={() => {
-              if (validateForm()) setShowPreviewModal(true);
+              if (validateForm(false)) setShowPreviewModal(true);
             }}
           />
         </div>

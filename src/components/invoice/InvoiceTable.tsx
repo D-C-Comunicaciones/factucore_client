@@ -10,7 +10,7 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useRowSelection } from "@/hooks/use-row-selection";
+import { useTableSelection } from "@/hooks/use-table-selection";
 
 import { getColumns } from "@/components/invoice/table/columns";
 import { InvoiceTableToolbar } from "@/components/invoice/table/InvoiceTableToolbar";
@@ -71,8 +71,18 @@ export function InvoiceTable({
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 
   // ✅ Hook de selección centralizado
-  const selection = useRowSelection();
-  const { rowSelection, onRowSelectionChange, selectedIds } = selection;
+  const getRowUniqueId = React.useCallback(
+    (invoice: InvoiceSummary) => String(invoice.id),
+    []
+  );
+
+  const {
+    selection: rowSelection,
+    toggle: toggleSelection,
+    toggleAll: toggleSelectAll,
+    allSelected,
+    someSelected,
+  } = useTableSelection(invoices, getRowUniqueId);
 
   const effectiveFilters = columnFilters ?? internalColumnFilters;
   const hasActiveFilters = React.useMemo(
@@ -115,12 +125,10 @@ export function InvoiceTable({
     data: invoices,
     columns,
     getRowId: (row) => String(row.id), // IDs reales como fuente de verdad
-    enableRowSelection: true,
-    state: { sorting, columnFilters: effectiveFilters, columnVisibility, rowSelection },
+    state: { sorting, columnFilters: effectiveFilters, columnVisibility },
     onSortingChange: setSorting,
     onColumnFiltersChange: setEffectiveFilters as any,
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
@@ -159,6 +167,11 @@ export function InvoiceTable({
         loading={loading}
         showNoDataMessage={!hasQueryContext && !loading}
         isError={isError}
+        rowSelection={rowSelection}
+        onToggleSelection={toggleSelection}
+        allSelected={allSelected}
+        someSelected={someSelected}
+        onToggleSelectAll={toggleSelectAll}
       />
 
       <InvoiceTablePagination
