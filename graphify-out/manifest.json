@@ -175,8 +175,8 @@
     "semantic_hash": ""
   },
   "src/app/(authenticated)/layout.tsx": {
-    "mtime": 1787630826.4988563,
-    "ast_hash": "051e72ca16e7cf5a273da4b8d3c05314",
+    "mtime": 1787848601.17425,
+    "ast_hash": "bada81f1a6b53641cc895fdf663fb4e6",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/payments/[id]/page.tsx": {
@@ -190,8 +190,8 @@
     "semantic_hash": "212d3fa6df4126adcd331f1a58fa0cf1"
   },
   "src/app/(authenticated)/payments/new/page.tsx": {
-    "mtime": 1787803616.5374553,
-    "ast_hash": "9a38a39a4abcfd05d2d847aeee763f1e",
+    "mtime": 1787849489.6271155,
+    "ast_hash": "cce750436e492e7f68ad3760340a9df2",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/payments/page.tsx": {
@@ -250,8 +250,8 @@
     "semantic_hash": ""
   },
   "src/app/(authenticated)/returns/new/page.tsx": {
-    "mtime": 1782318281.706761,
-    "ast_hash": "ec225b664ac2bd3f1d7584e7ca7eb42b",
+    "mtime": 1787847996.0752435,
+    "ast_hash": "2362957eac559fe52c9ee7e9c8e0ad11",
     "semantic_hash": ""
   },
   "src/app/(authenticated)/returns/page.tsx": {
@@ -700,8 +700,8 @@
     "semantic_hash": "4dc4ddde8f2af5b7cddd9cd33e25c1d3"
   },
   "src/components/invoice/details/InvoiceDetailHeader.tsx": {
-    "mtime": 1785768739.3766377,
-    "ast_hash": "44048d89b705c4085e95b6f89becee07",
+    "mtime": 1787849480.7391331,
+    "ast_hash": "3ec195fa29463fd9d721b868e64594a7",
     "semantic_hash": ""
   },
   "src/components/invoice/details/InvoiceDetailSkeleton.tsx": {
@@ -800,8 +800,8 @@
     "semantic_hash": ""
   },
   "src/components/invoice/table/columns.tsx": {
-    "mtime": 1787810624.7299104,
-    "ast_hash": "8dda3f8969ff76eec67abb3ea62e3539",
+    "mtime": 1787849465.5399823,
+    "ast_hash": "cb5d84c2897c2a4650c607bc0245f5e9",
     "semantic_hash": ""
   },
   "src/components/items/ExportItemsModal.tsx": {
@@ -1015,8 +1015,8 @@
     "semantic_hash": ""
   },
   "src/components/payments/new/NewPaymentForm.tsx": {
-    "mtime": 1787813902.8526106,
-    "ast_hash": "8855a7aaad6c2d1a547b3c54af29f835",
+    "mtime": 1787849498.634809,
+    "ast_hash": "dc60140d34f49f2a2ab409a0f994dc57",
     "semantic_hash": ""
   },
   "src/components/payments/new/OtherIncomeTable.tsx": {
@@ -1025,9 +1025,9 @@
     "semantic_hash": ""
   },
   "src/components/payments/new/PaymentInvoicesList.tsx": {
-    "mtime": 1785900639.1778805,
-    "ast_hash": "129dcaf6a28c5addb66b49ae39be82c3",
-    "semantic_hash": "129dcaf6a28c5addb66b49ae39be82c3"
+    "mtime": 1787849525.8915682,
+    "ast_hash": "4519cc123d34dd1e4dd5b468a4c09b6d",
+    "semantic_hash": ""
   },
   "src/components/payments/new/PaymentNumberingModal.tsx": {
     "mtime": 1783739845.3194513,
@@ -1290,8 +1290,8 @@
     "semantic_hash": "8cbe8e51cfc6febf8fed7d54dd0664d6"
   },
   "src/components/returns/new/NewReturnForm.tsx": {
-    "mtime": 1787814195.7015078,
-    "ast_hash": "3983a91c4d2b519052bd7fed3d2e6ac6",
+    "mtime": 1787848501.0623791,
+    "ast_hash": "dc16e9155aa59dc08ddd8aa538442385",
     "semantic_hash": ""
   },
   "src/components/returns/new/modals/ChangeClientModal.tsx": {
@@ -3240,8 +3240,8 @@
     "semantic_hash": ""
   },
   "src/components/invoice/table/InvoiceMobileCard.tsx": {
-    "mtime": 1787810639.1329246,
-    "ast_hash": "67d48ba9ab289086ec90825b3cd4e147",
+    "mtime": 1787849473.4019842,
+    "ast_hash": "33e26f4589d5ed92b499903df54d22d4",
     "semantic_hash": ""
   },
   "src/components/payments/table/PaymentMobileCard.tsx": {
@@ -3257,6 +3257,111 @@
   "src/components/remission/table/RemissionMobileCard.tsx": {
     "mtime": 1787813114.6454015,
     "ast_hash": "180c9f0ee904e243394a3d77c4965404",
+    "semantic_hash": ""
+  },
+  "src/components/returns/new/NewReturnSettingsDrawer.tsx": {
+    "mtime": 1787847982.09375,
+    "ast_hash": "f487b78c0e89308a37ad73fcb93359fd",
+    "semantic_hash": ""
+  },
+  "src/app/(authenticated)/debit-notes/[id]/page.tsx": {
+    "mtime": 1787849188.3390024,
+    "ast_hash": "be8e29d973af62363d3c534365059c3b",
+    "semantic_hash": ""
+  },
+  "src/app/(authenticated)/debit-notes/new/page.tsx": {
+    "mtime": 1787849018.4278858,
+    "ast_hash": "97c90f3e68df53dd69b24fc5c52ca3a0",
+    "semantic_hash": ""
+  },
+  "src/app/(authenticated)/debit-notes/page.tsx": {
+    "mtime": 1787848764.3070314,
+    "ast_hash": "c76a705544e6359ba9687f8db8d21c16",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/DebitNotePageHeader.tsx": {
+    "mtime": 1787848654.2871332,
+    "ast_hash": "f7482624a092876f830057078d511bd9",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/details/DebitNoteDetailDocument.tsx": {
+    "mtime": 1787849126.8562212,
+    "ast_hash": "8c105fb426bd71deee8f6baa5dac362b",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/details/DebitNoteDetailHeader.tsx": {
+    "mtime": 1787849054.765903,
+    "ast_hash": "7999a163ec553ee39dbdd207b7f18c9c",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/details/DebitNoteDetailSkeleton.tsx": {
+    "mtime": 1787849030.1258705,
+    "ast_hash": "3ad5337a7ebb0ca53e825474a1c2b4fe",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/details/DebitNoteDetailSummary.tsx": {
+    "mtime": 1787849035.6550646,
+    "ast_hash": "e44ece65b0167d35200d324fd840e122",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/details/DebitNoteDetailTabs.tsx": {
+    "mtime": 1787849153.6654322,
+    "ast_hash": "7570295ba202fe78da5d39d895ea0575",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/modals/ChangeClientModal.tsx": {
+    "mtime": 1787848773.3751006,
+    "ast_hash": "b6f955fd1040289bb965648363d5f6a5",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/modals/ExitFormModal.tsx": {
+    "mtime": 1787848777.9736512,
+    "ast_hash": "b0828248b4e133493585cb0e7efacae6",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/new/NewDebitNoteForm.tsx": {
+    "mtime": 1787849273.1285803,
+    "ast_hash": "a67be187484f17c146bf866ac375ca49",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/table/DebitNotesFilterChips.tsx": {
+    "mtime": 1787848689.9556057,
+    "ast_hash": "de71482da7b24dfabc08fc5c9b633ba6",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/table/DebitNotesTable.tsx": {
+    "mtime": 1787848753.6047678,
+    "ast_hash": "c9b415a8012a0cffeab88ec0c2f9e79e",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/table/DebitNotesTableBody.tsx": {
+    "mtime": 1787848726.7664456,
+    "ast_hash": "b13c00ef3eaa4bf7dcbe2b06177e7684",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/table/DebitNotesTablePagination.tsx": {
+    "mtime": 1787848741.4707642,
+    "ast_hash": "ad0fd0ab865442775accb67f75a3ef33",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/table/DebitNotesTableToolbar.tsx": {
+    "mtime": 1787848671.5646799,
+    "ast_hash": "b11feafa1864a673a25c2e191be5627d",
+    "semantic_hash": ""
+  },
+  "src/components/debit-notes/table/filterOptions.ts": {
+    "mtime": 1787848660.0365422,
+    "ast_hash": "e92c777cb411c8e8168a00187dddffec",
+    "semantic_hash": ""
+  },
+  "src/hooks/debitNotes/useDebitNotes.ts": {
+    "mtime": 1787848638.7354732,
+    "ast_hash": "7bd6657bd1b1f816b960b8697cea29e7",
+    "semantic_hash": ""
+  },
+  "src/lib/debitNotes.ts": {
+    "mtime": 1787848616.0715113,
+    "ast_hash": "b838d7fef42eca6b3116657e3c9ec9fa",
     "semantic_hash": ""
   }
 }

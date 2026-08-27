@@ -21,9 +21,10 @@ interface NewPaymentFormProps {
   formState: any;
   setFormState: React.Dispatch<React.SetStateAction<any>>;
   formErrors?: Record<string, boolean>;
+  initialInvoiceId?: string | null;
 }
 
-export function NewPaymentForm({ formState, setFormState, formErrors }: NewPaymentFormProps) {
+export function NewPaymentForm({ formState, setFormState, formErrors, initialInvoiceId }: NewPaymentFormProps) {
   const catalogs = useCatalogs();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
@@ -312,6 +313,7 @@ export function NewPaymentForm({ formState, setFormState, formErrors }: NewPayme
             contactId={formState.contact_id}
             formState={formState}
             setFormState={setFormState}
+            initialInvoiceId={initialInvoiceId}
           />
         ) : (
           <OtherIncomeTable

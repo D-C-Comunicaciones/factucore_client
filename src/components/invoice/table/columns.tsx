@@ -112,11 +112,35 @@ export function DianStatusBadge({ status }: { status: any }) {
 }
 
 /* -----------------------------------------------------------------------
-   Badge de estado interno
+   Resuelve el estado de cobro real de una factura.
+
+   El backend no siempre actualiza `status` a "cobrada" cuando el saldo
+   pendiente llega a 0 (p. ej. retenciones aplicadas después del último
+   pago) — el detalle de factura (InvoiceDetailDocument) ya calcula esto
+   en base al pendiente, así que aquí replicamos ese mismo criterio para
+   que el listado no muestre "Por cobrar" en facturas que ya están saldadas.
    ----------------------------------------------------------------------- */
-export function StatusBadge({ status }: { status: any }) {
+function resolveInvoiceStatus(status: any, pendingAmount?: number): string {
   const estadoStr = typeof status === "string" ? status : (status?.name || "");
   const estado = estadoStr.toLowerCase();
+
+  const isPendingFamily = estado === "por cobrar" || estado === "pendiente" || estado === "parcial" || estado === "vencida";
+  if (isPendingFamily && pendingAmount !== undefined && pendingAmount <= 0.01) {
+    return "cobrada";
+  }
+
+  return estado;
+}
+
+/* -----------------------------------------------------------------------
+   Badge de estado interno
+   ----------------------------------------------------------------------- */
+export function StatusBadge({ status, pendingAmount }: { status: any; pendingAmount?: number }) {
+  const rawEstadoStr = typeof status === "string" ? status : (status?.name || "");
+  const estado = resolveInvoiceStatus(status, pendingAmount);
+  // Si se sobrescribió el estado crudo del backend, el texto mostrado debe
+  // coincidir con el nuevo estado en vez del string original ("Por cobrar").
+  const estadoStr = estado === rawEstadoStr.toLowerCase() ? rawEstadoStr : estado;
 
   if (estado === "enviada" || estado === "sent" || estado === "emitida") {
     return (
@@ -184,8 +208,7 @@ export function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
   const estadoDianStr = typeof invoice.status_dian === "string" ? invoice.status_dian : ((invoice.status_dian as any)?.name || "");
   const estadoDian = estadoDianStr.toLowerCase();
 
-  const estadoStr = typeof invoice.status === "string" ? invoice.status : ((invoice.status as any)?.name || "");
-  const estado = estadoStr.toLowerCase();
+  const estado = resolveInvoiceStatus(invoice.status, Number(invoice.pending_amount));
 
   const isDianAprobada = estadoDian === "aprobada" || estadoDian === "approved" || estadoDian === "aceptada";
 
@@ -407,7 +430,7 @@ export function getColumns(
     {
       accessorKey: "status",
       header: "Estado",
-      cell: ({ row }) => <div className="text-left"><StatusBadge status={row.original.status} /></div>,
+      cell: ({ row }) => <div className="text-left"><StatusBadge status={row.original.status} pendingAmount={Number(row.original.pending_amount)} /></div>,
     },
     {
       id: "actions",

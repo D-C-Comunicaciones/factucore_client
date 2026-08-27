@@ -21,6 +21,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { showToast } from '@/components/sonner/CustomToaster';
+import { CommentsAndReminders } from '@/components/shared/CommentsAndReminders';
 import { DatePickerSimple } from '@/components/ui/DatePickerSimple';
 import { ChangeTypeModal } from '../modals/ChangeTypeModal';
 import { ChangeClientModal } from '../modals/ChangeClientModal';
@@ -98,6 +99,7 @@ export function NewReturnForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [reason, setReason] = useState('');
     const [notes, setNotes] = useState('');
+    const [comments, setComments] = useState<any[]>([]);
     const [errors, setErrors] = useState<FieldError>({});
 
     const [pendingType, setPendingType] = useState<string | null>(null);
@@ -832,7 +834,7 @@ export function NewReturnForm() {
 
     return (
         <div className="w-full">
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm mb-8">
 
                 {/* Document Type */}
                 <div className="p-6 border-b border-slate-100">
@@ -1059,7 +1061,7 @@ export function NewReturnForm() {
                             <Table className="[&_td]:border-b-0">
                                 <TableHeader>
                                     <TableRow className="bg-gray-50/50">
-                                        <TableHead className="font-bold uppercase text-xs text-slate-900 border-l border-gray-200">ITEM</TableHead>
+                                        <TableHead className="font-bold uppercase text-xs text-slate-900 border-l border-gray-200">Producto o servicio</TableHead>
 
                                         {(selectedType === '1' || selectedType === '2') && (
                                             <>
@@ -1392,7 +1394,7 @@ export function NewReturnForm() {
                                                                     const val = e.target.value.replace(/[^0-9]/g, '');
                                                                     const numVal = Number(val);
                                                                     const isPercentage = !!(d.percent || d.percentage);
-                                                                    
+
                                                                     if (isPercentage && numVal > 100) {
                                                                         showToast("El porcentaje no puede ser mayor al 100%", "warning");
                                                                         setGlobalDiscounts(prev => prev.map((item, i) => i === idx ? { ...item, amount: "", value: "", calculated_amount: "" } : item));
@@ -1525,35 +1527,41 @@ export function NewReturnForm() {
                 </div>
             </div>
 
+            <CommentsAndReminders
+                comments={comments}
+                setComments={setComments}
+                requiresSaveFirst={true}
+            />
+
             <div className="sticky bottom-0 z-30 pt-6">
-            <div className="bg-white border border-border rounded-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)] p-4 sm:p-6 flex flex-wrap justify-end gap-3">
-                <button
-                    type="button"
-                    className="cursor-pointer px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
-                    disabled={selectedType === '2'} onClick={() => {
-                        if (isDirty) {
-                            setShowExitModal(true);
-                        } else {
-                            router.push("/returns");
-                        }
-                    }}
-                >
-                    Cancelar
-                </button>
-                <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={!isFormValid || isSubmitting}
-                    className={cn(
-                        "px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2",
-                        (isFormValid && !isSubmitting)
-                            ? "cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
-                            : "bg-primary/40 text-primary-foreground cursor-not-allowed"
-                    )}
-                >
-                    {isSubmitting ? "Guardando..." : "Guardar"}
-                </button>
-            </div>
+                <div className="bg-white border border-border rounded-xl shadow-[0_-4px_12px_rgba(0,0,0,0.06)] p-4 sm:p-6 flex flex-wrap justify-end gap-3">
+                    <button
+                        type="button"
+                        className="cursor-pointer px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
+                        disabled={selectedType === '2'} onClick={() => {
+                            if (isDirty) {
+                                setShowExitModal(true);
+                            } else {
+                                router.push("/returns");
+                            }
+                        }}
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={!isFormValid || isSubmitting}
+                        className={cn(
+                            "px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2",
+                            (isFormValid && !isSubmitting)
+                                ? "cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "bg-primary/40 text-primary-foreground cursor-not-allowed"
+                        )}
+                    >
+                        {isSubmitting ? "Guardando..." : "Guardar"}
+                    </button>
+                </div>
             </div>
 
             <Dialog open={!!pendingDocType} onOpenChange={(open) => !open && setPendingDocType(null)}>

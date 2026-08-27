@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>alegra — Software de gestión para contadores y pymes</title>
+<style>
+  @font-face { font-family: "Inter"; src: url("fonts/Inter-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "Inter"; src: url("fonts/Inter-Medium.ttf") format("truetype"); font-weight: 500; }
+  @font-face { font-family: "Inter"; src: url("fonts/Inter-SemiBold.ttf") format("truetype"); font-weight: 600; }
+  @font-face { font-family: "Inter"; src: url("fonts/Inter-Bold.ttf") format("truetype"); font-weight: 700; }
+  @font-face { font-family: "Lexend"; src: url("fonts/Lexend-Medium.ttf") format("truetype"); font-weight: 500; }
+  @font-face { font-family: "Lexend"; src: url("fonts/Lexend-SemiBold.ttf") format("truetype"); font-weight: 600; }
+  @font-face { font-family: "Lexend"; src: url("fonts/Lexend-Bold.ttf") format("truetype"); font-weight: 700; }
+
+  :root {
+    --background: #ffffff;
+    --surface: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-muted: #9ca3af;
+    --text-muted-2: #64748b;
+    --accent: #00d6bc;
+    --accent-end: #30aba9;
+    --accent-vibrant: #06ecd0;
+    --accent-50: #eafafa;
+    --accent-100: #cff2f1;
+    --accent-900: #1a7e7f;
+    --border: #475569;
+    --border-light: #e5e7eb;
+    --success-bg: #e2fee2;
+    --navy: #0f172a;
+    --navy-2: #18283f;
+    --shadow-raised: 0 4px 6px -1px #0000001a, 0 2px 4px -1px #0000000f;
+    --shadow-floating: 0 2px 6px -2px #0000000d, 0 10px 15px -3px #0000001a;
+    --shadow-overlay: 0 10px 25px -5px #0000001a, 0 4px 10px -6px #00000014;
+    --shadow-glow: 0 0 24px #06ecd0a6, inset 0 0 16px #06d0ec80;
+    --radius: 14px;
+    --ease: cubic-bezier(.4,0,.2,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--background);
+    color: var(--text-primary);
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .lexend { font-family: "Lexend", sans-serif; line-height: 1.2; }
+  a { color: inherit; text-decoration: none; }
+  ul { list-style: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+  img, svg { display: block; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .reveal { opacity: 1; transform: none; }
+  }
+
+  .eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted-2); }
+  .eyebrow-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent-50); color: var(--accent-900);
+    border-radius: 999px; padding: 5px 15px; font-size: .75rem; font-weight: 600;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn-primary {
+    background: var(--accent); color: var(--text-primary); border-radius: var(--radius);
+    padding: 10px 20px; font-weight: 600; font-size: .875rem;
+    transition: opacity 150ms var(--ease), transform 150ms var(--ease);
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  }
+  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border); color: var(--text-primary);
+    border-radius: var(--radius); padding: 10px 20px; font-weight: 500; font-size: .875rem;
+    transition: border-color 150ms var(--ease), color 150ms var(--ease);
+  }
+  .btn-ghost:hover { border-color: var(--accent-end); color: var(--accent-900); }
+  .btn-ghost.on-dark { border-color: #475569; color: #ffffff; }
+  .btn-ghost.on-dark:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-outline-accent {
+    background: var(--accent-50); border: 1px solid var(--accent-end); color: var(--accent-900);
+    border-radius: var(--radius); padding: 10px 20px; font-weight: 600; font-size: .875rem;
+  }
+  .btn-lg { padding: 15px 30px; font-size: 1rem; }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50; padding: 15px 20px;
+    background: transparent; border-bottom: 1px solid transparent;
+    transition: background 250ms var(--ease), border-color 250ms var(--ease), box-shadow 250ms var(--ease);
+  }
+  .nav.scrolled { background: rgba(255,255,255,0.92); border-bottom: 1px solid var(--border-light); box-shadow: var(--shadow-raised); }
+  .nav .container { display: flex; align-items: center; }
+  .logo { display: flex; align-items: center; gap: 10px; font-family: "Lexend"; font-weight: 700; font-size: 20px; }
+  .logo-mark { width: 30px; height: 30px; border-radius: .75rem; background: linear-gradient(135deg, var(--accent), var(--accent-end)); display: inline-block; }
+  .nav-links { display: flex; align-items: center; gap: 5px; margin-left: 40px; }
+  .nav-link { color: var(--text-muted-2); padding: 10px 15px; border-radius: var(--radius); font-weight: 500; font-size: .875rem; transition: color 150ms var(--ease), background 150ms var(--ease); }
+  .nav-link:hover { color: var(--text-primary); background: var(--surface); }
+  .nav-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .nav-right .nav-link.ghost { color: var(--text-primary); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative; overflow: hidden; padding: 130px 20px 0; text-align: center;
+    background: radial-gradient(circle at 15% 20%, rgba(0,214,188,0.16), transparent 45%),
+                radial-gradient(circle at 85% 10%, rgba(6,236,208,0.14), transparent 40%);
+  }
+  .hero-inner { max-width: 800px; margin: 0 auto; }
+  .hero .eyebrow { display: block; margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(32px, 5.5vw, 56px); font-weight: 700; color: var(--text-primary); }
+  .hero h1 .accent-line { color: var(--accent-900); display: block; }
+  .hero p { margin: 20px auto 0; max-width: 600px; font-size: 1rem; color: var(--text-muted-2); line-height: 1.6; }
+  .hero-cta { margin-top: 30px; }
+  .trust-row { display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 20px; font-size: .75rem; color: var(--text-muted-2); }
+  .trust-row span { display: inline-flex; align-items: center; gap: 5px; }
+  .trust-row .dot { width: 15px; height: 15px; border-radius: 999px; background: var(--success-bg); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: var(--accent-900); }
+
+  .mockup-wrap { position: relative; margin: 50px auto 0; max-width: 900px; padding-bottom: 40px; }
+  .mockup-card { background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); box-shadow: var(--shadow-overlay); overflow: hidden; text-align: left; }
+  .mockup-topbar { display: flex; align-items: center; gap: 10px; padding: 15px 20px; background: var(--background); border-bottom: 1px solid var(--border-light); font-weight: 600; font-family: "Lexend"; }
+  .mockup-topbar .search { margin-left: auto; background: var(--surface); border-radius: 999px; padding: 5px 15px; font-size: .75rem; color: var(--text-muted); }
+  .mockup-body { display: grid; grid-template-columns: 160px 1fr; }
+  .mockup-nav { padding: 20px 10px; border-right: 1px solid var(--border-light); display: flex; flex-direction: column; gap: 5px; }
+  .mockup-nav-item { padding: 10px 15px; border-radius: .5rem; font-size: .75rem; color: var(--text-muted-2); }
+  .mockup-nav-item.active { background: var(--background); color: var(--text-primary); font-weight: 600; box-shadow: var(--shadow-raised); }
+  .mockup-content { padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+  .stat-tile { background: var(--background); border: 1px solid var(--border-light); border-radius: .75rem; padding: 15px; }
+  .stat-tile .label { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .stat-tile .value { font-family: "Lexend"; font-size: 1.25rem; font-weight: 700; margin-top: 5px; }
+  .stat-tile .delta { font-size: .75rem; color: var(--accent-900); margin-top: 5px; display: inline-block; background: var(--success-bg); padding: 2px 8px; border-radius: 999px; }
+  .stat-tile.chart { grid-column: span 3; display: flex; align-items: flex-end; gap: 5px; height: 90px; padding: 15px; }
+  .stat-tile.chart .bar { flex: 1; background: linear-gradient(180deg, var(--accent), var(--accent-end)); border-radius: 3px 3px 0 0; opacity: .85; }
+
+  .glow-blob { position: absolute; border-radius: 999px; background: radial-gradient(circle, rgba(6,236,208,0.35), transparent 70%); z-index: -1; animation: pulse 5s ease-in-out infinite; }
+  .glow-blob.b1 { width: 400px; height: 400px; top: -100px; left: -150px; }
+  .glow-blob.b2 { width: 350px; height: 350px; top: 100px; right: -120px; }
+  @keyframes pulse { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+
+  section { padding: 60px 20px; }
+  section.container { padding-top: 60px; padding-bottom: 60px; }
+  .section-head { text-align: center; max-width: 640px; margin: 0 auto 40px; }
+  .section-head .eyebrow-pill { margin-bottom: 15px; }
+  .section-head h2 { font-size: clamp(24px, 3.6vw, 34px); font-weight: 700; }
+  .section-head p { margin-top: 15px; color: var(--text-muted-2); }
+
+  /* ---------- Trust logo bar ---------- */
+  .trust-bar { text-align: center; padding-top: 20px; }
+  .trust-pill { display: inline-block; background: var(--surface); border-radius: 999px; padding: 10px 20px; font-size: .8125rem; color: var(--text-muted-2); margin-bottom: 30px; }
+  .trust-pill strong { color: var(--accent-900); }
+  .logo-strip { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 40px; }
+  .logo-chip { font-family: "Lexend"; font-weight: 700; font-size: 1.0625rem; color: var(--text-primary); opacity: .65; transition: opacity 200ms var(--ease); }
+  .logo-chip:hover { opacity: 1; }
+
+  /* ---------- Icon feature cards ---------- */
+  .icon-features h2 { text-align: center; font-size: clamp(22px, 3.2vw, 30px); font-weight: 700; max-width: 700px; margin: 0 auto 40px; }
+  .icon-features-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .icon-feature-card { background: var(--background); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 20px; transition: box-shadow 200ms var(--ease), transform 200ms var(--ease); }
+  .icon-feature-card:hover { box-shadow: var(--shadow-raised); transform: translateY(-3px); }
+  .icon-badge { width: 40px; height: 40px; border-radius: .75rem; border: 1px solid var(--accent-end); color: var(--accent-end); display: flex; align-items: center; justify-content: center; font-family: "Lexend"; font-weight: 700; margin-bottom: 15px; }
+  .icon-feature-card h3 { font-size: .9375rem; font-weight: 600; margin-bottom: 10px; }
+  .icon-feature-card p { color: var(--text-muted-2); font-size: .8125rem; }
+
+  /* ---------- Toggle pill ---------- */
+  .toggle-pill { display: inline-flex; background: var(--surface); border-radius: var(--radius); padding: 5px; gap: 5px; }
+  .toggle-pill button { padding: 10px 20px; border-radius: .75rem; font-weight: 600; font-size: .875rem; color: var(--text-muted-2); transition: background 200ms var(--ease), color 200ms var(--ease); display: inline-flex; align-items: center; gap: 10px; }
+  .toggle-pill button.active { background: var(--navy); color: #ffffff; }
+  .toggle-center { display: flex; justify-content: center; margin-bottom: 40px; }
+
+  /* ---------- Solutions split ---------- */
+  .split-card { background: var(--background); border: 1px solid var(--border-light); border-radius: 1.5rem; box-shadow: var(--shadow-floating); overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; }
+  .split-text { padding: 40px; display: flex; flex-direction: column; justify-content: center; gap: 15px; background: linear-gradient(135deg, var(--accent-50), transparent 60%); }
+  .split-text h3 { font-size: clamp(20px, 2.6vw, 28px); font-weight: 700; }
+  .split-text p { color: var(--text-muted-2); }
+  .split-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .split-media { position: relative; min-height: 280px; background: linear-gradient(135deg, var(--navy), var(--navy-2)); }
+  .split-media .float-badge { position: absolute; width: 40px; height: 40px; border-radius: .75rem; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-floating); font-weight: 700; font-family: "Lexend"; font-size: .75rem; }
+  .split-media .float-badge.one { top: 25px; left: 25px; background: var(--accent); color: var(--navy); }
+  .split-media .float-badge.two { top: 80px; left: 25px; background: #ffffff; color: var(--accent-end); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ---------- Tools tabbed section ---------- */
+  .tools-section { background: var(--surface); }
+  .tools-tabs { display: flex; justify-content: center; gap: 40px; border-bottom: 1px solid var(--border-light); margin-bottom: 40px; flex-wrap: wrap; }
+  .tools-tabs button { padding: 15px 5px; color: var(--text-muted-2); font-weight: 600; font-size: .9375rem; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 200ms var(--ease), border-color 200ms var(--ease); }
+  .tools-tabs button.active { color: var(--accent-900); border-color: var(--accent-end); }
+  .tool-panel { display: none; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .tool-panel.active { display: grid; }
+  .tool-lockup { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .tool-lockup .mark { width: 34px; height: 34px; border-radius: .5rem; background: linear-gradient(135deg, var(--accent), var(--accent-end)); }
+  .tool-lockup .name { font-family: "Lexend"; font-size: 1.375rem; font-weight: 700; }
+  .tool-lockup .name small { display: block; font-size: .6875rem; font-weight: 500; color: var(--text-muted-2); }
+  .tool-headline { color: var(--accent-900); font-weight: 700; font-size: 1.0625rem; margin-bottom: 15px; }
+  .tool-check-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+  .tool-check-list li { display: flex; align-items: flex-start; gap: 10px; font-size: .9375rem; }
+  .tool-check-list .check { width: 18px; height: 18px; border-radius: 999px; background: var(--success-bg); color: var(--accent-900); font-size: .625rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .tool-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tool-media { background: linear-gradient(160deg, var(--accent-50), var(--background)); border-radius: 1.5rem; padding: 20px; }
+  .tool-media .mockup-card { box-shadow: var(--shadow-raised); }
+
+  .crm-banner { margin-top: 30px; background: var(--accent-50); border: 1px solid var(--accent-100); border-radius: var(--radius); padding: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+  .crm-banner .icon { width: 34px; height: 34px; border-radius: .5rem; background: #ffffff; color: var(--accent-end); display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: var(--shadow-raised); }
+  .crm-banner .badge-new { background: var(--navy); color: var(--accent); font-size: .625rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; }
+  .crm-banner .body { flex: 1; min-width: 200px; }
+  .crm-banner .body strong { font-family: "Lexend"; }
+  .crm-banner .more { margin-left: auto; color: var(--accent-900); font-weight: 600; font-size: .8125rem; }
+
+  /* ---------- Pricing ---------- */
+  .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .price-card { background: var(--background); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 25px; display: flex; flex-direction: column; box-shadow: var(--shadow-raised); transition: transform 200ms var(--ease); }
+  .price-card:hover { transform: translateY(-3px); }
+  .price-card.featured { border: 2px solid var(--accent); box-shadow: var(--shadow-floating); }
+  .price-card .plan-name { display: flex; align-items: center; gap: 10px; font-size: 1.0625rem; font-weight: 700; margin-bottom: 15px; }
+  .price-card .rec-badge { background: var(--navy); color: var(--accent); font-size: .625rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .price-card .price { font-family: "Lexend"; font-size: 1.75rem; font-weight: 700; }
+  .price-card .price span { font-family: "Inter"; font-size: .8125rem; font-weight: 400; color: var(--text-muted); }
+  .price-card .plan-sub { color: var(--text-muted-2); font-size: .8125rem; margin: 5px 0 20px; }
+  .price-card .plan-features { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; flex: 1; }
+  .price-card .plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: .8125rem; }
+  .price-card .plan-features .ic { width: 18px; height: 18px; border-radius: .375rem; background: var(--accent-50); color: var(--accent-900); display: flex; align-items: center; justify-content: center; font-size: .625rem; flex-shrink: 0; margin-top: 1px; }
+  .price-card .btn-primary, .price-card .btn-outline-accent { justify-content: center; width: 100%; }
+  .pricing-note { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 30px; flex-wrap: wrap; color: var(--text-muted-2); font-size: .8125rem; padding-top: 30px; border-top: 1px solid var(--border-light); }
+  .pricing-note strong { color: var(--text-primary); }
+  .pricing-note .strike { text-decoration: line-through; color: var(--text-muted); }
+
+  /* ---------- Stats band ---------- */
+  .stats-band { background: radial-gradient(circle at 10% 10%, rgba(6,236,208,0.25), transparent 50%), radial-gradient(circle at 90% 90%, rgba(0,214,188,0.18), transparent 50%), var(--background); text-align: center; }
+  .stats-card { max-width: 1024px; margin: 0 auto; background: var(--background); border-radius: 1.5rem; box-shadow: var(--shadow-floating); padding: 30px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+  .stats-card .item .num { font-family: "Lexend"; font-weight: 700; font-size: clamp(22px, 3vw, 30px); }
+  .stats-card .item .num .accent-part { color: var(--accent-end); }
+  .stats-card .item .label { color: var(--text-muted-2); font-size: .8125rem; margin-top: 5px; }
+
+  /* ---------- Testimonials ---------- */
+  .testimonials-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .video-card { position: relative; border-radius: var(--radius); overflow: hidden; aspect-ratio: 3/4; background: linear-gradient(160deg, var(--navy-2), var(--navy)); box-shadow: var(--shadow-raised); }
+  .video-card .quote-mark { position: absolute; top: 15px; left: 15px; width: 26px; height: 26px; border-radius: .5rem; background: var(--accent); opacity: .85; }
+  .video-card .quote-text { position: absolute; top: 55px; left: 15px; right: 15px; color: #ffffff; font-family: "Lexend"; font-weight: 600; font-size: .9375rem; line-height: 1.35; }
+  .video-card .quote-text .hl { color: var(--accent); }
+  .video-card .who-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 15px; background: linear-gradient(0deg, rgba(15,23,42,0.85), transparent); display: flex; align-items: center; gap: 10px; }
+  .video-card .who-avatar { width: 30px; height: 30px; border-radius: 999px; background: #ffffff; flex-shrink: 0; }
+  .video-card .who-name { color: #ffffff; font-size: .75rem; font-weight: 600; }
+  .video-card .who-role { color: #cbd5e1; font-size: .6875rem; }
+
+  /* ---------- Mobile app section ---------- */
+  .app-card {
+    max-width: 1160px; margin: 0 auto; background: linear-gradient(135deg, var(--navy), var(--navy-2));
+    border-radius: 1.5rem; box-shadow: var(--shadow-glow); display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: 40px; overflow: hidden;
+  }
+  .app-card h2 { color: #ffffff; font-size: clamp(22px, 3vw, 30px); margin-bottom: 20px; }
+  .app-card ul { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+  .app-card ul li { color: #cbd5e1; font-size: .9375rem; display: flex; gap: 10px; align-items: flex-start; }
+  .app-card ul li::before { content: ""; width: 5px; height: 5px; background: var(--accent); margin-top: 8px; flex-shrink: 0; }
+  .qr-box { display: inline-flex; align-items: center; gap: 15px; background: #000000; border-radius: .75rem; padding: 15px 20px; }
+  .qr-box .qr-grid { width: 55px; height: 55px; background: #ffffff; border-radius: .25rem; display: grid; grid-template-columns: repeat(5,1fr); grid-template-rows: repeat(5,1fr); gap: 2px; padding: 4px; }
+  .qr-grid span { background: #000000; }
+  .qr-grid span:nth-child(3n) { background: transparent; }
+  .qr-grid span:nth-child(7n) { background: transparent; }
+  .qr-box .qr-label { color: #ffffff; font-weight: 600; font-size: .8125rem; line-height: 1.4; }
+  .phone-mock { width: 220px; margin: 0 auto; background: #0f172a; border-radius: 2rem; padding: 10px; box-shadow: var(--shadow-overlay); }
+  .phone-mock .screen { background: #ffffff; border-radius: 1.5rem; padding: 15px; color: var(--text-primary); }
+  .phone-mock .screen .row { display: flex; justify-content: space-between; font-size: .625rem; color: var(--text-muted); margin-bottom: 10px; }
+  .phone-mock .screen h4 { font-family: "Lexend"; font-size: .8125rem; margin-bottom: 10px; }
+  .phone-mock .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-light); font-size: .6875rem; }
+  .phone-mock .item-row .name { font-weight: 600; }
+  .phone-mock .item-row .price { color: var(--accent-900); }
+  .phone-mock .send-btn { margin-top: 10px; background: var(--accent); color: var(--navy); text-align: center; padding: 8px; border-radius: .5rem; font-weight: 700; font-size: .75rem; }
+
+  /* ---------- Integrations ---------- */
+  .integrations-card { max-width: 1160px; margin: 0 auto; background: linear-gradient(135deg, var(--accent-50), var(--surface)); border-radius: 1.5rem; padding: 40px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; align-items: center; }
+  .integrations-card h2 { font-size: clamp(20px, 2.8vw, 28px); margin-bottom: 15px; }
+  .integrations-card p { color: var(--text-muted-2); margin-bottom: 20px; }
+  .integrations-logos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+  .integration-chip { background: #ffffff; border-radius: .75rem; box-shadow: var(--shadow-raised); padding: 15px; text-align: center; font-family: "Lexend"; font-weight: 700; font-size: .8125rem; color: var(--text-primary); }
+
+  /* ---------- FAQ ---------- */
+  .faq-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1024px; margin: 0 auto; }
+  .faq-list { display: flex; flex-direction: column; }
+  .faq-row { border: 1px solid var(--border-light); border-top: none; }
+  .faq-list .faq-row:first-child { border-top: 1px solid var(--border-light); border-radius: var(--radius) var(--radius) 0 0; overflow: hidden; }
+  .faq-list .faq-row:last-child { border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+  .faq-row summary { list-style: none; cursor: pointer; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px; font-weight: 600; font-size: .875rem; }
+  .faq-row summary::-webkit-details-marker { display: none; }
+  .faq-row .chev { color: var(--accent-end); transition: transform 200ms var(--ease); flex-shrink: 0; }
+  .faq-row[open] .chev { transform: rotate(180deg); }
+  .faq-row .faq-body { padding: 0 20px 18px; color: var(--text-muted-2); font-size: .8125rem; }
+
+  /* ---------- Footer ---------- */
+  footer { background: var(--background); border-top: 1px solid var(--border-light); padding: 50px 20px 20px; }
+  .footer-grid { display: grid; grid-template-columns: 1.1fr repeat(3, 1fr); gap: 30px; }
+  .footer-col h4 { font-family: "Lexend"; font-size: .9375rem; font-weight: 700; margin-bottom: 15px; color: var(--accent-end); }
+  .footer-col ul { display: flex; flex-direction: column; gap: 12px; }
+  .footer-col a { color: var(--text-primary); font-size: .8125rem; transition: color 150ms var(--ease); display: inline-flex; align-items: center; gap: 8px; }
+  .footer-col a:hover { color: var(--accent-end); }
+  .tag-new { background: #ede9fe; color: #6d28d9; font-size: .625rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .tag-popular { background: var(--success-bg); color: var(--accent-900); font-size: .625rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .country-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-light); border-radius: .75rem; padding: 8px 15px; font-size: .8125rem; font-weight: 600; margin-bottom: 20px; }
+  .cert-row { display: flex; gap: 10px; }
+  .cert-badge { width: 55px; height: 55px; border: 1px solid var(--border-light); border-radius: .5rem; display: flex; align-items: center; justify-content: center; font-size: .5rem; font-weight: 700; text-align: center; color: var(--text-muted-2); padding: 4px; }
+  .footer-bottom { max-width: 1200px; margin: 40px auto 0; padding-top: 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; color: var(--text-muted); font-size: .75rem; align-items: center; }
+  .footer-bottom .tree-link { color: var(--accent-900); font-weight: 600; }
+  .social-icons { display: flex; gap: 10px; }
+  .social-icons span { width: 28px; height: 28px; border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; color: var(--text-muted-2); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 960px) {
+    .nav-links { display: none; }
+    .icon-features-grid { grid-template-columns: repeat(2, 1fr); }
+    .split-card, .tool-panel, .integrations-card { grid-template-columns: 1fr; }
+    .split-media { min-height: 200px; }
+    .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats-card { grid-template-columns: repeat(2, 1fr); }
+    .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+    .footer-grid { grid-template-columns: repeat(2, 1fr); }
+    .app-card { grid-template-columns: 1fr; text-align: center; }
+    .app-card ul { text-align: left; }
+    .faq-columns { grid-template-columns: 1fr; }
+    .mockup-body { grid-template-columns: 1fr; }
+    .mockup-nav { display: none; }
+  }
+  @media (max-width: 560px) {
+    .icon-features-grid, .pricing-grid, .stats-card, .testimonials-grid, .footer-grid, .integrations-logos { grid-template-columns: 1fr 1fr; }
+    .mockup-content { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="container">
+      <a href="#" class="logo"><span class="logo-mark"></span>alegra</a>
+      <div class="nav-links">
+        <a href="#tools" class="nav-link">Soluciones</a>
+        <a href="#pricing" class="nav-link">Planes</a>
+        <a href="#faq" class="nav-link">Contacto</a>
+        <a href="#" class="nav-link">Soy Contador</a>
+      </div>
+      <div class="nav-right">
+        <a href="#" class="nav-link ghost">Ingresa</a>
+        <a href="#" class="nav-link ghost">Agendar Demo</a>
+        <a href="#" class="btn-primary">Empieza gratis</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="glow-blob b1"></div>
+    <div class="glow-blob b2"></div>
+    <div class="hero-inner reveal in-view">
+      <span class="eyebrow">Software de gestión para contadores y pymes</span>
+      <h1>Ahora puedes mover tu negocio<span class="accent-line">al ritmo que quieres</span></h1>
+      <p>Alegra tiene lo que necesitas para manejar tu negocio: facturación, contabilidad, inventario y más, en un solo lugar. Acabas de encontrar el software para empresas y contadores que automatiza lo que más te quita tiempo.</p>
+      <div class="hero-cta"><a href="#" class="btn-primary btn-lg">Prueba 15 días gratis</a></div>
+      <div class="trust-row">
+        <span><span class="dot">✓</span> 100% avalado ante la DIAN</span>
+        <span><span class="dot">✓</span> Prueba gratis 15 días, sin tarjeta</span>
+      </div>
+    </div>
+
+    <div class="mockup-wrap reveal">
+      <div class="mockup-card">
+        <div class="mockup-topbar">
+          <span class="logo-mark" style="width:20px;height:20px;"></span>alegra
+          <span class="search">Buscar…</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-nav">
+            <span class="mockup-nav-item active">Inicio</span>
+            <span class="mockup-nav-item">Ingresos</span>
+            <span class="mockup-nav-item">Gastos</span>
+            <span class="mockup-nav-item">Contactos</span>
+            <span class="mockup-nav-item">Inventario</span>
+            <span class="mockup-nav-item">Contabilidad</span>
+          </div>
+          <div class="mockup-content">
+            <div class="stat-tile"><div class="label">Total por cobrar</div><div class="value">$3.124.535</div><span class="delta">↑ 4%</span></div>
+            <div class="stat-tile"><div class="label">Total ventas</div><div class="value">$402.684.752</div><span class="delta">↑ 16%</span></div>
+            <div class="stat-tile"><div class="label">Clientes nuevos</div><div class="value">8.249</div><span class="delta">↑ 4%</span></div>
+            <div class="stat-tile chart">
+              <div class="bar" style="height:40%"></div><div class="bar" style="height:65%"></div><div class="bar" style="height:35%"></div>
+              <div class="bar" style="height:80%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:90%"></div>
+              <div class="bar" style="height:70%"></div><div class="bar" style="height:60%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- TRUST LOGOS -->
+  <section class="trust-bar container reveal">
+    <div class="trust-pill">Más de <strong>40.000 empresas y despachos contables en Colombia</strong> confían en Alegra, únete tu también</div>
+    <div class="logo-strip">
+      <span class="logo-chip">INAFLORES</span>
+      <span class="logo-chip">TAX ONDigital</span>
+      <span class="logo-chip">Hormiga</span>
+      <span class="logo-chip">AF</span>
+      <span class="logo-chip">Elpidio Flores Ortiz</span>
+      <span class="logo-chip">BRUNCH&amp;MUNCH</span>
+      <span class="logo-chip">Hilton</span>
+      <span class="logo-chip">Pet's table</span>
+      <span class="logo-chip">Avocalia</span>
+    </div>
+  </section>
+
+  <!-- ICON FEATURES -->
+  <section class="icon-features container">
+    <h2 class="reveal">Haz tu contabilidad y facturación mas simples: desde donde quieras, y donde quieras</h2>
+    <div class="icon-features-grid">
+      <div class="icon-feature-card reveal">
+        <div class="icon-badge">☁</div>
+        <h3>Disponible en la nube</h3>
+        <p>Accede a tu información siempre protegida, desde un celular, tablet o computador con internet.</p>
+      </div>
+      <div class="icon-feature-card reveal">
+        <div class="icon-badge">✓</div>
+        <h3>Válido ante la DIAN</h3>
+        <p>Cumple fácil con los requisitos fiscales gracias a nuestras actualizaciones automáticas.</p>
+      </div>
+      <div class="icon-feature-card reveal">
+        <div class="icon-badge">▤</div>
+        <h3>Facturación Electrónica</h3>
+        <p>Certifícate gratis como facturador electrónico, hacemos el proceso de habilitación por ti.</p>
+      </div>
+      <div class="icon-feature-card reveal">
+        <div class="icon-badge">◉</div>
+        <h3>Con soporte gratis 24/7</h3>
+        <p>Recibe ayuda de nuestro equipo especializado cuando tengas dudas o cuando lo necesites.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOLUTIONS SPLIT (toggle) -->
+  <section class="container">
+    <div class="section-head reveal"><h2>Soluciones para cada tipo de negocio</h2></div>
+    <div class="toggle-center reveal">
+      <div class="toggle-pill" data-toggle-group="solutions">
+        <button class="active" data-target="sol-empresas">🏢 Para Empresas</button>
+        <button data-target="sol-contadores">🧾 Para Contadores</button>
+      </div>
+    </div>
+
+    <div class="split-card reveal" id="sol-empresas" data-panel="solutions">
+      <div class="split-text">
+        <h3>Haz crecer tu negocio en tiempo real</h3>
+        <p>Visualiza tus cuentas por cobrar y pagar, crea facturas electrónicas que cumplen con la DIAN y lleva tu gestión con inventarios, conciliaciones bancarias con IA y más.</p>
+        <div class="split-actions">
+          <a href="#" class="btn-outline-accent">Ver soluciones</a>
+          <a href="#pricing" class="btn-ghost">Ver planes</a>
+        </div>
+      </div>
+      <div class="split-media">
+        <span class="float-badge one">📦</span>
+        <span class="float-badge two">📈</span>
+      </div>
+    </div>
+
+    <div class="split-card reveal" id="sol-contadores" data-panel="solutions" style="display:none;">
+      <div class="split-text">
+        <h3>Impulsa tu gestión contable</h3>
+        <p>Gestiona toda tu cartera en un solo lugar. Cierres correctos, conciliaciones bancarias con IA, reportes automáticos y todo en orden para que la caja de tus clientes siempre cuadre.</p>
+        <div class="split-actions">
+          <a href="#" class="btn-ghost">Conoce Alegra para contadores →</a>
+        </div>
+      </div>
+      <div class="split-media">
+        <span class="float-badge one">📋</span>
+        <span class="float-badge two">◔</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOOLS TABS -->
+  <section class="tools-section" id="tools">
+    <div class="container">
+      <div class="section-head reveal">
+        <h2>Herramientas que lo hacen todo más fácil</h2>
+        <div class="eyebrow-pill" style="background:var(--navy);color:var(--accent);margin-top:15px;">🔔 Todas con <strong>Facturación Electrónica</strong> cumpliendo con la DIAN</div>
+      </div>
+
+      <div class="tools-tabs reveal" data-tab-group="tools">
+        <button class="active" data-target="tool-facturacion">Facturación electrónica</button>
+        <button data-target="tool-contabilidad">Contabilidad</button>
+        <button data-target="tool-pos">POS</button>
+        <button data-target="tool-nomina">Nómina</button>
+      </div>
+
+      <div class="tool-panel active reveal" id="tool-facturacion" data-tool-panel="tools">
+        <div>
+          <div class="tool-lockup"><span class="mark"></span><span class="name">alegra<small>Facturación</small></span></div>
+          <p class="tool-headline">El poder de facturar al día con la DIAN</p>
+          <ul class="tool-check-list">
+            <li><span class="check">✓</span>Lleva el control de todas tus facturas electrónicas fácilmente</li>
+            <li><span class="check">✓</span>Maneja tus productos y clientes de forma sencilla</li>
+            <li><span class="check">✓</span>Envía tus facturas por WhatsApp</li>
+            <li><span class="check">✓</span>Conecta tus bancos y haz la conciliación bancaria en automático</li>
+          </ul>
+          <div class="tool-actions"><a href="#" class="btn-primary">Empieza gratis</a><a href="#" class="btn-ghost">Conoce más</a></div>
+        </div>
+        <div class="tool-media">
+          <div class="mockup-card">
+            <div class="mockup-topbar"><span class="logo-mark" style="width:18px;height:18px;"></span>alegra<span class="search">Buscar…</span></div>
+            <div class="mockup-content" style="grid-template-columns:1fr 1fr;">
+              <div class="stat-tile"><div class="label">Cuentas por cobrar</div><div class="value">$0.00</div></div>
+              <div class="stat-tile"><div class="label">Cuentas por pagar</div><div class="value">$0.00</div></div>
+              <div class="stat-tile chart" style="grid-column:span 2;">
+                <div class="bar" style="height:20%"></div><div class="bar" style="height:30%"></div><div class="bar" style="height:90%"></div>
+                <div class="bar" style="height:25%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:35%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-panel reveal" id="tool-contabilidad" data-tool-panel="tools">
+        <div>
+          <div class="tool-lockup"><span class="mark"></span><span class="name">alegra<small>Contabilidad</small></span></div>
+          <p class="tool-headline">El poder de la Contabilidad Inteligente</p>
+          <ul class="tool-check-list">
+            <li><span class="check">✓</span>Genera tus reportes con un clic</li>
+            <li><span class="check">✓</span>Agrega a tu cliente automáticamente solo con cédula</li>
+            <li><span class="check">✓</span>Crea tus facturas electrónicas en segundos</li>
+            <li><span class="check">✓</span>Conoce los cobros, gastos y control de inventario</li>
+            <li><span class="check">✓</span>Cuadra tus transacciones y conecta con tus bancos en minutos</li>
+          </ul>
+          <div class="tool-actions"><a href="#" class="btn-primary">Empieza gratis</a><a href="#" class="btn-ghost">Conoce más</a></div>
+        </div>
+        <div class="tool-media">
+          <div class="mockup-card">
+            <div class="mockup-topbar"><span class="logo-mark" style="width:18px;height:18px;"></span>alegra<span class="search">Buscar…</span></div>
+            <div class="mockup-content" style="grid-template-columns:1fr 1fr;">
+              <div class="stat-tile"><div class="label">Impuestos en venta</div><div class="value">$0.00</div></div>
+              <div class="stat-tile"><div class="label">Devoluciones</div><div class="value">$0.00</div></div>
+              <div class="stat-tile chart" style="grid-column:span 2;">
+                <div class="bar" style="height:15%"></div><div class="bar" style="height:85%"></div><div class="bar" style="height:20%"></div>
+                <div class="bar" style="height:60%"></div><div class="bar" style="height:30%"></div><div class="bar" style="height:45%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-panel reveal" id="tool-pos" data-tool-panel="tools">
+        <div>
+          <div class="tool-lockup"><span class="mark"></span><span class="name">alegra<small>POS</small></span></div>
+          <p class="tool-headline">El poder de vender fácil en tu local</p>
+          <ul class="tool-check-list">
+            <li><span class="check">✓</span>Usa tu tablet, laptop o celular como punto de venta</li>
+            <li><span class="check">✓</span>Recibe alertas cuando un producto esté por agotarse</li>
+            <li><span class="check">✓</span>Protege tu efectivo realizando cierres de caja</li>
+            <li><span class="check">✓</span>Consulta reportes automáticos de ventas</li>
+          </ul>
+          <div class="tool-actions"><a href="#" class="btn-primary">Empieza gratis</a><a href="#" class="btn-ghost">Conoce más</a></div>
+        </div>
+        <div class="tool-media">
+          <div class="mockup-card">
+            <div class="mockup-topbar">Ticket de venta<span class="search">Buscar productos…</span></div>
+            <div class="mockup-content" style="grid-template-columns:repeat(3,1fr);">
+              <div class="stat-tile"><div class="label">Mesa de noche</div><div class="value">$20.000</div></div>
+              <div class="stat-tile"><div class="label">Cristal rosa</div><div class="value">$20.000</div></div>
+              <div class="stat-tile"><div class="label">Planta</div><div class="value">$20.000</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-panel reveal" id="tool-nomina" data-tool-panel="tools">
+        <div>
+          <div class="tool-lockup"><span class="mark"></span><span class="name">alegra<small>Nómina</small></span></div>
+          <p class="tool-headline">El poder de una nómina ágil y confiable</p>
+          <ul class="tool-check-list">
+            <li><span class="check">✓</span>Crea prestaciones sociales, deducciones y devengados</li>
+            <li><span class="check">✓</span>Administra tus pagos de forma mensual y quincenal</li>
+            <li><span class="check">✓</span>Emite y liquida en segundos tu nómina electrónica</li>
+            <li><span class="check">✓</span>Maneja la información y novedades de tu equipo</li>
+            <li><span class="check">✓</span>Envía tu nómina a la DIAN desde donde estés</li>
+          </ul>
+          <div class="tool-actions"><a href="#" class="btn-primary">Empieza gratis</a><a href="#" class="btn-ghost">Conoce más</a></div>
+        </div>
+        <div class="tool-media">
+          <div class="mockup-card">
+            <div class="mockup-topbar">Liquidación de nómina</div>
+            <div class="mockup-content" style="grid-template-columns:1fr 1fr;">
+              <div class="stat-tile"><div class="label">Salarios</div><div class="value">$500.000</div></div>
+              <div class="stat-tile"><div class="label">Total a pagar</div><div class="value">$460.000</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="crm-banner reveal">
+        <div class="icon">★</div>
+        <div class="body"><span class="badge-new">Nuevo</span> <strong>Alegra CRM</strong> — Tu asistente inteligente para cerrar más ventas, sin el caos del WhatsApp.</div>
+        <span class="more">Ver más ⌄</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="container">
+    <div class="section-head reveal">
+      <h2>Planes que se adaptan a tu forma de trabajar</h2>
+      <p>Empieza gratis con 15 días de acceso a todas las funcionalidades del plan PRO.</p>
+    </div>
+
+    <div class="tools-tabs reveal" style="max-width:600px;margin-left:auto;margin-right:auto;">
+      <button class="nav-link">Facturación electrónica</button>
+      <button class="active" style="color:var(--accent-900);border-color:var(--accent-end);">Alegra Contabilidad</button>
+      <button class="nav-link">POS</button>
+      <button class="nav-link">Nómina</button>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="price-card reveal">
+        <div class="plan-name">Emprendedor</div>
+        <div class="price">$74.900<span>/mes</span></div>
+        <div class="plan-sub">El kit que necesitas para crecer</div>
+        <ul class="plan-features">
+          <li><span class="ic">▤</span>Facturas de ventas ilimitadas</li>
+          <li><span class="ic">▤</span>Ingresos hasta $10.000.000 / mes</li>
+          <li><span class="ic">◒</span>1 usuario con acceso + 1 para tu contador</li>
+          <li><span class="ic">◔</span>Soporte 24/7</li>
+          <li><span class="ic">⚙</span>1 bodega de inventario</li>
+        </ul>
+        <a href="#" class="btn-outline-accent">Prueba 15 días gratis</a>
+      </div>
+      <div class="price-card reveal">
+        <div class="plan-name">Pyme</div>
+        <div class="price">$163.900<span>/mes</span></div>
+        <div class="plan-sub">Más control para avanzar</div>
+        <ul class="plan-features">
+          <li><span class="ic">▤</span>Facturas de ventas ilimitadas</li>
+          <li><span class="ic">▤</span>Ingresos hasta $40.000.000 / mes</li>
+          <li><span class="ic">◒</span>2 usuarios con acceso + 1 para tu contador</li>
+          <li><span class="ic">◔</span>Soporte 24/7</li>
+          <li><span class="ic">⚙</span>2 bodegas de inventario</li>
+        </ul>
+        <a href="#" class="btn-outline-accent">Prueba 15 días gratis</a>
+      </div>
+      <div class="price-card featured reveal">
+        <div class="plan-name">Pro <span class="rec-badge">★ Recomendado</span></div>
+        <div class="price">$250.900<span>/mes</span></div>
+        <div class="plan-sub">Opera en grande</div>
+        <ul class="plan-features">
+          <li><span class="ic">▤</span>Facturas de ventas ilimitadas</li>
+          <li><span class="ic">▤</span>Ingresos hasta $180.000.000 / mes</li>
+          <li><span class="ic">◒</span>3 usuarios con acceso + 1 para tu contador</li>
+          <li><span class="ic">◔</span>Soporte 24/7</li>
+          <li><span class="ic">⚙</span>10 bodegas de inventario</li>
+        </ul>
+        <a href="#" class="btn-primary">Prueba 15 días gratis</a>
+      </div>
+      <div class="price-card reveal">
+        <div class="plan-name">Plus</div>
+        <div class="price">$319.900<span>/mes</span></div>
+        <div class="plan-sub">Máximo Crecimiento</div>
+        <ul class="plan-features">
+          <li><span class="ic">▤</span>Facturas de ventas ilimitadas</li>
+          <li><span class="ic">▤</span>Ingresos hasta $500.000.000 / mes</li>
+          <li><span class="ic">◒</span>5 usuarios con acceso + 1 para tu contador</li>
+          <li><span class="ic">◔</span>Soporte 24/7</li>
+          <li><span class="ic">⚙</span>100 bodegas de inventario</li>
+        </ul>
+        <a href="#" class="btn-outline-accent">Prueba 15 días gratis</a>
+      </div>
+    </div>
+
+    <div class="pricing-note reveal">▤ <strong>Certificado Digital Gratis</strong> incluido en todos nuestros planes &nbsp; $0 <span class="strike">$150.000 /Anual</span></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats-band">
+    <div class="eyebrow-pill reveal">📈 Confianza que se mide</div>
+    <h2 class="reveal" style="margin:15px 0 30px;font-size:clamp(24px,3.4vw,32px);">Crecimiento que se ve en números</h2>
+    <div class="stats-card reveal">
+      <div class="item"><div class="num">13 años<span class="accent-part">+</span></div><div class="label">Diseñando soluciones en LATAM</div></div>
+      <div class="item"><div class="num">40.000<span class="accent-part">+</span></div><div class="label">Clientes en Colombia</div></div>
+      <div class="item"><div class="num">13<span class="accent-part">+</span></div><div class="label">Países donde nos eligen</div></div>
+      <div class="item"><div class="num">50.000<span class="accent-part">+</span></div><div class="label">Tareas hechas con IA</div></div>
+      <div class="item"><div class="num">6h/sem<span class="accent-part">+</span></div><div class="label">Tiempo ahorrado</div></div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="container">
+    <div class="section-head reveal">
+      <h2>Conoce la experiencia de otros contadores y firmas</h2>
+      <p>Cómo llegaron a Alegra, por qué nos eligieron y cómo ha cambiado la gestión de sus clientes.</p>
+    </div>
+    <div class="toggle-center reveal">
+      <div class="toggle-pill" data-toggle-group="testi">
+        <button data-target="testi-empresas">🏢 Para Empresas</button>
+        <button class="active" data-target="testi-contadores">🧾 Para Contadores</button>
+      </div>
+    </div>
+    <div class="testimonials-grid reveal" id="testi-contadores" data-panel="testi">
+      <div class="video-card">
+        <span class="quote-mark"></span>
+        <p class="quote-text">¿Cómo te beneficia Alegra en la creación de <span class="hl">reportes inteligentes?</span></p>
+        <div class="who-overlay"><span class="who-avatar"></span><div><div class="who-name">Carlos Pérez</div><div class="who-role">Contador</div></div></div>
+      </div>
+      <div class="video-card">
+        <span class="quote-mark"></span>
+        <p class="quote-text">Si uno tiene una cartera grande de clientes, <span class="hl">Alegra facilita todo el proceso.</span></p>
+        <div class="who-overlay"><span class="who-avatar"></span><div><div class="who-name">Guillermina González</div><div class="who-role">Goal Contadores</div></div></div>
+      </div>
+      <div class="video-card">
+        <span class="quote-mark"></span>
+        <p class="quote-text">La conciliación automática nos ahorra <span class="hl">más de diez horas al mes.</span></p>
+        <div class="who-overlay"><span class="who-avatar"></span><div><div class="who-name">Sofía Pardo</div><div class="who-role">Estudio Norte</div></div></div>
+      </div>
+      <div class="video-card">
+        <span class="quote-mark"></span>
+        <p class="quote-text">Atendemos más clientes <span class="hl">sin perder precisión</span> en los reportes.</p>
+        <div class="who-overlay"><span class="who-avatar"></span><div><div class="who-name">Julián Rojas</div><div class="who-role">Contador independiente</div></div></div>
+      </div>
+    </div>
+    <div class="testimonials-grid reveal" id="testi-empresas" data-panel="testi" style="display:none;">
+      <div class="video-card">
+        <span class="quote-mark"></span>
+        <p class="quote-text">Reducimos el tiempo de facturación <span class="hl">a la mitad.</span></p>
+        <div class="who-overlay"><span class="who-avatar"></span><div><div class="who-name">María Cárdenas</div><div class="who-role">Tienda Luz</div></div></div>
+      </div>
+      <div class="video-card">
+        <span class="quote-mark"></span>
+        <p class="quote-text">Todo mi inventario <span class="hl">en tiempo real</span> desde cualquier lugar.</p>
+        <div class="who-overlay"><span class="who-avatar"></span><div><div class="who-name">Andrés Suárez</div><div class="who-role">Ferretería Suárez</div></div></div>
+      </div>
+      <div class="video-card">
+        <span class="quote-mark"></span>
+        <p class="quote-text">El soporte 24/7 <span class="hl">nos salvó</span> en cierre de mes.</p>
+        <div class="who-overlay"><span class="who-avatar"></span><div><div class="who-name">Laura Gómez</div><div class="who-role">Café Andina</div></div></div>
+      </div>
+      <div class="video-card">
+        <span class="quote-mark"></span>
+        <p class="quote-text">Migramos desde Excel <span class="hl">en menos de una semana.</span></p>
+        <div class="who-overlay"><span class="who-avatar"></span><div><div class="who-name">Diego Fonseca</div><div class="who-role">Textiles DF</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOBILE APP -->
+  <section class="container">
+    <div class="app-card reveal">
+      <div>
+        <h2>Maneja tu negocio desde donde estés</h2>
+        <ul>
+          <li>Facturación, administración y contabilidad en tus manos</li>
+          <li>Gráficas de ventas, saldos e inventario en tiempo real</li>
+          <li>Manejo fácil de todos tus clientes desde una sola App</li>
+          <li>Administra todo en un solo lugar y ahorra tiempo en cada proceso</li>
+        </ul>
+        <div class="qr-box">
+          <span class="qr-grid"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+          <span class="qr-label">Escanea para<br>descargar</span>
+        </div>
+      </div>
+      <div class="phone-mock">
+        <div class="screen">
+          <div class="row"><span>Nueva factura</span><span>✕</span></div>
+          <h4>Empresa Ejemplar</h4>
+          <div class="item-row"><span class="name">Mesa de madera</span><span class="price">$200.000</span></div>
+          <div class="item-row"><span class="name">Maceta</span><span class="price">$200.000</span></div>
+          <div class="item-row"><span class="name">Mueble clamor</span><span class="price">$200.000</span></div>
+          <div class="send-btn">Enviar</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTEGRATIONS -->
+  <section class="container">
+    <div class="integrations-card reveal">
+      <div>
+        <h2>Integraciones que le dan más poder a tu negocio</h2>
+        <p>Conecta Alegra con las apps que ya usas y mueve tu negocio más rápido y sin interrupciones.</p>
+        <a href="#" class="btn-primary">Ver todas las integraciones →</a>
+      </div>
+      <div class="integrations-logos">
+        <div class="integration-chip">NEQUI</div>
+        <div class="integration-chip">mercado libre</div>
+        <div class="integration-chip">hotmart</div>
+        <div class="integration-chip">shopify</div>
+        <div class="integration-chip">PayU</div>
+        <div class="integration-chip">salesforce</div>
+        <div class="integration-chip">mailchimp</div>
+        <div class="integration-chip">hubspot</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="container">
+    <div class="section-head reveal"><h2>Explora las preguntas frecuentes</h2></div>
+    <div class="faq-columns reveal">
+      <div class="faq-list">
+        <details class="faq-row" open><summary>¿Qué es Alegra software de gestión en Colombia? <span class="chev">⌄</span></summary><div class="faq-body">Alegra es un software en la nube para facturación electrónica, contabilidad, inventario y más, diseñado para pymes y contadores en Colombia.</div></details>
+        <details class="faq-row"><summary>¿Para quién es ideal Alegra software de gestión? <span class="chev">⌄</span></summary><div class="faq-body">Para pequeñas y medianas empresas, comercios, y contadores que gestionan varias empresas a la vez.</div></details>
+        <details class="faq-row"><summary>¿Qué es un software de gestión? <span class="chev">⌄</span></summary><div class="faq-body">Es una herramienta que centraliza los procesos administrativos, contables y financieros de un negocio en un solo lugar.</div></details>
+        <details class="faq-row"><summary>¿Cuáles son las características de Alegra software de gestión? <span class="chev">⌄</span></summary><div class="faq-body">Facturación electrónica, contabilidad, inventario, nómina, POS, reportes automáticos e integraciones.</div></details>
+        <details class="faq-row"><summary>¿Qué debe tener un software de gestión? <span class="chev">⌄</span></summary><div class="faq-body">Debe cubrir facturación, contabilidad, control de inventario, y cumplir con la normativa fiscal vigente.</div></details>
+        <details class="faq-row"><summary>¿Quién utiliza un software de gestión? <span class="chev">⌄</span></summary><div class="faq-body">Empresarios, contadores, equipos administrativos y financieros de negocios de todos los tamaños.</div></details>
+        <details class="faq-row"><summary>¿Cuáles son los beneficios de usar Alegra? <span class="chev">⌄</span></summary><div class="faq-body">Ahorro de tiempo, cumplimiento normativo automático, acceso desde cualquier lugar y soporte 24/7.</div></details>
+        <details class="faq-row"><summary>¿Para qué sirve un software de gestión empresarial? <span class="chev">⌄</span></summary><div class="faq-body">Para automatizar procesos administrativos, financieros y contables, reduciendo errores manuales.</div></details>
+        <details class="faq-row"><summary>¿Alegra tiene funcionalidades con IA? <span class="chev">⌄</span></summary><div class="faq-body">Sí, Alegra utiliza IA para conciliaciones bancarias, reportes inteligentes y automatización de tareas.</div></details>
+        <details class="faq-row"><summary>¿Alegra es uno de los mejores software de gestión en Colombia? <span class="chev">⌄</span></summary><div class="faq-body">Sí, Alegra es uno de los software de gestión más usados en Colombia, con más de 40.000 empresas activas.</div></details>
+        <details class="faq-row"><summary>¿Alegra software es gratis? <span class="chev">⌄</span></summary><div class="faq-body">Puedes probar Alegra gratis durante 15 días con acceso completo al plan PRO, sin tarjeta de crédito.</div></details>
+      </div>
+      <div class="faq-list">
+        <details class="faq-row"><summary>¿En qué tipos de negocios puedo utilizar Alegra? <span class="chev">⌄</span></summary><div class="faq-body">Comercio, servicios, restaurantes, firmas contables, y prácticamente cualquier tipo de negocio.</div></details>
+        <details class="faq-row"><summary>¿Alegra funciona en todo Colombia? <span class="chev">⌄</span></summary><div class="faq-body">Sí, Alegra funciona en todo el país y cumple con la normativa de la DIAN a nivel nacional.</div></details>
+        <details class="faq-row"><summary>¿Me ayudan a migrar desde otro sistema o desde Excel? <span class="chev">⌄</span></summary><div class="faq-body">Sí, contamos con un equipo de acompañamiento para ayudarte a migrar tu información fácilmente.</div></details>
+        <details class="faq-row"><summary>¿Puedo usar Alegra con mi contador? <span class="chev">⌄</span></summary><div class="faq-body">Sí, todos los planes incluyen acceso adicional para que tu contador trabaje contigo en tiempo real.</div></details>
+        <details class="faq-row"><summary>¿Qué pasa si cambia una norma de la DIAN? <span class="chev">⌄</span></summary><div class="faq-body">Alegra actualiza automáticamente la plataforma para que siempre estés cumpliendo con la normativa vigente.</div></details>
+        <details class="faq-row"><summary>¿Ofrecen capacitación o acompañamiento para empezar? <span class="chev">⌄</span></summary><div class="faq-body">Sí, contamos con Alegra Academy, webinars y un centro de ayuda completo.</div></details>
+        <details class="faq-row"><summary>¿Cómo ayuda Alegra a ahorrar tiempo en la gestión de mi negocio? <span class="chev">⌄</span></summary><div class="faq-body">Automatizando tareas repetitivas como facturación, conciliación bancaria y generación de reportes.</div></details>
+        <details class="faq-row"><summary>¿Cuáles son las integraciones que permite Alegra en Colombia? <span class="chev">⌄</span></summary><div class="faq-body">Nequi, Mercado Libre, Hotmart, Shopify, PayU, Salesforce, Mailchimp, HubSpot y más.</div></details>
+        <details class="faq-row"><summary>¿Qué pasarela de pagos puedo conectar con Alegra en Colombia? <span class="chev">⌄</span></summary><div class="faq-body">Puedes conectar PayU, Nequi y otras pasarelas populares en Colombia.</div></details>
+        <details class="faq-row"><summary>¿Alegra tiene una API para desarrolladores en Colombia? <span class="chev">⌄</span></summary><div class="faq-body">Sí, Alegra ofrece una API abierta para integrar tu negocio con otras herramientas.</div></details>
+        <details class="faq-row"><summary>¿Puedo conectar Alegra con inteligencia artificial como ChatGPT o Claude? <span class="chev">⌄</span></summary><div class="faq-body">Sí, a través de la API de Alegra puedes conectar asistentes de IA a tu operación.</div></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid container">
+      <div class="footer-col">
+        <h4>Alegra</h4>
+        <div class="country-pill">🇨🇴 Colombia ⌄</div>
+        <div class="cert-row">
+          <div class="cert-badge">ICONTEC Carbono Neutro</div>
+          <div class="cert-badge">KIWA ISO 9001:2015</div>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Productos</h4>
+        <ul>
+          <li><a href="#">Funcionalidades de IA <span class="tag-new">Nuevo</span></a></li>
+          <li><a href="#">Software para Contadores <span class="tag-popular">Popular</span></a></li>
+          <li><a href="#">Software de contabilidad</a></li>
+          <li><a href="#">Sistema de facturación electrónica</a></li>
+          <li><a href="#">Software de nómina electrónica</a></li>
+          <li><a href="#">Punto de venta (POS)</a></li>
+          <li><a href="#">Alegra Enterprise</a></li>
+          <li><a href="#">Factura en Salud</a></li>
+          <li><a href="#">API e Integraciones</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contenido educativo</h4>
+        <ul>
+          <li><a href="#">Blog Inteligencia Empresarial <span class="tag-new">Nuevo</span></a></li>
+          <li><a href="#">Escuela de emprendedores</a></li>
+          <li><a href="#">Blog Siempre Al Día <span class="tag-popular">Popular</span></a></li>
+          <li><a href="#">Centro de ayuda <span class="tag-popular">Popular</span></a></li>
+          <li><a href="#">Alegra Academy</a></li>
+          <li><a href="#">Comunidad de Alegra</a></li>
+          <li><a href="#">Recursos para contadores</a></li>
+          <li><a href="#">Webinars</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Enlaces útiles</h4>
+        <ul>
+          <li><a href="#">Contáctanos</a></li>
+          <li><a href="#">Marketplace <span class="tag-new">Nuevo</span></a></li>
+          <li><a href="#">Calendario Tributario 2026</a></li>
+          <li><a href="#">Estado de las soluciones</a></li>
+          <li><a href="#">Alegra Partners</a></li>
+          <li><a href="#">Trabaja con Alegra <span class="tag-popular">Popular</span></a></li>
+          <li><a href="#">Quiénes somos</a></li>
+          <li><a href="#">Legal</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container" style="text-align:center;color:var(--text-muted-2);font-size:.75rem;margin-top:30px;">
+      Al navegar en los sitios webs propiedad de Alegra, se acepta el uso de Cookies según nuestros <strong>términos y condiciones</strong>
+    </div>
+    <div class="footer-bottom container">
+      <a href="#" class="tree-link">→ Tus facturas electrónicas ayudan a sembrar árboles 🌳</a>
+      <span>COPYRIGHT © 2026 Soluciones Alegra S.A.S.</span>
+      <div class="social-icons"><span>f</span><span>▶</span><span>◎</span><span>♪</span></div>
+    </div>
+  </footer>
+
+<script>
+  var navEl = document.querySelector(".nav");
+  function onNavScroll() { navEl.classList.toggle("scrolled", window.scrollY > 10); }
+  window.addEventListener("scroll", onNavScroll, { passive: true });
+  onNavScroll();
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) { entry.target.classList.add("in-view"); observer.unobserve(entry.target); }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll(".reveal").forEach(function (el) { observer.observe(el); });
+
+  document.querySelectorAll("[data-toggle-group]").forEach(function (group) {
+    var name = group.getAttribute("data-toggle-group");
+    var panels = document.querySelectorAll('[data-panel="' + name + '"]');
+    group.querySelectorAll("button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        group.querySelectorAll("button").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        var target = btn.getAttribute("data-target");
+        panels.forEach(function (p) { p.style.display = (p.id === target) ? "" : "none"; });
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-tab-group]").forEach(function (group) {
+    var name = group.getAttribute("data-tab-group");
+    var panels = document.querySelectorAll('[data-tool-panel="' + name + '"]');
+    group.querySelectorAll("button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        group.querySelectorAll("button").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        var target = btn.getAttribute("data-target");
+        panels.forEach(function (p) { p.classList.toggle("active", p.id === target); });
+      });
+    });
+  });
+</script>
+</body>
+</html>
