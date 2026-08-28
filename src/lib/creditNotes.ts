@@ -62,6 +62,15 @@ export class CreditNotesService {
     }
 
     /**
+     * PATCH /credit-notes/{id}
+     * Edición mínima (cliente, nota, observación) — solo mientras no esté aprobada por la DIAN.
+     */
+    static async update(id: number | string, data: any): Promise<any> {
+        const res = await apiClient.patch<any>(`/credit-notes/${id}`, data);
+        return res?.data || res;
+    }
+
+    /**
      * GET /credit-notes/{id}
      * Muestra los detalles de una nota de crédito.
      */

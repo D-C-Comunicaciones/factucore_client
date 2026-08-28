@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -49,6 +49,8 @@ export interface SearchableSelectProps {
   contentClassName?: string;
   /** Whether the select is disabled */
   disabled?: boolean;
+  /** Shows a left-aligned spinner instead of the label/placeholder while options load */
+  loading?: boolean;
   /** Optional footer element (e.g. "New item" button) rendered below the list */
   footer?: React.ReactNode;
   /** Optional error icon shown inside the trigger */
@@ -69,6 +71,7 @@ export function SearchableSelect({
   className,
   contentClassName,
   disabled = false,
+  loading = false,
   footer,
   errorIcon,
 }: SearchableSelectProps) {
@@ -77,27 +80,34 @@ export function SearchableSelect({
   const selectedOption = options.find((o) => o.value === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={loading ? false : open} onOpenChange={loading ? undefined : setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
           role="combobox"
           aria-expanded={open}
-          disabled={disabled}
+          aria-busy={loading}
+          disabled={disabled || loading}
           className={cn(
             // Match the project's base input styling
             "flex w-full items-center justify-between gap-2 rounded-lg border border-foreground/20 bg-white px-3 py-2 text-sm whitespace-nowrap transition-colors outline-none hover:border-primary focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 h-9 cursor-pointer",
             className,
           )}
         >
-          <span
-            className={cn(
-              "truncate text-left",
-              !selectedOption && "text-muted-foreground"
-            )}
-          >
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
+          {loading ? (
+            <span className="flex items-center text-left">
+              <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+            </span>
+          ) : (
+            <span
+              className={cn(
+                "truncate text-left",
+                !selectedOption && "text-muted-foreground"
+              )}
+            >
+              {selectedOption ? selectedOption.label : placeholder}
+            </span>
+          )}
           <span className="flex items-center gap-1 shrink-0">
             {errorIcon}
             <ChevronDown className="size-4 opacity-50" />

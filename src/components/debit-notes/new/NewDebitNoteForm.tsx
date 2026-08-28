@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Edit2, AlertCircle, Plus, X, RefreshCw, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { PercentCurrencyToggle } from '@/components/ui/percent-currency-toggle';
 import { cn } from '@/lib/utils';
 import { AuthService } from '@/lib/auth';
 import { ContactsService } from '@/lib/contacts';
@@ -523,7 +524,11 @@ export function NewDebitNoteForm() {
         if (!selectedInvoice.invoiceId) newErrors.factura = 'La factura de venta asociada es obligatoria';
 
         const validLines = addedLines.filter(l => l.productId && Number(l.quantity) > 0);
-        if (validLines.length === 0) newErrors.lineas = 'Debe agregar al menos una línea válida';
+        // Las líneas son opcionales: una nota débito puede ser un único ajuste global
+        // (ej. propina/recargo) sin anexar líneas de la factura original.
+        if (validLines.length === 0 && tips.length === 0) {
+            newErrors.lineas = 'Debe agregar al menos una línea o una propina/recargo';
+        }
 
         if (!reason.trim()) newErrors.razon = 'La razón es obligatoria';
         if (!paymentMethodId) newErrors.metodoPago = 'El método de pago es obligatorio';
@@ -697,9 +702,10 @@ export function NewDebitNoteForm() {
                                 value={clientId}
                                 onValueChange={handleClientChange}
                                 options={clientOptions}
-                                placeholder={loadingCustomers ? "Cargando..." : "Seleccionar cliente"}
+                                loading={loadingCustomers}
+                                placeholder="Seleccionar cliente"
                                 searchPlaceholder="Buscar cliente..."
-                                emptyMessage={loadingCustomers ? "Cargando..." : "No se encontraron clientes."}
+                                emptyMessage="No se encontraron clientes."
                                 className={cn(baseInput, "w-full rounded-md", errors.cliente && "border-red-400")}
                             />
                             {errors.cliente && (
@@ -719,7 +725,8 @@ export function NewDebitNoteForm() {
                                 value={selectedType}
                                 onValueChange={handleTypeChange}
                                 options={debitNoteTypes}
-                                placeholder={loadingTypes ? "Cargando..." : "Seleccionar"}
+                                loading={loadingTypes}
+                                placeholder="Seleccionar"
                                 searchPlaceholder="Buscar tipo..."
                                 emptyMessage="No se encontraron tipos."
                                 className={cn(baseInput, "w-full rounded-md", errors.tipoNota && "border-red-400")}
@@ -778,9 +785,10 @@ export function NewDebitNoteForm() {
                                                     value={selectedInvoice.invoiceId}
                                                     onValueChange={(v) => handleInvoiceChange(v)}
                                                     options={invoiceOptions}
-                                                    placeholder={loadingInvoices ? "Cargando..." : "Buscar factura"}
+                                                    loading={loadingInvoices}
+                                                    placeholder="Buscar factura"
                                                     searchPlaceholder="Buscar.."
-                                                    emptyMessage={loadingInvoices ? "Cargando..." : "No hay facturas."}
+                                                    emptyMessage="No hay facturas."
                                                     className={cn(baseInput, "w-full rounded-md", errors.factura && "border-red-400")}
                                                 />
                                             )}
@@ -886,9 +894,13 @@ export function NewDebitNoteForm() {
 
                                                 <td className="px-4 py-4">
                                                     <div className="flex border rounded-md h-[34px] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40">
-                                                        <button type="button" onClick={() => {
-                                                            setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, discount: { ...l.discount, type: l.discount.type === '%' ? '$' : '%' } } : l));
-                                                        }} className="px-2 border-r bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-medium w-8 text-center">{line.discount.type}</button>
+                                                        <PercentCurrencyToggle
+                                                            variant="inline"
+                                                            value={line.discount.type}
+                                                            onValueChange={(type) => {
+                                                                setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, discount: { ...l.discount, type } } : l));
+                                                            }}
+                                                        />
                                                         <input type="text" inputMode="numeric" value={line.discount.value} onChange={(e) => {
                                                             let valNum = Number(e.target.value.replace(/[^0-9]/g, ''));
                                                             if (line.discount.type === '%' && valNum > 100) {
@@ -990,10 +1002,7 @@ export function NewDebitNoteForm() {
                                 <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
                                     <input type="text" value={newTipReason} onChange={e => setNewTipReason(e.target.value)} placeholder="Motivo" className="flex-1 text-sm h-9 px-3 border rounded-md outline-none focus:border-primary w-full sm:w-auto" />
                                     <div className="flex gap-2 w-full sm:w-auto">
-                                        <select value={newTipType} onChange={e => { setNewTipType(e.target.value as '%' | '$'); setNewTipValue(''); }} className="text-sm border rounded-md outline-none focus:border-primary w-20 px-1 h-9">
-                                            <option value="%">%</option>
-                                            <option value="$">$</option>
-                                        </select>
+                                        <PercentCurrencyToggle value={newTipType} onValueChange={(v) => { setNewTipType(v); setNewTipValue(''); }} />
                                         <input type="text" inputMode="numeric" value={newTipValue} onChange={e => {
                                             const val = e.target.value.replace(/[^0-9]/g, '');
                                             if (newTipType === '%' && Number(val) > 100) {

@@ -283,7 +283,8 @@ export function NewPurchaseOrderForm({
                         value={contactId}
                         onValueChange={setContactId}
                         options={contactOptions}
-                        placeholder={loadingContacts ? "Cargando clientes..." : "Seleccionar cliente"}
+                        loading={loadingContacts}
+                        placeholder="Seleccionar cliente"
                         searchPlaceholder="Buscar cliente..."
                         className={`flex-1 h-9 ${errors.contact_id ? "border-destructive" : ""}`}
                       />

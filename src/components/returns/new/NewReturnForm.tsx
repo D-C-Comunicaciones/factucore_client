@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { HelpCircle, Edit2, AlertCircle, Plus, Trash2, X, RefreshCw } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { PercentCurrencyToggle } from '@/components/ui/percent-currency-toggle';
 import { cn } from '@/lib/utils';
 import { AuthService } from '@/lib/auth';
 import { ContactsService } from '@/lib/contacts';
@@ -679,14 +680,43 @@ export function NewReturnForm() {
                         invoice_id: firstInvoiceId,
                     };
                 } else if (['3', '6', '7'].includes(selectedType)) {
-                    // Para tipos 3, 6 y 7 solo enviamos nuevos ajustes de descuentos
-                    const payloadLines = validLines.filter(l => Number(l.discount.value) > 0).map(l => ({
-                        invoice_line_id: l.invoiceLineId,
-                        discount: {
-                            type: l.discount.type === '%' ? 'percentage' : 'fixed',
-                            value: Number(l.discount.value)
-                        }
-                    }));
+                    // Para tipos 3, 6 y 7: se mantiene la cantidad y el precio original de cada
+                    // línea y solo se agrega un descuento nuevo. La línea completa (description,
+                    // quantity, price, taxes) es obligatoria para el backend — solo enviar
+                    // invoice_line_id + discount no basta (StoreCreditNoteRequest rechaza la
+                    // línea, y el backend nunca calcula el nuevo IVA/base gravable).
+                    const payloadLines = validLines
+                        .filter(l => Number(l.discount.value) > 0)
+                        .map(l => {
+                            return {
+                                invoice_line_id: l.invoiceLineId,
+                                description: l.name || 'Ítem',
+                                quantity: l.maxQuantity,
+                                price: l.price,
+                                item_snapshot: { id: l.productId, name: l.name },
+                                taxes: (l.taxes || []).map((t: any) => {
+                                    const rate = Number(t.percent || t.rate || 0);
+                                    return {
+                                        tax_id: t.tax_id || t.id,
+                                        type: t.type || 'percentage',
+                                        rate,
+                                        tax_code: t.tax_code || String(t.tax_id || ''),
+                                        name: t.name || t.tax?.name || t.tax_name || '',
+                                        percent: rate,
+                                    };
+                                }),
+                                discounts: [{
+                                    type: l.discount.type === '%' ? 'percentage' : 'fixed',
+                                    percent: l.discount.type === '%' ? Number(l.discount.value) : undefined,
+                                    value: Number(l.discount.value),
+                                    reason: selectedType === '6'
+                                        ? 'Descuento comercial por pronto pago'
+                                        : selectedType === '7'
+                                            ? 'Descuento comercial por volumen de ventas'
+                                            : 'Rebaja o descuento parcial o total',
+                                }],
+                            };
+                        });
                     payload = {
                         ...commonData,
                         invoice_id: firstInvoiceId,
@@ -905,9 +935,10 @@ export function NewReturnForm() {
                                 value={clientId}
                                 onValueChange={handleClientChange}
                                 options={clientOptions}
-                                placeholder={loadingCustomers ? "Cargando..." : "Seleccionar cliente"}
+                                loading={loadingCustomers}
+                                placeholder="Seleccionar cliente"
                                 searchPlaceholder="Buscar cliente..."
-                                emptyMessage={loadingCustomers ? "Cargando..." : "No se encontraron clientes."}
+                                emptyMessage="No se encontraron clientes."
                                 className={cn(baseInput, "w-full rounded-md", errors.cliente && "border-red-400")}
                             />
                             {errors.cliente && (
@@ -929,7 +960,8 @@ export function NewReturnForm() {
                                 value={selectedType}
                                 onValueChange={handleTypeChange}
                                 options={creditNoteTypes}
-                                placeholder={loadingTypes ? "Cargando..." : "Seleccionar"}
+                                loading={loadingTypes}
+                                placeholder="Seleccionar"
                                 searchPlaceholder="Buscar tipo..."
                                 emptyMessage="No se encontraron tipos."
                                 className={cn(baseInput, "w-full rounded-md", errors.tipoNota && "border-red-400")}
@@ -1000,9 +1032,10 @@ export function NewReturnForm() {
                                                             setErrors(prev => ({ ...prev, facturas: undefined }));
                                                         }}
                                                         options={invoiceOptions.filter(o => o.value === inv.invoiceId || !selectedInvoices.some(i => i.invoiceId === o.value))}
-                                                        placeholder={loadingInvoices ? "Cargando..." : "Buscar factura"}
+                                                        loading={loadingInvoices}
+                                                        placeholder="Buscar factura"
                                                         searchPlaceholder="Buscar.."
-                                                        emptyMessage={loadingInvoices ? "Cargando..." : "No hay facturas."}
+                                                        emptyMessage="No hay facturas."
                                                         className={cn(baseInput, "w-full rounded-md", errors.facturas && "border-red-400")}
                                                     />
                                                 </div>
@@ -1260,9 +1293,14 @@ export function NewReturnForm() {
                                                         </div>
                                                     ) : (
                                                         <div className="flex border rounded-md h-[34px] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40">
-                                                            <button type="button" disabled={selectedType === '2'} onClick={() => {
-                                                                setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, discount: { ...l.discount, type: l.discount.type === '%' ? '$' : '%' } } : l));
-                                                            }} className="px-2 border-r bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-medium w-8 text-center">{line.discount.type}</button>
+                                                            <PercentCurrencyToggle
+                                                                variant="inline"
+                                                                disabled={selectedType === '2'}
+                                                                value={line.discount.type}
+                                                                onValueChange={(type) => {
+                                                                    setAddedLines(prev => prev.map(l => l.uid === line.uid ? { ...l, discount: { ...l.discount, type } } : l));
+                                                                }}
+                                                            />
                                                             <input type="text" inputMode="numeric" value={line.discount.value} disabled={selectedType === '2'} onChange={(e) => {
                                                                 let valNum = Number(e.target.value.replace(/[^0-9]/g, ''));
                                                                 if (line.discount.type === '%' && valNum > 100) {
@@ -1440,13 +1478,14 @@ export function NewReturnForm() {
                                             <div className="pt-2 border-t border-slate-200/50 flex flex-col gap-2">
                                                 <input type="text" value={newDiscountReason} onChange={e => setNewDiscountReason(e.target.value)} placeholder="Motivo" className="w-full text-sm h-8 px-2 border rounded-md outline-none focus:border-primary" />
                                                 <div className="flex gap-2">
-                                                    <select value={newDiscountType} onChange={e => {
-                                                        setNewDiscountType(e.target.value as '%' | '$');
-                                                        setNewDiscountValue('');
-                                                    }} className="text-sm border rounded-md outline-none focus:border-primary w-24 px-1">
-                                                        <option value="%">%</option>
-                                                        <option value="$">$</option>
-                                                    </select>
+                                                    <PercentCurrencyToggle
+                                                        className="w-24"
+                                                        value={newDiscountType}
+                                                        onValueChange={(v) => {
+                                                            setNewDiscountType(v);
+                                                            setNewDiscountValue('');
+                                                        }}
+                                                    />
                                                     <input type="text" inputMode="numeric" value={newDiscountValue} onChange={e => {
                                                         const val = e.target.value.replace(/[^0-9]/g, '');
                                                         const numVal = Number(val);

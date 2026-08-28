@@ -69,3 +69,16 @@ export function useSendDebitNote() {
         },
     });
 }
+
+export function useUpdateDebitNote() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }: { id: number | string; data: any }) => {
+            const res: any = await DebitNotesService.update(id, data);
+            return res;
+        },
+        onSuccess: (_data, { id }) => {
+            queryClient.invalidateQueries({ queryKey: DEBIT_NOTE_KEY(id) });
+        },
+    });
+}
