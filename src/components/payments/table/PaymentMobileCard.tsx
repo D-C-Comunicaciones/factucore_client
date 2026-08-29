@@ -29,7 +29,7 @@ export function PaymentMobileCard({
   return (
     <div
       className={`flex items-start gap-3 border-b border-border p-4 ${selected ? "bg-primary/5" : "bg-white"}`}
-      onClick={() => router.push(`/payments/${payment.id}`)}
+      onClick={() => router.push(`/sales/payments/${payment.id}`)}
     >
       <div className="pt-0.5" onClick={(e) => e.stopPropagation()} data-no-row-select="true">
         <SelectRowCheckbox checked={selected} onToggle={onToggleSelection} />

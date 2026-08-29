@@ -52,7 +52,7 @@ export function PurchaseOrderTable({
   variant = "external",
 }: PurchaseOrderTableProps) {
   const columns = getColumns(variant);
-  const basePath = variant === "internal" ? "/expenses/purchase-orders" : "/purchase-orders";
+  const basePath = variant === "internal" ? "/expenses/purchase-orders" : "/sales/purchase-orders";
 
   const table = useReactTable({
     data: purchaseOrders,

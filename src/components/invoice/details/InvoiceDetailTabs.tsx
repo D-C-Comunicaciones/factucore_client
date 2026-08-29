@@ -159,7 +159,7 @@ export function InvoiceDetailTabs({
                                             <tr
                                                 key={p.id || idx}
                                                 className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                                                onClick={() => paymentId && router.push(`/payments/${paymentId}`)}
+                                                onClick={() => paymentId && router.push(`/sales/payments/${paymentId}`)}
                                             >
                                                 <td className="py-3.5 px-4">
                                                     <span className="text-slate-800 font-medium">{formattedDate}</span>
@@ -208,7 +208,7 @@ export function InvoiceDetailTabs({
                                             <tr
                                                 key={r.id || idx}
                                                 className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                                                onClick={() => remissionId && router.push(`/remissions/${remissionId}`)}
+                                                onClick={() => remissionId && router.push(`/sales/remissions/${remissionId}`)}
                                             >
                                                 <td className="py-3.5 px-4 text-primary font-semibold">
                                                     {(r.prefix || '') + (r.number || r.id || '')}
@@ -273,7 +273,7 @@ export function InvoiceDetailTabs({
                                             <tr
                                                 key={cn.id || idx}
                                                 className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                                                onClick={() => creditNoteId && router.push(`/returns/${creditNoteId}`)}
+                                                onClick={() => creditNoteId && router.push(`/sales/returns/${creditNoteId}`)}
                                             >
                                                 <td className="py-3.5 px-4">
                                                     <span className="text-slate-800 font-medium">{formattedDate}</span>
@@ -320,7 +320,7 @@ export function InvoiceDetailTabs({
                                             <tr
                                                 key={q.id || idx}
                                                 className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                                                onClick={() => quoteId && router.push(`/quotes/${quoteId}`)}
+                                                onClick={() => quoteId && router.push(`/sales/quotes/${quoteId}`)}
                                             >
                                                 <td className="py-3.5 px-4">{q.created_at || q.issue_date || '-'}</td>
                                                 <td className="py-3.5 px-4 text-center text-primary font-medium">{q.prefix || ''}{q.number || q.id}</td>

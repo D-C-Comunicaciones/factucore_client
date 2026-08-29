@@ -188,13 +188,13 @@ export function NewPurchaseOrderForm({
       if (mode === "create") {
         const created = await createPurchaseOrder.mutateAsync(payload);
         showToast("Orden de compra creada correctamente", "success");
-        router.push(created?.id ? `/purchase-orders/${created.id}` : "/purchase-orders");
+        router.push(created?.id ? `/sales/purchase-orders/${created.id}` : "/sales/purchase-orders");
       } else if (purchaseOrderId) {
         // El backend no permite cambiar type/resolution_id/prefix/number al editar
         delete payload.type;
         await updatePurchaseOrder.mutateAsync({ id: purchaseOrderId, data: payload });
         showToast("Orden de compra actualizada correctamente", "success");
-        router.push(`/purchase-orders/${purchaseOrderId}`);
+        router.push(`/sales/purchase-orders/${purchaseOrderId}`);
       }
     } catch (error: any) {
       const backendErrors = error.response?.data?.errors;
@@ -216,7 +216,7 @@ export function NewPurchaseOrderForm({
         <div className="space-y-6">
           <div>
             <div className="flex items-center text-sm text-primary mb-2 font-medium">
-              <Link href="/purchase-orders" className="hover:underline">
+              <Link href="/sales/purchase-orders" className="hover:underline">
                 Órdenes de compra recibidas
               </Link>
               <ChevronRight className="w-4 h-4 mx-1 text-slate-400" />
@@ -421,7 +421,7 @@ export function NewPurchaseOrderForm({
           <div className="flex items-center justify-end gap-2 pb-8">
             <Button
               variant="outline"
-              onClick={() => router.push("/purchase-orders")}
+              onClick={() => router.push("/sales/purchase-orders")}
               disabled={loadingSave}
               className="bg-white border-gray-300 hover:bg-gray-50 cursor-pointer"
             >

@@ -133,15 +133,15 @@ export function Header({
               <span>Gasto</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-gray-200" />
-            <DropdownMenuItem onClick={() => router.push('/invoices/new')} className="cursor-pointer focus:bg-gray-100">
+            <DropdownMenuItem onClick={() => router.push('/sales/invoices/new')} className="cursor-pointer focus:bg-gray-100">
               <FileText className="mr-2 h-4 w-4 text-gray-500" />
               <span>Facturas de venta</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/remissions/new')} className="cursor-pointer focus:bg-gray-100">
+            <DropdownMenuItem onClick={() => router.push('/sales/remissions/new')} className="cursor-pointer focus:bg-gray-100">
               <FileBox className="mr-2 h-4 w-4 text-gray-500" />
               <span>Remisión</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/purchase-orders/new')} className="cursor-pointer focus:bg-gray-100">
+            <DropdownMenuItem onClick={() => router.push('/sales/purchase-orders/new')} className="cursor-pointer focus:bg-gray-100">
               <ShoppingCart className="mr-2 h-4 w-4 text-gray-500" />
               <span>Orden de compra recibida</span>
             </DropdownMenuItem>
@@ -163,7 +163,7 @@ export function Header({
               <Users className="mr-2 h-4 w-4 text-gray-500" />
               <span>Contacto</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/quotes/new')} className="cursor-pointer focus:bg-gray-100">
+            <DropdownMenuItem onClick={() => router.push('/sales/quotes/new')} className="cursor-pointer focus:bg-gray-100">
               <FileSignature className="mr-2 h-4 w-4 text-gray-500" />
               <span>Cotización</span>
             </DropdownMenuItem>
@@ -285,21 +285,21 @@ export function Header({
               <CommandGroup className="[&_[cmdk-group-heading]]:hidden">
                 {[
                   // Ingresos
-                  { parent: "Ingresos", title: "Factura de venta", path: "/invoices", keywords: ["ingresos", "facturas", "venta", "ventas", "facturacion", "invoices"] },
-                  { parent: "Ingresos", title: "Pagos recibidos", path: "/payments", keywords: ["ingresos", "pagos", "recibidos", "cobros", "abonos", "payments"] },
-                  { parent: "Ingresos", title: "Devoluciones en venta", path: "/returns", keywords: ["ingresos", "devoluciones", "venta", "retornos", "returns"] },
-                  { parent: "Ingresos", title: "Notas débito", path: "/debit-notes", keywords: ["ingresos", "notas", "debito", "debitos", "debit-notes"] },
-                  { parent: "Ingresos", title: "Cotizaciones", path: "/quotes", keywords: ["ingresos", "cotizaciones", "presupuestos", "quotes"] },
-                  { parent: "Ingresos", title: "Remisiones", path: "/remissions", keywords: ["ingresos", "remisiones", "despachos", "entregas", "remissions"] },
-                  { parent: "Ingresos", title: "Órdenes de compra recibidas", path: "/purchase-orders", keywords: ["ingresos", "ordenes", "compra", "recibidas", "clientes", "purchase-orders"] },
+                  { parent: "Ingresos", title: "Factura de venta", path: "/sales/invoices", keywords: ["ingresos", "facturas", "venta", "ventas", "facturacion", "invoices"] },
+                  { parent: "Ingresos", title: "Pagos recibidos", path: "/sales/payments", keywords: ["ingresos", "pagos", "recibidos", "cobros", "abonos", "payments"] },
+                  { parent: "Ingresos", title: "Devoluciones en venta", path: "/sales/returns", keywords: ["ingresos", "devoluciones", "venta", "retornos", "returns"] },
+                  { parent: "Ingresos", title: "Notas débito", path: "/expenses/debit-notes", keywords: ["ingresos", "notas", "debito", "debitos", "debit-notes"] },
+                  { parent: "Ingresos", title: "Cotizaciones", path: "/sales/quotes", keywords: ["ingresos", "cotizaciones", "presupuestos", "quotes"] },
+                  { parent: "Ingresos", title: "Remisiones", path: "/sales/remissions", keywords: ["ingresos", "remisiones", "despachos", "entregas", "remissions"] },
+                  { parent: "Ingresos", title: "Órdenes de compra recibidas", path: "/sales/purchase-orders", keywords: ["ingresos", "ordenes", "compra", "recibidas", "clientes", "purchase-orders"] },
 
                   // Gastos
-                  { parent: "Gastos", title: "Facturas de compra", path: "/gastos/facturas-compra", keywords: ["gastos", "compras", "facturas", "proveedores"] },
-                  { parent: "Gastos", title: "Documento soporte", path: "/gastos/documento-soporte", keywords: ["gastos", "soporte", "documento", "no obligados"] },
+                  { parent: "Gastos", title: "Facturas de compra", path: "/expenses/bills", keywords: ["gastos", "compras", "facturas", "proveedores"] },
+                  { parent: "Gastos", title: "Documento soporte", path: "/expenses/support-documents", keywords: ["gastos", "soporte", "documento", "no obligados"] },
                   { parent: "Gastos", title: "Notas de ajuste", path: "/gastos/notas-ajuste", keywords: ["gastos", "notas", "ajuste", "correcciones"] },
                   { parent: "Gastos", title: "Pagos", path: "/gastos/pagos", keywords: ["gastos", "pagos", "egresos", "desembolsos"] },
                   { parent: "Gastos", title: "Pagos recurrentes", path: "/gastos/pagos-recurrentes", keywords: ["gastos", "pagos", "recurrentes", "suscripciones"] },
-                  { parent: "Gastos", title: "Notas débito", path: "/gastos/notas-debito", keywords: ["gastos", "notas", "debito", "devoluciones compra"] },
+                  { parent: "Gastos", title: "Notas débito", path: "/expenses/debit-notes", keywords: ["gastos", "notas", "debito", "devoluciones compra"] },
                   { parent: "Gastos", title: "Órdenes de compra", path: "/expenses/purchase-orders", keywords: ["gastos", "ordenes", "compra", "pedidos"] },
                   { parent: "Gastos", title: "Recepción de comprobantes", path: "/gastos/recepcion-comprobantes", keywords: ["gastos", "recepcion", "comprobantes", "xml", "dian"] },
 

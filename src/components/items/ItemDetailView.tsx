@@ -308,7 +308,7 @@ export function ItemDetailView({
           <Button
             variant="outline"
             className="btn-base border-border bg-white text-foreground hover:bg-primary/10 hover:text-primary"
-            onClick={() => router.push(`/invoices/new?item=${item.id}`)}
+            onClick={() => router.push(`/sales/invoices/new?item=${item.id}`)}
           >
             <Plus className="w-4 h-4 mr-1.5" />
             Facturar este ítem

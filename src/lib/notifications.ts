@@ -4,17 +4,17 @@ import type { NotificationsListResponse } from "@/types/notification";
 // Mapa compartido entre la campanita y el toast de mención en vivo: a qué
 // ruta navegar según `commentable_type`.
 export const DOCUMENT_ROUTES: Record<string, string> = {
-    invoice: "/invoices",
-    quotation: "/quotes",
-    remission: "/remissions",
-    credit_note: "/returns",
-    payment: "/payments",
-    // Las órdenes de compra tienen dos vistas (externas en /purchase-orders,
+    invoice: "/sales/invoices",
+    quotation: "/sales/quotes",
+    remission: "/sales/remissions",
+    credit_note: "/sales/returns",
+    payment: "/sales/payments",
+    // Las órdenes de compra tienen dos vistas (externas en /sales/purchase-orders,
     // internas en /expenses/purchase-orders) que comparten el mismo alias de
     // backend ("purchase_order") — sin esa distinción en el payload de la
     // notificación, se navega siempre a la externa. Si hace falta distinguir,
     // el backend tendría que mandar ese dato aparte.
-    purchase_order: "/purchase-orders",
+    purchase_order: "/sales/purchase-orders",
 };
 
 // comments-notifications.md documenta estos endpoints devolviendo la data

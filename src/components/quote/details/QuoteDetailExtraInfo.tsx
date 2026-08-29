@@ -58,7 +58,7 @@ export function QuoteDetailExtraInfo({ quote, invoices = [] }: QuoteDetailExtraI
                                     <tr
                                         key={inv.id || idx}
                                         className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-pointer"
-                                        onClick={() => inv.id && router.push(`/invoices/${inv.id}`)}
+                                        onClick={() => inv.id && router.push(`/sales/invoices/${inv.id}`)}
                                     >
                                         <td className="py-3.5 px-6 text-slate-700">{inv.created_at || inv.issue_date || '-'}</td>
                                         <td className="py-3.5 px-6 text-center text-slate-700 font-medium">{inv.prefix || ''}{inv.number || inv.id}</td>

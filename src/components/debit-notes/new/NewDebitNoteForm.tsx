@@ -555,9 +555,9 @@ export function NewDebitNoteForm() {
                 const note = response?.debit_note || response?.data?.debit_note;
                 showToast("Nota débito guardada como borrador", "success", "Éxito");
                 if (note && note.id) {
-                    router.push(`/debit-notes/${note.id}`);
+                    router.push(`/expenses/debit-notes/${note.id}`);
                 } else {
-                    router.push("/debit-notes");
+                    router.push("/expenses/debit-notes");
                 }
                 return;
             }
@@ -599,9 +599,9 @@ export function NewDebitNoteForm() {
             }
 
             if (note && note.id) {
-                router.push(`/debit-notes/${note.id}`);
+                router.push(`/expenses/debit-notes/${note.id}`);
             } else {
-                router.push("/debit-notes");
+                router.push("/expenses/debit-notes");
             }
         } catch (error: any) {
             console.error("Error guardando nota de débito:", error);
@@ -1132,7 +1132,7 @@ export function NewDebitNoteForm() {
                         if (isDirty) {
                             setShowExitModal(true);
                         } else {
-                            router.push("/debit-notes");
+                            router.push("/expenses/debit-notes");
                         }
                     }}
                 >
@@ -1269,7 +1269,7 @@ export function NewDebitNoteForm() {
                     if (pendingUrl) {
                         router.push(pendingUrl);
                     } else {
-                        router.push("/debit-notes");
+                        router.push("/expenses/debit-notes");
                     }
                 }}
             />

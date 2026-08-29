@@ -17,7 +17,7 @@ export function InvoiceMobileCard({ invoice, selected, onToggleSelection }: Invo
   return (
     <div
       className={`border-b border-gray-200 p-4 ${selected ? "bg-primary/5" : "bg-white"}`}
-      onClick={() => router.push(`/invoices/${invoice.id}`)}
+      onClick={() => router.push(`/sales/invoices/${invoice.id}`)}
     >
       <div className="flex items-start gap-3">
         <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>

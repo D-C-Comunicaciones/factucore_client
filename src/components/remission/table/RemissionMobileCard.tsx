@@ -14,7 +14,7 @@ export function RemissionMobileCard({ remission }: RemissionMobileCardProps) {
   return (
     <div
       className="border-b border-gray-200 p-4 bg-white"
-      onClick={() => router.push(`/remissions/${remission.id}`)}
+      onClick={() => router.push(`/sales/remissions/${remission.id}`)}
     >
       <div className="flex items-start justify-between gap-2">
         <span className="text-sm font-semibold text-gray-900">{remission.number}</span>

@@ -26,7 +26,7 @@ interface TabConfig {
 const TABS: TabConfig[] = [
     {
         key: "ventas", label: "Facturas de venta", dataKey: "invoices",
-        route: (id) => `/invoices/${id}`, icon: FileText,
+        route: (id) => `/sales/invoices/${id}`, icon: FileText,
         emptyMessage: "No tiene facturas de venta asociadas",
         emptyDescription: "Las facturas de venta generadas para este ítem aparecerán aquí.",
     },
@@ -44,7 +44,7 @@ const TABS: TabConfig[] = [
     },
     {
         key: "credito", label: "Notas de crédito", dataKey: "creditNotes",
-        route: (id) => `/returns/${id}`, icon: FileMinus,
+        route: (id) => `/sales/returns/${id}`, icon: FileMinus,
         emptyMessage: "No tiene notas de crédito asociadas",
         emptyDescription: "Las notas de crédito emitidas para este ítem aparecerán aquí.",
     },
@@ -62,13 +62,13 @@ const TABS: TabConfig[] = [
     },
     {
         key: "cotizaciones", label: "Cotizaciones", dataKey: "quotations",
-        route: (id) => `/quotes/${id}`, icon: FileCheck,
+        route: (id) => `/sales/quotes/${id}`, icon: FileCheck,
         emptyMessage: "No tiene cotizaciones asociadas",
         emptyDescription: "Las cotizaciones que incluyen este ítem aparecerán aquí.",
     },
     {
         key: "remisiones", label: "Remisiones", dataKey: "remissions", fallbackDataKey: "deliveryNotes",
-        route: (id) => `/remissions/${id}`, icon: Truck,
+        route: (id) => `/sales/remissions/${id}`, icon: Truck,
         emptyMessage: "No tiene remisiones asociadas",
         emptyDescription: "Las remisiones que incluyen este ítem aparecerán aquí.",
     },

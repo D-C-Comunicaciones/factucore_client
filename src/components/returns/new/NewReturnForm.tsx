@@ -749,9 +749,9 @@ export function NewReturnForm() {
             // Si retorna una sola nota crédito, ir al detalle. Si retorna arreglo (batch), ir a lista general
             const singleNote = response?.credit_note || response?.creditNote || response?.data?.credit_note;
             if (singleNote && !Array.isArray(singleNote) && singleNote.id) {
-                router.push(`/returns/${singleNote.id}`);
+                router.push(`/sales/returns/${singleNote.id}`);
             } else {
-                router.push("/returns");
+                router.push("/sales/returns");
             }
         } catch (error: any) {
             console.error("Error guardando nota de crédito:", error);
@@ -1581,7 +1581,7 @@ export function NewReturnForm() {
                             if (isDirty) {
                                 setShowExitModal(true);
                             } else {
-                                router.push("/returns");
+                                router.push("/sales/returns");
                             }
                         }}
                     >
@@ -1716,7 +1716,7 @@ export function NewReturnForm() {
                     if (pendingUrl) {
                         router.push(pendingUrl);
                     } else {
-                        router.push("/returns");
+                        router.push("/sales/returns");
                     }
                 }}
             />

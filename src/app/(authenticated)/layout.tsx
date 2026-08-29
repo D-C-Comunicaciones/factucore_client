@@ -119,13 +119,13 @@ export default function AuthenticatedLayout({
             expandable: true,
             moduleCode: 'billing',
             submenu: [
-                { icon: FileText, label: 'Factura de venta', path: '/invoices' },
-                { icon: FileText, label: 'Pagos recibidos', path: '/payments' },
-                { icon: FileText, label: 'Devoluciones en venta', path: '/returns' },
-                { icon: FileText, label: 'Notas débito', path: '/debit-notes', moduleCode: 'debit_notes' },
-                { icon: FileText, label: 'Cotizaciones', path: '/quotes' },
-                { icon: FileText, label: 'Remisiones', path: '/remissions' },
-                { icon: FileText, label: 'Órd. de compra recibidas', path: '/purchase-orders' },
+                { icon: FileText, label: 'Factura de venta', path: '/sales/invoices' },
+                { icon: FileText, label: 'Pagos recibidos', path: '/sales/payments' },
+                { icon: FileText, label: 'Devoluciones en venta', path: '/sales/returns' },
+                { icon: FileText, label: 'Notas débito', path: '/expenses/debit-notes', moduleCode: 'debit_notes' },
+                { icon: FileText, label: 'Cotizaciones', path: '/sales/quotes' },
+                { icon: FileText, label: 'Remisiones', path: '/sales/remissions' },
+                { icon: FileText, label: 'Órd. de compra recibidas', path: '/sales/purchase-orders' },
             ]
         },
         {
@@ -134,12 +134,12 @@ export default function AuthenticatedLayout({
             path: '/gastos',
             expandable: true,
             submenu: [
-                { icon: ShoppingBag, label: 'Facturas de compra', path: '/gastos/facturas-compra' },
-                { icon: ShoppingBag, label: 'Documento soporte', path: '/gastos/documento-soporte' },
+                { icon: ShoppingBag, label: 'Facturas de compra', path: '/expenses/bills' },
+                { icon: ShoppingBag, label: 'Documento soporte', path: '/expenses/support-documents' },
                 { icon: ShoppingBag, label: 'Notas de ajuste', path: '/gastos/notas-ajuste' },
                 { icon: ShoppingBag, label: 'Pagos', path: '/gastos/pagos' },
                 { icon: ShoppingBag, label: 'Pagos recurrentes', path: '/gastos/pagos-recurrentes' },
-                { icon: ShoppingBag, label: 'Notas débito', path: '/gastos/notas-debito' },
+                { icon: ShoppingBag, label: 'Notas débito', path: '/expenses/debit-notes' },
                 { icon: ShoppingBag, label: 'Órdenes de compra', path: '/expenses/purchase-orders' },
                 { icon: ShoppingBag, label: 'Recepción de comprobantes', path: '/gastos/recepcion-comprobantes' },
             ]

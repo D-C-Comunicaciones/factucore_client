@@ -1,124 +1,124 @@
-# Graph Report - facturacion-cliente  (2026-08-27)
+# Graph Report - efac_frontend  (2026-08-28)
 
 ## Corpus Check
-- 644 files · ~716,042 words
+- 683 files · ~735,096 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3096 nodes · 9363 edges · 226 communities (153 shown, 73 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 9 edges (avg confidence: 0.71)
+- 3229 nodes · 10016 edges · 241 communities (168 shown, 73 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 12 edges (avg confidence: 0.75)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ec80a857`
+- Built from commit: `d4f1a02b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- NewDebitNoteForm.tsx
-- activate-account/page.tsx
-- dialog.tsx
-- extractErrorMessage
-- types/catalogs.ts
-- QuoteItemsTable.tsx
-- invoice/table/columns.tsx
-- CostCenterTable.tsx
-- sidebar.tsx
-- alegra DESIGN.md
-- QuoteSummary
-- react
-- dashboard/page.tsx
-- useRemissions.ts
-- dropdown-menu.tsx
-- devDependencies
-- useNotifications.ts
-- compilerOptions
-- searchable-select.tsx
-- types/items.ts
-- CustomToaster.tsx
-- components.json
-- returns/[id]/page.tsx
-- ContactTable.tsx
-- ConfigCostCentersModal.tsx
-- RemindersPanel.tsx
-- useCommentsSocket.ts
-- alegra DESIGN.md
-- NewInvoiceMain.tsx
-- QuickCreateItemModal.tsx
-- quotes/[id]/edit/page.tsx
-- InvoicesService
-- useQuotes.ts
-- invoices/[id]/page.tsx
-- RemissionTable.tsx
-- debit-notes/[id]/page.tsx
-- useCatalogs
-- invoice.ts
-- NewPurchaseOrderForm.tsx
-- CommentsAndReminders.tsx
-- ReturnsFilterChips.tsx
-- Órdenes de compra (`purchase_orders`) — CRUD y guía de integración
-- ApiResponse
-- roles/[id]/page.tsx
-- PaymentTable.tsx
+- NewReturnForm.tsx
 - tooltip.tsx
+- dialog.tsx
+- AdvancedOptionsSection.tsx
+- Sidebar.tsx
+- NewQuoteSettingsDrawer.tsx
+- invoice/table/columns.tsx
+- cn
+- sidebar.tsx
+- NewReturnForm.backup.tsx
+- QuoteTable.tsx
+- ApiResponse
+- dashboard/page.tsx
+- auth-context.tsx
+- button.tsx
+- devDependencies
+- useResolutions
+- compilerOptions
+- showToast
+- types/items.ts
+- NewRemissionMain.tsx
+- components.json
+- CreditNotesService
+- ReturnsTableBody.tsx
+- CostCenterTable.tsx
+- lib/utils.ts
 - invoices/new/page.tsx
+- ui/utils.ts
+- PaymentTable.tsx
+- react
+- QuoteItemsTable.tsx
+- quote.ts
+- useQuotes.ts
+- InvoicesService
+- remission.ts
+- contacts/page.tsx
+- items/[id]/page.tsx
+- invoice.ts
+- cn
+- NewItemModal.tsx
+- contacts/[id]/page.tsx
+- returns/[id]/page.tsx
+- ResolutionTable.tsx
+- context-menu.tsx
+- types/catalogs.ts
+- AddContactModal.tsx
+- payments/[id]/page.tsx
 - tasks/page.tsx
 - ItemTable.tsx
-- NewPaymentForm.tsx
-- NewReturnSettingsDrawer.tsx
+- invoices/[id]/page.tsx
+- invoice/table/FilterChips.tsx
 - carousel.tsx
-- AdvancedOptionsSection.tsx
+- dependencies
 - InvoiceTable.tsx
-- DebitNotesFilterChips.tsx
-- context-menu.tsx
-- form.tsx
+- remissions/[id]/edit/page.tsx
+- AuthService
+- ResolutionForm.tsx
 - Extraction Subagent Prompt Template
 - CalculationService (Backend)
-- ItemDetailView.tsx
-- contact/table/columns.tsx
-- ContactDetailTabs.tsx
-- calculations.js
-- auth-context.tsx
-- ui/utils.ts
-- remission.ts
+- useInvoices.ts
+- QuickCreateItemModal.tsx
+- useCatalogs
+- ExportItemsModal.tsx
+- PaymentDetailTabs.tsx
+- drawer.tsx
+- navigation-menu.tsx
 - exports.md Reference Guide
 - ReportsSections.tsx
-- Sidebar.tsx
-- App.jsx
+- CertificateList.tsx
+- ItemFilterChips.tsx
 - chart.tsx
-- CompanySummaryCard.tsx
-- --update / --cluster-only subcommands (SKILL.md pointer)
-- Qué cambió: ahora sí traen descuentos, impuestos e ajustes globales
-- input.tsx
 - pagination.tsx
+- --update / --cluster-only subcommands (SKILL.md pointer)
+- NewReturnForm
+- softwares.ts
+- ItemDetailView.tsx
 - /graphify Full Pipeline
 - graphify Knowledge Graph System
 - query.md Reference Guide
-- contacts/page.tsx
-- PaymentDetailTabs.tsx
-- alegra DESIGN.md
+- CompanySummaryCard.tsx
+- skeleton.tsx
+- toggle-group.tsx
 - tenant.ts
 - update.md Reference Guide
 - widget.interface.ts
-- alegra Design System
-- payments/[id]/page.tsx
-- ExportItemsModal.tsx
-- showToast
+- invoices/page.tsx
+- cotizaciones/page.tsx
+- package.json
+- useAuth
 - github-and-merge.md Reference Guide
 - AddGraphMenu.tsx
-- ResolutionTable.tsx
-- exportPdf.js
+- breadcrumb.tsx
+- PaymentDetailInfo.tsx
 - catalogCache.ts
 - hooks.md Reference Guide
 - transcribe.md Reference Guide
 - Next.js Project (create-next-app bootstrap)
-- lucide-react
-- pusher-js
+- MonthSelector.tsx
+- CuentasPorCobrarWidget.tsx
 - CuentasPorPagarWidget.tsx
-- integrations/page.tsx
+- PaymentInvoicesList.tsx
 - invoice/InvoiceItemsTable.tsx
-- cn
-- @radix-ui/react-accordion
+- InvoiceDetailPage
+- alert.tsx
 - next.config.ts
 - contacts/layout.tsx
 - dashboard/layout.tsx
@@ -126,85 +126,85 @@
 - invoices/new/layout.tsx
 - items/layout.tsx
 - payments/new/layout.tsx
-- dependencies
-- devDependencies
-- dayjs
-- package.json
-- app/package.json
+- EmptyDashboardState.tsx
+- EmptyStateWidget.tsx
+- ProductosVendidosSimpleWidget.tsx
+- DocumentTitleUpdater.tsx
+- Loader.tsx
 - proxy.ts
-- alegra-design.skill
-- initialBudget.js
-- @radix-ui/react-menubar
-- Component Patterns
-- dependencies
+- class-variance-authority
+- clsx
+- input-otp.tsx
+- DeleteWidgetDialog.tsx
+- @dnd-kit/core
 - @dnd-kit/modifiers
-- cotizaciones/page.tsx
+- @dnd-kit/sortable
 - @dnd-kit/utilities
 - embla-carousel-react
 - eslint.config.mjs
-- .oxlintrc.json
+- geist
 - @hookform/resolvers
 - html2canvas
 - input-otp
-- @radix-ui/react-slot
+- ClientesConVentasWidget.tsx
 - next
-- react-hook-form
-- navigation-menu.tsx
-- TimePickerSimple.tsx
-- notifications.ts
+- DevolucionesWidget.tsx
+- radix-ui
+- @radix-ui/react-accordion
+- ImpuestosWidget.tsx
 - @radix-ui/react-checkbox
-- UserInfoPanel.tsx
-- 10. Agent Prompt Guide
+- @radix-ui/react-dialog
+- SolutionsPopover.tsx
 - @radix-ui/react-label
 - @radix-ui/react-progress
-- MonthSelector.tsx
-- CuentasPorCobrarWidget.tsx
-- jspdf
+- dayjs
+- next-themes
+- @radix-ui/react-slot
 - @radix-ui/react-tabs
-- 4. Component Stylings
-- @radix-ui/react-toggle-group
 - @radix-ui/react-toggle
-- postcss
+- @radix-ui/react-toggle-group
+- @radix-ui/react-tooltip
+- react-day-picker
 - react-dom
-- Spacing & Layout
+- react-qr-code
 - react-resizable-panels
-- recycle/page.tsx
-- SummaryPanel.jsx
-- @radix-ui/react-aspect-ratio
+- recharts
+- sonner
+- react-hook-form
 - tailwind-merge
-- @radix-ui/react-avatar
+- tailwindcss-animate
 - @tanstack/query-sync-storage-persister
-- 6. Depth & Elevation
-- Color System
-- NewReminderModal.tsx
+- @radix-ui/react-switch
+- @tanstack/react-query-persist-client
+- @tanstack/react-table
 - vaul
-- @radix-ui/react-context-menu
+- zod
 - postcss.config.mjs
 - afleones (User/Author Persona)
 - globals.css.d.ts
-- Typography
-- quote.ts
-- React + Vite
+- ContactAssociatedPersons.tsx
+- ImageWithFallback.tsx
+- SuggestedFunctions.tsx
 - global.d.ts
 - newInvoiceMockData.ts
 - FactuCore Logo
 - Login Page Illustration (Facturación Electrónica)
-- toggle-group.tsx
-- @radix-ui/react-hover-card
-- @radix-ui/react-navigation-menu
-- @radix-ui/react-radio-group
-- accordion.tsx
+- @tabler/icons-react
+- @tanstack/react-query
+- prompt.md
 - @radix-ui/react-select
-- 7. Animation & Motion
+- providers.tsx
 - @radix-ui/react-separator
+- certificates/page.tsx
 - @radix-ui/react-slider
-- Animation & Motion
-- react
-- class-variance-authority
-- notification.ts
-- alegra Design System
-- react-day-picker
-- skeleton.tsx
+- @radix-ui/react-switch
+- Ajuste de flujo: emisión de facturas y notas crédito ahora es asíncrona
+- @tabler/icons-react
+- @tanstack/react-query
+- PaymentInvoicesList.tsx
+- NewInvoiceView.tsx
+- ClientesConVentasWidget.tsx
+- softwares.ts
 - NewLegacyReminderModal.tsx
 - tailwindcss-animate
 - @tanstack/react-query
@@ -215,45 +215,60 @@
 - @radix-ui/react-tooltip
 - @tanstack/react-table
 - date-fns
-- InvoiceSummary
+- quotes/[id]/page.tsx
 - ContactAdvancedForm.tsx
-- cn
+- ItemMainInfo.tsx
 - QuoteTable.tsx
 - drawer.tsx
-- DueReminderPopup.tsx
-- RemissionSummary
-- SKILL.md
+- remissions/[id]/page.tsx
+- remission/table/columns.tsx
+- invoices/page.tsx
 - DeleteWidgetDialog.tsx
 - app/layout.tsx
 - EmptyDashboardState.tsx
 - DevolucionesWidget.tsx
 - ImpuestosWidget.tsx
 - ProductosVendidosSimpleWidget.tsx
-- geist
+- softwares.ts
+- breadcrumb.tsx
+- ConnectedDevicesSection.tsx
+- useUpdateProfile.ts
+- echo.ts
+- certificates/page.tsx
+- remissions/page.tsx
+- lib/permissions.ts
+- FlujoTransaccionesWidget.tsx
+- TotalVentasWidget.tsx
+- invoices/layout.tsx
+- invoices/new/layout.tsx
+- payments/new/layout.tsx
+- ClientesConVentasWidget.tsx
+- clsx
+- DashboardPage
 
 ## God Nodes (most connected - your core abstractions)
-1. `react` - 374 edges
-2. `showToast()` - 263 edges
+1. `react` - 407 edges
+2. `showToast()` - 301 edges
 3. `cn()` - 198 edges
 4. `cn()` - 155 edges
-5. `Button()` - 128 edges
-6. `DialogContent()` - 64 edges
-7. `DialogTitle()` - 64 edges
-8. `Dialog()` - 63 edges
-9. `DialogHeader()` - 61 edges
-10. `useCatalogs()` - 61 edges
+5. `Button()` - 146 edges
+6. `useCatalogs()` - 73 edges
+7. `DialogContent()` - 68 edges
+8. `DialogTitle()` - 68 edges
+9. `Dialog()` - 67 edges
+10. `DialogHeader()` - 65 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `InternalPurchaseOrderDetailView()` --indirect_call--> `itemTotal()`  [INFERRED]
+  src/components/purchase-order/internal/InternalPurchaseOrderDetailView.tsx → presupuesto/app/src/lib/calculations.js
 - `Constrained Query Expansion (Step 0)` --semantically_similar_to--> `Domain-hint Whisper Prompt Strategy`  [INFERRED] [semantically similar]
   .claude/skills/graphify/references/query.md → .claude/skills/graphify/references/transcribe.md
 - `CostCentersPage()` --calls--> `showToast()`  [EXTRACTED]
   src/app/(authenticated)/cost-centers/page.tsx → src/components/sonner/CustomToaster.tsx
+- `AuthenticatedLayout()` --indirect_call--> `Warehouse`  [INFERRED]
+  src/app/(authenticated)/layout.tsx → src/types/catalogs.ts
 - `NewReturnPage()` --calls--> `useCatalogs()`  [EXTRACTED]
-  src/app/(authenticated)/returns/new/page.tsx → src/hooks/useCatalogs.ts
-- `notifyComingSoon()` --calls--> `showToast()`  [EXTRACTED]
-  src/components/contact/detail/ContactDetailHeader.tsx → src/components/sonner/CustomToaster.tsx
-- `NewInvoiceComments()` --calls--> `showToast()`  [EXTRACTED]
-  src/components/invoice/new/NewInvoiceComments.tsx → src/components/sonner/CustomToaster.tsx
+  src/app/(authenticated)/sales/returns/new/page.tsx → src/hooks/useCatalogs.ts
 
 ## Import Cycles
 - None detected.
@@ -262,232 +277,231 @@
 - **Modular Reference-Doc Loading Pattern** — claude_skills_graphify_skill_step0_github_merge, claude_skills_graphify_skill_step2_5_transcribe, claude_skills_graphify_skill_part_b_semantic_extraction, claude_skills_graphify_skill_update_cluster_only, claude_skills_graphify_skill_query_flow, claude_skills_graphify_skill_add_watch_flow, claude_skills_graphify_skill_hooks_integration, claude_skills_graphify_skill_exports_flow [INFERRED 0.85]
 - **Self-Improving Query Feedback Loop (save-result + reflect)** — claude_skills_graphify_references_query_query_command, claude_skills_graphify_references_query_path_command, claude_skills_graphify_references_query_explain_command, claude_skills_graphify_references_query_save_result_command, claude_skills_graphify_references_query_reflect_command [EXTRACTED 1.00]
 - **Incremental Update Manifest & Merge Integrity Guards** — claude_skills_graphify_references_update_update_flag, claude_skills_graphify_references_update_build_merge_function, claude_skills_graphify_skill_step9_cleanup_report [INFERRED 0.75]
-- **Credit Note Types Using Line-Level Adjustments with CalculationService** — payload_examples_type1, payload_examples_type3, payload_examples_type4, payload_examples_type5, payload_examples_calculation_service [INFERRED 0.85]
 - **graphify CLI Subcommands** — claude_md_graphify_query, claude_md_graphify_path, claude_md_graphify_explain, claude_md_graphify_update [EXTRACTED 1.00]
 
-## Communities (226 total, 73 thin omitted)
+## Communities (241 total, 73 thin omitted)
 
-### Community 0 - "NewDebitNoteForm.tsx"
-Cohesion: 0.10
-Nodes (43): FactucoreLogo(), FactucoreLogoProps, CertificateListProps, ContactTableBodyProps, DebitNoteDetailDocument(), DebitNoteDetailDocumentProps, DebitNoteDetailTabs(), AddedLine (+35 more)
+### Community 0 - "NewReturnForm.tsx"
+Cohesion: 0.14
+Nodes (30): FactucoreLogo(), FactucoreLogoProps, CertificateListProps, DebitNoteDetailDocumentProps, InvoiceDetailDocumentProps, DianStatusBadge(), parseDateSafe(), PaymentInvoicesListProps (+22 more)
 
-### Community 1 - "activate-account/page.tsx"
-Cohesion: 0.11
-Nodes (17): ActivateAccountContent(), ConfirmEmailContent(), ForgotPasswordPage(), ResetPasswordContent(), AccountNotActivatedNotice(), AuthLinkStatus(), AuthLinkStatusProps, PasswordResetForm() (+9 more)
+### Community 1 - "tooltip.tsx"
+Cohesion: 0.13
+Nodes (15): ActivateAccountContent(), ConfirmEmailContent(), ResetPasswordContent(), AccountNotActivatedNoticeProps, AuthLinkStatus(), AuthLinkStatusProps, PasswordResetForm(), TwoFactorChallengeForm() (+7 more)
 
 ### Community 2 - "dialog.tsx"
-Cohesion: 0.08
-Nodes (36): NewCertificateModalProps, BulkEditContactsModalProps, ChangeClientModal(), ChangeClientModalProps, ExitFormModal(), ExitFormModalProps, CreateWarehouseModal(), CreateWarehouseModalProps (+28 more)
+Cohesion: 0.09
+Nodes (32): AttributeModalProps, ExportModalProps, ImportExcelModalProps, UploadBillFileModalProps, NewCertificateModalProps, CreateCurrencyModalProps, ChangeClientModalProps, ExitFormModalProps (+24 more)
 
-### Community 3 - "extractErrorMessage"
-Cohesion: 0.07
-Nodes (41): SecurityPage(), ChangeEmailDialog(), ChangePasswordDialog(), PasswordGateDialog(), RecoveryCodesDisplay(), RecoveryCodesDisplayProps, CodeMode, ENABLE_STEP_PROGRESS (+33 more)
-
-### Community 4 - "types/catalogs.ts"
-Cohesion: 0.12
-Nodes (15): Attribute, Category, Country, CustomField, Department, Municipality, Plan, PriceList (+7 more)
-
-### Community 5 - "QuoteItemsTable.tsx"
+### Community 3 - "AdvancedOptionsSection.tsx"
 Cohesion: 0.11
-Nodes (28): InvoiceItemsTable(), ItemCard(), ItemRow(), useItemRowLogic(), InvoiceItem, NewInvoiceViewProps, ItemRow(), PurchaseOrderLineItemsTable() (+20 more)
+Nodes (23): useUpdateCompanyProfile(), useConfirmTwoFactor(), useDisableTwoFactor(), useRegenerateRecoveryCodes(), CompanyProfileService, CompanyProfileUpdatePayload, CompanyProfileUpdateResponse, DeviceSession (+15 more)
+
+### Community 4 - "Sidebar.tsx"
+Cohesion: 0.12
+Nodes (16): AuthenticatedLayout(), Attribute, Category, Country, CustomField, Department, Municipality, Plan (+8 more)
+
+### Community 5 - "NewQuoteSettingsDrawer.tsx"
+Cohesion: 0.08
+Nodes (46): NewBillOptionsProps, AddContactModal(), ContactAccountingInfoProps, ContactCommercialInfoProps, EditResolutionModal(), InvoiceItemsTable(), ItemCard(), ItemRow() (+38 more)
 
 ### Community 6 - "invoice/table/columns.tsx"
-Cohesion: 0.16
-Nodes (21): NewCertificateForm(), NewCertificateFormProps, InvoiceDetailHeaderProps, PurchaseOrderDetailView(), contactLabel(), InternalPurchaseOrderDetailView(), ActionsCell(), PurchaseOrderStatusBadge() (+13 more)
+Cohesion: 0.15
+Nodes (23): NewCertificateForm(), NewCertificateFormProps, InvoiceDetailHeader(), InvoiceDetailHeaderProps, ActionsCell(), resolveInvoiceStatus(), StatusBadge(), PurchaseOrderDetailHeader() (+15 more)
 
-### Community 7 - "CostCenterTable.tsx"
-Cohesion: 0.11
-Nodes (21): CostCenterTable(), CostCenterTableProps, ServerPagination, CostCenter, getColumns(), CostCenterFilter(), CostCenterFilterProps, defaultCostCenterFilterOptions (+13 more)
+### Community 7 - "cn"
+Cohesion: 0.15
+Nodes (15): CostCenterTable(), CostCenterTableProps, ServerPagination, CostCenter, getColumns(), CostCenterFilter(), CostCenterTableBody(), CostCenterTableBodyProps (+7 more)
 
 ### Community 8 - "sidebar.tsx"
 Cohesion: 0.06
 Nodes (35): Sheet(), SheetContent(), SheetDescription(), SheetFooter(), SheetHeader(), SheetOverlay(), SheetTitle(), Sidebar() (+27 more)
 
-### Community 9 - "alegra DESIGN.md"
+### Community 9 - "NewReturnForm.backup.tsx"
 Cohesion: 0.05
 Nodes (36): 10. Agent Prompt Guide, 1. Visual Theme & Atmosphere, 2. Color Palette & Roles, 3. Typography Rules, 4. Component Stylings, 5. Layout Principles, 6. Depth & Elevation, 7. Animation & Motion (+28 more)
 
-### Community 10 - "QuoteSummary"
+### Community 10 - "QuoteTable.tsx"
 Cohesion: 0.20
-Nodes (10): QuoteFilter(), QuoteTableProps, StatusBadge(), FilterChipsProps, QuoteMobileCard(), QuoteMobileCardProps, QuoteTableBodyProps, QuoteTableToolbar() (+2 more)
+Nodes (9): QuoteFilter(), QuoteTableProps, ActionsCell(), QuoteMobileCard(), QuoteMobileCardProps, QuoteTableBodyProps, QuoteTableToolbar(), QuoteTableToolbarProps (+1 more)
 
 ### Community 12 - "dashboard/page.tsx"
-Cohesion: 0.12
-Nodes (21): DashboardPage(), isPredefinedWidget(), PREDEFINED_POSITIONS, SortableWidgetProps, Widget, ClientesConVentasWidget(), ClientesConVentasWidgetProps, FlujoTransaccionesWidget() (+13 more)
+Cohesion: 0.13
+Nodes (19): PREDEFINED_POSITIONS, SortableWidgetProps, Widget, DistribucionGastosWidget(), MejoresClientesWidget(), ProductosMasVendidosWidget(), WidgetSkeleton(), WidgetSkeletonProps (+11 more)
 
-### Community 13 - "useRemissions.ts"
+### Community 13 - "auth-context.tsx"
 Cohesion: 0.10
-Nodes (15): RemissionDetailPage(), RemissionDetailExtraInfo(), RemissionDetailExtraInfoProps, RemissionDetailSkeleton(), RemissionDetailSummary(), RemissionDetailSummaryProps, RemissionPageHeader(), ActionsCell() (+7 more)
+Nodes (17): RemissionDetailPage(), DOCUMENT_TYPES, DocumentType, ExportModal(), REMISSION_KEY(), REMISSIONS_KEY, useDeleteRemission(), usePrefetchRemissionDetail() (+9 more)
 
-### Community 14 - "dropdown-menu.tsx"
-Cohesion: 0.07
-Nodes (42): DebitNotePageHeaderProps, DebitNoteDetailHeaderProps, defaultFilterOptions, FilterOption, InvoiceFilterProps, InvoicePageHeaderProps, NewInvoiceFooter(), filterIcons (+34 more)
+### Community 14 - "button.tsx"
+Cohesion: 0.08
+Nodes (33): BillFilterProps, FilterOption, BillPageHeaderProps, CostCenterFilterProps, defaultCostCenterFilterOptions, FilterOption, FilterChipsProps, filterIcons (+25 more)
 
 ### Community 15 - "devDependencies"
 Cohesion: 0.09
 Nodes (23): babel-plugin-react-compiler, eslint, eslint-config-next, devDependencies, babel-plugin-react-compiler, eslint, eslint-config-next, shadcn (+15 more)
 
-### Community 16 - "useNotifications.ts"
-Cohesion: 0.25
-Nodes (17): NotificationBell(), parseApiDate(), timeAgo(), showMentionNotificationToast(), showReplyNotificationToast(), formatDueAt(), getChannelName(), LIST_KEY() (+9 more)
+### Community 16 - "useResolutions"
+Cohesion: 0.09
+Nodes (33): NotificationBell(), parseApiDate(), timeAgo(), DueReminderPopup(), showMentionNotificationToast(), showReplyNotificationToast(), formatDueAt(), getChannelName() (+25 more)
 
 ### Community 17 - "compilerOptions"
 Cohesion: 0.07
 Nodes (28): dom, dom.iterable, esnext, **/*.mts, .next/dev/types/**/*.ts, next-env.d.ts, .next/types/**/*.ts, node_modules (+20 more)
 
-### Community 18 - "searchable-select.tsx"
-Cohesion: 0.10
-Nodes (29): Factucore Horizontal Logo, HeaderProps, SolutionsPopover(), SolutionsPopoverProps, InlineDocumentSelector(), InlineDocumentSelectorProps, NewInvoiceComments(), CustomFieldDatePicker() (+21 more)
+### Community 18 - "showToast"
+Cohesion: 0.14
+Nodes (19): Factucore Horizontal Logo, HeaderProps, SolutionsPopover(), SolutionsPopoverProps, ConfigWithholdingsModal(), ConfigWithholdingsModalProps, expenseAccounts, Command() (+11 more)
 
 ### Community 19 - "types/items.ts"
-Cohesion: 0.06
-Nodes (45): Image, formatMoney(), getClientName(), getDocDate(), getDocNumber(), getDocStatus(), getDocTotal(), ItemDocumentsTab() (+37 more)
+Cohesion: 0.08
+Nodes (30): Image, BaseItemBasicInfo, BaseItemPayload, ComboBasicInfo, ComboItemPayload, CreateItemAccounting, CreateItemComboComponent, CreateItemComboSettings (+22 more)
 
-### Community 20 - "CustomToaster.tsx"
-Cohesion: 0.14
-Nodes (21): CostCenter, NewCostCenterModal(), NewCostCenterModalProps, CreateCurrencyModalProps, NewCurrencyModal(), NewPaymentTermModalProps, NewPriceListModal(), NewPriceListModalProps (+13 more)
+### Community 20 - "NewRemissionMain.tsx"
+Cohesion: 0.08
+Nodes (50): AttributeModal(), CostCenter, NewCostCenterModal(), NewCostCenterModalProps, NewCurrencyModal(), InlineDocumentSelector(), InlineDocumentSelectorProps, CustomFieldDatePicker() (+42 more)
 
 ### Community 21 - "components.json"
 Cohesion: 0.08
 Nodes (23): aliases, components, hooks, lib, ui, utils, Authorization, iconLibrary (+15 more)
 
-### Community 22 - "returns/[id]/page.tsx"
-Cohesion: 0.10
-Nodes (16): ReturnDetailPage(), ReturnsPage(), ReturnDetailHeader(), ReturnDetailSkeleton(), ReturnDetailSummary(), ReturnDetailSummaryProps, NewReturnForm(), createEmptyLine() (+8 more)
+### Community 22 - "CreditNotesService"
+Cohesion: 0.11
+Nodes (15): APPROVED_STATUSES, ReturnEditPage(), ReturnDetailPage(), ReturnsPage(), createEmptyLine(), NewReturnForm(), CREDIT_NOTE_KEY(), CREDIT_NOTES_KEY (+7 more)
 
-### Community 23 - "ContactTable.tsx"
-Cohesion: 0.13
-Nodes (15): Contact, ContactTable(), ContactTableProps, ServerPagination, getContactColumns(), ContactFilterChips(), ContactTableBody(), ContactTablePagination() (+7 more)
+### Community 23 - "ReturnsTableBody.tsx"
+Cohesion: 0.11
+Nodes (22): Contact, ContactTable(), ContactTableProps, ServerPagination, notifyComingSoon(), AvatarInitials(), Contact, ContactActionsCell() (+14 more)
 
-### Community 24 - "ConfigCostCentersModal.tsx"
-Cohesion: 0.24
-Nodes (7): ConfigCostCentersModal(), ConfigCostCentersModalProps, DOCUMENT_TYPES, Switch(), VariantEditModal(), VariantEditModalProps, WarehouseDetail
+### Community 24 - "CostCenterTable.tsx"
+Cohesion: 0.11
+Nodes (15): CostCentersPage(), ConfigCostCentersModal(), ConfigCostCentersModalProps, DOCUMENT_TYPES, CodeMode, ENABLE_STEP_PROGRESS, OTP_SLOTS, Step (+7 more)
 
-### Community 25 - "RemindersPanel.tsx"
+### Community 25 - "lib/utils.ts"
 Cohesion: 0.18
 Nodes (21): formatReminderDateTime(), parseApiDate(), ReminderCard(), RemindersPanel(), REMINDERS_KEY(), useCreateReminder(), useDeleteReminder(), useRemindersList() (+13 more)
 
-### Community 26 - "useCommentsSocket.ts"
-Cohesion: 0.17
-Nodes (16): LiveCommentDeletedPayload, LiveCommentPayload, LiveCommentUpdatedPayload, CommentsService, unwrapArray(), unwrapComment(), unwrapPaginated(), Comment (+8 more)
+### Community 26 - "invoices/new/page.tsx"
+Cohesion: 0.21
+Nodes (12): CommentsService, unwrapArray(), unwrapComment(), unwrapPaginated(), Comment, CommentableType, CommentMention, CommentsListResponse (+4 more)
 
-### Community 27 - "alegra DESIGN.md"
+### Community 27 - "ui/utils.ts"
 Cohesion: 0.05
 Nodes (36): 10. Agent Prompt Guide, 1. Visual Theme & Atmosphere, 2. Color Palette & Roles, 3. Typography Rules, 4. Component Stylings, 5. Layout Principles, 6. Depth & Elevation, 7. Animation & Motion (+28 more)
 
-### Community 28 - "NewInvoiceMain.tsx"
-Cohesion: 0.15
-Nodes (24): getSession(), SessionData, AddContactModal(), ContactAccountingInfoProps, ContactCommercialInfoProps, EditResolutionModal(), NewInvoiceMain(), QuickCreateItemModal() (+16 more)
+### Community 28 - "PaymentTable.tsx"
+Cohesion: 0.07
+Nodes (35): EditBillPage(), NewBillPage(), BillsPage(), BillPageHeader(), BillTable(), BillTableProps, ServerPagination, ExportModal() (+27 more)
 
-### Community 29 - "QuickCreateItemModal.tsx"
-Cohesion: 0.11
-Nodes (24): CategoryModalProps, NewCategoryModal(), BLANK_BASIC, QuickCreateItemModalProps, AccountingSection(), AdditionalFieldsSection(), GeneralInfoSection(), ItemConfigurationSection() (+16 more)
-
-### Community 30 - "quotes/[id]/edit/page.tsx"
+### Community 29 - "react"
 Cohesion: 0.13
-Nodes (18): CostCentersPage(), parseDDMMYYYYToDate(), parseDDMMYYYYToISO(), NewInvoiceOptions(), NewQuoteFooter(), NewQuoteHeader(), NewQuoteHeaderProps, NewQuoteOptions() (+10 more)
+Nodes (23): ItemImage, CategoryModalProps, NewCategoryModal(), CustomFieldModal(), CustomFieldModalProps, FALLBACK_FIELD_TYPES, BLANK_BASIC, QuickCreateItemModalProps (+15 more)
 
-### Community 31 - "InvoicesService"
-Cohesion: 0.12
-Nodes (13): InvoiceEditPage(), InvoiceDetailPage(), extractInvoiceFromDetail(), INVOICE_KEY(), INVOICES_KEY, useInvoice(), usePrefetchInvoiceDetail(), useSendInvoice() (+5 more)
+### Community 30 - "QuoteItemsTable.tsx"
+Cohesion: 0.09
+Nodes (27): SupportDocumentDetailPage(), SupportDocumentsPage(), defaultSupportDocumentFilterOptions, SupportDocumentFilter(), SupportDocumentPageHeader(), ServerPagination, SupportDocumentTable(), SupportDocumentTableProps (+19 more)
+
+### Community 31 - "quote.ts"
+Cohesion: 0.17
+Nodes (4): InvoiceDetailPage(), useSendInvoice(), InvoicesService, Invoice
 
 ### Community 32 - "useQuotes.ts"
-Cohesion: 0.09
-Nodes (18): QuoteDetailPage(), QuoteDetailDocument(), QuoteDetailExtraInfo(), QuoteDetailExtraInfoProps, QuoteDetailHeader(), QuoteDetailSummary(), QuoteDetailSummaryProps, ActionsCell() (+10 more)
+Cohesion: 0.10
+Nodes (24): EditQuotePage(), parseDDMMYYYYToDate(), parseDDMMYYYYToISO(), QuoteDetailPage(), NewQuotePageContent(), NewQuoteFooter(), NewQuoteHeader(), NewQuoteHeaderProps (+16 more)
 
-### Community 33 - "invoices/[id]/page.tsx"
-Cohesion: 0.15
-Nodes (11): InvoiceDetailDocument(), InvoiceDetailExtraInfo(), InvoiceDetailExtraInfoProps, InvoiceDetailSummary(), InvoiceDetailSummaryProps, InvoiceDetailTabs(), InvoiceDianStatus(), DianSubmissionPendingCard() (+3 more)
+### Community 33 - "InvoicesService"
+Cohesion: 0.17
+Nodes (9): InvoiceDetailDocument(), InvoiceDetailExtraInfo(), InvoiceDetailExtraInfoProps, InvoiceDetailSkeleton(), InvoiceDetailSummary(), InvoiceDetailSummaryProps, InvoiceDetailTabs(), DianSubmissionStatus (+1 more)
 
-### Community 34 - "RemissionTable.tsx"
-Cohesion: 0.16
-Nodes (13): FacturasVentaViewProps, RemissionsPage(), RemissionTable(), RemissionTableProps, ServerPagination, getColumns(), FilterChips(), filterValueToColumnId (+5 more)
+### Community 34 - "remission.ts"
+Cohesion: 0.14
+Nodes (16): RemissionFilter(), RemissionTable(), RemissionTableProps, ServerPagination, getColumns(), FilterChips(), filterValueToColumnId, RemissionMobileCardProps (+8 more)
 
-### Community 35 - "debit-notes/[id]/page.tsx"
-Cohesion: 0.09
-Nodes (15): DebitNoteDetailPage(), DebitNoteDetailHeader(), DebitNoteDetailSkeleton(), DebitNoteDetailSummary(), DebitNoteDetailSummaryProps, createEmptyLine(), NewDebitNoteForm(), DEBIT_NOTE_KEY() (+7 more)
+### Community 35 - "contacts/page.tsx"
+Cohesion: 0.11
+Nodes (14): DebitNoteDetailPage(), DebitNoteDetailDocument(), DebitNoteDetailHeader(), DebitNoteDetailSkeleton(), createEmptyLine(), NewDebitNoteForm(), DianSubmissionPendingCard(), DianSubmissionPendingCardProps (+6 more)
 
-### Community 36 - "useCatalogs"
-Cohesion: 0.12
-Nodes (22): EditItemPage(), ItemDetailPage(), NewItemPage(), FormState, ItemsPage(), BulkEditContactsModal(), ItemAccounting(), ItemAttachments() (+14 more)
+### Community 36 - "items/[id]/page.tsx"
+Cohesion: 0.24
+Nodes (5): ItemAccounting(), ItemAttachments(), ItemHeader(), ItemInventory(), ItemInventoryProps
 
 ### Community 37 - "invoice.ts"
 Cohesion: 0.12
-Nodes (15): AllowanceCharge, DianSubmissionStatus, InvoiceBill, InvoiceBillingPeriod, InvoiceCompany, InvoiceCustomer, InvoiceDian, InvoiceEstablishment (+7 more)
+Nodes (16): AllowanceCharge, DianSubmissionStatus, InvoiceBill, InvoiceBillingPeriod, InvoiceCompany, InvoiceCustomer, InvoiceDetailResponse, InvoiceDian (+8 more)
 
-### Community 38 - "NewPurchaseOrderForm.tsx"
-Cohesion: 0.07
-Nodes (38): InternalPurchaseOrderDetailPage(), InternalPurchaseOrdersPage(), EditPurchaseOrderPage(), PurchaseOrderDetailPage(), PurchaseOrdersPage(), PurchaseOrderDetailHeaderProps, NewPurchaseOrderForm(), toDateInput() (+30 more)
-
-### Community 39 - "CommentsAndReminders.tsx"
-Cohesion: 0.20
-Nodes (18): CommentEditor(), ConnectedCommentsAndReminders(), escapeRegExp(), formatDateTime(), highlightMentions(), initialsOf(), LegacyCommentsAndReminders(), MentionResults() (+10 more)
-
-### Community 40 - "ReturnsFilterChips.tsx"
-Cohesion: 0.15
-Nodes (13): ReturnPageHeader(), ReturnPageHeaderProps, FilterOption, RETURN_FILTER_OPTIONS, ReturnsFilterChips(), ReturnsFilterChipsProps, ReturnsTable(), ReturnsTableProps (+5 more)
-
-### Community 41 - "Órdenes de compra (`purchase_orders`) — CRUD y guía de integración"
-Cohesion: 0.14
-Nodes (13): 1. Crear orden de compra, 2. Listar órdenes de compra, 3. Detalle de una orden de compra, 4. Editar orden de compra, 5. Eliminar orden de compra, `allowance_charges[]` (a nivel de línea o global, mismo shape), Body de cada línea en `items[]`, Ejemplo — `external` (orden del cliente) (+5 more)
-
-### Community 42 - "ApiResponse"
+### Community 38 - "cn"
 Cohesion: 0.05
-Nodes (28): DOCUMENT_TYPES, DocumentType, CertificateList(), NewCertificateModal(), NewSoftwareModal(), SoftwareList(), envs, ApiClient (+20 more)
+Nodes (49): EditInternalPurchaseOrderPage(), toDateInput(), InternalPurchaseOrderDetailPage(), NewInternalPurchaseOrderPage(), InternalPurchaseOrdersPage(), EditPurchaseOrderPage(), PurchaseOrderDetailPage(), PurchaseOrdersPage() (+41 more)
 
-### Community 43 - "roles/[id]/page.tsx"
-Cohesion: 0.13
-Nodes (23): RoleDetailPage(), PermissionModuleGroup(), PermissionModuleGroupProps, Label(), RoleListboxProps, getModuleLabel(), PERMISSION_MODULE_LABELS, usePermissionsCatalog() (+15 more)
+### Community 39 - "NewItemModal.tsx"
+Cohesion: 0.15
+Nodes (25): getSession(), SessionData, CommentEditor(), ConnectedCommentsAndReminders(), escapeRegExp(), formatDateTime(), highlightMentions(), initialsOf() (+17 more)
 
-### Community 44 - "PaymentTable.tsx"
+### Community 40 - "contacts/[id]/page.tsx"
+Cohesion: 0.08
+Nodes (25): ItemTable(), ServerPagination, getItemColumns(), filterLabels, ItemFilterChips(), itemFilterOptions, MOCK_WAREHOUSES, ItemTableBody() (+17 more)
+
+### Community 41 - "returns/[id]/page.tsx"
+Cohesion: 0.18
+Nodes (10): ContactComments(), RecoveryCodesDisplay(), RecoveryCodesDisplayProps, NewSoftwareForm(), NewSoftwareFormProps, Button(), buttonVariants, Calendar() (+2 more)
+
+### Community 42 - "ResolutionTable.tsx"
+Cohesion: 0.12
+Nodes (7): ApiClient, AttributePayload, attributesApi, categoriesApi, currenciesApi, DebitNoteType, priceListsApi
+
+### Community 43 - "context-menu.tsx"
+Cohesion: 0.14
+Nodes (19): RoleDetailPage(), PermissionModuleGroup(), PermissionModuleGroupProps, RoleListbox(), RoleListboxProps, getModuleLabel(), PERMISSION_MODULE_LABELS, useRole() (+11 more)
+
+### Community 44 - "types/catalogs.ts"
+Cohesion: 0.12
+Nodes (22): PaymentsPage(), PaymentTable(), PaymentTableProps, ServerPagination, getPaymentColumns(), PaymentActionsCell(), filterLabels, MOCK_BANK_ACCOUNTS (+14 more)
+
+### Community 45 - "AddContactModal.tsx"
 Cohesion: 0.09
-Nodes (26): PaymentsPage(), PaymentDetailInfo(), PaymentDetailInfoProps, PaymentTable(), PaymentTableProps, ServerPagination, getPaymentColumns(), PaymentActionsCell() (+18 more)
+Nodes (31): NewBillMainProps, DistribucionGastosWidgetProps, GastoItem, ClienteItem, MejoresClientesWidgetProps, ProductoItem, ProductosMasVendidosWidgetProps, InvoiceDianStatusProps (+23 more)
 
-### Community 45 - "tooltip.tsx"
+### Community 46 - "payments/[id]/page.tsx"
 Cohesion: 0.10
-Nodes (23): FlujoTransaccionesData, FlujoTransaccionesWidgetProps, TotalVentasWidgetProps, VentasData, InvoiceDianStatusProps, GeneralInfoSectionProps, ItemType, SectionCard() (+15 more)
-
-### Community 46 - "invoices/new/page.tsx"
-Cohesion: 0.10
-Nodes (34): NewInvoicePageContent(), EditQuotePage(), NewQuotePageContent(), EditRemissionPage(), parseDDMMYYYYToDate(), parseDDMMYYYYToISO(), NewRemissionPageContent(), NewInvoiceHeader() (+26 more)
+Nodes (29): NewInvoicePageContent(), EditRemissionPage(), parseDDMMYYYYToDate(), parseDDMMYYYYToISO(), NewRemissionPageContent(), NewInvoiceFooter(), NewInvoiceHeader(), NewInvoiceHeaderProps (+21 more)
 
 ### Community 47 - "tasks/page.tsx"
 Cohesion: 0.16
 Nodes (10): NewTaskDrawer(), NewTaskDrawerProps, ASSIGNEE_OPTIONS, FILTER_TABS, PRIORITY_OPTIONS, STATUS_OPTIONS, TaskFiltersPopup(), TaskFiltersPopupProps (+2 more)
 
 ### Community 48 - "ItemTable.tsx"
-Cohesion: 0.11
-Nodes (19): ItemTable(), ItemTableProps, ServerPagination, getItemColumns(), filterLabels, ItemFilterChips(), ItemFilterChipsProps, itemFilterOptions (+11 more)
+Cohesion: 0.12
+Nodes (15): contactFilterOptions, ContactTableToolbar(), ContactTableToolbarProps, FilterOption, defaultFilterOptions, FilterOption, InvoiceFilter(), InvoiceFilterProps (+7 more)
 
-### Community 49 - "NewPaymentForm.tsx"
-Cohesion: 0.14
-Nodes (9): AccountSwitcher(), AccountSwitcherProps, HelpCenterPopover(), HelpCenterPopoverProps, NewPaymentForm(), NewPaymentFormProps, OtherIncomeTable(), AuthService (+1 more)
+### Community 49 - "invoices/[id]/page.tsx"
+Cohesion: 0.10
+Nodes (20): EditSupportDocumentPage(), NewSupportDocumentContent(), AccountSwitcher(), AccountSwitcherProps, HelpCenterPopover(), HelpCenterPopoverProps, NewInvoiceOptions(), NewQuoteOptions() (+12 more)
 
-### Community 50 - "NewReturnSettingsDrawer.tsx"
-Cohesion: 0.36
-Nodes (6): NewReturnPage(), DEFAULT_RETURN_SEARCH_SETTINGS, NewReturnSettingsDrawer(), NONE_OPTION, ReturnSearchSettings, SAME_AS_INVOICE_OPTION
+### Community 50 - "invoice/table/FilterChips.tsx"
+Cohesion: 0.08
+Nodes (21): NewReturnPage(), BulkEditContactsModal(), BulkEditContactsModalProps, GeneralInfoSection(), ItemType, NewItemModalProps, UNIT_OPTIONS, DEFAULT_RETURN_SEARCH_SETTINGS (+13 more)
 
 ### Community 51 - "carousel.tsx"
 Cohesion: 0.20
 Nodes (13): Carousel(), CarouselApi, CarouselContent(), CarouselContext, CarouselContextProps, CarouselItem(), CarouselNext(), CarouselOptions (+5 more)
 
-### Community 52 - "AdvancedOptionsSection.tsx"
-Cohesion: 0.14
-Nodes (15): AttributeModal(), AttributeModalProps, AdvancedOptionsSection(), ComboProductEntry, PriceListEntry, WarehouseEntry, ComboProductData, ProductComboModal() (+7 more)
+### Community 52 - "dependencies"
+Cohesion: 0.11
+Nodes (13): ChangeClientModal(), ExitFormModal(), AddedLine, FieldError, InvoiceSelection, TipItem, ChangeClientModal(), ChangeTypeModal() (+5 more)
 
 ### Community 53 - "InvoiceTable.tsx"
 Cohesion: 0.13
-Nodes (16): FacturasVentaViewProps, InvoicesPage(), InvoicePageHeader(), InvoiceTable(), ServerPagination, InvoiceStats, StatCard(), StatCardProps (+8 more)
+Nodes (17): InvoiceTable(), InvoiceTableProps, ServerPagination, getColumns(), FilterChips(), filterValueToColumnId, InvoiceMobileCardProps, InvoiceTableBody() (+9 more)
 
-### Community 54 - "DebitNotesFilterChips.tsx"
-Cohesion: 0.18
-Nodes (11): DebitNotesFilterChips(), DebitNotesFilterChipsProps, DebitNotesTable(), DebitNotesTableProps, DebitNotesTableBody(), DebitNotesTablePagination(), DebitNotesTablePaginationProps, DebitNotesTableToolbar() (+3 more)
-
-### Community 55 - "context-menu.tsx"
+### Community 54 - "remissions/[id]/edit/page.tsx"
 Cohesion: 0.12
-Nodes (9): ContextMenuCheckboxItem(), ContextMenuContent(), ContextMenuItem(), ContextMenuLabel(), ContextMenuRadioItem(), ContextMenuSeparator(), ContextMenuShortcut(), ContextMenuSubContent() (+1 more)
+Nodes (15): DebitNotesPage(), DebitNotePageHeader(), DebitNotePageHeaderProps, DebitNotesFilterChips(), DebitNotesFilterChipsProps, DebitNotesTable(), DebitNotesTableProps, DebitNotesTableBody() (+7 more)
 
-### Community 56 - "form.tsx"
+### Community 55 - "AuthService"
+Cohesion: 0.13
+Nodes (13): defaultFilterOptions, FilterOption, QuoteFilterProps, FilterChipsProps, filterIcons, filterLabels, defaultFilterOptions, FilterOption (+5 more)
+
+### Community 56 - "ResolutionForm.tsx"
 Cohesion: 0.23
 Nodes (11): FormControl(), FormDescription(), FormField(), FormFieldContext, FormFieldContextValue, FormItem(), FormItemContext, FormItemContextValue (+3 more)
 
@@ -496,34 +510,34 @@ Cohesion: 0.18
 Nodes (11): Confidence Score Rubric (EXTRACTED/INFERRED/AMBIGUOUS), extraction-spec.md Reference Guide, Hyperedge Extraction Rule, Node ID Format Spec ({stem}_{entity}), semantically_similar_to Edge Rule, Extraction Subagent Prompt Template, Honesty Rules, Part A: Structural (AST) extraction (+3 more)
 
 ### Community 58 - "CalculationService (Backend)"
-Cohesion: 0.42
-Nodes (11): CalculationService (Backend), Rationale: Frontend Must Not Send Monetary Amounts, credit_note_reference_index field, POST /api/credit-notes endpoint, POST /api/credit-notes/send endpoint, Tipo 1: Devolución Parcial (Ajuste de Cantidad), Tipo 2: Anulación Completa de la Factura, Tipo 3 y 6: Rebaja / Descuento a Líneas (+3 more)
+Cohesion: 0.29
+Nodes (12): usersApi, AssignUserPermissionsPayload, AssignUserRolesPayload, CreateUserPayload, PermissionsOutsidePlanError, PlanLimit, ResetUserPasswordPayload, TenantUserDetail (+4 more)
 
-### Community 59 - "ItemDetailView.tsx"
-Cohesion: 0.17
-Nodes (13): TabConfig, ItemPriceLists(), ItemPriceListsProps, formatMoney(), getItemTypeName(), InfoChip(), InfoField(), ItemDetailView() (+5 more)
+### Community 59 - "useInvoices.ts"
+Cohesion: 0.28
+Nodes (8): formatMoney(), getItemTypeName(), InfoChip(), InfoField(), ItemDetailView(), ItemDetailViewProps, StatusToggle(), TabButton()
 
-### Community 60 - "contact/table/columns.tsx"
-Cohesion: 0.26
-Nodes (10): AvatarInitials(), Contact, ContactActionsCell(), getColorFromName(), getInitials(), ContactFilterChipsProps, contactFilterOptions, filterLabels (+2 more)
+### Community 60 - "QuickCreateItemModal.tsx"
+Cohesion: 0.25
+Nodes (8): ContactMobileCard(), ContactTableBodyProps, InvoiceMobileCard(), ReturnMobileCard(), ReturnRow(), ReturnsTableBodyProps, SelectAllCheckbox(), SelectRowCheckbox()
 
-### Community 61 - "ContactDetailTabs.tsx"
-Cohesion: 0.13
-Nodes (15): ContactDetailComments(), ContactDetailCommentsProps, ContactDetailHeaderProps, ContactDetailTabs(), ContactDetailTabsProps, emptyDocuments, formatDate(), formatMoney() (+7 more)
+### Community 61 - "useCatalogs"
+Cohesion: 0.24
+Nodes (9): ContactDetailComments(), ContactDetailCommentsProps, ContactDetailHeaderProps, AssociatedPerson, Contact, ContactDetailResponse, ContactDocumentItem, ContactDocuments (+1 more)
 
-### Community 62 - "calculations.js"
+### Community 62 - "ExportItemsModal.tsx"
 Cohesion: 0.24
 Nodes (13): CADENCES, SavingsPlanCard(), TripForm(), computeBreakdown(), computeSavingsPlan(), daysBetween(), formatMoneyPlain(), itemTotal() (+5 more)
 
-### Community 63 - "auth-context.tsx"
-Cohesion: 0.13
-Nodes (16): CompanyProfilePage(), LoginPage(), RootPage(), SplashScreen(), SplashScreenProps, UserMenu(), UserMenuProps, AuthContext (+8 more)
+### Community 63 - "PaymentDetailTabs.tsx"
+Cohesion: 0.19
+Nodes (8): SplashScreen(), SplashScreenProps, AuthContext, AuthContextType, AuthProvider(), BackendUser, LoginRequires2FAResult, TwoFactorChallengePayload
 
-### Community 64 - "ui/utils.ts"
-Cohesion: 0.11
-Nodes (10): Alert(), AlertDescription(), AlertTitle(), alertVariants, HoverCardContent(), Progress(), ResizableHandle(), ResizablePanelGroup() (+2 more)
+### Community 64 - "drawer.tsx"
+Cohesion: 0.12
+Nodes (9): Alert(), AlertDescription(), AlertTitle(), alertVariants, HoverCardContent(), Progress(), ResizableHandle(), ResizablePanelGroup() (+1 more)
 
-### Community 65 - "remission.ts"
+### Community 65 - "navigation-menu.tsx"
 Cohesion: 0.13
 Nodes (14): AllowanceCharge, RemissionBill, RemissionBillingPeriod, RemissionCompany, RemissionCustomer, RemissionDian, RemissionEstablishment, RemissionFindAllEmpty (+6 more)
 
@@ -535,19 +549,19 @@ Nodes (9): Token reduction benchmark (Step 8), --falkordb / --falkordb-push expo
 Cohesion: 0.33
 Nodes (5): CategoryCard(), CategoryCardProps, ReportsCategoryGrid(), ReportsHeader(), ReportsSearchBar()
 
-### Community 68 - "Sidebar.tsx"
-Cohesion: 0.20
-Nodes (11): AuthenticatedLayout(), Header(), Logo(), CollapseButton(), MenuItem(), MenuItemProps, Sidebar(), SidebarMenuItem (+3 more)
+### Community 68 - "CertificateList.tsx"
+Cohesion: 0.22
+Nodes (10): Header(), Logo(), CollapseButton(), MenuItem(), MenuItemProps, Sidebar(), SidebarMenuItem, SidebarMenuItems() (+2 more)
 
-### Community 69 - "App.jsx"
+### Community 69 - "ItemFilterChips.tsx"
 Cohesion: 0.22
 Nodes (9): App(), loadBudget(), ExportBar(), Header(), ExtrasForm(), LocalTransportForm(), FoodForm(), StayForm() (+1 more)
 
 ### Community 70 - "chart.tsx"
-Cohesion: 0.15
-Nodes (17): DistribucionGastosWidget(), DistribucionGastosWidgetProps, GastoItem, ClienteItem, MejoresClientesWidgetProps, ProductoItem, ProductosMasVendidosWidget(), ProductosMasVendidosWidgetProps (+9 more)
+Cohesion: 0.33
+Nodes (7): ChartContext, ChartContextProps, ChartLegendContent(), ChartTooltipContent(), getPayloadConfigFromPayload(), THEMES, useChart()
 
-### Community 71 - "CompanySummaryCard.tsx"
+### Community 71 - "pagination.tsx"
 Cohesion: 0.31
 Nodes (5): CompanySummaryCard(), ConfigCard(), ConfigCardProps, ConfigLink, ConfigurationGrid()
 
@@ -555,15 +569,15 @@ Nodes (5): CompanySummaryCard(), ConfigCard(), ConfigCardProps, ConfigLink, Conf
 Cohesion: 0.29
 Nodes (7): /graphify add <url>, add-watch.md Reference Guide, --watch (background folder watcher), /graphify add and --watch flow (SKILL.md pointer), Interpreter guard for subcommands, /graphify query flow (SKILL.md pointer), --update / --cluster-only subcommands (SKILL.md pointer)
 
-### Community 73 - "Qué cambió: ahora sí traen descuentos, impuestos e ajustes globales"
-Cohesion: 0.22
-Nodes (8): Contrato de API actualizado, Edición (`PATCH /purchase-orders/{id}`), La respuesta ahora trae totales reales, Qué cambió: ahora sí traen descuentos, impuestos e ajustes globales, Qué hay que agregar al formulario de items, Recapitulación: dos tipos de orden de compra (sigue igual), Resumen de lo que hay que construir/ajustar, Órdenes de compra: ajustes de descuentos, impuestos y cargos globales
+### Community 73 - "NewReturnForm"
+Cohesion: 0.17
+Nodes (12): AccountNotActivatedNotice(), ChangePasswordDialog(), CreateRoleModal(), ChangeUserEmailDialog(), ResetUserPasswordDialog(), useChangePassword(), useCreateRole(), useResetUserPassword() (+4 more)
 
-### Community 74 - "input.tsx"
-Cohesion: 0.11
-Nodes (31): AccountNotActivatedNoticeProps, PasswordResetFormProps, TwoFactorChallengeForm(), TwoFactorChallengeFormProps, CompanyProfileForm(), getInitials(), OtherIncomeTableProps, ChangeEmailDialogProps (+23 more)
+### Community 74 - "softwares.ts"
+Cohesion: 0.13
+Nodes (26): PasswordResetFormProps, TwoFactorChallengeFormProps, CompanyProfileForm(), getInitials(), CreateWebhookModalProps, ChangeEmailDialogProps, ChangePasswordDialogProps, PasswordGateDialogProps (+18 more)
 
-### Community 75 - "pagination.tsx"
+### Community 75 - "ItemDetailView.tsx"
 Cohesion: 0.22
 Nodes (7): Pagination(), PaginationContent(), PaginationEllipsis(), PaginationLink(), PaginationLinkProps, PaginationNext(), PaginationPrevious()
 
@@ -579,15 +593,15 @@ Nodes (7): GRAPH_REPORT.md, graphify Knowledge Graph System, graphify explain co
 Cohesion: 0.52
 Nodes (7): graphify explain "NODE_NAME", query.md Reference Guide, graphify path "A" "B", graphify query "<question>", graphify reflect / LESSONS.md, graphify save-result (work memory), Constrained Query Expansion (Step 0)
 
-### Community 79 - "contacts/page.tsx"
-Cohesion: 0.14
-Nodes (17): EditContactContent(), ContactDetailPage(), Contact, ContactPage(), ContactType, ContactDetailAttachments(), ContactDetailAttachmentsProps, ContactDetailBranches() (+9 more)
+### Community 79 - "CompanySummaryCard.tsx"
+Cohesion: 0.07
+Nodes (43): ContactDetailPage(), Contact, ContactPage(), ContactType, ContactsRecyclePage(), ContactType, APPROVED_STATUSES, DebitNoteEditPage() (+35 more)
 
-### Community 80 - "PaymentDetailTabs.tsx"
-Cohesion: 0.27
-Nodes (6): PaymentDetailAccounting(), PaymentDetailAccountingAccounts(), PaymentDetailAccountingAccountsProps, PaymentDetailAdvances(), PaymentDetailTabs(), PaymentDetailTabsProps
+### Community 80 - "skeleton.tsx"
+Cohesion: 0.11
+Nodes (19): DebitNoteDetailSummary(), DebitNoteDetailSummaryProps, DebitNoteDetailTabs(), DebitNoteDetailTabsProps, DebitNoteMobileCard(), DebitNoteRow(), DebitNotesTableBodyProps, PaymentDetailAccountingAccounts() (+11 more)
 
-### Community 81 - "alegra DESIGN.md"
+### Community 81 - "toggle-group.tsx"
 Cohesion: 0.14
 Nodes (14): 1. Visual Theme & Atmosphere, 2. Color Palette & Roles, 3. Typography Rules, 5. Layout Principles, 8. Do's and Don'ts, 9. Responsive Behavior, alegra DESIGN.md, Anti-Patterns (detected from codebase) (+6 more)
 
@@ -603,21 +617,21 @@ Nodes (6): build_merge() / graph_diff(), --cluster-only, update.md Reference Gui
 Cohesion: 0.33
 Nodes (3): DashboardViewProps, SortableWidgetProps, Widget
 
-### Community 85 - "alegra Design System"
-Cohesion: 0.15
-Nodes (13): alegra Design System, Anti-Patterns (Never Do), Brand Spec, Depth & Elevation, Design Philosophy, Homepage, Page Structure, Quick Reference (+5 more)
+### Community 85 - "invoices/page.tsx"
+Cohesion: 0.12
+Nodes (15): alegra Design System, Anti-Patterns (Never Do), Brand Spec, Depth & Elevation, Design Philosophy, Design System Tokens (DESIGN.md), Full Reference Files, Homepage (+7 more)
 
-### Community 86 - "payments/[id]/page.tsx"
-Cohesion: 0.15
-Nodes (10): PaymentDetailPage(), NewPaymentPageContent(), Attachment, PaymentDetailAttachments(), PaymentDetailAttachmentsProps, PaymentDetailHeader(), PaymentDetailTotal(), PaymentDetailTotalProps (+2 more)
+### Community 86 - "cotizaciones/page.tsx"
+Cohesion: 0.10
+Nodes (15): PaymentDetailPage(), NewPaymentPageContent(), PaymentDetailAccounting(), PaymentDetailAdvances(), Attachment, PaymentDetailAttachments(), PaymentDetailAttachmentsProps, PaymentDetailHeader() (+7 more)
 
-### Community 87 - "ExportItemsModal.tsx"
-Cohesion: 0.29
-Nodes (7): ContactDetailGeneral(), ContactDetailGeneralProps, ExportConfig, ExportItemsModal(), ExportItemsModalProps, RadioGroup(), RadioGroupItem()
+### Community 87 - "package.json"
+Cohesion: 0.27
+Nodes (8): ContactDetailGeneral(), ContactDetailGeneralProps, ExportConfig, ExportItemsModal(), ExportItemsModalProps, Label(), RadioGroup(), RadioGroupItem()
 
-### Community 88 - "showToast"
-Cohesion: 0.16
-Nodes (22): EditInternalPurchaseOrderPage(), toDateInput(), NewInternalPurchaseOrderPage(), EditResolutionPage(), NewResolutionPage(), ResolutionsPage(), EditResolutionModalProps, NewInvoicePayment() (+14 more)
+### Community 88 - "useAuth"
+Cohesion: 0.11
+Nodes (23): EditResolutionPage(), NewResolutionPage(), EditResolutionModalProps, NewInvoicePayment(), ResolutionForm(), ResolutionFormProps, ResolutionTable(), ResolutionTableProps (+15 more)
 
 ### Community 89 - "github-and-merge.md Reference Guide"
 Cohesion: 0.60
@@ -627,11 +641,11 @@ Nodes (5): graphify clone <github-url>, github-and-merge.md Reference Guide, gra
 Cohesion: 0.40
 Nodes (4): AddGraphMenu(), AddGraphMenuProps, allGraphOptions, GraphOption
 
-### Community 91 - "ResolutionTable.tsx"
-Cohesion: 0.16
-Nodes (12): ResolutionTable(), ResolutionTableProps, ServerPagination, getResolutionColumns(), ResolutionFilterChips(), ResolutionTableBody(), ResolutionTableBodyProps, ResolutionTablePagination() (+4 more)
+### Community 91 - "breadcrumb.tsx"
+Cohesion: 0.22
+Nodes (3): PaymentTermsService, SellersService, ApiResponse
 
-### Community 92 - "exportPdf.js"
+### Community 92 - "PaymentDetailInfo.tsx"
 Cohesion: 0.21
 Nodes (7): exportBudgetExcel(), ACCENT, BORDER, INK, MUTED, SURFACE, formatDate()
 
@@ -655,165 +669,181 @@ Nodes (4): create-next-app CLI, Geist Font (via next/font), Next.js Project (cre
 Cohesion: 0.67
 Nodes (3): CuentasPorPagarData, CuentasPorPagarWidget(), CuentasPorPagarWidgetProps
 
-### Community 100 - "integrations/page.tsx"
+### Community 100 - "PaymentInvoicesList.tsx"
 Cohesion: 0.48
 Nodes (4): Tabs(), TabsContent(), TabsList(), TabsTrigger()
 
-### Community 103 - "cn"
-Cohesion: 0.06
-Nodes (41): AlertDialogOverlay(), Avatar(), AvatarFallback(), AvatarImage(), BreadcrumbEllipsis(), BreadcrumbItem(), BreadcrumbLink(), BreadcrumbList() (+33 more)
+### Community 101 - "invoice/InvoiceItemsTable.tsx"
+Cohesion: 0.07
+Nodes (9): react, ContactDetailBranches(), ContactDetailBranchesProps, EmptyStateWidgetProps, routeTitles, FacturaItem, InvoiceItemsTableProps, LoaderProps (+1 more)
 
-### Community 113 - "dependencies"
+### Community 103 - "InvoiceDetailPage"
+Cohesion: 0.06
+Nodes (38): AlertDialogOverlay(), Avatar(), AvatarFallback(), AvatarImage(), CardAction(), CardDescription(), CardFooter(), CardHeader() (+30 more)
+
+### Community 108 - "invoices/layout.tsx"
+Cohesion: 0.27
+Nodes (8): InvoiceEditPage(), extractInvoiceFromDetail(), INVOICE_KEY(), INVOICES_KEY, useInvoice(), usePrefetchInvoiceDetail(), useUpdateInvoice(), InvoiceListData
+
+### Community 109 - "invoices/new/layout.tsx"
+Cohesion: 0.19
+Nodes (8): ContactDetailTabs(), ContactDetailTabsProps, emptyDocuments, formatDate(), formatMoney(), TabType, ScrollArea(), ScrollBar()
+
+### Community 111 - "payments/new/layout.tsx"
+Cohesion: 0.18
+Nodes (10): ItemTableProps, ItemFilterChipsProps, ItemTableBodyProps, UseItemsParams, PaginatedData, GetItemByIdResponse, ItemListResponse, ItemsListApiData (+2 more)
+
+### Community 113 - "EmptyDashboardState.tsx"
 Cohesion: 0.18
 Nodes (11): jspdf-autotable, dependencies, jspdf, jspdf-autotable, react, react-dom, xlsx, jspdf (+3 more)
 
-### Community 114 - "devDependencies"
+### Community 114 - "EmptyStateWidget.tsx"
 Cohesion: 0.18
 Nodes (11): oxlint, devDependencies, oxlint, @types/react, @types/react-dom, vite, @vitejs/plugin-react, @types/react (+3 more)
 
-### Community 116 - "package.json"
+### Community 116 - "DocumentTitleUpdater.tsx"
 Cohesion: 0.20
 Nodes (9): name, packageManager, private, scripts, build, dev, lint, start (+1 more)
 
-### Community 117 - "app/package.json"
+### Community 117 - "Loader.tsx"
 Cohesion: 0.20
 Nodes (9): name, private, scripts, build, dev, lint, preview, type (+1 more)
 
-### Community 119 - "alegra-design.skill"
+### Community 119 - "class-variance-authority"
 Cohesion: 0.22
 Nodes (8): ������a�0r�40r.�|F>#����`�30�Y�, C���d#���2C?q�t8��`���έ�E��F�ql���`x���{����������ۜSv$�~�]�P.��2], "-!���E~"�sJ6O�WX+_\Z, %����Qw�]��P��c)�]t�aL��1�Ku)⌉��, ��Sa�4����|4�I�_���a��0Ԧ�>��/Ƣ���m�wg��������W��}��a��Yȅ�<o۸i�, t ���I]=��ա���H��ɤ�'u�tRϑA�<D?#��2���, �y�A��>�.�wy=g՘�g��!�]k֔:�,g�ڼ�����%r��l����, _Z�T���C++l�g�8Җ�	�Dm�	>���"BE4PQ]�Z���B�"h�Õf�Cc8ݳt5lOǻaK�0��,?��]ö$k˔U���{	�vn
 
-### Community 120 - "initialBudget.js"
+### Community 120 - "clsx"
 Cohesion: 0.36
 Nodes (5): DynamicList(), TransportForm(), addMonthsIso(), makeId(), createInitialBudget()
 
-### Community 122 - "Component Patterns"
+### Community 122 - "DeleteWidgetDialog.tsx"
 Cohesion: 0.22
 Nodes (9): Badge / Chip, Button, Card, Component Patterns, Extracted Components, Input, Modal / Dialog, Navigation (+1 more)
 
-### Community 123 - "dependencies"
+### Community 123 - "@dnd-kit/core"
 Cohesion: 0.06
-Nodes (31): axios, clsx, cmdk, laravel-echo, next-themes, dependencies, axios, clsx (+23 more)
+Nodes (31): axios, cmdk, geist, laravel-echo, next-themes, dependencies, axios, cmdk (+23 more)
 
-### Community 125 - "cotizaciones/page.tsx"
+### Community 125 - "@dnd-kit/sortable"
 Cohesion: 0.31
 Nodes (6): FacturasVentaViewProps, QuotesPage(), FacturasVentaViewProps, QuotesPage(), QuotePageHeader(), useQuotesList()
 
-### Community 129 - ".oxlintrc.json"
+### Community 129 - "geist"
 Cohesion: 0.25
 Nodes (7): plugins, rules, react/only-export-components, react/rules-of-hooks, $schema, oxc, warn
 
-### Community 136 - "navigation-menu.tsx"
+### Community 136 - "radix-ui"
 Cohesion: 0.22
 Nodes (9): NavigationMenu(), NavigationMenuContent(), NavigationMenuIndicator(), NavigationMenuItem(), NavigationMenuLink(), NavigationMenuList(), NavigationMenuTrigger(), navigationMenuTriggerStyle (+1 more)
 
-### Community 137 - "TimePickerSimple.tsx"
+### Community 137 - "@radix-ui/react-accordion"
 Cohesion: 0.36
 Nodes (8): formatDisplay(), HOURS, MINUTES, parseTime(), TimeParts, TimePickerSimple(), toParts(), toValue()
 
-### Community 138 - "notifications.ts"
-Cohesion: 0.31
-Nodes (4): NotificationsService, unwrapCount(), unwrapPaginated(), NotificationsListResponse
+### Community 138 - "ImpuestosWidget.tsx"
+Cohesion: 0.32
+Nodes (11): formatMoney(), getClientName(), getDocDate(), getDocNumber(), getDocStatus(), getDocTotal(), ItemDocumentsTab(), resolveDoc() (+3 more)
 
-### Community 140 - "UserInfoPanel.tsx"
-Cohesion: 0.11
-Nodes (37): RolesPage(), getInitials(), UsersPage(), ChangeUserEmailDialog(), CreateUserModal(), CreateUserModalProps, EMPTY_FORM, ResetUserPasswordDialog() (+29 more)
+### Community 140 - "@radix-ui/react-dialog"
+Cohesion: 0.19
+Nodes (17): RolesPage(), getInitials(), UsersPage(), CreateUserModal(), UserInfoPanel(), UserInfoPanelProps, useRolesList(), usePermissions() (+9 more)
 
-### Community 141 - "10. Agent Prompt Guide"
+### Community 141 - "SolutionsPopover.tsx"
 Cohesion: 0.29
 Nodes (7): 10. Agent Prompt Guide, Build a Button, Build a Card, Build a Form, Build a Page Layout, Build a Stats Card, General Component
 
-### Community 144 - "MonthSelector.tsx"
+### Community 144 - "dayjs"
 Cohesion: 0.50
 Nodes (3): monthOptions, MonthSelector(), MonthSelectorProps
 
-### Community 145 - "CuentasPorCobrarWidget.tsx"
+### Community 145 - "next-themes"
 Cohesion: 0.67
 Nodes (3): CuentasPorCobrarData, CuentasPorCobrarWidget(), CuentasPorCobrarWidgetProps
 
-### Community 148 - "4. Component Stylings"
+### Community 148 - "@radix-ui/react-toggle"
 Cohesion: 0.29
 Nodes (7): 4. Component Stylings, Data Display (3), Data Input (1), Layout (1), Media (2), Navigation (1), Overlay (1)
 
-### Community 153 - "Spacing & Layout"
+### Community 153 - "react-qr-code"
 Cohesion: 0.29
 Nodes (7): Base Grid: 5px, Border Radius, Breakpoints, Container, Spacing as Meaning, Spacing & Layout, Spacing Scale
 
-### Community 155 - "recycle/page.tsx"
-Cohesion: 0.15
-Nodes (14): ContactsRecyclePage(), ContactType, DebitNotesPage(), DebitNotePageHeader(), InvoiceFilter(), InvoiceTableToolbar(), InvoiceTableToolbarProps, FilterOption (+6 more)
+### Community 155 - "recharts"
+Cohesion: 0.20
+Nodes (9): BillFilter(), defaultBillFilterOptions, BillTableToolbarProps, FilterOption, paymentFilterOptions, PaymentTableToolbar(), PaymentTableToolbarProps, DebouncedInput() (+1 more)
 
-### Community 156 - "SummaryPanel.jsx"
+### Community 156 - "sonner"
 Cohesion: 0.53
 Nodes (4): CATEGORY_COLORS, DonutChart(), SummaryPanel(), formatCurrency()
 
-### Community 161 - "6. Depth & Elevation"
+### Community 161 - "@radix-ui/react-switch"
 Cohesion: 0.33
 Nodes (6): 6. Depth & Elevation, Flat — subtle depth hints, Floating — dropdowns, popovers, modals, Overlay — full-screen overlays, top-level dialogs, Raised — cards, buttons, interactive elements, Z-Index Scale
 
-### Community 162 - "Color System"
+### Community 162 - "@tanstack/react-query-persist-client"
 Cohesion: 0.40
 Nodes (5): Color System, Core Palette, CSS Variable Tokens, Extended Palette, Status Colors
 
-### Community 163 - "NewReminderModal.tsx"
+### Community 163 - "@tanstack/react-table"
 Cohesion: 0.47
 Nodes (8): initialsOf(), isoToLocalDate(), localDateToIso(), NewReminderModal(), nowHHMM(), ReminderFormData, splitDueAt(), todayISO()
 
-### Community 170 - "Typography"
+### Community 170 - "ContactAssociatedPersons.tsx"
 Cohesion: 0.40
 Nodes (5): Font Sources, Font Stack, Type Scale, Typography, Typography Rules
 
-### Community 171 - "quote.ts"
+### Community 171 - "ImageWithFallback.tsx"
 Cohesion: 0.12
-Nodes (15): AllowanceCharge, QuoteBill, QuoteBillingPeriod, QuoteCompany, QuoteCustomer, QuoteDian, QuoteEstablishment, QuoteFindAllApiData (+7 more)
+Nodes (16): AllowanceCharge, QuoteBill, QuoteBillingPeriod, QuoteCompany, QuoteCustomer, QuoteDetailResponse, QuoteDian, QuoteEstablishment (+8 more)
 
-### Community 174 - "React + Vite"
+### Community 174 - "SuggestedFunctions.tsx"
 Cohesion: 0.50
 Nodes (3): Expanding the Oxlint configuration, React Compiler, React + Vite
 
-### Community 182 - "toggle-group.tsx"
+### Community 182 - "@tabler/icons-react"
 Cohesion: 0.43
 Nodes (5): ToggleGroup(), ToggleGroupContext, ToggleGroupItem(), Toggle(), toggleVariants
 
-### Community 187 - "accordion.tsx"
+### Community 187 - "providers.tsx"
 Cohesion: 0.40
 Nodes (3): AccordionContent(), AccordionItem(), AccordionTrigger()
 
-### Community 189 - "7. Animation & Motion"
+### Community 189 - "certificates/page.tsx"
 Cohesion: 0.50
 Nodes (4): 7. Animation & Motion, Animated Components, CSS Animations, Motion Guidelines
 
-### Community 192 - "Animation & Motion"
+### Community 192 - "Ajuste de flujo: emisión de facturas y notas crédito ahora es asíncrona"
 Cohesion: 0.50
 Nodes (4): Animation & Motion, CSS Animations, Motion Guidelines, Motion Tokens
 
-### Community 193 - "react"
-Cohesion: 0.05
-Nodes (28): react, ContactDetailBranchesProps, EmptyStateWidgetProps, DebitNoteDetailTabsProps, routeTitles, ApiKeysTab(), CreateApiKeyModal(), CreateApiKeyModalProps (+20 more)
+### Community 193 - "@tabler/icons-react"
+Cohesion: 0.10
+Nodes (18): ApiKeysTab(), CreateApiKeyModal(), CreateApiKeyModalProps, CreateWebhookModal(), RotateSecretModal(), RotateSecretModalProps, WebhookDeliveriesModal(), WebhookDeliveriesModalProps (+10 more)
 
-### Community 196 - "notification.ts"
-Cohesion: 0.29
-Nodes (5): AppNotification, MentionNotificationData, NotificationData, ReminderNotificationData, ReplyNotificationData
-
-### Community 199 - "skeleton.tsx"
+### Community 196 - "PaymentInvoicesList.tsx"
 Cohesion: 0.31
-Nodes (5): WidgetSkeleton(), WidgetSkeletonProps, InvoiceDetailSkeleton(), QuoteDetailSkeleton(), Skeleton()
+Nodes (7): CompanyProfilePage(), LoginPage(), RootPage(), UserMenu(), UserMenuProps, useAuth(), useHasPermission()
+
+### Community 199 - "softwares.ts"
+Cohesion: 0.12
+Nodes (14): SecurityPage(), ForgotPasswordPage(), ChangeEmailDialog(), PasswordGateDialog(), TwoFactorPanel(), TwoFactorSection(), Skeleton(), useChangeEmail() (+6 more)
 
 ### Community 200 - "NewLegacyReminderModal.tsx"
 Cohesion: 0.22
 Nodes (14): formatReminderDateTime(), LegacyRemindersPanel(), MONTHS_ES, ReminderCard(), initialsOf(), isoToLocalDate(), LegacyReminder, LegacyReminderRecipient (+6 more)
 
-### Community 211 - "InvoiceSummary"
-Cohesion: 0.16
-Nodes (12): InvoiceDetailHeader(), InvoiceTableProps, ActionsCell(), resolveInvoiceStatus(), StatusBadge(), FilterChipsProps, InvoiceMobileCard(), InvoiceMobileCardProps (+4 more)
+### Community 211 - "quotes/[id]/page.tsx"
+Cohesion: 0.24
+Nodes (6): QuoteDetailExtraInfo(), QuoteDetailExtraInfoProps, QuoteDetailHeader(), QuoteDetailSkeleton(), QuoteDetailSummary(), QuoteDetailSummaryProps
 
 ### Community 212 - "ContactAdvancedForm.tsx"
-Cohesion: 0.14
-Nodes (20): NewContactContent(), AddContactModalProps, ModalContent(), PrefilledContactData, ContactAccountingInfo(), ContactAdvancedForm(), ContactAdvancedFormProps, ContactBasicForm() (+12 more)
+Cohesion: 0.15
+Nodes (20): EditContactContent(), NewContactContent(), AddContactModalProps, ModalContent(), PrefilledContactData, ContactAccountingInfo(), ContactAdvancedForm(), ContactAdvancedFormProps (+12 more)
 
-### Community 213 - "cn"
-Cohesion: 0.10
-Nodes (27): ItemImage, CustomFieldModal(), CustomFieldModalProps, FALLBACK_FIELD_TYPES, InfoChip(), ItemMainInfo(), ItemMainInfoProps, ProductGalleryModal() (+19 more)
+### Community 213 - "ItemMainInfo.tsx"
+Cohesion: 0.22
+Nodes (8): TabConfig, InfoChip(), ItemMainInfo(), ItemMainInfoProps, ItemPriceLists(), ItemPriceListsProps, ProductGalleryModal(), ItemResponse
 
 ### Community 214 - "QuoteTable.tsx"
 Cohesion: 0.21
@@ -823,37 +853,81 @@ Nodes (10): QuoteTable(), ServerPagination, getColumns(), FilterChips(), filterV
 Cohesion: 0.18
 Nodes (6): DrawerContent(), DrawerDescription(), DrawerFooter(), DrawerHeader(), DrawerOverlay(), DrawerTitle()
 
-### Community 216 - "DueReminderPopup.tsx"
-Cohesion: 0.31
-Nodes (7): DueReminderPopup(), DueReminderPayload, Listener, listeners, onDueReminder(), DOCUMENT_ROUTES, playReminderDueSound()
+### Community 216 - "remissions/[id]/page.tsx"
+Cohesion: 0.24
+Nodes (6): RemissionDetailExtraInfo(), RemissionDetailExtraInfoProps, RemissionDetailSkeleton(), RemissionDetailSummary(), RemissionDetailSummaryProps, CommentsAndReminders()
 
-### Community 217 - "RemissionSummary"
-Cohesion: 0.22
-Nodes (9): RemissionFilter(), StatusBadge(), FilterChipsProps, RemissionMobileCard(), RemissionMobileCardProps, RemissionTableBodyProps, RemissionTableToolbar(), RemissionTableToolbarProps (+1 more)
+### Community 217 - "remission/table/columns.tsx"
+Cohesion: 0.33
+Nodes (5): RemissionDetailHeader(), RemissionDetailHeaderProps, ActionsCell(), isRemissionInvoiced(), StatusBadge()
+
+### Community 218 - "invoices/page.tsx"
+Cohesion: 0.28
+Nodes (7): FacturasVentaViewProps, InvoicesPage(), InvoicePageHeader(), InvoiceStats, StatCard(), StatCardProps, useInvoicesList()
 
 ### Community 220 - "app/layout.tsx"
-Cohesion: 0.33
+Cohesion: 0.32
 Nodes (4): metadata, CustomToaster(), ThemeProvider(), Providers()
 
+### Community 225 - "softwares.ts"
+Cohesion: 0.29
+Nodes (5): NewSoftwareModal(), SoftwareList(), CreateSoftwarePayload, SoftwareResponse, softwaresApi
+
+### Community 226 - "breadcrumb.tsx"
+Cohesion: 0.25
+Nodes (6): BreadcrumbEllipsis(), BreadcrumbItem(), BreadcrumbLink(), BreadcrumbList(), BreadcrumbPage(), BreadcrumbSeparator()
+
+### Community 227 - "ConnectedDevicesSection.tsx"
+Cohesion: 0.52
+Nodes (4): ConnectedDevicesSection(), formatRelativeTime(), useDevices(), useRevokeDevice()
+
+### Community 228 - "useUpdateProfile.ts"
+Cohesion: 0.33
+Nodes (5): getInitials(), isTenantProfile(), PersonalDataSection(), useUpdateProfile(), UpdateProfilePayload
+
+### Community 229 - "echo.ts"
+Cohesion: 0.33
+Nodes (3): envs, disconnectEcho(), ReverbEcho
+
+### Community 230 - "certificates/page.tsx"
+Cohesion: 0.40
+Nodes (3): CertificateList(), NewCertificateModal(), certificatesApi
+
+### Community 231 - "remissions/page.tsx"
+Cohesion: 0.40
+Nodes (4): FacturasVentaViewProps, RemissionsPage(), RemissionPageHeader(), useRemissionsList()
+
+### Community 232 - "lib/permissions.ts"
+Cohesion: 0.60
+Nodes (4): usePermissionsCatalog(), usePermissionsCatalogByModule(), groupPermissionsByModule(), permissionsApi
+
+### Community 233 - "FlujoTransaccionesWidget.tsx"
+Cohesion: 0.50
+Nodes (3): FlujoTransaccionesData, FlujoTransaccionesWidget(), FlujoTransaccionesWidgetProps
+
+### Community 234 - "TotalVentasWidget.tsx"
+Cohesion: 0.50
+Nodes (3): TotalVentasWidget(), TotalVentasWidgetProps, VentasData
+
 ## Knowledge Gaps
-- **818 isolated node(s):** `$schema`, `style`, `rsc`, `tsx`, `config` (+813 more)
+- **836 isolated node(s):** `$schema`, `style`, `rsc`, `tsx`, `config` (+831 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **73 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react` to `NewDebitNoteForm.tsx`, `activate-account/page.tsx`, `dialog.tsx`, `extractErrorMessage`, `QuoteItemsTable.tsx`, `invoice/table/columns.tsx`, `CostCenterTable.tsx`, `sidebar.tsx`, `QuoteSummary`, `dashboard/page.tsx`, `useRemissions.ts`, `dropdown-menu.tsx`, `useNotifications.ts`, `searchable-select.tsx`, `types/items.ts`, `CustomToaster.tsx`, `returns/[id]/page.tsx`, `ContactTable.tsx`, `ConfigCostCentersModal.tsx`, `RemindersPanel.tsx`, `useCommentsSocket.ts`, `NewInvoiceMain.tsx`, `QuickCreateItemModal.tsx`, `quotes/[id]/edit/page.tsx`, `InvoicesService`, `useQuotes.ts`, `invoices/[id]/page.tsx`, `RemissionTable.tsx`, `debit-notes/[id]/page.tsx`, `useCatalogs`, `NewPurchaseOrderForm.tsx`, `CommentsAndReminders.tsx`, `ReturnsFilterChips.tsx`, `ApiResponse`, `roles/[id]/page.tsx`, `PaymentTable.tsx`, `tooltip.tsx`, `invoices/new/page.tsx`, `tasks/page.tsx`, `ItemTable.tsx`, `NewPaymentForm.tsx`, `NewReturnSettingsDrawer.tsx`, `carousel.tsx`, `AdvancedOptionsSection.tsx`, `InvoiceTable.tsx`, `DebitNotesFilterChips.tsx`, `context-menu.tsx`, `form.tsx`, `ItemDetailView.tsx`, `contact/table/columns.tsx`, `ContactDetailTabs.tsx`, `calculations.js`, `auth-context.tsx`, `ui/utils.ts`, `ReportsSections.tsx`, `Sidebar.tsx`, `App.jsx`, `chart.tsx`, `CompanySummaryCard.tsx`, `input.tsx`, `pagination.tsx`, `contacts/page.tsx`, `PaymentDetailTabs.tsx`, `payments/[id]/page.tsx`, `ExportItemsModal.tsx`, `showToast`, `AddGraphMenu.tsx`, `ResolutionTable.tsx`, `integrations/page.tsx`, `invoice/InvoiceItemsTable.tsx`, `cn`, `cotizaciones/page.tsx`, `.oxlintrc.json`, `navigation-menu.tsx`, `TimePickerSimple.tsx`, `UserInfoPanel.tsx`, `MonthSelector.tsx`, `recycle/page.tsx`, `NewReminderModal.tsx`, `toggle-group.tsx`, `accordion.tsx`, `NewLegacyReminderModal.tsx`, `ContactAdvancedForm.tsx`, `cn`, `QuoteTable.tsx`, `drawer.tsx`, `DueReminderPopup.tsx`, `RemissionSummary`, `DeleteWidgetDialog.tsx`, `app/layout.tsx`, `ImpuestosWidget.tsx`, `ProductosVendidosSimpleWidget.tsx`?**
-  _High betweenness centrality (0.325) - this node is a cross-community bridge._
-- **Why does `showToast()` connect `showToast` to `NewDebitNoteForm.tsx`, `activate-account/page.tsx`, `dialog.tsx`, `extractErrorMessage`, `QuoteItemsTable.tsx`, `invoice/table/columns.tsx`, `dashboard/page.tsx`, `useRemissions.ts`, `dropdown-menu.tsx`, `UserInfoPanel.tsx`, `useNotifications.ts`, `searchable-select.tsx`, `CustomToaster.tsx`, `returns/[id]/page.tsx`, `ContactTable.tsx`, `RemindersPanel.tsx`, `recycle/page.tsx`, `NewInvoiceMain.tsx`, `QuickCreateItemModal.tsx`, `quotes/[id]/edit/page.tsx`, `InvoicesService`, `useQuotes.ts`, `invoices/[id]/page.tsx`, `debit-notes/[id]/page.tsx`, `useCatalogs`, `NewPurchaseOrderForm.tsx`, `CommentsAndReminders.tsx`, `roles/[id]/page.tsx`, `PaymentTable.tsx`, `tooltip.tsx`, `invoices/new/page.tsx`, `AdvancedOptionsSection.tsx`, `auth-context.tsx`, `react`, `Sidebar.tsx`, `NewLegacyReminderModal.tsx`, `input.tsx`, `contacts/page.tsx`, `InvoiceSummary`, `ContactAdvancedForm.tsx`, `cn`, `payments/[id]/page.tsx`, `cotizaciones/page.tsx`?**
-  _High betweenness centrality (0.088) - this node is a cross-community bridge._
-- **Why does `cn()` connect `cn` to `activate-account/page.tsx`, `dialog.tsx`, `invoice/table/columns.tsx`, `navigation-menu.tsx`, `sidebar.tsx`, `dropdown-menu.tsx`, `searchable-select.tsx`, `ConfigCostCentersModal.tsx`, `NewInvoiceMain.tsx`, `carousel.tsx`, `toggle-group.tsx`, `context-menu.tsx`, `form.tsx`, `accordion.tsx`, `ui/utils.ts`, `react`, `chart.tsx`, `input.tsx`, `pagination.tsx`, `ExportItemsModal.tsx`, `drawer.tsx`, `integrations/page.tsx`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+- **Why does `react` connect `invoice/InvoiceItemsTable.tsx` to `NewReturnForm.tsx`, `tooltip.tsx`, `dialog.tsx`, `NewQuoteSettingsDrawer.tsx`, `invoice/table/columns.tsx`, `cn`, `sidebar.tsx`, `QuoteTable.tsx`, `dashboard/page.tsx`, `auth-context.tsx`, `button.tsx`, `useResolutions`, `showToast`, `NewRemissionMain.tsx`, `CreditNotesService`, `ReturnsTableBody.tsx`, `CostCenterTable.tsx`, `lib/utils.ts`, `PaymentTable.tsx`, `react`, `QuoteItemsTable.tsx`, `useQuotes.ts`, `InvoicesService`, `remission.ts`, `contacts/page.tsx`, `items/[id]/page.tsx`, `cn`, `NewItemModal.tsx`, `contacts/[id]/page.tsx`, `returns/[id]/page.tsx`, `context-menu.tsx`, `types/catalogs.ts`, `AddContactModal.tsx`, `payments/[id]/page.tsx`, `tasks/page.tsx`, `ItemTable.tsx`, `invoices/[id]/page.tsx`, `invoice/table/FilterChips.tsx`, `carousel.tsx`, `dependencies`, `InvoiceTable.tsx`, `remissions/[id]/edit/page.tsx`, `AuthService`, `ResolutionForm.tsx`, `useInvoices.ts`, `QuickCreateItemModal.tsx`, `ExportItemsModal.tsx`, `PaymentDetailTabs.tsx`, `drawer.tsx`, `ReportsSections.tsx`, `CertificateList.tsx`, `ItemFilterChips.tsx`, `chart.tsx`, `pagination.tsx`, `softwares.ts`, `ItemDetailView.tsx`, `CompanySummaryCard.tsx`, `skeleton.tsx`, `cotizaciones/page.tsx`, `package.json`, `useAuth`, `AddGraphMenu.tsx`, `PaymentInvoicesList.tsx`, `InvoiceDetailPage`, `invoices/layout.tsx`, `invoices/new/layout.tsx`, `@dnd-kit/sortable`, `geist`, `radix-ui`, `@radix-ui/react-accordion`, `ImpuestosWidget.tsx`, `@radix-ui/react-dialog`, `dayjs`, `recharts`, `@tanstack/react-table`, `@tabler/icons-react`, `providers.tsx`, `@tabler/icons-react`, `PaymentInvoicesList.tsx`, `softwares.ts`, `NewLegacyReminderModal.tsx`, `quotes/[id]/page.tsx`, `ContactAdvancedForm.tsx`, `ItemMainInfo.tsx`, `QuoteTable.tsx`, `drawer.tsx`, `remissions/[id]/page.tsx`, `remission/table/columns.tsx`, `invoices/page.tsx`, `DeleteWidgetDialog.tsx`, `app/layout.tsx`, `ImpuestosWidget.tsx`, `ProductosVendidosSimpleWidget.tsx`, `softwares.ts`, `breadcrumb.tsx`, `certificates/page.tsx`, `remissions/page.tsx`, `TotalVentasWidget.tsx`?**
+  _High betweenness centrality (0.316) - this node is a cross-community bridge._
+- **Why does `showToast()` connect `CompanySummaryCard.tsx` to `NewReturnForm.tsx`, `tooltip.tsx`, `dialog.tsx`, `AdvancedOptionsSection.tsx`, `Sidebar.tsx`, `NewQuoteSettingsDrawer.tsx`, `invoice/table/columns.tsx`, `QuoteTable.tsx`, `dashboard/page.tsx`, `auth-context.tsx`, `button.tsx`, `@radix-ui/react-dialog`, `useResolutions`, `NewRemissionMain.tsx`, `CreditNotesService`, `ReturnsTableBody.tsx`, `CostCenterTable.tsx`, `lib/utils.ts`, `PaymentTable.tsx`, `react`, `QuoteItemsTable.tsx`, `quote.ts`, `useQuotes.ts`, `InvoicesService`, `contacts/page.tsx`, `cn`, `NewItemModal.tsx`, `returns/[id]/page.tsx`, `context-menu.tsx`, `types/catalogs.ts`, `AddContactModal.tsx`, `payments/[id]/page.tsx`, `invoices/[id]/page.tsx`, `invoice/table/FilterChips.tsx`, `dependencies`, `CalculationService (Backend)`, `PaymentDetailTabs.tsx`, `@tabler/icons-react`, `CertificateList.tsx`, `softwares.ts`, `NewLegacyReminderModal.tsx`, `NewReturnForm`, `softwares.ts`, `skeleton.tsx`, `quotes/[id]/page.tsx`, `ContactAdvancedForm.tsx`, `cotizaciones/page.tsx`, `useAuth`, `remissions/[id]/page.tsx`, `remission/table/columns.tsx`, `ConnectedDevicesSection.tsx`, `useUpdateProfile.ts`, `invoice/InvoiceItemsTable.tsx`, `remissions/page.tsx`, `DashboardPage`, `@dnd-kit/sortable`?**
+  _High betweenness centrality (0.128) - this node is a cross-community bridge._
+- **Why does `cn()` connect `InvoiceDetailPage` to `tooltip.tsx`, `dialog.tsx`, `NewQuoteSettingsDrawer.tsx`, `invoice/table/columns.tsx`, `radix-ui`, `sidebar.tsx`, `button.tsx`, `showToast`, `NewRemissionMain.tsx`, `CostCenterTable.tsx`, `AddContactModal.tsx`, `invoice/table/FilterChips.tsx`, `carousel.tsx`, `@tabler/icons-react`, `ResolutionForm.tsx`, `providers.tsx`, `drawer.tsx`, `@tabler/icons-react`, `chart.tsx`, `softwares.ts`, `ItemDetailView.tsx`, `drawer.tsx`, `package.json`, `breadcrumb.tsx`, `PaymentInvoicesList.tsx`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
 - **What connects `$schema`, `style`, `rsc` to the rest of the system?**
-  _818 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `NewDebitNoteForm.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.10020703933747412 - nodes in this community are weakly interconnected._
-- **Should `activate-account/page.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.11095305832147938 - nodes in this community are weakly interconnected._
+  _836 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `NewReturnForm.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.14061054579093432 - nodes in this community are weakly interconnected._
+- **Should `tooltip.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.12857142857142856 - nodes in this community are weakly interconnected._
 - **Should `dialog.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.07589285714285714 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0873015873015873 - nodes in this community are weakly interconnected._

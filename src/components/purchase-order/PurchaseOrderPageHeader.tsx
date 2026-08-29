@@ -19,7 +19,7 @@ export function PurchaseOrderPageHeader() {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            onClick={() => router.push("/purchase-orders/new")}
+            onClick={() => router.push("/sales/purchase-orders/new")}
             className="hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground cursor-pointer"
           >
             <Plus className="w-3 h-3 mr-1" />

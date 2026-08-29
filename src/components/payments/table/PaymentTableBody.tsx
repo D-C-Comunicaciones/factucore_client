@@ -50,7 +50,7 @@ export function PaymentTableBody({
       'button, a, input, select, textarea, [role="checkbox"], [data-no-row-select="true"]'
     );
     if (interactiveElement) return;
-    router.push(`/payments/${row.original.id}`);
+    router.push(`/sales/payments/${row.original.id}`);
   };
 
   const stateContent = loading ? null : (

@@ -24,7 +24,7 @@ export function PaymentDetailHeader({ paymentNumber }: PaymentDetailHeaderProps)
   return (
     <div className="flex flex-col mb-6">
       <button
-        onClick={() => router.push("/payments")}
+        onClick={() => router.push("/sales/payments")}
         className="flex items-center text-primary text-sm font-medium hover:underline mb-4 w-fit"
       >
         <ArrowLeft className="w-4 h-4 mr-1.5" />

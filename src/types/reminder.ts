@@ -8,7 +8,8 @@ export type ReminderableType =
     | "remission"
     | "payment"
     | "purchase_order"
-    | "contact";
+    | "contact"
+    | "support_document";
 
 export interface ReminderUser {
     id: number;

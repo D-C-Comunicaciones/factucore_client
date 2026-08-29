@@ -50,7 +50,7 @@ export function DebitNoteDetailHeader({
     return (
         <div>
             <div className="flex items-center text-sm text-slate-500 mb-2">
-                <Link href="/debit-notes" className="hover:text-primary transition-colors">
+                <Link href="/expenses/debit-notes" className="hover:text-primary transition-colors">
                     Notas de débito
                 </Link>
                 <span className="mx-2">&gt;</span>
@@ -64,7 +64,7 @@ export function DebitNoteDetailHeader({
                 <div className="flex flex-wrap items-center gap-2">
                     {canEdit && (
                         <Button variant="outline" size="sm" asChild className={defaultBtnClass}>
-                            <Link href={`/debit-notes/${debitNote.id}/edit`}>
+                            <Link href={`/expenses/debit-notes/${debitNote.id}/edit`}>
                                 <Pencil className="w-4 h-4 mr-2" /> Editar
                             </Link>
                         </Button>
