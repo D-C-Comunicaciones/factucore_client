@@ -96,7 +96,7 @@ function DebitNoteRow({
 
   const currencyCode = item.type_currency_id === 35 || !item.type_currency_id ? "COP" : "USD";
 
-  const navigateToDetail = () => router.push(`/debit-notes/${item.id}`);
+  const navigateToDetail = () => router.push(`/expenses/debit-notes/${item.id}`);
 
   return (
     <TableRow className="hover:bg-slate-50 cursor-pointer" onClick={navigateToDetail}>
@@ -167,7 +167,7 @@ function DebitNoteMobileCard({
     "—";
 
   const currencyCode = item.type_currency_id === 35 || !item.type_currency_id ? "COP" : "USD";
-  const navigateToDetail = () => router.push(`/debit-notes/${item.id}`);
+  const navigateToDetail = () => router.push(`/expenses/debit-notes/${item.id}`);
   const formattedDate = item.issue_date && item.issue_date.includes("-")
     ? item.issue_date.split("T")[0].split(" ")[0].split("-").reverse().join("/")
     : (item.issue_date || "—");
@@ -268,7 +268,7 @@ export function DebitNotesTableBody({
       <button
         type="button"
         className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
-        onClick={() => router.push("/debit-notes/new")}
+        onClick={() => router.push("/expenses/debit-notes/new")}
       >
         Nueva nota de débito
       </button>

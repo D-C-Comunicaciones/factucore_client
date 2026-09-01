@@ -252,9 +252,9 @@ export function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
 
   const handlePayment = () => {
     if (invoice.contact_id) {
-      router.push(`/payments/new?customer_id=${invoice.contact_id}&invoice_id=${invoice.id}`);
+      router.push(`/sales/payments/new?customer_id=${invoice.contact_id}&invoice_id=${invoice.id}`);
     } else {
-      router.push(`/payments/new?invoice_id=${invoice.id}`);
+      router.push(`/sales/payments/new?invoice_id=${invoice.id}`);
     }
   };
 
@@ -291,7 +291,7 @@ export function ActionsCell({ invoice }: { invoice: InvoiceSummary }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={8} className="mt-2 min-w-[140px]">
-              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={() => router.push(`/invoices/${invoice.id}`)} className="cursor-pointer">
+              <DropdownMenuItem onClick={(e) => e.stopPropagation()} onSelect={() => router.push(`/sales/invoices/${invoice.id}`)} className="cursor-pointer">
                 <Eye className="w-4 h-4 mr-2 text-slate-700" />
                 Ver detalle
               </DropdownMenuItem>

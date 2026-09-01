@@ -41,16 +41,16 @@ export function QuoteDetailHeader({
     const router = useRouter();
 
     const handleClone = () => {
-        router.push(`/quotes/new?cloneId=${quote.id}`);
+        router.push(`/sales/quotes/new?cloneId=${quote.id}`);
     };
 
     const handleConvertToRemission = () => {
-        router.push(`/remissions/new?quoteId=${quote.id}`);
+        router.push(`/sales/remissions/new?quoteId=${quote.id}`);
     };
 
     return (
         <div>
-            <Link href="/quotes" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
+            <Link href="/sales/quotes" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
                 <ArrowLeft className="w-4 h-4" /> Volver a mis cotizaciones
             </Link>
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -85,7 +85,7 @@ export function QuoteDetailHeader({
 
                     {canEdit && (
                         <Button variant="outline" size="sm" asChild className={defaultBtnClass}>
-                            <Link href={`/quotes/${quote.id}/edit`}>
+                            <Link href={`/sales/quotes/${quote.id}/edit`}>
                                 <Pencil className="w-4 h-4 mr-2" /> Editar
                             </Link>
                         </Button>
@@ -98,7 +98,7 @@ export function QuoteDetailHeader({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 text-slate-700 bg-white">
-                            <DropdownMenuItem className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/invoices/new?quoteId=${quote.id}`)}>
+                            <DropdownMenuItem className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/sales/invoices/new?quoteId=${quote.id}`)}>
                                 Convertir a factura
                             </DropdownMenuItem>
                             <DropdownMenuItem className="cursor-pointer hover:bg-slate-50" onClick={handleConvertToRemission}>

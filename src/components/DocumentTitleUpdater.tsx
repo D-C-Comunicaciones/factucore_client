@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 const routeTitles: Record<string, string> = {
   "/login": "Iniciar sesión",
   "/dashboard": "Dashboard",
-  "/invoices": "Facturas de venta",
-  "/invoices/new": "Nueva factura",
+  "/sales/invoices": "Facturas de venta",
+  "/sales/invoices/new": "Nueva factura",
   "/contacts": "Contactos",
   "/bandeja": "Bandeja de entrada",
   "/config": "Configuración",

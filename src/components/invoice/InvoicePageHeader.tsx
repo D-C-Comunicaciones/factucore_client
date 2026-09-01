@@ -88,7 +88,7 @@ export function InvoicePageHeader({ onNavigate }: InvoicePageHeaderProps) {
             >
               <DropdownMenuItem
                 onClick={() => {
-                  router.push("/invoices/new");
+                  router.push("/sales/invoices/new");
                   onNavigate?.("crear-manualmente");
                 }}
                 className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer"

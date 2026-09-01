@@ -56,7 +56,7 @@ export function RemissionTableBody({ table, columns, loading, showNoDataMessage 
           <button
             type="button"
             className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
-            onClick={() => router.push("/remissions/new")}
+            onClick={() => router.push("/sales/remissions/new")}
           >
             Crear primera remisión
           </button>
@@ -131,7 +131,7 @@ export function RemissionTableBody({ table, columns, loading, showNoDataMessage 
                         className={isClickable ? "cursor-pointer" : ""}
                         onClick={() => {
                           if (isClickable) {
-                            router.push(`/remissions/${row.original.id}`);
+                            router.push(`/sales/remissions/${row.original.id}`);
                           }
                         }}
                       >

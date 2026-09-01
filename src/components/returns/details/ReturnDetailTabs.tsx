@@ -119,7 +119,7 @@ export function ReturnDetailTabs({ creditNote }: ReturnDetailTabsProps) {
                                     <tbody>
                                         <tr
                                             className="hover:bg-slate-50 transition-colors cursor-pointer"
-                                            onClick={() => router.push(`/invoices/${creditNote.invoice.id}`)}
+                                            onClick={() => router.push(`/sales/invoices/${creditNote.invoice.id}`)}
                                         >
                                             <td className="py-4 px-4 text-slate-700">
                                                 {formatDate(creditNote.invoice.issue_date)}

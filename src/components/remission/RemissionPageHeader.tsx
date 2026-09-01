@@ -67,7 +67,7 @@ export function RemissionPageHeader({ onNavigate }: RemissionPageHeaderProps) {
             >
               <DropdownMenuItem
                 onClick={() => {
-                  router.push("/remissions/new");
+                  router.push("/sales/remissions/new");
                   onNavigate?.("crear-manualmente");
                 }}
                 className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer"

@@ -56,7 +56,7 @@ export function QuoteTableBody({ table, columns, loading, showNoDataMessage = fa
           <button
             type="button"
             className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
-            onClick={() => router.push("/quotes/new")}
+            onClick={() => router.push("/sales/quotes/new")}
           >
             Crear primera cotización
           </button>
@@ -131,7 +131,7 @@ export function QuoteTableBody({ table, columns, loading, showNoDataMessage = fa
                         className={isClickable ? "cursor-pointer" : ""}
                         onClick={() => {
                           if (isClickable) {
-                            router.push(`/quotes/${row.original.id}`);
+                            router.push(`/sales/quotes/${row.original.id}`);
                           }
                         }}
                       >

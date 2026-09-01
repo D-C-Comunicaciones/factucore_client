@@ -44,12 +44,12 @@ export function RemissionDetailHeader({
     const documentTypeLabel = Number(remission.type_remission_id) === 2 ? "Orden de servicio" : "Remisión";
 
     const handleClone = () => {
-        router.push(`/remissions/new?cloneId=${remission.id}`);
+        router.push(`/sales/remissions/new?cloneId=${remission.id}`);
     };
 
     return (
         <div>
-            <Link href="/remissions" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
+            <Link href="/sales/remissions" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
                 <ArrowLeft className="w-4 h-4" /> Volver a mis remisiones
             </Link>
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -84,7 +84,7 @@ export function RemissionDetailHeader({
 
                     {!invoiced && canEdit && (
                         <Button variant="outline" size="sm" asChild className={defaultBtnClass}>
-                            <Link href={`/remissions/${remission.id}/edit`}>
+                            <Link href={`/sales/remissions/${remission.id}/edit`}>
                                 <Pencil className="w-4 h-4 mr-2" /> Editar
                             </Link>
                         </Button>
@@ -98,7 +98,7 @@ export function RemissionDetailHeader({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56 text-slate-700 bg-white">
-                                <DropdownMenuItem className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/invoices/new?remissionId=${remission.id}`)}>
+                                <DropdownMenuItem className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/sales/invoices/new?remissionId=${remission.id}`)}>
                                     Convertir a factura
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

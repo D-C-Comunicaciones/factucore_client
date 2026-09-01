@@ -28,7 +28,7 @@ export function NewInvoiceHeader({
   return (
     <div>
       <div className="flex items-center text-sm text-primary mb-2 font-medium">
-        <Link href="/invoices" className="hover:underline">
+        <Link href="/sales/invoices" className="hover:underline">
           Facturas de venta
         </Link>
         <ChevronRight className="w-4 h-4 mx-1 text-slate-400" />
@@ -52,7 +52,7 @@ export function NewInvoiceHeader({
         {/* Personalizar opciones button with dropdown */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all border h-[38px] ${
+          className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all border h-[38px] cursor-pointer ${
             isOpen
               ? "border-primary bg-white text-primary shadow-sm ring-1 ring-primary/20"
               : "border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary"

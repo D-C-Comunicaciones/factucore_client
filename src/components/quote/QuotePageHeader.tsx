@@ -67,7 +67,7 @@ export function QuotePageHeader({ onNavigate }: QuotePageHeaderProps) {
             >
               <DropdownMenuItem
                 onClick={() => {
-                  router.push("/quotes/new");
+                  router.push("/sales/quotes/new");
                   onNavigate?.("crear-manualmente");
                 }}
                 className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer"

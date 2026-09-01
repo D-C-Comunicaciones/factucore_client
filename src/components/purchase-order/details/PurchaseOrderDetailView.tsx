@@ -31,7 +31,7 @@ export function PurchaseOrderDetailView({ purchaseOrder }: { purchaseOrder: Purc
     try {
       await deletePurchaseOrder.mutateAsync(purchaseOrder.id);
       showToast("Orden de compra eliminada correctamente", "success");
-      router.push("/purchase-orders");
+      router.push("/sales/purchase-orders");
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "No se pudo eliminar la orden de compra";
       showToast(errorMsg, "error");
@@ -45,7 +45,7 @@ export function PurchaseOrderDetailView({ purchaseOrder }: { purchaseOrder: Purc
       <PurchaseOrderDetailHeader
         purchaseOrder={purchaseOrder}
         isAssociatedToInvoice={isAssociatedToInvoice}
-        onEdit={() => router.push(`/purchase-orders/${purchaseOrder.id}/edit`)}
+        onEdit={() => router.push(`/sales/purchase-orders/${purchaseOrder.id}/edit`)}
         onDeleteClick={() => setShowDeleteDialog(true)}
       />
 

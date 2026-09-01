@@ -116,7 +116,7 @@ export function ContactDetailHeader({ contact, summary, onToggleActive }: Contac
                     size="sm"
                     disabled={isTrashed}
                     className={isTrashed ? disabledBtnClass : defaultBtnClass}
-                    onClick={() => router.push(`/invoices/new?contactId=${contact.id}`)}
+                    onClick={() => router.push(`/sales/invoices/new?contactId=${contact.id}`)}
                 >
                     + Nueva factura
                 </Button>

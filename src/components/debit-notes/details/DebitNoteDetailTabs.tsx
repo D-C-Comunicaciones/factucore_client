@@ -116,7 +116,7 @@ export function DebitNoteDetailTabs({ debitNote }: DebitNoteDetailTabsProps) {
                                     <tbody>
                                         <tr
                                             className="hover:bg-slate-50 transition-colors cursor-pointer"
-                                            onClick={() => router.push(`/invoices/${debitNote.invoice.id}`)}
+                                            onClick={() => router.push(`/sales/invoices/${debitNote.invoice.id}`)}
                                         >
                                             <td className="py-4 px-4 text-slate-700">
                                                 {formatDate(debitNote.invoice.issue_date)}

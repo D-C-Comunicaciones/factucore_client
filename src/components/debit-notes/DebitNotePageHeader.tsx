@@ -71,7 +71,7 @@ export function DebitNotePageHeader({ onNavigate }: DebitNotePageHeaderProps) {
           <Button
             size="sm"
             className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium cursor-pointer"
-            onClick={() => router.push("/debit-notes/new")}
+            onClick={() => router.push("/expenses/debit-notes/new")}
           >
             <Plus className="w-4 h-4 mr-1.5" />
             Nueva nota de débito
