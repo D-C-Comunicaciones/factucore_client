@@ -4,10 +4,10 @@ import * as React from "react";
 import { Table } from "@tanstack/react-table";
 import { DebouncedInput } from "@/components/ui/debounced-input";
 import { SupportDocumentFilter, defaultSupportDocumentFilterOptions } from "../SupportDocumentFilter";
-import type { SupportDocumentSummary } from "@/types/supportDocument";
+import type { SupportDocument } from "@/types/supportDocument";
 
 interface SupportDocumentTableToolbarProps {
-    table?: Table<SupportDocumentSummary>;
+    table?: Table<SupportDocument>;
     search: string;
     setSearch: (v: string) => void;
     onAddFilter: (filterValue: string) => void;

@@ -63,43 +63,75 @@ export default function NewBillPage() {
         return Object.keys(errs).length === 0;
     };
 
+    // Maps the UI's local form state (builder.items/withholdings/globalAdjustments) into
+    // StoreBillRequest's actual contract: `lines` (not `items`), `allowance_charges`/
+    // `withholding_taxes` at global or per-line scope (CalculationService's generic shape —
+    // same as Support Document/Invoice use). warehouse_id/cost_center_id/payment_form_id are
+    // real Bill columns and go through as-is; purchase_orders has no backend counterpart yet
+    // and is intentionally left off the payload.
+    const buildPayload = () => {
+        const lines = builder.items.map((item) => {
+            const allowanceCharges: any[] = [];
+            const discVal = Number(item.discountValue) || 0;
+            if (discVal > 0) {
+                allowanceCharges.push({
+                    scope: "line",
+                    charge_indicator: false,
+                    value_type: item.discountType || "percentage",
+                    value: discVal,
+                });
+            }
+
+            return {
+                item_id: item.item_id ? Number(item.item_id) : undefined,
+                description: item.description || item.item || undefined,
+                quantity: Number(item.cantidad) || 1,
+                price: Number(item.precio) || 0,
+                taxes: item.taxObj?.tax_id ? [{ tax_id: Number(item.taxObj.tax_id), rate: Number(item.taxObj.rate ?? item.taxObj.percentage ?? 0) }] : [],
+                allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
+            };
+        });
+
+        const allowanceCharges = (builder.globalAdjustments || []).map((adj) => ({
+            scope: "global" as const,
+            charge_indicator: adj.type === "charge",
+            value_type: adj.valueType,
+            value: Number(adj.value) || 0,
+            reason: adj.reason || undefined,
+        }));
+
+        const withholdingTaxes = (builder.withholdings || [])
+            .filter((w) => w.retention_id)
+            .map((w) => ({
+                scope: "global" as const,
+                tax_id: Number(w.retention_id),
+                rate: Number(w.percentage) || 0,
+            }));
+
+        return {
+            contact_id: formState.contact_id,
+            bill_number: formState.bill_number || undefined,
+            issue_date: formState.issue_date,
+            due_date: formState.due_date || undefined,
+            payment_form_id: formState.payment_form_id || undefined,
+            warehouse_id: formState.warehouse_id ? Number(formState.warehouse_id) : undefined,
+            cost_center_id: formState.cost_center_id ? Number(formState.cost_center_id) : undefined,
+            physical_document_number: formState.physical_document_number || undefined,
+            terms_conditions: formState.terms_conditions || undefined,
+            notes: formState.notes || undefined,
+            lines,
+            allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
+            withholding_taxes: withholdingTaxes.length > 0 ? withholdingTaxes : undefined,
+        };
+    };
+
     const handleSave = async (action: "save" | "save_and_pay" | "save_and_new" = "save") => {
         if (!validateForm()) return;
 
-        const payload: any = {
-            bill_number: formState.bill_number,
-            contact_id: formState.contact_id,
-            issue_date: formState.issue_date,
-            due_date: formState.due_date,
-            payment_form_id: formState.payment_form_id,
-            warehouse_id: formState.warehouse_id ? Number(formState.warehouse_id) : null,
-            cost_center_id: formState.cost_center_id ? Number(formState.cost_center_id) : null,
-            physical_document_number: formState.physical_document_number,
-            terms_conditions: formState.terms_conditions,
-            notes: formState.notes,
-            items: builder.items.map((item) => ({
-                item_id: item.item_id,
-                name: item.item,
-                description: item.description,
-                reference_code: item.referencia,
-                quantity: Number(item.cantidad) || 1,
-                price: Number(item.precio) || 0,
-                discount: Number(item.discountValue) || 0,
-                discount_type: item.discountType || "percentage",
-                tax_id: item.taxObj?.id || null,
-            })),
-            withholdings: builder.withholdings,
-            purchase_orders: builder.purchaseOrders,
-            global_adjustments: builder.globalAdjustments,
-            subtotal: builder.totals.subtotal,
-            discounts_total: builder.totals.discountsAmount,
-            taxes_total: builder.totals.taxesAmount,
-            withholdings_total: builder.totals.withholdingsAmount,
-            total: builder.totals.payableAmount,
-        };
+        const payload = buildPayload();
 
         createBillMutation.mutate(payload, {
-            onSuccess: (res: any) => {
+            onSuccess: (bill: any) => {
                 if (action === "save_and_new") {
                     setFormState({
                         bill_number: "",
@@ -134,14 +166,9 @@ export default function NewBillPage() {
                     builder.setWithholdings([]);
                     builder.setPurchaseOrders([]);
                 } else if (action === "save_and_pay") {
-                    const billId = res?.data?.bill?.id || res?.data?.id;
-                    if (billId) {
-                        router.push(`/gastos/pagos/new?bill_id=${billId}`);
-                    } else {
-                        router.push("/expenses/bills");
-                    }
+                    router.push(bill?.id ? `/expenses/payments/new?type=bill&document_id=${bill.id}` : "/expenses/bills");
                 } else {
-                    router.push("/expenses/bills");
+                    router.push(bill?.id ? `/expenses/bills/${bill.id}` : "/expenses/bills");
                 }
             },
         });

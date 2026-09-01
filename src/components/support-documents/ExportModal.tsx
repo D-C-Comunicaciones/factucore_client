@@ -30,7 +30,7 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
                 : (endDate ? endDate.toISOString().split("T")[0] : "2099-12-31");
 
             const result = await exportByDateRange(
-                "/expenses/support-documents/export",
+                "/support-documents/export",
                 from,
                 to,
                 `DocumentosSoporte_${from}_${to}.xlsx`

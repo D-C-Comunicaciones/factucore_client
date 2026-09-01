@@ -101,7 +101,7 @@ export function SearchableSelect({
           ) : (
             <span
               className={cn(
-                "truncate text-left",
+                "flex-1 min-w-0 truncate text-left",
                 !selectedOption && "text-muted-foreground"
               )}
             >

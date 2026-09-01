@@ -8,8 +8,8 @@ interface ServerPagination {
     per_page: number;
     total: number;
     last_page: number;
-    from: number;
-    to: number;
+    from: number | null;
+    to: number | null;
 }
 
 interface SupportDocumentTablePaginationProps {

@@ -8,16 +8,15 @@ import { NewSupportDocumentMain } from "@/components/support-documents/new/NewSu
 import { NewSupportDocumentFooter } from "@/components/support-documents/new/NewSupportDocumentFooter";
 import { CommentsAndReminders } from "@/components/shared/CommentsAndReminders";
 import { useSupportDocumentBuilder } from "@/hooks/supportDocuments/useSupportDocumentBuilder";
-import { useCreateSupportDocument } from "@/hooks/supportDocuments/useSupportDocuments";
-import { SupportDocumentsService } from "@/lib/supportDocuments";
+import { useCreateSupportDocument, useSaveDraftSupportDocument, useSendTestSupportDocument } from "@/hooks/supportDocuments/useSupportDocuments";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useResolutions } from "@/hooks/useResolutions";
 import { costCentersApi } from "@/lib/costCenters";
 import { AuthService } from "@/lib/auth";
-import { getSession } from "@/common/interfaces/session";
 import { useQuery } from "@tanstack/react-query";
 import { showToast } from "@/components/sonner/CustomToaster";
 import type { Resolution } from "@/lib/resolutions";
+import type { SupportDocumentPayload, AllowanceCharge } from "@/types/supportDocument";
 
 export default function NewSupportDocumentPage() {
     return (
@@ -31,9 +30,17 @@ function NewSupportDocumentContent() {
     const router = useRouter();
     const catalogData = useCatalogs();
     const createDoc = useCreateSupportDocument();
+    const saveDraftDoc = useSaveDraftSupportDocument();
+    const sendTestDoc = useSendTestSupportDocument();
 
-    // Resolution for Documento Soporte (type_resolution: 10 or from active resolutions)
+    // type_resolution: 10 = Documento Soporte — filtered server-side (ResolutionService::getAll())
+    // rather than fetching every resolution and comparing type_resolution_id client-side: that
+    // comparison is a strict `=== 10`, and the API can hand this field back as a string, which
+    // silently fails the check and falls through to whatever resolution happened to come first
+    // (this is exactly what was pointing new Documento Soporte drafts at the Notas Débito
+    // resolution, with no visible error). Same fix already applied to the NAS "new" page.
     const { resolutions, refetch: refetchResolutions } = useResolutions({
+        type_resolution: 10,
         is_active: true,
     });
     const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
@@ -43,8 +50,8 @@ function NewSupportDocumentContent() {
         if (resolutions && resolutions.length > 0) {
             const valid = resolutions.find((r: Resolution) => r.id === selectedResolutionId);
             if (!valid) {
-                const supportRes = resolutions.find((r: Resolution) => r.type_resolution_id === 10 || r.name?.toLowerCase().includes("soporte")) || resolutions[0];
-                setSelectedResolutionId(supportRes.id);
+                const mainRes = resolutions.find((r: Resolution) => r.is_main) || resolutions[0];
+                setSelectedResolutionId(mainRes.id);
             }
         }
     }, [resolutions]);
@@ -91,6 +98,7 @@ function NewSupportDocumentContent() {
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loadingGuardar, setLoadingGuardar] = useState(false);
+    const [globalAdjustments, setGlobalAdjustments] = useState<any[]>([]);
 
     const builder = useSupportDocumentBuilder();
 
@@ -132,115 +140,115 @@ function NewSupportDocumentContent() {
         return true;
     };
 
+    /**
+     * Maps the UI's rich local form state (builder.items/withholdings + globalAdjustments,
+     * declared in NewSupportDocumentMain) into StoreSupportDocumentRequest's actual contract:
+     * `lines` (not `items`), `allowance_charges`/`withholding_taxes` at global or per-line scope
+     * (CalculationService's generic shape — see StoreSupportDocumentRequest::rules()), `issue_date`
+     * (not `operation_date`), `note` (not `notes`). Fields the DS backend doesn't model at all yet
+     * (warehouse, cost center, physical receipt number, payment form/method, purchase orders) are
+     * intentionally left off the payload — the backend has no columns for them.
+     */
+    const buildPayload = (extra?: Partial<SupportDocumentPayload>): SupportDocumentPayload => {
+        const lines = builder.items.map((line) => {
+            const allowanceCharges: AllowanceCharge[] = [];
+            if (line.discountValue && Number(line.discountValue) > 0) {
+                allowanceCharges.push({
+                    scope: "line",
+                    charge_indicator: false,
+                    value_type: line.discountType,
+                    value: Number(line.discountValue),
+                });
+            }
+
+            return {
+                item_id: line.item_id ?? undefined,
+                description: line.description || line.item || undefined,
+                quantity: Number(line.cantidad) || 1,
+                price: Number(line.precio) || 0,
+                taxes: line.taxObj?.tax_id ? [{ tax_id: Number(line.taxObj.tax_id), rate: Number(line.taxObj.rate) || 0 }] : [],
+                allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
+            };
+        });
+
+        const allowanceCharges: AllowanceCharge[] = globalAdjustments.map((adj) => ({
+            scope: "global" as const,
+            charge_indicator: adj.type === "charge",
+            value_type: adj.valueType,
+            value: Number(adj.value) || 0,
+            reason: adj.reason || undefined,
+        }));
+
+        const withholdingTaxes = builder.withholdings
+            .filter((w) => w.retention_id)
+            .map((w) => ({
+                scope: "global" as const,
+                tax_id: Number(w.retention_id),
+                rate: Number(w.percentage) || 0,
+            }));
+
+        return {
+            resolution_id: selectedResolutionId ?? undefined,
+            contact_id: formState.contact_id,
+            issue_date: formState.operation_date,
+            note: formState.notes || undefined,
+            lines,
+            allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
+            withholding_taxes: withholdingTaxes.length > 0 ? withholdingTaxes : undefined,
+            ...extra,
+        };
+    };
+
+    const resetForm = () => {
+        builder.reset();
+        setGlobalAdjustments([]);
+        setFormState({
+            contact_id: null,
+            supplier: null,
+            identification: "",
+            phone: "",
+            operation_date: new Date().toISOString().split("T")[0],
+            payment_form_id: 1,
+            payment_method_id: 10,
+            authorization_text: "",
+            notes: "",
+            comments: [],
+        });
+        refetchResolutions();
+    };
+
     const handleSaveAction = async (actionType: "SAVE" | "SEND" | "DRAFT" | "CREATE_NEW" | "SAVE_PAYMENT") => {
         if (!validateForm()) return;
 
         setLoadingGuardar(true);
         try {
-            const session = getSession();
-
-            const itemsPayload = builder.items.map((line) => {
-                const qty = Number(line.cantidad) || 1;
-                const price = Number(line.precio) || 0;
-                let discountVal = 0;
-                if (line.discountValue) {
-                    discountVal = line.discountType === 'percentage'
-                        ? (qty * price * Number(line.discountValue)) / 100
-                        : Number(line.discountValue);
-                }
-
-                return {
-                    item_id: line.item_id,
-                    name: line.item,
-                    description: line.description,
-                    quantity: qty,
-                    price_amount: price,
-                    unit_measure_code: line.unit_measure_code || '94',
-                    discount_amount: discountVal,
-                    taxes: line.taxObj ? [{
-                        tax_id: line.taxObj.id,
-                        rate: line.taxObj.rate,
-                        name: line.taxObj.name,
-                    }] : [],
-                };
-            });
-
-            const withholdingsPayload = builder.withholdings.map((w) => ({
-                retention_id: w.retention_id,
-                name: w.name,
-                base: Number(w.base) || 0,
-                percentage: Number(w.percentage) || 0,
-                value: Number(w.value) || 0,
-                is_assumed: Boolean(w.is_assumed),
-            }));
-
-            const purchaseOrderIds = builder.purchaseOrders
-                .map((po) => po.purchase_order_id)
-                .filter(Boolean);
-
-            const payload: any = {
-                resolution_id: selectedResolutionId,
-                contact_id: formState.contact_id,
-                user_id: session?.user?.id,
-                currency_id: currency,
-                warehouse_id: warehouseId ? Number(warehouseId) : undefined,
-                cost_center_id: costCenterId ? Number(costCenterId) : undefined,
-                physical_receipt_number: physicalReceiptNumber || undefined,
-                operation_date: formState.operation_date,
-                payment_form_id: formState.payment_form_id,
-                payment_method_id: formState.payment_method_id,
-                authorization_text: formState.authorization_text || undefined,
-                notes: formState.notes || undefined,
-                items: itemsPayload,
-                withholdings: withholdingsPayload,
-                purchase_order_ids: purchaseOrderIds.length > 0 ? purchaseOrderIds : undefined,
-            };
+            const payload = buildPayload();
 
             if (actionType === "SEND") {
-                const res: any = await SupportDocumentsService.sendDirect(payload);
-                showToast("Documento soporte enviado a la DIAN correctamente", "success");
-                const newId = res?.data?.id || res?.id || res?.support_document?.id;
-                if (newId) router.push(`/expenses/support-documents/${newId}`);
-                else router.push("/expenses/support-documents");
+                const result = await sendTestDoc.mutateAsync(payload);
+                showToast(result.message || "Documento soporte enviado en habilitación a la DIAN", "success");
+                const newId = result.support_document?.id;
+                router.push(newId ? `/expenses/support-documents/${newId}` : "/expenses/support-documents");
             } else if (actionType === "DRAFT") {
-                const res: any = await SupportDocumentsService.saveDraft(payload);
+                const doc = await saveDraftDoc.mutateAsync(payload);
                 showToast("Borrador de documento soporte guardado", "success");
-                const newId = res?.data?.id || res?.id || res?.support_document?.id;
-                if (newId) router.push(`/expenses/support-documents/${newId}`);
-                else router.push("/expenses/support-documents");
+                router.push(doc?.id ? `/expenses/support-documents/${doc.id}` : "/expenses/support-documents");
             } else if (actionType === "CREATE_NEW") {
                 await createDoc.mutateAsync(payload);
                 showToast("Documento soporte guardado correctamente", "success");
-                builder.reset();
-                setFormState({
-                    contact_id: null,
-                    supplier: null,
-                    identification: "",
-                    phone: "",
-                    operation_date: new Date().toISOString().split("T")[0],
-                    payment_form_id: 1,
-                    payment_method_id: 10,
-                    authorization_text: "",
-                    notes: "",
-                    comments: [],
-                });
-                refetchResolutions();
+                resetForm();
             } else if (actionType === "SAVE_PAYMENT") {
-                const res: any = await createDoc.mutateAsync(payload);
+                const doc = await createDoc.mutateAsync(payload);
                 showToast("Documento soporte guardado. Redirigiendo a pagos...", "success");
-                const newId = res?.data?.id || res?.id || res?.support_document?.id;
-                router.push(`/sales/payments/new?support_document_id=${newId || ''}`);
+                router.push(doc?.id ? `/expenses/support-documents/${doc.id}?tab=payments` : "/expenses/support-documents");
             } else {
-                // Standard SAVE
-                const res: any = await createDoc.mutateAsync(payload);
+                const doc = await createDoc.mutateAsync(payload);
                 showToast("Documento soporte guardado correctamente", "success");
-                const newId = res?.data?.id || res?.id || res?.support_document?.id;
-                if (newId) router.push(`/expenses/support-documents/${newId}`);
-                else router.push("/expenses/support-documents");
+                router.push(doc?.id ? `/expenses/support-documents/${doc.id}` : "/expenses/support-documents");
             }
         } catch (error: any) {
             console.error(error);
-            showToast(error?.response?.data?.message || "Error al guardar el documento soporte", "error");
+            showToast(error?.response?.data?.message || error?.message || "Error al guardar el documento soporte", "error");
         } finally {
             setLoadingGuardar(false);
         }
@@ -285,6 +293,8 @@ function NewSupportDocumentContent() {
                 setFormState={setFormState}
                 builder={builder}
                 errors={errors}
+                globalAdjustments={globalAdjustments}
+                setGlobalAdjustments={setGlobalAdjustments}
             />
 
             {/* Comments & Reminders - Locked on creation until saved */}

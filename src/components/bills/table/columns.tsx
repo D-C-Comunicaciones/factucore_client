@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { ArrowUp, ArrowDown, Eye, Pencil, Trash2, Printer, FileText, DollarSign, MoreVertical } from "lucide-react";
+import { ArrowUp, ArrowDown, Pencil, Ban, DollarSign, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -12,8 +12,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Bill } from "@/types/bill";
-import { showToast } from "@/components/sonner/CustomToaster";
-import { BillsService } from "@/lib/bills";
 
 function SortableHeader({
     column,
@@ -53,44 +51,27 @@ function SortableHeader({
 }
 
 export function BillStatusBadge({ status }: { status: any }) {
-    const statusStr = typeof status === "string" ? status : (status?.name || "Guardada");
-    const st = statusStr.toLowerCase();
+    const code = String(status?.code || "").toUpperCase();
+    const label = status?.name || "Guardado";
 
-    if (st.includes("borrador") || st.includes("draft")) {
-        return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
-                Borrador
-            </span>
-        );
-    }
+    const styles: Record<string, string> = {
+        BORRADOR: "bg-slate-100 text-slate-700",
+        GUARDADO: "bg-amber-50 text-amber-800 border border-amber-200/80",
+        PAGADO: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+        POR_PAGAR: "bg-blue-100 text-blue-700",
+        ANULADO: "bg-red-50 text-red-700 border border-red-200",
+    };
 
-    if (st.includes("pagada") || st.includes("paid")) {
-        return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Pagada
-            </span>
-        );
-    }
-
-    if (st.includes("anulada") || st.includes("cancelled")) {
-        return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 text-red-700 border border-red-200">
-                Anulada
-            </span>
-        );
-    }
-
-    // Default "Guardada" (matching yellow/amber pill in Screenshot 1)
     return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200/80">
-            Guardada
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${styles[code] ?? "bg-slate-100 text-slate-700"}`}>
+            {label}
         </span>
     );
 }
 
 export function getBillColumns(
     router: ReturnType<typeof useRouter>,
-    onDelete?: (id: number | string) => void
+    onCancel?: (id: number | string) => void
 ): ColumnDef<Bill>[] {
     return [
         {
@@ -107,7 +88,7 @@ export function getBillColumns(
                 </div>
             ),
             cell: ({ row }) => (
-                <div className="flex items-center justify-center pl-2">
+                <div className="flex items-center justify-center pl-2" onClick={(e) => e.stopPropagation()}>
                     <input
                         type="checkbox"
                         className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
@@ -122,52 +103,38 @@ export function getBillColumns(
             size: 40,
         },
         {
-            accessorKey: "number",
-            header: ({ column }) => <SortableHeader column={column} label="Número" />,
+            id: "bill_number",
+            header: ({ column }) => <SortableHeader column={column} label="Número factura proveedor" />,
             cell: ({ row }) => {
                 const bill = row.original;
-                const numberStr = bill.prefix
-                    ? `${bill.prefix}${bill.number || bill.consecutive || bill.id}`
-                    : (bill.number || bill.consecutive || bill.bill_number || `BILL-${bill.id}`);
                 return (
-                    <button
-                        onClick={() => router.push(`/expenses/bills/${bill.id}/edit`)}
-                        className="font-medium text-slate-800 hover:text-primary hover:underline text-xs text-center w-full block cursor-pointer"
-                    >
-                        {numberStr}
-                    </button>
+                    <span className="font-medium text-slate-800 text-xs text-center w-full block">
+                        {bill.bill_number || `#${bill.id}`}
+                    </span>
                 );
             },
         },
         {
-            accessorKey: "supplier",
+            id: "contact",
             header: ({ column }) => <SortableHeader column={column} label="Proveedor" />,
             cell: ({ row }) => {
-                const bill = row.original;
-                const supplierName =
-                    bill.supplier?.name ||
-                    bill.supplier?.registration_name ||
-                    bill.contact?.name ||
-                    bill.contact?.registration_name ||
-                    "ANDRES FELIPE LEONES PALACIO";
+                const contact = row.original.contact;
+                const supplierName = contact?.registration_name || contact?.name || `${contact?.first_name || ""} ${contact?.last_name || ""}`.trim();
                 return (
                     <div className="text-xs text-slate-800 text-center">
-                        <p className="font-semibold uppercase truncate max-w-[200px] mx-auto">{supplierName}</p>
+                        <p className="font-semibold uppercase truncate max-w-[200px] mx-auto">{supplierName || "Sin proveedor"}</p>
                     </div>
                 );
             },
         },
         {
             accessorKey: "issue_date",
-            header: ({ column }) => <SortableHeader column={column} label="Creación" />,
+            header: ({ column }) => <SortableHeader column={column} label="Fecha" />,
             cell: ({ row }) => {
-                const bill = row.original;
-                const dateStr = bill.issue_date || bill.created_at;
-                if (!dateStr) return <span className="text-muted-foreground text-xs">-</span>;
-                const d = new Date(dateStr);
+                const dateStr = row.original.issue_date;
                 return (
                     <span className="text-xs text-slate-600 whitespace-nowrap text-center block">
-                        {d.toLocaleDateString("es-CO")}
+                        {dateStr ? String(dateStr).slice(0, 10) : "-"}
                     </span>
                 );
             },
@@ -176,13 +143,10 @@ export function getBillColumns(
             accessorKey: "due_date",
             header: ({ column }) => <SortableHeader column={column} label="Vencimiento" />,
             cell: ({ row }) => {
-                const bill = row.original;
-                const dateStr = bill.due_date;
-                if (!dateStr) return <span className="text-muted-foreground text-xs">-</span>;
-                const d = new Date(dateStr);
+                const dateStr = row.original.due_date;
                 return (
                     <span className="text-xs text-slate-600 whitespace-nowrap text-center block">
-                        {d.toLocaleDateString("es-CO")}
+                        {dateStr ? String(dateStr).slice(0, 10) : "-"}
                     </span>
                 );
             },
@@ -190,51 +154,29 @@ export function getBillColumns(
         {
             accessorKey: "total",
             header: ({ column }) => <SortableHeader column={column} label="Total" />,
-            cell: ({ row }) => {
-                const bill = row.original;
-                const total = Number(bill.total || 0);
-                return (
-                    <span className="text-xs font-semibold text-slate-900 whitespace-nowrap text-center block">
-                        ${total.toLocaleString("es-CO")}
-                    </span>
-                );
-            },
+            cell: ({ row }) => (
+                <span className="text-xs font-semibold text-slate-900 whitespace-nowrap text-center block">
+                    ${Number(row.original.total || 0).toLocaleString("es-CO")}
+                </span>
+            ),
         },
         {
-            accessorKey: "pending_amount",
+            id: "balance",
             header: ({ column }) => <SortableHeader column={column} label="Por pagar" />,
-            cell: ({ row }) => {
-                const bill = row.original;
-                const pending = Number(bill.pending_amount ?? (Number(bill.total || 0) - Number(bill.paid_amount || 0)));
-                return (
-                    <span className="text-xs font-semibold text-slate-900 whitespace-nowrap text-center block">
-                        ${pending.toLocaleString("es-CO")}
-                    </span>
-                );
-            },
+            cell: ({ row }) => (
+                <span className="text-xs font-semibold text-slate-900 whitespace-nowrap text-center block">
+                    ${Number(row.original.balance || 0).toLocaleString("es-CO")}
+                </span>
+            ),
         },
         {
-            accessorKey: "status_dian",
-            header: () => <span className="text-xs font-medium text-slate-900 block text-center">Estado DIAN</span>,
-            cell: () => {
-                return (
-                    <span className="text-xs text-slate-500 whitespace-nowrap text-center block">
-                        No electrónica
-                    </span>
-                );
-            },
-        },
-        {
-            accessorKey: "status",
+            id: "bill_status",
             header: ({ column }) => <SortableHeader column={column} label="Estado" />,
-            cell: ({ row }) => {
-                const bill = row.original;
-                return (
-                    <div className="flex justify-center">
-                        <BillStatusBadge status={bill.status} />
-                    </div>
-                );
-            },
+            cell: ({ row }) => (
+                <div className="flex justify-center">
+                    <BillStatusBadge status={row.original.bill_status} />
+                </div>
+            ),
         },
         {
             id: "actions",
@@ -242,41 +184,23 @@ export function getBillColumns(
             cell: ({ row }) => {
                 const bill = row.original;
 
-                const handleDownloadPdf = async () => {
-                    try {
-                        const blob = await BillsService.printPdfBlob(bill.id);
-                        const url = window.URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
-                        const link = document.createElement("a");
-                        link.href = url;
-                        link.setAttribute("download", `Factura_Compra_${bill.id}.pdf`);
-                        document.body.appendChild(link);
-                        link.click();
-                        link.parentNode?.removeChild(link);
-                        showToast("PDF descargado correctamente", "success");
-                    } catch (e) {
-                        showToast("Error al descargar PDF", "error");
-                    }
-                };
-
                 return (
-                    <div className="flex items-center justify-center gap-1">
-                        {/* Payment Icon */}
+                    <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <button
                             type="button"
-                            onClick={() => router.push(`/gastos/pagos/new?bill_id=${bill.id}`)}
-                            className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                            onClick={() => router.push(`/expenses/payments/new?type=bill&document_id=${bill.id}`)}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
                             title="Agregar pago"
                         >
                             <DollarSign className="w-4 h-4" />
                         </button>
 
-                        {/* More options */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-7 w-7 p-0 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md"
+                                    className="h-7 w-7 p-0 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md cursor-pointer"
                                 >
                                     <MoreVertical className="w-4 h-4" />
                                 </Button>
@@ -290,21 +214,13 @@ export function getBillColumns(
                                     <span>Editar</span>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuItem
-                                    onClick={handleDownloadPdf}
-                                    className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium cursor-pointer rounded-lg hover:bg-muted"
-                                >
-                                    <FileText className="w-3.5 h-3.5 text-slate-500" />
-                                    <span>Descargar PDF</span>
-                                </DropdownMenuItem>
-
-                                {onDelete && (
+                                {onCancel && (
                                     <DropdownMenuItem
-                                        onClick={() => onDelete(bill.id)}
+                                        onClick={() => onCancel(bill.id)}
                                         className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium text-destructive cursor-pointer rounded-lg hover:bg-destructive/10"
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                        <span>Eliminar</span>
+                                        <Ban className="w-3.5 h-3.5" />
+                                        <span>Anular</span>
                                     </DropdownMenuItem>
                                 )}
                             </DropdownMenuContent>

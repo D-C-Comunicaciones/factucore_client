@@ -17,7 +17,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { SupportDocumentSummary } from "@/types/supportDocument";
+import type { SupportDocument } from "@/types/supportDocument";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { SupportDocumentsService } from "@/lib/supportDocuments";
 
@@ -111,7 +111,7 @@ export function StatusBadge({ status, pendingAmount }: { status: any; pendingAmo
 
     const isPendingFamily = estado === "por pagar" || estado === "por cobrar" || estado === "pendiente" || estado === "parcial" || estado === "vencida";
     if (isPendingFamily && pendingAmount !== undefined && pendingAmount <= 0.01) {
-        estado = "pagada";
+        estado = "pagado";
     }
 
     const estadoStr = estado === rawEstadoStr.toLowerCase() ? rawEstadoStr : estado;
@@ -132,16 +132,17 @@ export function StatusBadge({ status, pendingAmount }: { status: any; pendingAmo
         );
     }
 
-    if (estado === "saved" || estado === "guardada") {
+    if (estado === "saved" || estado === "guardada" || estado === "guardado") {
         return (
             <span className="inline-flex px-2 py-1 text-xs rounded-full font-medium bg-yellow-100 text-yellow-800">
-                Guardada
+                {estadoStr || "Guardado"}
             </span>
         );
     }
 
     const styles: Record<string, string> = {
         pagada: "bg-green-100 text-green-700",
+        pagado: "bg-green-100 text-green-700",
         cobrada: "bg-green-100 text-green-700",
         "por pagar": "bg-blue-100 text-blue-700",
         "por cobrar": "bg-blue-100 text-blue-700",
@@ -149,6 +150,7 @@ export function StatusBadge({ status, pendingAmount }: { status: any; pendingAmo
         pendiente: "bg-primary/10 text-primary",
         vencida: "bg-red-100 text-red-700",
         anulada: "bg-red-100 text-red-700",
+        anulado: "bg-red-100 text-red-700",
         activo: "bg-green-100 text-green-700",
         activa: "bg-green-100 text-green-700",
     };
@@ -163,8 +165,8 @@ export function StatusBadge({ status, pendingAmount }: { status: any; pendingAmo
 
 export function getSupportDocumentColumns(
     router: ReturnType<typeof useRouter>,
-    onDelete?: (id: number | string) => void
-): ColumnDef<SupportDocumentSummary>[] {
+    onCancel?: (id: number | string) => void
+): ColumnDef<SupportDocument>[] {
     return [
         {
             id: "select",
@@ -180,7 +182,7 @@ export function getSupportDocumentColumns(
                 </div>
             ),
             cell: ({ row }) => (
-                <div className="flex items-center justify-center pl-2">
+                <div className="flex items-center justify-center pl-2" onClick={(e) => e.stopPropagation()}>
                     <input
                         type="checkbox"
                         className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
@@ -208,13 +210,14 @@ export function getSupportDocumentColumns(
             },
         },
         {
-            accessorKey: "supplier_name",
+            id: "contact",
             header: "Proveedor",
             cell: ({ row }) => {
-                const doc = row.original;
+                const contact = row.original.contact;
+                const name = contact?.registration_name || contact?.name || `${contact?.first_name || ""} ${contact?.last_name || ""}`.trim();
                 return (
                     <span className="text-xs text-gray-900 text-left block truncate max-w-[200px]">
-                        {doc.supplier_name || "Sin proveedor"}
+                        {name || "Sin proveedor"}
                     </span>
                 );
             },
@@ -223,16 +226,16 @@ export function getSupportDocumentColumns(
             accessorKey: "created_at",
             header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Creación" /></div>,
             cell: ({ row }) => {
-                const date = row.original.created_at || row.original.operation_date;
-                return <span className="text-xs text-gray-600 text-center block">{date || "-"}</span>;
+                const date = row.original.created_at || row.original.issue_date;
+                return <span className="text-xs text-gray-600 text-center block">{date ? String(date).slice(0, 10) : "-"}</span>;
             },
         },
         {
-            accessorKey: "payment_due_date",
+            accessorKey: "due_date",
             header: ({ column }) => <div className="text-center"><SortableHeader column={column} label="Vencimiento" /></div>,
             cell: ({ row }) => {
-                const date = row.original.payment_due_date;
-                return <span className="text-xs text-gray-600 text-center block">{date || "-"}</span>;
+                const date = row.original.due_date;
+                return <span className="text-xs text-gray-600 text-center block">{date ? String(date).slice(0, 10) : "-"}</span>;
             },
         },
         {
@@ -248,33 +251,33 @@ export function getSupportDocumentColumns(
             },
         },
         {
-            id: "payable_amount",
+            id: "balance",
             header: () => <div className="text-right">Por pagar</div>,
             cell: ({ row }) => {
-                const totalNum = Number(row.original.total) || 0;
+                const balanceNum = Number(row.original.balance) || 0;
                 return (
                     <div className="text-xs text-gray-900 font-normal text-right">
-                        $ {totalNum.toLocaleString("es-CO")}
+                        $ {balanceNum.toLocaleString("es-CO")}
                     </div>
                 );
             },
         },
         {
-            accessorKey: "status_dian",
+            id: "dian_status",
             header: "Estado DIAN",
             cell: ({ row }) => (
                 <div className="text-left">
-                    <DianStatusBadge status={row.original.status_dian} />
+                    <DianStatusBadge status={row.original.dian_status} />
                 </div>
             ),
         },
         {
-            accessorKey: "status",
+            id: "support_document_status",
             header: "Estado",
             cell: ({ row }) => {
                 return (
                     <div className="text-left">
-                        <StatusBadge status={row.original.status} pendingAmount={Number(row.original.total)} />
+                        <StatusBadge status={row.original.support_document_status} pendingAmount={Number(row.original.balance)} />
                     </div>
                 );
             },
@@ -299,7 +302,7 @@ export function getSupportDocumentColumns(
                 const handleDownloadXml = async (e?: React.MouseEvent) => {
                     if (e) e.stopPropagation();
                     try {
-                        const blob = await SupportDocumentsService.downloadXml(doc.id);
+                        const blob = await SupportDocumentsService.downloadXmlBlob(doc.id);
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
@@ -323,7 +326,7 @@ export function getSupportDocumentColumns(
                                         className="h-8 w-8 hover:bg-gray-100 transition-colors text-slate-700 focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            router.push(`/gastos/pagos/new?support_document_id=${doc.id}`);
+                                            router.push(`/expenses/support-documents/${doc.id}?tab=payments`);
                                         }}
                                     >
                                         <div className="flex items-center justify-center -space-x-0.5">
@@ -387,14 +390,14 @@ export function getSupportDocumentColumns(
                                     <Pencil className="w-4 h-4 mr-2 text-slate-700" />
                                     Editar
                                 </DropdownMenuItem>
-                                {onDelete && (
+                                {onCancel && (
                                     <DropdownMenuItem
                                         onClick={(e) => e.stopPropagation()}
-                                        onSelect={() => onDelete(doc.id)}
+                                        onSelect={() => onCancel(doc.id)}
                                         className="cursor-pointer text-xs py-2 text-red-600 focus:text-red-600 hover:bg-red-50"
                                     >
                                         <Trash2 className="w-4 h-4 mr-2" />
-                                        Eliminar
+                                        Anular
                                     </DropdownMenuItem>
                                 )}
                             </DropdownMenuContent>

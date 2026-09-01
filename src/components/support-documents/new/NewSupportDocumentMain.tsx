@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, HelpCircle, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { Settings, HelpCircle, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ import { useCatalogs } from "@/hooks/useCatalogs";
 import { usePurchaseOrdersList } from "@/hooks/purchaseOrders/usePurchaseOrders";
 import { showToast } from "@/components/sonner/CustomToaster";
 import type { Resolution } from "@/lib/resolutions";
-import type { SupportDocumentLine, SupportDocumentWithholding } from "@/types/supportDocument";
+import type { SupportDocumentLineFormState, SupportDocumentWithholdingFormState } from "@/hooks/supportDocuments/useSupportDocumentBuilder";
 
 // Reusable component for currency formatting without cursor jumps
 function FormattedInput({ value, onChange, placeholder, className }: any) {
@@ -81,6 +81,8 @@ interface NewSupportDocumentMainProps {
     setFormState: React.Dispatch<React.SetStateAction<any>>;
     builder: any;
     errors?: Record<string, any>;
+    globalAdjustments?: any[];
+    setGlobalAdjustments?: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export function NewSupportDocumentMain({
@@ -94,6 +96,8 @@ export function NewSupportDocumentMain({
     setFormState,
     builder,
     errors = {},
+    globalAdjustments: globalAdjustmentsProp,
+    setGlobalAdjustments: setGlobalAdjustmentsProp,
 }: NewSupportDocumentMainProps) {
     const catalogs = useCatalogs();
 
@@ -104,11 +108,14 @@ export function NewSupportDocumentMain({
     const [isEditingAuthText, setIsEditingAuthText] = useState(false);
     const [isEditingNotes, setIsEditingNotes] = useState(false);
     const [isConfigWithholdingsOpen, setIsConfigWithholdingsOpen] = useState(false);
-    const [activeWithholdingForConfig, setActiveWithholdingForConfig] = useState<SupportDocumentWithholding | null>(null);
+    const [activeWithholdingForConfig, setActiveWithholdingForConfig] = useState<SupportDocumentWithholdingFormState | null>(null);
     const [expandedPoIds, setExpandedPoIds] = useState<Record<string, boolean>>({});
 
-    // Global Adjustments
-    const [globalAdjustments, setGlobalAdjustments] = useState<any[]>([]);
+    // Global Adjustments — lifted to the parent page when provided (it needs this list to
+    // build the save/send payload); falls back to local state otherwise.
+    const [localGlobalAdjustments, setLocalGlobalAdjustments] = useState<any[]>([]);
+    const globalAdjustments = globalAdjustmentsProp ?? localGlobalAdjustments;
+    const setGlobalAdjustments = setGlobalAdjustmentsProp ?? setLocalGlobalAdjustments;
     const [globalAdjType, setGlobalAdjType] = useState<"discount" | "charge">("discount");
     const [globalAdjValueType, setGlobalAdjValueType] = useState<"percentage" | "fixed">("percentage");
     const [globalAdjPercent, setGlobalAdjPercent] = useState<number>(0);
@@ -214,14 +221,26 @@ export function NewSupportDocumentMain({
         const item: any = itemsList.find((i) => String(i.id) === itemIdStr);
         if (item) {
             const defaultPrice = Number(item.price_amount ?? item.price ?? item.cost ?? 0);
-            builder.updateItem(rowId, "item_id", item.id);
+            // /items flattens variants (entity_type: "variant") into the same list, each with its
+            // OWN id plus parent_id pointing at the real Item — item_id must resolve to parent_id
+            // or exists:items,id rejects it (a variant id isn't a valid item id).
+            const resolvedItemId = item.entity_type === "variant" ? (item.parent_id ?? item.item_id ?? item.id) : item.id;
+            builder.updateItem(rowId, "item_id", resolvedItemId);
             builder.updateItem(rowId, "item", item.name);
             builder.updateItem(rowId, "description", item.description || item.name);
             builder.updateItem(rowId, "referencia", item.reference || item.reference_code || item.code || "");
             builder.updateItem(rowId, "precio", defaultPrice);
             if (item.tax_rates && item.tax_rates.length > 0) {
                 const tax = item.tax_rates[0];
-                builder.updateItem(rowId, "taxObj", tax);
+                builder.updateItem(rowId, "taxObj", {
+                    tax_rate_id: tax.id,
+                    tax_id: tax.tax_id,
+                    name: tax.name,
+                    rate: Number(tax.rate ?? tax.percentage ?? 0),
+                    type: tax.type || "percentage",
+                });
+            } else {
+                builder.updateItem(rowId, "taxObj", null);
             }
         }
     };
@@ -286,8 +305,10 @@ export function NewSupportDocumentMain({
 
     const taxesOptions = (catalogs.taxes || []).map((t: any) => ({
         id: t.id,
+        tax_id: t.tax_id,
         name: t.name,
         rate: Number(t.rate ?? t.percentage ?? 0),
+        type: t.type || "percentage",
     }));
 
     const retentionTypes = (catalogs.withholdingRates && catalogs.withholdingRates.length > 0)
@@ -375,21 +396,48 @@ export function NewSupportDocumentMain({
                             <CompanyHeaderPdfStyle />
                         </div>
 
-                        {/* Document type & Consecutivo No. X with gear icon */}
+                        {/* Numeración: selector de resolución + No. consecutivo, igual que en Invoice */}
                         <div className="text-center md:text-right md:justify-self-end">
                             <div className="inline-flex flex-col items-center md:items-end gap-1">
-                                <span className="text-sm text-muted-foreground whitespace-nowrap text-center">
-                                    Documento soporte
-                                </span>
-                                <div className="flex items-center gap-2 text-lg font-bold text-foreground">
-                                    <span>No. {currentConsecutive}</span>
+                                <div className="grid grid-cols-[minmax(160px,220px)_auto] gap-x-2 gap-y-1 items-center">
+                                    <span className="text-sm text-muted-foreground text-center col-start-1 leading-snug">
+                                        {activeResolution?.name || (activeResolution?.is_main ? "Numeración Principal" : "Documento soporte")}
+                                    </span>
+                                    <div className="col-start-1 row-start-2">
+                                        <SearchableSelect
+                                            value={selectedResolutionId?.toString() || ""}
+                                            onValueChange={(val) => setSelectedResolutionId?.(Number(val))}
+                                            options={resolutions?.map((res) => ({
+                                                value: res.id.toString(),
+                                                label: res.prefix || `Resolución ${res.id}`
+                                            })) || []}
+                                            placeholder="Seleccionar"
+                                            className="w-full text-foreground"
+                                        />
+                                    </div>
                                     <button
                                         type="button"
-                                        className="p-1 rounded hover:bg-muted/40 transition cursor-pointer text-muted-foreground hover:text-foreground"
+                                        className="p-1 rounded hover:bg-muted/40 transition col-start-2 row-start-2 cursor-pointer"
                                         onClick={() => setIsEditResolutionOpen(true)}
                                         title="Configurar resolución"
                                     >
-                                        <Settings className="w-4 h-4" />
+                                        <Settings className="w-4 h-4 text-muted-foreground" />
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-center md:justify-end w-full gap-2 mt-1">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-sm text-muted-foreground">No.</span>
+                                        <span className="font-bold text-lg text-foreground">
+                                            {currentConsecutive}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="p-1 rounded hover:bg-muted/40 transition cursor-pointer"
+                                        onClick={() => onRefetchResolutions?.()}
+                                        title="Actualizar numeración"
+                                    >
+                                        <RefreshCw className="w-4 h-4 text-muted-foreground" />
                                     </button>
                                 </div>
                             </div>
@@ -579,7 +627,7 @@ export function NewSupportDocumentMain({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {builder.items.map((line: SupportDocumentLine) => {
+                                    {builder.items.map((line: SupportDocumentLineFormState) => {
                                         const qty = Number(line.cantidad) || 0;
                                         const price = Number(line.precio) || 0;
                                         const sub = qty * price;
@@ -657,7 +705,7 @@ export function NewSupportDocumentMain({
                                                 {/* Impuesto */}
                                                 <td className="px-2 py-2 align-middle">
                                                     <SearchableSelect
-                                                        value={line.taxObj?.id ? String(line.taxObj.id) : "0"}
+                                                        value={line.taxObj?.tax_rate_id ? String(line.taxObj.tax_rate_id) : line.taxObj?.id ? String(line.taxObj.id) : line.taxObj?.tax_id ? String(line.taxObj.tax_id) : "0"}
                                                         onValueChange={(val) => {
                                                             if (val === "0") {
                                                                 builder.updateItem(line.id, "taxObj", null);
@@ -670,7 +718,7 @@ export function NewSupportDocumentMain({
                                                             { value: "0", label: "Sin impuesto" },
                                                             ...taxesOptions.map((t) => ({
                                                                 value: String(t.id),
-                                                                label: `${t.name} (${t.rate}%)`,
+                                                                label: t.name,
                                                             })),
                                                         ]}
                                                         placeholder="Sin impuesto"
@@ -765,7 +813,7 @@ export function NewSupportDocumentMain({
                                 </div>
                             ) : (
                                 <div className="space-y-2.5">
-                                    {builder.withholdings.map((w: SupportDocumentWithholding) => (
+                                    {builder.withholdings.map((w: SupportDocumentWithholdingFormState) => (
                                         <div key={w.id} className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
                                             <div className="flex items-center gap-1.5 min-w-[170px] flex-1">
                                                 <label className="text-xs font-semibold text-primary shrink-0">

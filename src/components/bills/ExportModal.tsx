@@ -1,24 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { X } from "lucide-react";
 import { DatePickerSimple } from "@/components/ui/DatePickerSimple";
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from "@/components/ui/select";
-import { BillsService } from "@/lib/bills";
+import { exportByDateRange } from "@/lib/dateRangeExport";
 import { showToast } from "@/components/sonner/CustomToaster";
 
 interface ExportModalProps {
@@ -27,108 +14,99 @@ interface ExportModalProps {
 }
 
 export function ExportModal({ open, onOpenChange }: ExportModalProps) {
-    const [exportType, setExportType] = useState<string>("general");
-    const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-    const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-    const [isExporting, setIsExporting] = useState(false);
+    const today = new Date();
+    const [startDate, setStartDate] = useState<Date | undefined>(today);
+    const [endDate, setEndDate] = useState<Date | undefined>(today);
+    const [loading, setLoading] = useState(false);
 
-    const handleExport = async () => {
-        setIsExporting(true);
+    const handleExport = async (exportAll = false) => {
+        setLoading(true);
         try {
-            const params: Record<string, any> = {
-                type: exportType,
-                start_date: startDate ? startDate.toISOString().split("T")[0] : undefined,
-                end_date: endDate ? endDate.toISOString().split("T")[0] : undefined,
-            };
-            const blob = await BillsService.exportExcel(params);
-            const url = window.URL.createObjectURL(new Blob([blob]));
-            const link = document.createElement("a");
-            link.href = url;
-            link.setAttribute("download", `Facturas_Compra_${Date.now()}.xlsx`);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode?.removeChild(link);
-            showToast("Reporte exportado exitosamente", "success");
-            onOpenChange(false);
-        } catch (error: any) {
-            showToast(error?.message || "Error al exportar las facturas de compra", "error");
+            const from = exportAll
+                ? "2000-01-01"
+                : (startDate ? startDate.toISOString().split("T")[0] : "2000-01-01");
+            const to = exportAll
+                ? "2099-12-31"
+                : (endDate ? endDate.toISOString().split("T")[0] : "2099-12-31");
+
+            const result = await exportByDateRange(
+                "/bills/export",
+                from,
+                to,
+                `FacturasCompra_${from}_${to}.xlsx`
+            );
+
+            if (result.downloaded) {
+                showToast("Facturas de compra exportadas exitosamente", "success");
+                onOpenChange(false);
+            } else {
+                showToast(result.message || "No se encontraron registros para exportar", "info");
+            }
+        } catch {
+            showToast("Error al exportar las facturas de compra", "error");
         } finally {
-            setIsExporting(false);
+            setLoading(false);
         }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[420px] p-6 bg-white rounded-2xl shadow-2xl border border-border">
-                <DialogHeader className="space-y-1">
-                    <DialogTitle className="text-base font-bold text-foreground">
+            <DialogContent
+                hideClose={true}
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+                className="sm:max-w-md p-6 bg-white rounded-2xl border border-border shadow-xl focus:outline-none"
+            >
+                <div className="flex items-center justify-between pb-4 border-b border-border">
+                    <DialogTitle className="text-base font-bold text-slate-900">
                         Exportar facturas de compra
                     </DialogTitle>
-                </DialogHeader>
+                    <button
+                        type="button"
+                        onClick={() => onOpenChange(false)}
+                        className="w-7 h-7 rounded-full border border-gray-200 text-slate-500 hover:bg-muted flex items-center justify-center transition-colors cursor-pointer"
+                        title="Cerrar modal"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
 
-                <div className="space-y-4 pt-2">
-                    <div className="space-y-1.5">
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
                         <label className="text-xs font-semibold text-foreground">
-                            Tipo de reporte
+                            Periodo a exportar
                         </label>
-                        <Select value={exportType} onValueChange={setExportType}>
-                            <SelectTrigger className="w-full text-xs h-9 bg-white border border-foreground/20 rounded-lg">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="general" className="text-xs cursor-pointer">
-                                    Reporte General
-                                </SelectItem>
-                                <SelectItem value="detailed" className="text-xs cursor-pointer">
-                                    Reporte Detallado por Ítem
-                                </SelectItem>
-                                <SelectItem value="withholdings" className="text-xs cursor-pointer">
-                                    Reporte de Retenciones
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-foreground">
-                                Fecha inicial
-                            </label>
-                            <DatePickerSimple
-                                value={startDate}
-                                onChange={setStartDate}
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-foreground">
-                                Fecha final
-                            </label>
-                            <DatePickerSimple
-                                value={endDate}
-                                onChange={setEndDate}
-                            />
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                                <DatePickerSimple value={startDate} onChange={setStartDate} side="top" />
+                            </div>
+                            <span className="text-muted-foreground text-xs font-medium">-</span>
+                            <div className="flex-1">
+                                <DatePickerSimple value={endDate} onChange={setEndDate} side="top" align="end" />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <DialogFooter className="mt-6 flex flex-row items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-3 pt-2">
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 px-4 text-xs font-medium rounded-lg"
+                        onClick={() => handleExport(true)}
+                        disabled={loading}
+                        className="text-xs px-4 h-9 rounded-lg bg-white border border-border text-foreground hover:bg-muted transition-colors cursor-pointer"
                     >
-                        Cancelar
+                        Exportar todo
                     </Button>
                     <Button
                         type="button"
-                        onClick={handleExport}
-                        disabled={isExporting}
-                        className="h-9 px-4 text-xs font-medium rounded-lg bg-primary hover:bg-primary/90 text-white"
+                        onClick={() => handleExport(false)}
+                        disabled={loading}
+                        className="text-xs px-5 h-9 rounded-lg bg-primary hover:bg-primary/90 text-white font-medium shadow-sm transition-colors cursor-pointer"
                     >
-                        {isExporting ? "Exportando..." : "Exportar"}
+                        {loading ? "Exportando..." : "Exportar"}
                     </Button>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );

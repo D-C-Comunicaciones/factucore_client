@@ -4,9 +4,9 @@ import * as React from 'react';
 import { SupportDocumentPageHeader } from '@/components/support-documents/SupportDocumentPageHeader';
 import { SupportDocumentTable } from '@/components/support-documents/SupportDocumentTable';
 import { ExportModal } from '@/components/support-documents/ExportModal';
-import { useSupportDocumentsList, useDeleteSupportDocument } from '@/hooks/supportDocuments/useSupportDocuments';
+import { useSupportDocumentsList, useCancelSupportDocument } from '@/hooks/supportDocuments/useSupportDocuments';
 import { showToast } from '@/components/sonner/CustomToaster';
-import type { SupportDocumentSummary } from '@/types/supportDocument';
+import type { SupportDocument } from '@/types/supportDocument';
 
 export default function SupportDocumentsPage() {
     const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
@@ -31,8 +31,20 @@ export default function SupportDocumentsPage() {
             obj.search = search;
         }
 
-        columnFilters.forEach((f) => {
-            if (f.value !== "" && f.value !== undefined && f.value !== null) {
+        columnFilters.forEach((f: any) => {
+            if (f.value === "" || f.value === undefined || f.value === null) return;
+            if (Array.isArray(f.value) && f.value.length === 0) return;
+
+            // The "issue_date"/"due_date" filter chips are a single-date picker (see
+            // SupportDocumentFilterChips.tsx) — treat the picked date as an exact-day match by
+            // sending it as both bounds of the backend's date_from/date_to range.
+            if (f.id === "issue_date") {
+                obj.date_from = f.value;
+                obj.date_to = f.value;
+            } else if (f.id === "due_date") {
+                obj.due_date_from = f.value;
+                obj.due_date_to = f.value;
+            } else {
                 obj[f.id] = f.value;
             }
         });
@@ -65,9 +77,9 @@ export default function SupportDocumentsPage() {
         }
     }, [refetch]);
 
-    const deleteMutation = useDeleteSupportDocument();
+    const cancelMutation = useCancelSupportDocument();
 
-    const documents: SupportDocumentSummary[] = data?.support_documents || (Array.isArray(data) ? data : []);
+    const documents: SupportDocument[] = data?.support_documents || (Array.isArray(data) ? data : []);
     const pagination = data?.pagination || {
         current_page: page,
         per_page: perPage,
@@ -77,14 +89,14 @@ export default function SupportDocumentsPage() {
         to: Math.min(page * perPage, documents.length),
     };
 
-    const handleDelete = async (id: number | string) => {
-        if (!confirm("¿Estás seguro de eliminar este documento soporte?")) return;
+    const handleCancel = async (id: number | string) => {
+        if (!confirm("¿Estás seguro de anular este documento soporte? Esta acción no se puede deshacer.")) return;
         try {
-            await deleteMutation.mutateAsync(id);
-            showToast("Documento soporte eliminado correctamente", "success");
+            await cancelMutation.mutateAsync(id);
+            showToast("Documento soporte anulado correctamente", "success");
             refetch();
-        } catch {
-            showToast("Error al eliminar el documento soporte", "error");
+        } catch (error: any) {
+            showToast(error?.message || "Error al anular el documento soporte", "error");
         }
     };
 
@@ -110,7 +122,7 @@ export default function SupportDocumentsPage() {
                         setPerPage={setPerPage}
                         pagination={pagination}
                         isError={isError}
-                        onDelete={handleDelete}
+                        onCancel={handleCancel}
                     />
                 </div>
 

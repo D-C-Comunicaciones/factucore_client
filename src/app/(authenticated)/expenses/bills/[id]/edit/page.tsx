@@ -7,7 +7,7 @@ import { NewBillOptions } from "@/components/bills/new/NewBillOptions";
 import { NewBillMain } from "@/components/bills/new/NewBillMain";
 import { NewBillFooter } from "@/components/bills/new/NewBillFooter";
 import { useBillBuilder } from "@/hooks/bills/useBillBuilder";
-import { useBillDetail, useUpdateBill } from "@/hooks/bills/useBills";
+import { useBill, useUpdateBill } from "@/hooks/bills/useBills";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { costCentersApi } from "@/lib/costCenters";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +27,8 @@ export default function EditBillPage() {
         ? costCentersResp?.data['cost-centers']
         : (Array.isArray(costCentersResp?.data) ? costCentersResp.data : []);
 
-    const { data: billData, isLoading: loadingBill } = useBillDetail(billId);
+    const { data: billDetailData, isLoading: loadingBill } = useBill(billId);
+    const billData = billDetailData?.bill;
     const updateBillMutation = useUpdateBill();
 
     // Top Options Visibility
@@ -58,53 +59,42 @@ export default function EditBillPage() {
     useEffect(() => {
         if (billData) {
             const bill = billData;
+            const contact = bill.contact;
             setFormState({
-                bill_number: bill.number || bill.bill_number || bill.consecutive || "",
-                contact_id: bill.contact_id || bill.supplier?.id || bill.contact?.id || null,
-                supplier: bill.supplier || bill.contact || null,
-                identification:
-                    bill.supplier?.identification_number ||
-                    bill.contact?.identification_number ||
-                    "",
-                phone: bill.supplier?.phone || bill.contact?.phone || "",
-                issue_date: bill.issue_date || bill.created_at || new Date().toISOString().split("T")[0],
-                due_date: bill.due_date || new Date().toISOString().split("T")[0],
+                bill_number: bill.bill_number || "",
+                contact_id: bill.contact_id || contact?.id || null,
+                supplier: contact || null,
+                identification: contact?.identification_number || "",
+                phone: contact?.phone || "",
+                issue_date: bill.issue_date || new Date().toISOString().split("T")[0],
+                due_date: bill.due_date || "",
                 payment_form_id: bill.payment_form_id || 1,
-                currency: bill.currency || "COP",
-                warehouse_id: bill.warehouse_id ? String(bill.warehouse_id) : "1",
+                currency: "COP",
+                warehouse_id: bill.warehouse_id ? String(bill.warehouse_id) : "",
                 cost_center_id: bill.cost_center_id ? String(bill.cost_center_id) : "",
                 physical_document_number: bill.physical_document_number || "",
                 terms_conditions: bill.terms_conditions || "",
                 notes: bill.notes || "",
             });
 
-            if (bill.items && bill.items.length > 0) {
+            if (bill.lines && bill.lines.length > 0) {
                 builder.setItems(
-                    bill.items.map((it: any, index: number) => ({
-                        id: String(it.id || `line-${index}`),
-                        item_id: it.item_id || it.id || null,
-                        item: it.name || it.item || "",
-                        description: it.description || "",
-                        referencia: it.reference_code || it.referencia || "",
-                        cantidad: Number(it.quantity ?? it.cantidad ?? 1),
-                        precio: Number(it.price ?? it.cost ?? it.precio ?? 0),
-                        discountValue: Number(it.discount ?? it.discountValue ?? 0),
-                        discountType: it.discount_type || it.discountType || "percentage",
-                        taxObj: it.tax || it.taxObj || null,
-                    }))
+                    bill.lines.map((line: any, index: number) => {
+                        const firstTax = (line.taxes || [])[0];
+                        return {
+                            id: String(line.id || `line-${index}`),
+                            item_id: line.product_id || null,
+                            item: line.item_snapshot?.name || line.description || "",
+                            description: line.description || "",
+                            referencia: line.item_code || "",
+                            cantidad: Number(line.quantity) || 1,
+                            precio: Number(line.price) || 0,
+                            discountValue: Number(line.discount) || 0,
+                            discountType: "fixed" as const,
+                            taxObj: firstTax ? { tax_id: firstTax.tax_id, name: firstTax.name, rate: Number(firstTax.percent) } : null,
+                        };
+                    })
                 );
-            }
-
-            if (bill.withholdings && bill.withholdings.length > 0) {
-                builder.setWithholdings(bill.withholdings);
-            }
-
-            if (bill.purchase_orders && bill.purchase_orders.length > 0) {
-                builder.setPurchaseOrders(bill.purchase_orders);
-            }
-
-            if (bill.global_adjustments && bill.global_adjustments.length > 0) {
-                builder.setGlobalAdjustments(bill.global_adjustments);
             }
         }
     }, [billData]);
@@ -125,43 +115,65 @@ export default function EditBillPage() {
     const handleSave = async () => {
         if (!validateForm()) return;
 
-        const payload: any = {
-            bill_number: formState.bill_number,
-            contact_id: formState.contact_id,
-            issue_date: formState.issue_date,
-            due_date: formState.due_date,
-            payment_form_id: formState.payment_form_id,
-            warehouse_id: formState.warehouse_id ? Number(formState.warehouse_id) : null,
-            cost_center_id: formState.cost_center_id ? Number(formState.cost_center_id) : null,
-            physical_document_number: formState.physical_document_number,
-            terms_conditions: formState.terms_conditions,
-            notes: formState.notes,
-            items: builder.items.map((item) => ({
-                item_id: item.item_id,
-                name: item.item,
-                description: item.description,
-                reference_code: item.referencia,
+        const lines = builder.items.map((item) => {
+            const allowanceCharges: any[] = [];
+            const discVal = Number(item.discountValue) || 0;
+            if (discVal > 0) {
+                allowanceCharges.push({
+                    scope: "line",
+                    charge_indicator: false,
+                    value_type: item.discountType || "percentage",
+                    value: discVal,
+                });
+            }
+
+            return {
+                item_id: item.item_id ? Number(item.item_id) : undefined,
+                description: item.description || item.item || undefined,
                 quantity: Number(item.cantidad) || 1,
                 price: Number(item.precio) || 0,
-                discount: Number(item.discountValue) || 0,
-                discount_type: item.discountType || "percentage",
-                tax_id: item.taxObj?.id || null,
-            })),
-            withholdings: builder.withholdings,
-            purchase_orders: builder.purchaseOrders,
-            global_adjustments: builder.globalAdjustments,
-            subtotal: builder.totals.subtotal,
-            discounts_total: builder.totals.discountsAmount,
-            taxes_total: builder.totals.taxesAmount,
-            withholdings_total: builder.totals.withholdingsAmount,
-            total: builder.totals.payableAmount,
+                taxes: item.taxObj?.tax_id ? [{ tax_id: Number(item.taxObj.tax_id), rate: Number(item.taxObj.rate ?? item.taxObj.percentage ?? 0) }] : [],
+                allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
+            };
+        });
+
+        const allowanceCharges = (builder.globalAdjustments || []).map((adj) => ({
+            scope: "global" as const,
+            charge_indicator: adj.type === "charge",
+            value_type: adj.valueType,
+            value: Number(adj.value) || 0,
+            reason: adj.reason || undefined,
+        }));
+
+        const withholdingTaxes = (builder.withholdings || [])
+            .filter((w) => w.retention_id)
+            .map((w) => ({
+                scope: "global" as const,
+                tax_id: Number(w.retention_id),
+                rate: Number(w.percentage) || 0,
+            }));
+
+        const payload = {
+            contact_id: formState.contact_id,
+            bill_number: formState.bill_number || undefined,
+            issue_date: formState.issue_date,
+            due_date: formState.due_date || undefined,
+            payment_form_id: formState.payment_form_id || undefined,
+            warehouse_id: formState.warehouse_id ? Number(formState.warehouse_id) : undefined,
+            cost_center_id: formState.cost_center_id ? Number(formState.cost_center_id) : undefined,
+            physical_document_number: formState.physical_document_number || undefined,
+            terms_conditions: formState.terms_conditions || undefined,
+            notes: formState.notes || undefined,
+            lines,
+            allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
+            withholding_taxes: withholdingTaxes.length > 0 ? withholdingTaxes : undefined,
         };
 
         updateBillMutation.mutate(
             { id: billId, data: payload },
             {
                 onSuccess: () => {
-                    router.push("/expenses/bills");
+                    router.push(`/expenses/bills/${billId}`);
                 },
             }
         );

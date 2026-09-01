@@ -22,20 +22,21 @@ import {
 import { useTableSelection } from "@/hooks/use-table-selection";
 import { getSupportDocumentColumns } from "./table/columns";
 import { SupportDocumentTableToolbar } from "./table/SupportDocumentTableToolbar";
+import { SupportDocumentFilterChips, filterValueToColumnId } from "./table/SupportDocumentFilterChips";
 import { SupportDocumentTablePagination } from "./table/SupportDocumentTablePagination";
-import type { SupportDocumentSummary } from "@/types/supportDocument";
+import type { SupportDocument } from "@/types/supportDocument";
 
 interface ServerPagination {
     current_page: number;
     per_page: number;
     total: number;
     last_page: number;
-    from: number;
-    to: number;
+    from: number | null;
+    to: number | null;
 }
 
 interface SupportDocumentTableProps {
-    documents: SupportDocumentSummary[];
+    documents: SupportDocument[];
     loading?: boolean;
     refreshing?: boolean;
     onRefresh?: () => void;
@@ -49,7 +50,7 @@ interface SupportDocumentTableProps {
     search: string;
     setSearch: (search: string) => void;
     isError?: boolean;
-    onDelete?: (id: string | number) => void;
+    onCancel?: (id: string | number) => void;
 }
 
 export function SupportDocumentTable({
@@ -67,7 +68,7 @@ export function SupportDocumentTable({
     search,
     setSearch,
     isError = false,
-    onDelete,
+    onCancel,
 }: SupportDocumentTableProps) {
     const router = useRouter();
     const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -84,12 +85,12 @@ export function SupportDocumentTable({
         toggleAll: handleToggleSelectAll,
     } = useTableSelection(
         documents,
-        (d: SupportDocumentSummary) => String(d.id)
+        (d: SupportDocument) => String(d.id)
     );
 
     const columns = React.useMemo(
-        () => getSupportDocumentColumns(router, onDelete),
-        [router, onDelete]
+        () => getSupportDocumentColumns(router, onCancel),
+        [router, onCancel]
     );
 
     const setEffectiveFilters = React.useCallback(
@@ -127,8 +128,11 @@ export function SupportDocumentTable({
         manualSorting: true,
     });
 
-    const handleAddFilter = (filterKey: string) => {
-        // Handle adding a filter
+    const handleAddFilter = (filterValue: string) => {
+        const columnId = filterValueToColumnId[filterValue];
+        if (!columnId) return;
+        if (effectiveFilters.some((f) => f.id === columnId)) return;
+        setEffectiveFilters([...effectiveFilters, { id: columnId, value: "" }]);
     };
 
     return (
@@ -141,6 +145,13 @@ export function SupportDocumentTable({
                 onAddFilter={handleAddFilter}
                 perPage={perPage}
                 setPerPage={setPerPage}
+            />
+
+            <SupportDocumentFilterChips
+                columnFilters={effectiveFilters}
+                setColumnFilters={setEffectiveFilters as any}
+                table={table}
+                onAddFilter={handleAddFilter}
             />
 
             {/* Table or Loading */}
@@ -168,7 +179,8 @@ export function SupportDocumentTable({
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
                                     key={row.id}
-                                    className="hover:bg-slate-50 transition-colors duration-100"
+                                    onClick={() => router.push(`/expenses/support-documents/${row.original.id}`)}
+                                    className="hover:bg-slate-50 transition-colors duration-100 cursor-pointer"
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id} className="px-3 py-3 text-slate-700">

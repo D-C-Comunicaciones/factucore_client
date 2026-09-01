@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CalendarDays, Filter, User, ListOrdered, CheckCircle2 } from "lucide-react";
+import { CalendarDays, CheckCircle, BadgeCheck, Funnel } from "lucide-react";
 
 export interface FilterOption {
     label: string;
@@ -15,31 +15,28 @@ interface SupportDocumentFilterProps {
     onSelect: (value: string) => void;
 }
 
+// Mirrors defaultFilterOptions in components/invoice/InvoiceFilter.tsx — same chip ids as
+// SupportDocumentFilterChips.tsx (issue_date/due_date/dian_status_id/support_document_status_id).
 export const defaultSupportDocumentFilterOptions: FilterOption[] = [
     {
-        label: "Número",
-        value: "number",
-        icon: ListOrdered,
-    },
-    {
-        label: "Proveedor",
-        value: "supplier",
-        icon: User,
-    },
-    {
-        label: "Fecha de creación",
-        value: "created_at",
+        label: "Fecha de generación",
+        value: "issue_date",
         icon: CalendarDays,
     },
     {
         label: "Fecha de vencimiento",
-        value: "payment_due_date",
+        value: "due_date",
         icon: CalendarDays,
     },
     {
         label: "Estado DIAN",
-        value: "status_dian",
-        icon: CheckCircle2,
+        value: "dian_status_id",
+        icon: CheckCircle,
+    },
+    {
+        label: "Estado",
+        value: "support_document_status_id",
+        icon: BadgeCheck,
     },
 ];
 
@@ -53,28 +50,30 @@ export function SupportDocumentFilter({
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="outline"
-                    size="sm"
-                    className="bg-white ml-2 flex items-center gap-1.5 h-8 px-3 text-xs border border-border text-foreground hover:bg-primary/10 hover:text-foreground transition-colors cursor-pointer shadow-none"
+                    className="bg-white ml-2 flex items-center gap-2 h-8 px-3 text-xs border-0 shadow-none text-foreground hover:bg-primary/10 hover:text-foreground transition-colors"
                 >
-                    <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Funnel className="w-3.5 h-3.5" />
                     Filtrar
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[200px] p-1.5 shadow-md">
-                <div className="px-2.5 py-1.5 text-xs text-muted-foreground font-medium">Filtrar por</div>
+            <DropdownMenuContent align="start" className="min-w-[220px]">
+                <div className="px-3 py-2 text-xs text-muted-foreground font-semibold">Filtrar Por</div>
                 {options.map((opt) => {
                     const Icon = opt.icon;
-                    const isSelected = selected === opt.value;
                     return (
                         <DropdownMenuItem
                             key={opt.value}
                             onClick={() => onSelect(opt.value)}
                             className={`
-                                flex items-center gap-2.5 px-2.5 py-2 text-xs rounded-md cursor-pointer transition-colors
-                                ${isSelected ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-muted focus:bg-muted"}
+                            ${selected === opt.value ? "bg-primary/10 text-primary font-semibold" : ""}
+                            data-[highlighted]:bg-primary/10
+                            data-[highlighted]:text-primary
+                            focus:bg-primary/10
+                            focus:text-primary
+                            transition-colors
                             `}
                         >
-                            <Icon className="w-4 h-4 text-muted-foreground" />
+                            <Icon className="w-4 h-4 mr-2" />
                             {opt.label}
                         </DropdownMenuItem>
                     );

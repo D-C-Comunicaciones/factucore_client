@@ -29,7 +29,7 @@ import { useItems } from "@/hooks/items/useItems";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { usePurchaseOrdersList } from "@/hooks/purchaseOrders/usePurchaseOrders";
 import { showToast } from "@/components/sonner/CustomToaster";
-import type { BillLine, BillWithholding } from "@/types/bill";
+import type { BillLineFormState, BillWithholdingFormState } from "@/hooks/bills/useBillBuilder";
 
 // Reusable component for currency formatting without cursor jumps
 function FormattedInput({ value, onChange, placeholder, className }: any) {
@@ -192,14 +192,27 @@ export function NewBillMain({
         const item: any = itemsList.find((i) => String(i.id) === itemIdStr);
         if (item) {
             const defaultPrice = Number(item.price_amount ?? item.price ?? item.cost ?? 0);
-            builder.updateItem(rowId, "item_id", item.id);
+            // The /items listing flattens variants into the same list (entity_type: "variant"),
+            // each carrying its OWN id plus parent_id pointing at the real Item — the backend's
+            // item_id column only ever references the base Item, so a variant row must resolve
+            // to parent_id or `exists:items,id` rejects it with a 422 (variant ids aren't item ids).
+            const resolvedItemId = item.entity_type === "variant" ? (item.parent_id ?? item.item_id ?? item.id) : item.id;
+            builder.updateItem(rowId, "item_id", resolvedItemId);
             builder.updateItem(rowId, "item", item.name);
             builder.updateItem(rowId, "description", item.description || item.name);
             builder.updateItem(rowId, "referencia", item.reference || item.reference_code || item.code || "");
             builder.updateItem(rowId, "precio", defaultPrice);
             if (item.tax_rates && item.tax_rates.length > 0) {
                 const tax = item.tax_rates[0];
-                builder.updateItem(rowId, "taxObj", tax);
+                builder.updateItem(rowId, "taxObj", {
+                    tax_rate_id: tax.id,
+                    tax_id: tax.tax_id,
+                    name: tax.name,
+                    rate: Number(tax.rate ?? tax.percentage ?? 0),
+                    type: tax.type || "percentage",
+                });
+            } else {
+                builder.updateItem(rowId, "taxObj", null);
             }
         }
     };
@@ -264,8 +277,10 @@ export function NewBillMain({
 
     const taxesOptions = (catalogs.taxes || []).map((t: any) => ({
         id: t.id,
+        tax_id: t.tax_id,
         name: t.name,
         rate: Number(t.rate ?? t.percentage ?? 0),
+        type: t.type || "percentage",
     }));
 
     const retentionTypes = (catalogs.withholdingRates && catalogs.withholdingRates.length > 0)
@@ -523,7 +538,7 @@ export function NewBillMain({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {builder.items.map((line: BillLine) => {
+                                    {builder.items.map((line: BillLineFormState) => {
                                         const qty = Number(line.cantidad) || 0;
                                         const price = Number(line.precio) || 0;
                                         const sub = qty * price;
@@ -601,7 +616,7 @@ export function NewBillMain({
                                                 {/* Impuesto */}
                                                 <td className="px-2 py-2 align-middle">
                                                     <SearchableSelect
-                                                        value={line.taxObj?.id ? String(line.taxObj.id) : "none"}
+                                                        value={line.taxObj?.tax_rate_id ? String(line.taxObj.tax_rate_id) : line.taxObj?.id ? String(line.taxObj.id) : line.taxObj?.tax_id ? String(line.taxObj.tax_id) : "none"}
                                                         onValueChange={(val) => {
                                                             if (val === "none") {
                                                                 builder.updateItem(line.id, "taxObj", null);
@@ -614,7 +629,7 @@ export function NewBillMain({
                                                             { value: "none", label: "Ninguno" },
                                                             ...taxesOptions.map((tax: any) => ({
                                                                 value: String(tax.id),
-                                                                label: `${tax.name} (${tax.rate}%)`,
+                                                                label: tax.name,
                                                             })),
                                                         ]}
                                                         placeholder="Ninguno"
@@ -709,7 +724,7 @@ export function NewBillMain({
                                 </div>
                             ) : (
                                 <div className="space-y-2.5">
-                                    {builder.withholdings.map((w: BillWithholding) => (
+                                    {builder.withholdings.map((w: BillWithholdingFormState) => (
                                         <div key={w.id} className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
                                             <div className="flex items-center gap-1.5 min-w-[170px] flex-1">
                                                 <label className="text-xs font-semibold text-primary shrink-0">

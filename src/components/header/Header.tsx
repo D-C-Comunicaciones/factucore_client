@@ -296,8 +296,8 @@ export function Header({
                   // Gastos
                   { parent: "Gastos", title: "Facturas de compra", path: "/expenses/bills", keywords: ["gastos", "compras", "facturas", "proveedores"] },
                   { parent: "Gastos", title: "Documento soporte", path: "/expenses/support-documents", keywords: ["gastos", "soporte", "documento", "no obligados"] },
-                  { parent: "Gastos", title: "Notas de ajuste", path: "/gastos/notas-ajuste", keywords: ["gastos", "notas", "ajuste", "correcciones"] },
-                  { parent: "Gastos", title: "Pagos", path: "/gastos/pagos", keywords: ["gastos", "pagos", "egresos", "desembolsos"] },
+                  { parent: "Gastos", title: "Notas de ajuste", path: "/expenses/adjustment-notes", keywords: ["gastos", "notas", "ajuste", "correcciones"] },
+                  { parent: "Gastos", title: "Pagos", path: "/expenses/payments", keywords: ["gastos", "pagos", "egresos", "desembolsos"] },
                   { parent: "Gastos", title: "Pagos recurrentes", path: "/gastos/pagos-recurrentes", keywords: ["gastos", "pagos", "recurrentes", "suscripciones"] },
                   { parent: "Gastos", title: "Notas débito", path: "/expenses/debit-notes", keywords: ["gastos", "notas", "debito", "devoluciones compra"] },
                   { parent: "Gastos", title: "Órdenes de compra", path: "/expenses/purchase-orders", keywords: ["gastos", "ordenes", "compra", "pedidos"] },

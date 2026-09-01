@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, CreditCard, ShoppingCart } from "lucide-react";
+import { FileText, CreditCard, ShoppingCart, Plus, Trash2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { showToast } from "@/components/sonner/CustomToaster";
+import {
+    useCreateSupportDocumentPayment,
+    useDeleteSupportDocumentPayment,
+} from "@/hooks/supportDocuments/useSupportDocuments";
 
 // ─────────────────── helpers ───────────────────
 function EmptyTabMessage({ icon, message, description }: { icon: React.ReactNode; message: string; description: string }) {
@@ -18,10 +25,11 @@ function EmptyTabMessage({ icon, message, description }: { icon: React.ReactNode
 // ─────────────────── props ───────────────────
 interface SupportDocumentDetailTabsProps {
     doc: any;
+    initialTab?: string;
 }
 
 // ─────────────────── component ───────────────────
-export function SupportDocumentDetailTabs({ doc }: SupportDocumentDetailTabsProps) {
+export function SupportDocumentDetailTabs({ doc, initialTab }: SupportDocumentDetailTabsProps) {
     const router = useRouter();
 
     // Extract related data
@@ -50,7 +58,46 @@ export function SupportDocumentDetailTabs({ doc }: SupportDocumentDetailTabsProp
         },
     ];
 
-    const [activeTab, setActiveTab] = useState("notas_ajuste");
+    const [activeTab, setActiveTab] = useState(initialTab === "payments" ? "pagos" : "notas_ajuste");
+    const [isAddingPayment, setIsAddingPayment] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState("");
+    const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
+    const [paymentNotes, setPaymentNotes] = useState("");
+
+    const createPayment = useCreateSupportDocumentPayment();
+    const deletePayment = useDeleteSupportDocumentPayment();
+
+    const balance = Number(doc?.balance ?? 0);
+
+    const handleAddPayment = async () => {
+        const amount = Number(paymentAmount);
+        if (!amount || amount <= 0) {
+            showToast("Ingresa un monto válido", "error");
+            return;
+        }
+        try {
+            await createPayment.mutateAsync({
+                id: doc.id,
+                data: { amount, payment_date: paymentDate, notes: paymentNotes || undefined },
+            });
+            showToast("Pago registrado correctamente", "success");
+            setIsAddingPayment(false);
+            setPaymentAmount("");
+            setPaymentNotes("");
+        } catch (error: any) {
+            showToast(error?.message || "Error al registrar el pago", "error");
+        }
+    };
+
+    const handleDeletePayment = async (paymentId: number | string) => {
+        if (!confirm("¿Eliminar este pago? El saldo pendiente del documento se recalculará.")) return;
+        try {
+            await deletePayment.mutateAsync({ id: doc.id, paymentId });
+            showToast("Pago eliminado correctamente", "success");
+        } catch (error: any) {
+            showToast(error?.message || "Error al eliminar el pago", "error");
+        }
+    };
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-slate-200">
@@ -135,47 +182,125 @@ export function SupportDocumentDetailTabs({ doc }: SupportDocumentDetailTabsProp
 
                 {/* ── PAGOS ── */}
                 {activeTab === "pagos" && (
-                    payments.length === 0 ? (
-                        <EmptyTabMessage
-                            icon={<CreditCard className="w-10 h-10 text-slate-300" />}
-                            message="Sin registros aún"
-                            description="Los pagos registrados para este documento soporte aparecerán aquí."
-                        />
-                    ) : (
-                        <div className="w-full overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-[#f8fafc] text-[#1e293b] font-semibold border-b border-slate-100">
-                                    <tr>
-                                        <th className="py-3.5 px-4 rounded-tl-md">Fecha</th>
-                                        <th className="py-3.5 px-4 text-center">Pago #</th>
-                                        <th className="py-3.5 px-4 text-center">Método</th>
-                                        <th className="py-3.5 px-4 text-right rounded-tr-md">Monto</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {payments.map((p: any, idx: number) => (
-                                        <tr
-                                            key={p.id || idx}
-                                            className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                                        >
-                                            <td className="py-3.5 px-4 text-slate-800 font-medium">
-                                                {p.payment_date || p.date || p.created_at || "-"}
-                                            </td>
-                                            <td className="py-3.5 px-4 text-center text-slate-700 font-medium">
-                                                {p.prefix != null ? `${p.prefix}${p.number}` : (p.number || p.id || "-")}
-                                            </td>
-                                            <td className="py-3.5 px-4 text-center text-slate-700">
-                                                {p.payment_method?.name || p.payment_method || "Efectivo"}
-                                            </td>
-                                            <td className="py-3.5 px-4 text-right text-slate-700 font-medium">
-                                                $ {Number(p.amount || p.total || p.value || 0).toLocaleString("es-CO")}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs text-slate-500">
+                                Saldo pendiente: <span className="font-semibold text-slate-700">$ {balance.toLocaleString("es-CO")}</span>
+                            </p>
+                            {balance > 0 && !isAddingPayment && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => { setIsAddingPayment(true); setPaymentAmount(String(balance)); }}
+                                    className="text-xs cursor-pointer"
+                                >
+                                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                                    Registrar pago
+                                </Button>
+                            )}
                         </div>
-                    )
+
+                        {isAddingPayment && (
+                            <div className="bg-slate-50/70 border border-border rounded-lg p-4 flex flex-wrap items-end gap-3">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-medium text-slate-600">Monto</label>
+                                    <Input
+                                        type="number"
+                                        value={paymentAmount}
+                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                        className="h-9 w-36 text-sm"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-medium text-slate-600">Fecha</label>
+                                    <Input
+                                        type="date"
+                                        value={paymentDate}
+                                        onChange={(e) => setPaymentDate(e.target.value)}
+                                        className="h-9 text-sm"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
+                                    <label className="text-xs font-medium text-slate-600">Notas</label>
+                                    <Input
+                                        type="text"
+                                        value={paymentNotes}
+                                        onChange={(e) => setPaymentNotes(e.target.value)}
+                                        placeholder="Opcional"
+                                        className="h-9 text-sm"
+                                    />
+                                </div>
+                                <Button
+                                    size="sm"
+                                    onClick={handleAddPayment}
+                                    disabled={createPayment.isPending}
+                                    className="h-9 text-xs cursor-pointer"
+                                >
+                                    {createPayment.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Guardar pago"}
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setIsAddingPayment(false)}
+                                    className="h-9 text-xs cursor-pointer"
+                                >
+                                    Cancelar
+                                </Button>
+                            </div>
+                        )}
+
+                        {payments.length === 0 ? (
+                            <EmptyTabMessage
+                                icon={<CreditCard className="w-10 h-10 text-slate-300" />}
+                                message="Sin registros aún"
+                                description="Los pagos registrados para este documento soporte aparecerán aquí."
+                            />
+                        ) : (
+                            <div className="w-full overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-[#f8fafc] text-[#1e293b] font-semibold border-b border-slate-100">
+                                        <tr>
+                                            <th className="py-3.5 px-4 rounded-tl-md">Fecha</th>
+                                            <th className="py-3.5 px-4 text-center">Pago #</th>
+                                            <th className="py-3.5 px-4 text-center">Método</th>
+                                            <th className="py-3.5 px-4 text-right">Monto</th>
+                                            <th className="py-3.5 px-4 text-center rounded-tr-md"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {payments.map((p: any, idx: number) => (
+                                            <tr
+                                                key={p.id || idx}
+                                                className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                            >
+                                                <td className="py-3.5 px-4 text-slate-800 font-medium">
+                                                    {p.payment_date || p.created_at || "-"}
+                                                </td>
+                                                <td className="py-3.5 px-4 text-center text-slate-700 font-medium">
+                                                    {p.prefix != null ? `${p.prefix}${p.number}` : (p.number || p.id || "-")}
+                                                </td>
+                                                <td className="py-3.5 px-4 text-center text-slate-700">
+                                                    {p.payment_method?.name || "Sin definir"}
+                                                </td>
+                                                <td className="py-3.5 px-4 text-right text-slate-700 font-medium">
+                                                    $ {Number(p.amount || 0).toLocaleString("es-CO")}
+                                                </td>
+                                                <td className="py-3.5 px-4 text-center">
+                                                    <button
+                                                        onClick={() => handleDeletePayment(p.id)}
+                                                        className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                                                        title="Eliminar pago"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {/* ── ÓRDENES DE COMPRA ── */}

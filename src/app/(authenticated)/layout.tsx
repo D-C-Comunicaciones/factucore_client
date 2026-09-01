@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { usePermissions } from '@/hooks/usePermissions';
 import { showToast } from '@/components/sonner/CustomToaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Home, FileText, ShoppingBag, Users, Package, Building2, BarChart3, CheckSquare, Settings, ArrowDownLeft, Inbox, Tags, Layers, Warehouse, Sliders, ClipboardList, ListTree, Puzzle } from 'lucide-react';
+import { Home, FileText, ShoppingBag, Users, Package, Building2, BarChart3, CheckSquare, Settings, ArrowDownLeft, Inbox, Tags, Layers, Warehouse, Sliders, ClipboardList, ListTree, Puzzle, Calculator } from 'lucide-react';
 import type { SidebarMenuItem } from '@/components/sidebar/Sidebar';
 
 export default function AuthenticatedLayout({
@@ -136,8 +136,8 @@ export default function AuthenticatedLayout({
             submenu: [
                 { icon: ShoppingBag, label: 'Facturas de compra', path: '/expenses/bills' },
                 { icon: ShoppingBag, label: 'Documento soporte', path: '/expenses/support-documents' },
-                { icon: ShoppingBag, label: 'Notas de ajuste', path: '/gastos/notas-ajuste' },
-                { icon: ShoppingBag, label: 'Pagos', path: '/gastos/pagos' },
+                { icon: ShoppingBag, label: 'Notas de ajuste', path: '/expenses/adjustment-notes' },
+                { icon: ShoppingBag, label: 'Pagos', path: '/expenses/payments' },
                 { icon: ShoppingBag, label: 'Pagos recurrentes', path: '/gastos/pagos-recurrentes' },
                 { icon: ShoppingBag, label: 'Notas débito', path: '/expenses/debit-notes' },
                 { icon: ShoppingBag, label: 'Órdenes de compra', path: '/expenses/purchase-orders' },
@@ -163,7 +163,17 @@ export default function AuthenticatedLayout({
             ]
         },
         { icon: Building2, label: 'Bancos', path: '/bancos' },
-        { icon: FileText, label: 'Contabilidad', path: '/contabilidad' },
+        {
+            icon: Calculator,
+            label: 'Contabilidad',
+            path: '/accounting',
+            expandable: true,
+            submenu: [
+                { icon: Calculator, label: 'Catálogo de cuentas', path: '/accounting/chart-of-accounts' },
+                { icon: Calculator, label: 'Comprobante contable', path: '/accounting/journal-entries' },
+                { icon: Calculator, label: 'Libro diario', path: '/accounting/ledger' },
+            ]
+        },
         { icon: BarChart3, label: 'Reportes', path: '/reports' },
         { icon: CheckSquare, label: 'Mis tareas', path: '/tasks' },
         { icon: Settings, label: 'Configuración', path: '/configuration' },

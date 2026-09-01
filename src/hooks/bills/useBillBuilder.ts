@@ -1,8 +1,48 @@
 import { useState, useMemo } from "react";
-import type { BillLine, BillWithholding, BillPurchaseOrder, BillGlobalAdjustment } from "@/types/bill";
+
+// Local line-editor form state — distinct from the API's BillLine (types/bill.ts), which is the
+// read model returned by the backend. This shape only lives in the "new"/"edit" form until the
+// page maps it into the real BillLineInput payload (see NewBillContent.buildPayload()).
+export interface BillLineFormState {
+    id: string;
+    item_id: number | string | null;
+    item?: string;
+    description?: string;
+    referencia?: string;
+    cantidad: number | string;
+    precio: number | string;
+    discountValue?: number | string;
+    discountType?: "percentage" | "fixed";
+    taxObj?: { id?: number | string; tax_id?: number | string; tax_rate_id?: number | string; name?: string; rate?: number | string; percentage?: number | string; type?: string } | null;
+}
+
+export interface BillWithholdingFormState {
+    id?: string;
+    retention_id?: number | string;
+    name?: string;
+    percentage?: number;
+    base?: number;
+    value?: number;
+    is_assumed?: boolean;
+    accounting_account_id?: string;
+}
+
+export interface BillPurchaseOrderFormState {
+    id: string;
+    purchase_order_id?: number | string;
+    items?: any[];
+}
+
+export interface BillGlobalAdjustmentFormState {
+    id: number;
+    type: "discount" | "charge";
+    valueType: "percentage" | "fixed";
+    value: number;
+    reason?: string;
+}
 
 export function useBillBuilder(initialData?: any) {
-    const [items, setItems] = useState<BillLine[]>(() => {
+    const [items, setItems] = useState<BillLineFormState[]>(() => {
         if (initialData?.items && initialData.items.length > 0) {
             return initialData.items.map((it: any, index: number) => ({
                 id: String(it.id || `line-${index}-${Date.now()}`),
@@ -33,7 +73,7 @@ export function useBillBuilder(initialData?: any) {
         ];
     });
 
-    const [withholdings, setWithholdings] = useState<BillWithholding[]>(() => {
+    const [withholdings, setWithholdings] = useState<BillWithholdingFormState[]>(() => {
         if (initialData?.withholdings && initialData.withholdings.length > 0) {
             return initialData.withholdings.map((w: any, index: number) => ({
                 id: String(w.id || `withholding-${index}-${Date.now()}`),
@@ -49,7 +89,7 @@ export function useBillBuilder(initialData?: any) {
         return [];
     });
 
-    const [purchaseOrders, setPurchaseOrders] = useState<BillPurchaseOrder[]>(() => {
+    const [purchaseOrders, setPurchaseOrders] = useState<BillPurchaseOrderFormState[]>(() => {
         if (initialData?.purchase_orders && initialData.purchase_orders.length > 0) {
             return initialData.purchase_orders.map((po: any, index: number) => ({
                 id: String(po.id || `po-${index}-${Date.now()}`),
@@ -60,7 +100,7 @@ export function useBillBuilder(initialData?: any) {
         return [];
     });
 
-    const [globalAdjustments, setGlobalAdjustments] = useState<BillGlobalAdjustment[]>(() => {
+    const [globalAdjustments, setGlobalAdjustments] = useState<BillGlobalAdjustmentFormState[]>(() => {
         if (initialData?.global_adjustments && initialData.global_adjustments.length > 0) {
             return initialData.global_adjustments;
         }
@@ -69,7 +109,7 @@ export function useBillBuilder(initialData?: any) {
 
     // Item methods
     const addItem = () => {
-        const newLine: BillLine = {
+        const newLine: BillLineFormState = {
             id: `line-${items.length}-${Date.now()}`,
             item_id: null,
             item: "",
@@ -84,7 +124,7 @@ export function useBillBuilder(initialData?: any) {
         setItems((prev) => [...prev, newLine]);
     };
 
-    const updateItem = (id: string, field: keyof BillLine, value: any) => {
+    const updateItem = (id: string, field: keyof BillLineFormState, value: any) => {
         setItems((prev) =>
             prev.map((item) => {
                 if (item.id === id) {
@@ -104,7 +144,7 @@ export function useBillBuilder(initialData?: any) {
     const addWithholding = (baseAmount: number = 0) => {
         const percentage = 3.5;
         const value = (baseAmount * percentage) / 100;
-        const newWithholding: BillWithholding = {
+        const newWithholding: BillWithholdingFormState = {
             id: `withholding-${withholdings.length}-${Date.now()}`,
             retention_id: "2",
             name: "ReteFuente (3.5%)",
@@ -117,7 +157,7 @@ export function useBillBuilder(initialData?: any) {
         setWithholdings((prev) => [...prev, newWithholding]);
     };
 
-    const updateWithholding = (id: string, field: keyof BillWithholding, value: any) => {
+    const updateWithholding = (id: string, field: keyof BillWithholdingFormState, value: any) => {
         setWithholdings((prev) =>
             prev.map((w) => {
                 if (w.id === id) {
@@ -140,7 +180,7 @@ export function useBillBuilder(initialData?: any) {
 
     // Purchase Order methods
     const addPurchaseOrder = () => {
-        const newPo: BillPurchaseOrder = {
+        const newPo: BillPurchaseOrderFormState = {
             id: `po-${purchaseOrders.length}-${Date.now()}`,
             purchase_order_id: "",
             items: [],

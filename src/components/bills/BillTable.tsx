@@ -30,8 +30,8 @@ interface ServerPagination {
     per_page: number;
     total: number;
     last_page: number;
-    from: number;
-    to: number;
+    from: number | null;
+    to: number | null;
 }
 
 interface BillTableProps {
@@ -48,7 +48,7 @@ interface BillTableProps {
     perPage: number;
     setPerPage: (n: number) => void;
     pagination: ServerPagination;
-    onDeleteBill?: (id: number | string) => void;
+    onCancelBill?: (id: number | string) => void;
     onApplyFilters?: (filters: any) => void;
 }
 
@@ -66,7 +66,7 @@ export function BillTable({
     perPage,
     setPerPage,
     pagination,
-    onDeleteBill,
+    onCancelBill,
     onApplyFilters,
 }: BillTableProps) {
     const router = useRouter();
@@ -88,8 +88,8 @@ export function BillTable({
     );
 
     const columns = React.useMemo(
-        () => getBillColumns(router, onDeleteBill),
-        [router, onDeleteBill]
+        () => getBillColumns(router, onCancelBill),
+        [router, onCancelBill]
     );
 
     const setEffectiveFilters = React.useCallback(
@@ -167,7 +167,8 @@ export function BillTable({
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
                                     key={row.id}
-                                    className={`transition-colors hover:bg-slate-50/80 ${
+                                    onClick={() => router.push(`/expenses/bills/${row.original.id}`)}
+                                    className={`transition-colors hover:bg-slate-50/80 cursor-pointer ${
                                         row.getIsSelected() ? "bg-blue-50/40" : ""
                                     }`}
                                 >

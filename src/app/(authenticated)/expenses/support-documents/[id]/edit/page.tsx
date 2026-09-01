@@ -12,6 +12,7 @@ import { useSupportDocumentBuilder } from "@/hooks/supportDocuments/useSupportDo
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { useResolutions } from "@/hooks/useResolutions";
 import type { Resolution } from "@/lib/resolutions";
+import type { SupportDocumentPayload, AllowanceCharge } from "@/types/supportDocument";
 import { costCentersApi } from "@/lib/costCenters";
 import { AuthService } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
@@ -25,13 +26,13 @@ export default function EditSupportDocumentPage() {
     const router = useRouter();
     const id = params?.id as string;
 
-    const { data: response, isLoading, isError } = useSupportDocument(id);
+    const { data, isLoading, isError } = useSupportDocument(id);
     const updateMutation = useUpdateSupportDocument();
     const catalogData = useCatalogs();
 
-    const doc: any = response?.data || response?.support_document || response || null;
+    const doc: any = data?.support_document || null;
 
-    const { resolutions, refetch: refetchResolutions } = useResolutions({ is_active: true });
+    const { resolutions, refetch: refetchResolutions } = useResolutions({ type_resolution: 10, is_active: true });
     const [selectedResolutionId, setSelectedResolutionId] = useState<number | null>(null);
 
     const storedCompany = AuthService.getCompany<any>();
@@ -69,6 +70,7 @@ export default function EditSupportDocumentPage() {
         notes: "",
         comments: [],
     });
+    const [globalAdjustments, setGlobalAdjustments] = useState<any[]>([]);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loadingGuardar, setLoadingGuardar] = useState(false);
@@ -80,66 +82,70 @@ export default function EditSupportDocumentPage() {
         if (!prefillAppliedRef.current && doc) {
             prefillAppliedRef.current = true;
 
-            const supplier = doc.supplier || doc.customer || doc.contact || {};
-            const contactId = doc.contact_id || supplier.id;
+            const contact = doc.contact || {};
 
             setFormState({
-                contact_id: contactId,
-                supplier,
-                identification: supplier.identification_number
-                    ? `${supplier.identification_number}${supplier.verification_digit != null ? `-${supplier.verification_digit}` : ''}`
-                    : doc.supplier_identification || "",
-                phone: supplier.phone1 || supplier.phone || doc.supplier_phone || "",
-                operation_date: doc.operation_date || (doc.created_at ? doc.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
-                payment_form_id: doc.payment_form_id || (doc.payment_form?.id) || 1,
-                payment_method_id: doc.payment_method_id || (doc.payment_method?.id) || 10,
-                authorization_text: doc.authorization_text || "",
-                notes: doc.notes || doc.observation || "",
+                contact_id: doc.contact_id || contact.id,
+                supplier: contact,
+                identification: contact.identification_number
+                    ? `${contact.identification_number}${contact.verification_digit != null ? `-${contact.verification_digit}` : ''}`
+                    : "",
+                phone: contact.phone || "",
+                operation_date: doc.issue_date || new Date().toISOString().split('T')[0],
+                payment_form_id: 1,
+                payment_method_id: 10,
+                authorization_text: "",
+                notes: doc.note || "",
                 comments: [],
             });
 
             if (doc.resolution_id) setSelectedResolutionId(doc.resolution_id);
-            if (doc.currency_id) setCurrency(String(doc.currency_id));
-            if (doc.warehouse_id) setWarehouseId(doc.warehouse_id);
-            if (doc.cost_center_id) setCostCenterId(String(doc.cost_center_id));
-            if (doc.physical_receipt_number) setPhysicalReceiptNumber(doc.physical_receipt_number);
 
             // Populate lines
-            const rawLines = doc.items || doc.lines || doc.support_document_lines || [];
+            const rawLines = doc.lines || [];
             if (rawLines.length > 0) {
-                const mappedLines = rawLines.map((l: any, idx: number) => ({
-                    id: String(l.id || `line-${idx}`),
-                    item_id: l.item_id || null,
-                    standard_code: l.standard_code || '',
-                    item: l.name || l.item || '',
-                    description: l.description || '',
-                    referencia: l.referencia || '',
-                    cantidad: l.quantity || l.cantidad || 1,
-                    unit_measure_code: l.unit_measure_code || '94',
-                    precio: Number(l.price_amount || l.precio || l.price || 0),
-                    discountValue: Number(l.discount_amount || l.discountValue || 0),
-                    discountType: 'fixed',
-                    taxObj: l.tax || (l.taxes && l.taxes[0]) || null,
-                    taxes: l.taxes || [],
-                    allowance_charges: [],
-                }));
+                const mappedLines = rawLines.map((l: any, idx: number) => {
+                    const firstTax = l.taxes && l.taxes[0];
+                    return {
+                        id: String(l.id || `line-${idx}`),
+                        item_id: l.product_id || null,
+                        standard_code: l.item_snapshot?.type_item_identification?.code || '',
+                        item: l.item_snapshot?.name || l.description || '',
+                        description: l.description || '',
+                        referencia: l.item_code || '',
+                        cantidad: Number(l.quantity) || 1,
+                        unit_measure_code: l.item_snapshot?.unit_measure?.code || '94',
+                        precio: Number(l.price) || 0,
+                        discountValue: Number(l.discount) || 0,
+                        discountType: 'fixed' as const,
+                        taxObj: firstTax ? { tax_id: firstTax.tax_id, rate: Number(firstTax.percent), name: firstTax.name } : null,
+                        taxes: (l.taxes || []).map((t: any) => ({ tax_id: t.tax_id, rate: Number(t.percent), name: t.name })),
+                        allowance_charges: [],
+                    };
+                });
                 builder.setItems(mappedLines);
             }
 
-            // Populate withholdings
-            const rawWithholdings = doc.withholdings || doc.withholding_taxes || [];
-            if (rawWithholdings.length > 0) {
-                const mappedWithholdings = rawWithholdings.map((w: any, idx: number) => ({
-                    id: String(w.id || `ret-${idx}`),
-                    retention_id: String(w.retention_id || w.id || ''),
-                    name: w.name || w.retention_name || '',
-                    percentage: Number(w.percentage || 0),
-                    base: Number(w.base || 0),
-                    value: Number(w.value || 0),
-                    is_assumed: Boolean(w.is_assumed),
-                }));
-                builder.setWithholdings(mappedWithholdings);
-            }
+            // Global discounts/charges -> local "global adjustments" UI list
+            const globalDiscounts = (doc.discounts || []).filter((d: any) => d.support_document_line_id === null);
+            const globalCharges = (doc.charges || []).filter((c: any) => c.scope === 'global');
+            const mappedAdjustments = [
+                ...globalDiscounts.map((d: any, idx: number) => ({
+                    id: `d-${d.id ?? idx}`,
+                    type: 'discount' as const,
+                    valueType: Number(d.percent) > 0 ? 'percentage' as const : 'fixed' as const,
+                    value: Number(d.percent) > 0 ? Number(d.percent) : Number(d.amount),
+                    reason: d.reason || '',
+                })),
+                ...globalCharges.map((c: any, idx: number) => ({
+                    id: `c-${c.id ?? idx}`,
+                    type: 'charge' as const,
+                    valueType: Number(c.percent) > 0 ? 'percentage' as const : 'fixed' as const,
+                    value: Number(c.percent) > 0 ? Number(c.percent) : Number(c.amount),
+                    reason: c.reason || '',
+                })),
+            ];
+            if (mappedAdjustments.length > 0) setGlobalAdjustments(mappedAdjustments);
         }
     }, [doc]);
 
@@ -170,16 +176,18 @@ export default function EditSupportDocumentPage() {
         );
     }
 
-    // Check if DIAN status is already approved
-    const dianStatusName = typeof doc.status_dian === 'object' ? doc.status_dian?.name : String(doc.status_dian || '');
-    if (dianStatusName?.toLowerCase().includes("aprobada") || dianStatusName?.toLowerCase().includes("approved") || dianStatusName?.toLowerCase().includes("aceptada")) {
+    // Only BORRADOR/GUARDADO (and GUARDADO after a DIAN rejection) are editable — mirrors
+    // SupportDocument::isEditable() on the backend.
+    const statusCode = String(doc.support_document_status?.code || "").toUpperCase();
+    const isEditable = (statusCode === "BORRADOR" || statusCode === "GUARDADO") && doc.dian_status_id !== 2;
+    if (!isEditable) {
         return (
             <div className="max-w-2xl mx-auto py-16 px-4 text-center space-y-4">
                 <h1 className="text-2xl font-bold text-foreground">
                     Documento soporte #{doc.prefix || ""}{doc.number || doc.id}
                 </h1>
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-                    Este documento soporte ya fue aceptado por la DIAN y no puede ser editado directamente.
+                    Este documento soporte ya fue enviado/aprobado por la DIAN y no puede ser editado directamente.
                 </div>
                 <Link href={`/expenses/support-documents/${id}`}>
                     <Button variant="outline">Volver al detalle</Button>
@@ -196,54 +204,51 @@ export default function EditSupportDocumentPage() {
 
         setLoadingGuardar(true);
         try {
-            const itemsPayload = builder.items.map((line) => {
-                const qty = Number(line.cantidad) || 1;
-                const price = Number(line.precio) || 0;
-                let discountVal = 0;
-                if (line.discountValue) {
-                    discountVal = line.discountType === 'percentage'
-                        ? (qty * price * Number(line.discountValue)) / 100
-                        : Number(line.discountValue);
+            const lines = builder.items.map((line) => {
+                const allowanceCharges: AllowanceCharge[] = [];
+                if (line.discountValue && Number(line.discountValue) > 0) {
+                    allowanceCharges.push({
+                        scope: "line",
+                        charge_indicator: false,
+                        value_type: line.discountType,
+                        value: Number(line.discountValue),
+                    });
                 }
 
                 return {
-                    item_id: line.item_id,
-                    name: line.item,
-                    description: line.description,
-                    quantity: qty,
-                    price_amount: price,
-                    unit_measure_code: line.unit_measure_code || '94',
-                    discount_amount: discountVal,
-                    taxes: line.taxObj ? [{
-                        tax_id: line.taxObj.id,
-                        rate: line.taxObj.rate,
-                        name: line.taxObj.name,
-                    }] : [],
+                    item_id: line.item_id ?? undefined,
+                    description: line.description || line.item || undefined,
+                    quantity: Number(line.cantidad) || 1,
+                    price: Number(line.precio) || 0,
+                    taxes: line.taxObj?.tax_id ? [{ tax_id: Number(line.taxObj.tax_id), rate: Number(line.taxObj.rate) || 0 }] : [],
+                    allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
                 };
             });
 
-            const withholdingsPayload = builder.withholdings.map((w) => ({
-                retention_id: w.retention_id,
-                name: w.name,
-                base: Number(w.base) || 0,
-                percentage: Number(w.percentage) || 0,
-                value: Number(w.value) || 0,
-                is_assumed: Boolean(w.is_assumed),
+            const allowanceCharges: AllowanceCharge[] = globalAdjustments.map((adj) => ({
+                scope: "global" as const,
+                charge_indicator: adj.type === "charge",
+                value_type: adj.valueType,
+                value: Number(adj.value) || 0,
+                reason: adj.reason || undefined,
             }));
 
-            const payload: any = {
+            const withholdingTaxes = builder.withholdings
+                .filter((w) => w.retention_id)
+                .map((w) => ({
+                    scope: "global" as const,
+                    tax_id: Number(w.retention_id),
+                    rate: Number(w.percentage) || 0,
+                }));
+
+            const payload: SupportDocumentPayload = {
                 contact_id: formState.contact_id,
-                currency_id: currency,
-                warehouse_id: warehouseId ? Number(warehouseId) : undefined,
-                cost_center_id: costCenterId ? Number(costCenterId) : undefined,
-                physical_receipt_number: physicalReceiptNumber || undefined,
-                operation_date: formState.operation_date,
-                payment_form_id: formState.payment_form_id,
-                payment_method_id: formState.payment_method_id,
-                authorization_text: formState.authorization_text || undefined,
-                notes: formState.notes || undefined,
-                items: itemsPayload,
-                withholdings: withholdingsPayload,
+                resolution_id: selectedResolutionId ?? undefined,
+                issue_date: formState.operation_date,
+                note: formState.notes || undefined,
+                lines,
+                allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
+                withholding_taxes: withholdingTaxes.length > 0 ? withholdingTaxes : undefined,
             };
 
             await updateMutation.mutateAsync({ id, data: payload });
@@ -251,7 +256,7 @@ export default function EditSupportDocumentPage() {
             router.push(`/expenses/support-documents/${id}`);
         } catch (err: any) {
             console.error(err);
-            showToast(err?.response?.data?.message || "Error al actualizar el documento soporte", "error");
+            showToast(err?.response?.data?.message || err?.message || "Error al actualizar el documento soporte", "error");
         } finally {
             setLoadingGuardar(false);
         }
@@ -297,6 +302,8 @@ export default function EditSupportDocumentPage() {
                 setFormState={setFormState}
                 builder={builder}
                 errors={errors}
+                globalAdjustments={globalAdjustments}
+                setGlobalAdjustments={setGlobalAdjustments}
             />
 
             {/* Comments & Reminders */}

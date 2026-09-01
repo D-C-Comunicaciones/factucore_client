@@ -1,5 +1,35 @@
 import { useState, useMemo } from 'react';
-import type { SupportDocumentLine, SupportDocumentWithholding } from '@/types/supportDocument';
+
+// Local line-editor form state — distinct from the API's SupportDocumentLine (types/supportDocument.ts),
+// which is the read model returned by the backend. This shape only ever lives in the "new"/"edit" form
+// until NewSupportDocumentContent.handleSaveAction() maps it into the real SupportDocumentLineInput payload.
+export interface SupportDocumentLineFormState {
+    id: string; // row id
+    item_id: number | null;
+    standard_code?: string;
+    item: string;
+    description: string;
+    referencia?: string;
+    cantidad: number | '';
+    unit_measure_code?: string;
+    precio: number;
+    discountValue: number;
+    discountType: 'percentage' | 'fixed';
+    taxObj?: any | null;
+    taxes?: { tax_id: number; rate: number; name?: string }[];
+    allowance_charges?: any[];
+}
+
+export interface SupportDocumentWithholdingFormState {
+    id?: string;
+    retention_id?: number | string;
+    name?: string;
+    code?: string;
+    percentage?: number;
+    base: number;
+    value: number;
+    is_assumed: boolean;
+}
 
 export interface SupportDocumentTotals {
     subtotal: number;
@@ -12,7 +42,7 @@ export interface SupportDocumentTotals {
 }
 
 export function useSupportDocumentBuilder() {
-    const [items, setItems] = useState<SupportDocumentLine[]>([
+    const [items, setItems] = useState<SupportDocumentLineFormState[]>([
         {
             id: 'line-1',
             item_id: null,
@@ -31,7 +61,7 @@ export function useSupportDocumentBuilder() {
         }
     ]);
 
-    const [withholdings, setWithholdings] = useState<SupportDocumentWithholding[]>([]);
+    const [withholdings, setWithholdings] = useState<SupportDocumentWithholdingFormState[]>([]);
     const [purchaseOrders, setPurchaseOrders] = useState<{ id: string; purchase_order_id: string }[]>([]);
 
     const addItem = () => {
@@ -60,7 +90,7 @@ export function useSupportDocumentBuilder() {
         setItems(prev => prev.filter(item => item.id !== id));
     };
 
-    const updateItem = (id: string, field: keyof SupportDocumentLine, value: any) => {
+    const updateItem = (id: string, field: keyof SupportDocumentLineFormState, value: any) => {
         setItems(prev => prev.map(item => {
             if (item.id === id) {
                 return { ...item, [field]: value };
@@ -89,7 +119,7 @@ export function useSupportDocumentBuilder() {
         setWithholdings(prev => prev.filter(w => w.id !== id));
     };
 
-    const updateWithholding = (id: string, field: keyof SupportDocumentWithholding, value: any) => {
+    const updateWithholding = (id: string, field: keyof SupportDocumentWithholdingFormState, value: any) => {
         setWithholdings(prev => prev.map(w => {
             if (w.id === id) {
                 const updated = { ...w, [field]: value };
