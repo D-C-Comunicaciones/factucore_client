@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, AlertCircle, GripVertical, Pencil, BadgePercent, Trash2 } from "lucide-react";
+import { X, AlertCircle, GripVertical, Pencil, BadgePercent, Trash2, Truck } from "lucide-react";
 import { showToast } from "@/components/sonner/CustomToaster";
 import {
   DndContext,
@@ -90,6 +90,7 @@ function ItemRow({
   remissionBuilder,
   selectedWarehouseId,
   selectedPriceListId,
+  documentContext,
   taxes,
   errors,
   hasAnyIvaTax,
@@ -101,6 +102,7 @@ function ItemRow({
   remissionBuilder: any;
   selectedWarehouseId: number | null;
   selectedPriceListId: number | null;
+  documentContext?: "remission" | "service_order";
   taxes: any[];
   errors?: Record<string, any>;
   hasAnyIvaTax: boolean;
@@ -131,6 +133,7 @@ function ItemRow({
       search: searchQuery,
       warehouse_id: effectiveWarehouseId ?? undefined,
       price_list_id: effectivePriceListId ?? undefined,
+      document_context: documentContext,
     }
   });
 
@@ -529,12 +532,14 @@ export function RemissionItemsTable({
   remissionBuilder,
   selectedWarehouseId,
   selectedPriceListId,
+  documentContext,
   taxes,
   errors,
 }: {
   remissionBuilder: any;
   selectedWarehouseId: number | null;
   selectedPriceListId: number | null;
+  documentContext?: "remission" | "service_order";
   taxes: any[];
   errors?: Record<string, any>;
 }) {
@@ -624,9 +629,7 @@ export function RemissionItemsTable({
                   <td colSpan={9} className="bg-white">
                     <div className="flex flex-col items-center justify-center py-12 gap-3">
                       <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.837-7.17a60.81 60.81 0 00-16.58-1.986c-.64 0-1.276.019-1.907.055m-.566 0L4.5 6h15M10.5 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm7.5 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                        </svg>
+                        <Truck className="w-7 h-7 text-primary" strokeWidth={1.5} />
                       </div>
                       <p className="text-sm font-medium text-foreground">No hay ítems agregados</p>
                       <p className="text-xs text-muted-foreground">Haz clic en <span className="font-semibold text-primary">"Agregar ítem"</span> para comenzar.</p>
@@ -642,6 +645,7 @@ export function RemissionItemsTable({
                     remissionBuilder={remissionBuilder}
                     selectedWarehouseId={selectedWarehouseId}
                     selectedPriceListId={selectedPriceListId}
+                    documentContext={documentContext}
                     taxes={taxes}
                     errors={errors}
                     hasAnyIvaTax={hasAnyIvaTax}

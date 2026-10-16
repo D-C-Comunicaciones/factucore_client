@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 
 import type { ApiResponse } from "@/types/api";
+import type { Tax, Withholding, UpdateTaxAccountsPayload, UpdateWithholdingAccountsPayload } from "@/types/catalogs";
 
 export const catalogsApi = {
     /* ====================================================================== */
@@ -67,6 +68,12 @@ export const catalogsApi = {
         );
     },
 
+    // type_currencies — el catálogo que realmente referencian bills.currency_id /
+    // support_documents.currency_id / invoices.type_currency_id (distinto de /catalogs/currencies).
+    getTypeCurrencies: async (params?: { query?: string }): Promise<ApiResponse<any>> => {
+        return await apiClient.get<any>("/catalogs/type-currencies", { params });
+    },
+
     /* ====================================================================== */
     /* WAREHOUSES                                                             */
     /* ====================================================================== */
@@ -111,10 +118,28 @@ export const catalogsApi = {
     /* TAXES                                                                  */
     /* ====================================================================== */
 
-    getTaxes: async (): Promise<ApiResponse<any>> => {
-        return await apiClient.get<any>(
+    getTaxes: async (): Promise<ApiResponse<{ taxes: Tax[] }>> => {
+        return await apiClient.get<{ taxes: Tax[] }>(
             "/catalogs/taxes"
         );
+    },
+
+    updateTax: async (id: number, payload: UpdateTaxAccountsPayload): Promise<ApiResponse<{ tax: Tax }>> => {
+        return await apiClient.patch<{ tax: Tax }>(`/catalogs/taxes/${id}`, payload);
+    },
+
+    /* ====================================================================== */
+    /* WITHHOLDINGS                                                           */
+    /* ====================================================================== */
+
+    getWithholdings: async (): Promise<ApiResponse<{ withholdings: Withholding[] }>> => {
+        return await apiClient.get<{ withholdings: Withholding[] }>(
+            "/catalogs/withholdings"
+        );
+    },
+
+    updateWithholding: async (id: number, payload: UpdateWithholdingAccountsPayload): Promise<ApiResponse<{ withholding: Withholding }>> => {
+        return await apiClient.patch<{ withholding: Withholding }>(`/catalogs/withholdings/${id}`, payload);
     },
 
     /* ====================================================================== */

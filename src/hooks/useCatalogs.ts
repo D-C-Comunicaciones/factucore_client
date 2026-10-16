@@ -312,6 +312,12 @@ export function useCatalogs() {
         queryFn: catalogsApi.getWithholdingRates,
     });
 
+    const typeCurrenciesQuery = useQuery({
+        queryKey: QUERY_KEYS.catalogs.typeCurrencies(),
+        queryFn: () => catalogsApi.getTypeCurrencies(),
+        staleTime: 1000 * 60 * 60, // 1 hour — catálogo de monedas rara vez cambia
+    });
+
     /* ====================================================================== */
     /* HELPERS                                                                */
     /* ====================================================================== */
@@ -525,6 +531,13 @@ export function useCatalogs() {
         currencies: extractArray(
             currenciesQuery.data?.data,
             "currencies",
+            "data"
+        ),
+
+        typeCurrencies: extractArray(
+            typeCurrenciesQuery.data?.data,
+            "type_currencies",
+            "typeCurrencies",
             "data"
         ),
 

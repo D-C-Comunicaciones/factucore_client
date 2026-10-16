@@ -81,7 +81,7 @@ export function NewPaymentForm({ formState, setFormState, formErrors, initialInv
 
   const bankAccountOptions = catalogs.bankAccounts?.map((ba: any) => ({
     value: ba.id.toString(),
-    label: ba.name
+    label: ba.account_number ? `${ba.name} - ${ba.account_number}` : ba.name
   })) || [];
 
   // Display name logic for the header card (Company in session)
@@ -183,7 +183,7 @@ export function NewPaymentForm({ formState, setFormState, formErrors, initialInv
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
-              <span>Cuenta bancaria <span className="text-primary">*</span></span>
+              <span>Cuenta bancaria <span className="text-muted-foreground text-xs font-normal">(opcional)</span></span>
               <TooltipProvider>
                 <Tooltip delayDuration={300}>
                   <TooltipTrigger asChild>
@@ -203,16 +203,10 @@ export function NewPaymentForm({ formState, setFormState, formErrors, initialInv
               value={formState.bank_account_id || ""}
               onValueChange={(val) => {
                 setFormState({ ...formState, bank_account_id: val });
-                if (formErrors?.bank_account_id) formErrors.bank_account_id = false;
               }}
               options={bankAccountOptions}
               placeholder="Seleccionar"
-              className={formErrors?.bank_account_id ? "border-[#ef4444] text-[#ef4444]" : ""}
-              errorIcon={formErrors?.bank_account_id ? <AlertCircle className="w-4 h-4 text-[#ef4444]" /> : undefined}
             />
-            {formErrors?.bank_account_id && (
-              <p className="text-[11px] text-[#ef4444]">Indica la cuenta donde recibiste el pago</p>
-            )}
           </div>
 
           <div className="space-y-2">

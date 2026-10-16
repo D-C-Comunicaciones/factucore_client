@@ -20,6 +20,7 @@ interface InvoiceTablePaginationProps {
   pagination: ServerPagination;
   onRefresh?: () => void;
   refreshing?: boolean;
+  perPageLabel?: string;
 }
 
 export function InvoiceTablePagination({
@@ -30,6 +31,7 @@ export function InvoiceTablePagination({
   pagination,
   onRefresh,
   refreshing = false,
+  perPageLabel = "Facturas por pagina:",
 }: InvoiceTablePaginationProps) {
   const { total, last_page, from, to } = pagination;
   const safeLastPage = Math.max(1, last_page || 1);
@@ -116,7 +118,7 @@ export function InvoiceTablePagination({
       </div>
 
       <div className="flex items-center gap-3 text-xs text-gray-700">
-        <span>Facturas por pagina:</span>
+        <span>{perPageLabel}</span>
         <select
           value={perPage}
           onChange={(event) => {

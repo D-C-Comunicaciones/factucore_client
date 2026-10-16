@@ -30,10 +30,13 @@ export default function AuthenticatedLayout({
     const [windowWidth, setWindowWidth] = useState(0);
 
     // HANDLERS
+    // Acordeón: abrir un menú cierra cualquier otro que estuviera abierto. Como esta
+    // función es la única que escribe expandedMenus (siempre con la llave "menu-<label>"
+    // de un item expandible), reemplazar el objeto entero al abrir es seguro.
     const onToggleMenu = useCallback((menu: string) => {
         setExpandedMenus(prev => {
             const isOpen = prev[menu];
-            return { ...prev, [menu]: !isOpen };
+            return isOpen ? {} : { [menu]: true };
         });
     }, []);
 
@@ -162,7 +165,16 @@ export default function AuthenticatedLayout({
                 { icon: ListTree, label: 'Atributos', path: '/inventario/atributos' },
             ]
         },
-        { icon: Building2, label: 'Bancos', path: '/bancos' },
+        {
+            icon: Building2,
+            label: 'Bancos',
+            path: '/banks',
+            expandable: true,
+            submenu: [
+                { icon: Building2, label: 'Bancos y cajas', path: '/banks' },
+                { icon: Building2, label: 'Conciliaciones bancarias', path: '/banks/reconciliations' },
+            ]
+        },
         {
             icon: Calculator,
             label: 'Contabilidad',

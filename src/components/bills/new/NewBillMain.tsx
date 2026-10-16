@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { HelpCircle, Plus, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -22,14 +23,15 @@ import {
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { AddContactModal } from "@/components/contact/new/AddContactModal";
 import { QuickCreateItemModal } from "@/components/invoice/new/QuickCreateItemModal";
+import { NewTaxRateModal } from "@/components/taxes/NewTaxRateModal";
+import { BillItemsTable } from "./BillItemsTable";
 import { FactucoreLogo } from "@/components/brand/FactucoreLogo";
 import { CompanyHeaderPdfStyle } from "@/components/shared/CompanyHeaderPdfStyle";
 import { ContactsService } from "@/lib/contacts";
-import { useItems } from "@/hooks/items/useItems";
 import { useCatalogs } from "@/hooks/useCatalogs";
 import { usePurchaseOrdersList } from "@/hooks/purchaseOrders/usePurchaseOrders";
 import { showToast } from "@/components/sonner/CustomToaster";
-import type { BillLineFormState, BillWithholdingFormState } from "@/hooks/bills/useBillBuilder";
+import type { BillWithholdingFormState } from "@/hooks/bills/useBillBuilder";
 
 // Reusable component for currency formatting without cursor jumps
 function FormattedInput({ value, onChange, placeholder, className }: any) {
@@ -79,10 +81,12 @@ export function NewBillMain({
     errors = {},
 }: NewBillMainProps) {
     const catalogs = useCatalogs();
+    const queryClient = useQueryClient();
 
     const [isAddContactOpen, setIsAddContactOpen] = useState(false);
     const [isQuickCreateItemOpen, setIsQuickCreateItemOpen] = useState(false);
     const [itemModalRowId, setItemModalRowId] = useState<string | null>(null);
+    const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
     const [expandedPoIds, setExpandedPoIds] = useState<Record<string, boolean>>({});
 
     // Global Adjustments
@@ -104,13 +108,6 @@ export function NewBillMain({
     const [contactSearch, setContactSearch] = useState("");
     const [contactOptions, setContactOptions] = useState<{ value: string; label: string; details?: any }[]>([]);
     const [loadingContacts, setLoadingContacts] = useState(false);
-
-    // Items catalog query via React Query with automatic caching
-    const { data: itemsResponse, isLoading: loadingItems } = useItems({ params: { per_page: 100 } });
-    const itemsList = React.useMemo(() => {
-        const list = itemsResponse?.data;
-        return Array.isArray(list) ? list : [];
-    }, [itemsResponse]);
 
     // Fetch contacts
     useEffect(() => {
@@ -182,49 +179,36 @@ export function NewBillMain({
         }
     };
 
-    const handleItemSelect = (rowId: string, itemIdStr: string) => {
-        if (itemIdStr === "__new__") {
-            setItemModalRowId(rowId);
-            setIsQuickCreateItemOpen(true);
-            return;
-        }
-
-        const item: any = itemsList.find((i) => String(i.id) === itemIdStr);
-        if (item) {
-            const defaultPrice = Number(item.price_amount ?? item.price ?? item.cost ?? 0);
-            // The /items listing flattens variants into the same list (entity_type: "variant"),
-            // each carrying its OWN id plus parent_id pointing at the real Item — the backend's
-            // item_id column only ever references the base Item, so a variant row must resolve
-            // to parent_id or `exists:items,id` rejects it with a 422 (variant ids aren't item ids).
-            const resolvedItemId = item.entity_type === "variant" ? (item.parent_id ?? item.item_id ?? item.id) : item.id;
-            builder.updateItem(rowId, "item_id", resolvedItemId);
-            builder.updateItem(rowId, "item", item.name);
-            builder.updateItem(rowId, "description", item.description || item.name);
-            builder.updateItem(rowId, "referencia", item.reference || item.reference_code || item.code || "");
-            builder.updateItem(rowId, "precio", defaultPrice);
-            if (item.tax_rates && item.tax_rates.length > 0) {
-                const tax = item.tax_rates[0];
-                builder.updateItem(rowId, "taxObj", {
-                    tax_rate_id: tax.id,
-                    tax_id: tax.tax_id,
-                    name: tax.name,
-                    rate: Number(tax.rate ?? tax.percentage ?? 0),
-                    type: tax.type || "percentage",
-                });
-            } else {
-                builder.updateItem(rowId, "taxObj", null);
-            }
-        }
-    };
-
     const handleQuickItemCreated = (newItem: any) => {
         if (!newItem) return;
         if (itemModalRowId) {
-            const defaultPrice = Number(newItem.price_amount ?? newItem.price ?? newItem.cost ?? 0);
+            const defaultPrice = Number(newItem.price_amount ?? newItem.price ?? newItem.cost ?? newItem.base_price ?? newItem.total_price ?? 0);
             builder.updateItem(itemModalRowId, "item_id", newItem.id);
             builder.updateItem(itemModalRowId, "item", newItem.name);
             builder.updateItem(itemModalRowId, "description", newItem.description || newItem.name);
+            builder.updateItem(itemModalRowId, "referencia", newItem.reference || newItem.reference_code || newItem.code || "");
             builder.updateItem(itemModalRowId, "precio", defaultPrice);
+
+            // El ítem recién creado no siempre trae tax_rates aplanado (según venga de
+            // creación básica o avanzada) — se revisan ambas formas, igual que en factura
+            // de venta, para que el impuesto quede preseleccionado sin que el usuario
+            // tenga que volver a elegirlo.
+            const itemTaxes = newItem.tax_rates || newItem.pricing?.tax_rates;
+            if (itemTaxes && itemTaxes.length > 0) {
+                const defaultTax = itemTaxes[0];
+                builder.updateItem(itemModalRowId, "taxObj", {
+                    tax_rate_id: defaultTax.tax_rate_id || defaultTax.id,
+                    tax_id: defaultTax.tax_id,
+                    code: defaultTax.tax_code || defaultTax.code,
+                    name: defaultTax.name,
+                    rate: parseFloat(defaultTax.rate || defaultTax.percentage || "0"),
+                    type: defaultTax.type || "percentage",
+                });
+            } else {
+                builder.updateItem(itemModalRowId, "taxObj", null);
+            }
+
+            queryClient.invalidateQueries({ queryKey: ["items"] });
         }
         setIsQuickCreateItemOpen(false);
         setItemModalRowId(null);
@@ -347,15 +331,21 @@ export function NewBillMain({
                                     Factura de compra
                                 </span>
                                 <div className="flex items-center gap-2 text-lg font-bold text-foreground">
-                                    <span>No.</span>
+                                    <span>No. <span className="text-primary">*</span></span>
                                     <Input
                                         type="text"
-                                        placeholder="0001"
+                                        placeholder="FAC1"
                                         value={formState.bill_number || ""}
                                         onChange={(e) => setFormState((prev: any) => ({ ...prev, bill_number: e.target.value }))}
-                                        className="w-28 h-8 text-sm font-bold text-center bg-white border border-foreground/20 rounded-md focus:border-primary"
+                                        className={cn(
+                                            "w-36 h-8 text-sm font-bold text-center bg-white border rounded-md focus:border-primary",
+                                            errors.bill_number ? "border-destructive" : "border-foreground/20"
+                                        )}
                                     />
                                 </div>
+                                <span className="text-xs text-muted-foreground max-w-[220px]">
+                                    Númeración de la factura hecha por el proveedor.
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -521,177 +511,9 @@ export function NewBillMain({
                         </div>
                     </div>
 
-                    {/* TABLE: Productos y Servicios */}
+                    {/* TABLE: Productos y Servicios — mismo componente y estilos que factura de venta */}
                     <div className="space-y-3 pt-2">
-                        <div className="border border-border rounded-lg overflow-x-auto">
-                            <table className="w-full text-xs text-left min-w-[720px]">
-                                <thead>
-                                    <tr className="border-b border-border bg-muted/40 text-muted-foreground font-medium">
-                                        <th className="px-3 py-2.5 font-medium w-[24%]">Concepto</th>
-                                        <th className="px-3 py-2.5 font-medium w-[15%]">Precio</th>
-                                        <th className="px-3 py-2.5 font-medium w-[15%]">Desc %</th>
-                                        <th className="px-3 py-2.5 font-medium w-[16%]">Impuesto</th>
-                                        <th className="px-3 py-2.5 font-medium w-[10%]">Cantidad</th>
-                                        <th className="px-3 py-2.5 font-medium w-[12%]">Observaciones</th>
-                                        <th className="px-3 py-2.5 font-medium w-[12%] text-right">Total</th>
-                                        <th className="px-3 py-2.5 font-medium w-[6%] text-center"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {builder.items.map((line: BillLineFormState) => {
-                                        const qty = Number(line.cantidad) || 0;
-                                        const price = Number(line.precio) || 0;
-                                        const sub = qty * price;
-                                        let disc = 0;
-                                        if (line.discountValue) {
-                                            disc = line.discountType === 'percentage'
-                                                ? (sub * Number(line.discountValue)) / 100
-                                                : Number(line.discountValue);
-                                        }
-                                        const lineTotal = Math.max(0, sub - disc);
-
-                                        return (
-                                            <tr key={line.id} className="hover:bg-muted/20 transition-colors">
-                                                {/* Concepto */}
-                                                <td className="px-2 py-2 align-middle">
-                                                    <SearchableSelect
-                                                        value={line.item_id ? String(line.item_id) : ""}
-                                                        onValueChange={(val) => handleItemSelect(line.id, val)}
-                                                        options={itemsList.map((i: any) => ({
-                                                            value: String(i.id),
-                                                            label: `${(i.reference || i.code) ? `${i.reference || i.code} - ` : ''}${i.name}`,
-                                                        }))}
-                                                        placeholder="Seleccionar"
-                                                        searchPlaceholder="Buscar ítem..."
-                                                        className="h-8 text-xs bg-white shadow-none hover:border-primary focus:border-primary transition-colors border-foreground/20"
-                                                        footer={
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setItemModalRowId(line.id);
-                                                                    setIsQuickCreateItemOpen(true);
-                                                                }}
-                                                                className="w-full text-left px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 rounded-md transition-colors cursor-pointer"
-                                                            >
-                                                                + Crear nuevo producto
-                                                            </button>
-                                                        }
-                                                    />
-                                                </td>
-
-                                                {/* Precio */}
-                                                <td className="px-2 py-2 align-middle">
-                                                    <FormattedInput
-                                                        placeholder="0"
-                                                        value={line.precio || 0}
-                                                        onChange={(num: number) => builder.updateItem(line.id, "precio", num)}
-                                                        className={tableInputClass}
-                                                    />
-                                                </td>
-
-                                                {/* Desc % */}
-                                                <td className="px-2 py-2 align-middle">
-                                                    <div className="flex items-center">
-                                                        <Input
-                                                            type="number"
-                                                            value={line.discountValue || 0}
-                                                            onChange={(e) => builder.updateItem(line.id, "discountValue", parseFloat(e.target.value) || 0)}
-                                                            className={cn(tableInputClass, "rounded-r-none border-r-0 w-16")}
-                                                        />
-                                                        <Select
-                                                            value={line.discountType || "percentage"}
-                                                            onValueChange={(val: any) => builder.updateItem(line.id, "discountType", val)}
-                                                        >
-                                                            <SelectTrigger className="h-8 px-1 text-xs border border-foreground/20 bg-white shadow-none rounded-l-none w-12 hover:bg-muted cursor-pointer transition-colors">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="percentage" className={selectItemClass}>%</SelectItem>
-                                                                <SelectItem value="fixed" className={selectItemClass}>$</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                </td>
-
-                                                {/* Impuesto */}
-                                                <td className="px-2 py-2 align-middle">
-                                                    <SearchableSelect
-                                                        value={line.taxObj?.tax_rate_id ? String(line.taxObj.tax_rate_id) : line.taxObj?.id ? String(line.taxObj.id) : line.taxObj?.tax_id ? String(line.taxObj.tax_id) : "none"}
-                                                        onValueChange={(val) => {
-                                                            if (val === "none") {
-                                                                builder.updateItem(line.id, "taxObj", null);
-                                                            } else {
-                                                                const tax = taxesOptions.find((t: any) => String(t.id) === val);
-                                                                builder.updateItem(line.id, "taxObj", tax || null);
-                                                            }
-                                                        }}
-                                                        options={[
-                                                            { value: "none", label: "Ninguno" },
-                                                            ...taxesOptions.map((tax: any) => ({
-                                                                value: String(tax.id),
-                                                                label: tax.name,
-                                                            })),
-                                                        ]}
-                                                        placeholder="Ninguno"
-                                                        searchPlaceholder="Buscar impuesto..."
-                                                        className="h-8 text-xs bg-white shadow-none hover:border-primary focus:border-primary transition-colors border-foreground/20"
-                                                    />
-                                                </td>
-
-                                                {/* Cantidad */}
-                                                <td className="px-2 py-2 align-middle">
-                                                    <Input
-                                                        type="number"
-                                                        value={line.cantidad}
-                                                        onChange={(e) => builder.updateItem(line.id, "cantidad", e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                                                        className={`${tableInputClass} w-16 text-center`}
-                                                        min="1"
-                                                    />
-                                                </td>
-
-                                                {/* Observaciones */}
-                                                <td className="px-2 py-2 align-middle">
-                                                    <Input
-                                                        type="text"
-                                                        value={line.description || ""}
-                                                        onChange={(e) => builder.updateItem(line.id, "description", e.target.value)}
-                                                        placeholder="Observaciones"
-                                                        className={tableInputClass}
-                                                    />
-                                                </td>
-
-                                                {/* Total */}
-                                                <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap align-middle">
-                                                    ${new Intl.NumberFormat('es-CO').format(lineTotal)}
-                                                </td>
-
-                                                {/* Delete line */}
-                                                <td className="px-2 py-2 text-center align-middle">
-                                                    {builder.items.length > 1 && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => builder.removeItem(line.id)}
-                                                            className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={builder.addItem}
-                            className="text-primary hover:text-primary/80 text-xs font-semibold flex items-center gap-1 transition-colors h-8 px-2 rounded-md hover:bg-muted cursor-pointer"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Agregar línea
-                        </button>
+                        <BillItemsTable builder={builder} taxes={taxesOptions} errors={errors} />
                     </div>
 
                     {/* LÍNEA SEPARADORA DEBAJO DE AGREGAR LÍNEA */}
@@ -717,7 +539,7 @@ export function NewBillMain({
                                                 <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-slate-900 text-white px-3 py-2 text-xs rounded-lg font-medium shadow-xl max-w-[280px] text-center leading-relaxed">
-                                                Si no existe la retención, puedes crearla. Descubre cómo <a href="#" className="underline text-teal-400 hover:text-teal-300 font-medium">aquí</a>
+                                                Si no existe la retención, puedes crearla. Descubre cómo <a href="#" className="underline text-primary hover:text-primary/80 font-medium">aquí</a>
                                             </TooltipContent>
                                         </Tooltip>
                                     </div>
@@ -966,8 +788,8 @@ export function NewBillMain({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="discount" className="text-sm cursor-pointer">Descuento</SelectItem>
-                                            <SelectItem value="charge" className="text-sm cursor-pointer">Cargo</SelectItem>
+                                            <SelectItem value="discount" className="text-sm cursor-pointer hover:bg-muted focus:bg-muted">Descuento</SelectItem>
+                                            <SelectItem value="charge" className="text-sm cursor-pointer hover:bg-muted focus:bg-muted">Cargo</SelectItem>
                                         </SelectContent>
                                     </Select>
 
@@ -976,8 +798,8 @@ export function NewBillMain({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="percentage" className="text-sm cursor-pointer">%</SelectItem>
-                                            <SelectItem value="fixed" className="text-sm cursor-pointer">$</SelectItem>
+                                            <SelectItem value="percentage" className="text-sm cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
+                                            <SelectItem value="fixed" className="text-sm cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1074,21 +896,12 @@ export function NewBillMain({
                             </div>
 
                             {builder.totals.discountsAmount > 0 && (
-                                <>
-                                    <div className="flex justify-between py-1 border-b border-border/40">
-                                        <span className="text-muted-foreground">Descuento</span>
-                                        <span className="font-medium text-destructive">
-                                            -${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(builder.totals.discountsAmount)}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex justify-between py-1 border-b border-border/40">
-                                        <span className="text-muted-foreground">Subtotal</span>
-                                        <span className="font-medium text-foreground">
-                                            ${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(builder.totals.subtotalAfterDiscount)}
-                                        </span>
-                                    </div>
-                                </>
+                                <div className="flex justify-between py-1 border-b border-border/40">
+                                    <span className="text-muted-foreground">Descuentos en Línea</span>
+                                    <span className="font-medium text-destructive">
+                                        -${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(builder.totals.discountsAmount)}
+                                    </span>
+                                </div>
                             )}
 
                             {globalDiscounts > 0 && (
@@ -1109,14 +922,14 @@ export function NewBillMain({
                                 </div>
                             )}
 
-                            {builder.totals.taxesAmount > 0 && (
-                                <div className="flex justify-between py-1 border-b border-border/40">
-                                    <span className="text-muted-foreground">Impuestos</span>
+                            {builder.totals.taxBreakdown && (Object.values(builder.totals.taxBreakdown) as { name: string; amount: number }[]).map(({ name, amount }) => (
+                                <div key={name} className="flex justify-between py-1 border-b border-border/40">
+                                    <span className="text-muted-foreground">{name}</span>
                                     <span className="font-medium text-foreground">
-                                        +${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(builder.totals.taxesAmount)}
+                                        +${new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0)}
                                     </span>
                                 </div>
-                            )}
+                            ))}
 
                             {builder.totals.withholdingsAmount > 0 && (
                                 <div className="flex justify-between py-1 border-b border-border/40 text-amber-700">
@@ -1194,6 +1007,7 @@ export function NewBillMain({
                 isOpen={isAddContactOpen}
                 onClose={() => setIsAddContactOpen(false)}
                 catalogData={catalogs}
+                prefilledData={{ contactTypes: ["proveedor"] } as any}
                 onCustomerCreated={(c: any) => {
                     if (c) {
                         setContactOptions((prev) => [
@@ -1210,6 +1024,17 @@ export function NewBillMain({
                 }}
             />
 
+            {/* Botón oculto para abrir el modal de creación rápida desde la tabla de ítems */}
+            <button
+                id="open-quick-item-modal"
+                className="hidden"
+                onClick={(e) => {
+                    const targetRowId = e.currentTarget.getAttribute("data-target-row");
+                    setItemModalRowId(targetRowId);
+                    setIsQuickCreateItemOpen(true);
+                }}
+            />
+
             <QuickCreateItemModal
                 open={isQuickCreateItemOpen}
                 onClose={() => {
@@ -1218,6 +1043,17 @@ export function NewBillMain({
                 }}
                 catalogs={catalogs}
                 onCreated={handleQuickItemCreated}
+            />
+
+            <button id="open-new-tax-modal" className="hidden" onClick={() => setIsTaxModalOpen(true)} />
+
+            <NewTaxRateModal
+                open={isTaxModalOpen}
+                onOpenChange={setIsTaxModalOpen}
+                taxTypes={catalogs?.taxTypes || []}
+                onSave={async () => {
+                    // El componente NewTaxRateModal ya actualiza el cache de impuestos.
+                }}
             />
         </TooltipProvider>
     );

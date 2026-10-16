@@ -46,13 +46,18 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                     />
                 </div>
 
-                {/* Sliding text */}
+                {/* Sliding text — ancho fijo (w-max) desde el montaje inicial: antes el ancho
+                    animaba de 0px a 200px, y como este bloque vive dentro del flex row que el
+                    contenedor padre centra (items-center justify-center), cada frame de esa
+                    animación recalculaba el centrado horizontal del conjunto. En desktop el
+                    corrimiento (~100px) es imperceptible frente al viewport, pero en móvil
+                    (~375px de ancho) es una fracción enorme de la pantalla, así que el logo se
+                    veía "rodar" hacia la izquierda mientras el texto entraba. Al reservar el
+                    ancho final desde el inicio y animar solo opacity/translate, el ancho del
+                    row nunca cambia y el conjunto queda centrado en X/Y durante toda la animación. */}
                 <div
-                    style={{
-                        width: animateText ? "200px" : "0px",
-                        opacity: animateText ? 1 : 0,
-                    }}
-                    className="overflow-hidden transition-all duration-700 ease-out flex items-center ml-[-8px] md:ml-[-12px]"
+                    className={`overflow-visible transition-all duration-700 ease-out flex items-center w-max ml-[-8px] md:ml-[-12px] ${animateText ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-3"
+                        }`}
                 >
                     <div className="flex items-center">
                         <span className="text-3xl md:text-4xl font-[300] text-black tracking-tighter whitespace-nowrap">

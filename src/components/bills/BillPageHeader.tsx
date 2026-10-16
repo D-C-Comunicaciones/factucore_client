@@ -43,7 +43,7 @@ export function BillPageHeader({ onExportClick }: BillPageHeaderProps) {
             </div>
 
             <p className="text-xs text-muted-foreground">
-                Registra las facturas de compra que te emiten tus proveedores (no se envían a la DIAN, solo quedan en tu registro interno).{" "}
+                Registra las facturas de compra que emiten tus proveedores (Si el proveedor es no obligado a facturar te recomendamos registrarla en documentos soporte).{" "}
                 <Link href="#" className="text-primary hover:text-primary/80 font-medium">
                     Saber más.
                 </Link>

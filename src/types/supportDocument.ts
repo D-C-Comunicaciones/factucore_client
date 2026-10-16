@@ -44,6 +44,7 @@ export interface SupportDocumentPayload {
     issue_time?: string; // HH:mm:ss
     due_date?: string;
     currency_id?: number;
+    warehouse_id?: number | null;
     seller_origin_code?: "10" | "11";
     note?: string;
     order_reference_id?: string;

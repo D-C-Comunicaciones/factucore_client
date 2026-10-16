@@ -373,14 +373,14 @@ function ModalContent({
                     commercialRegistration
                   };
                   sessionStorage.setItem("contactFormDraft", JSON.stringify(formDataToSave));
-                  
+
                   onClose();
                   router.push('/contacts/new');
                 } else {
                   setMode("advanced");
                 }
               }}
-              className="text-primary hover:text-primary/80 text-sm font-semibold flex items-center gap-1 transition-colors"
+              className="text-primary hover:text-primary/80 text-sm font-semibold flex items-center gap-1 transition-colors cursor-pointer"
             >
               Ir a formulario avanzado
             </button>
@@ -388,7 +388,7 @@ function ModalContent({
             <button
               type="button"
               onClick={() => setMode("simple")}
-              className="text-primary hover:text-primary/80 text-sm font-semibold flex items-center gap-1 transition-colors"
+              className="text-primary hover:text-primary/80 text-sm font-semibold flex items-center gap-1 transition-colors cursor-pointer"
             >
               Ir a formulario simple
             </button>
@@ -398,7 +398,7 @@ function ModalContent({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors text-slate-700"
+              className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors text-slate-700 cursor-pointer"
             >
               Cancelar
             </button>
@@ -406,7 +406,7 @@ function ModalContent({
               type="button"
               onClick={handleSubmit}
               disabled={creating || autocompleting}
-              className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+              className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm cursor-pointer disabled:cursor-not-allowed"
             >
               {creating && <Loader2 className="w-4 h-4 animate-spin" />}
               Crear contacto

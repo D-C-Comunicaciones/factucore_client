@@ -749,6 +749,10 @@ export function NewRemissionMain({
               selectedPriceListId={selectedPriceListId}
               taxes={catalogData.taxes || []}
               errors={errors}
+              // id 2 = "Orden de servicio" (ver TypeRemissionSeeder): solo admite
+              // servicios; toda otra remisión ("Remisión") solo admite productos
+              // inventariables (App\Support\Items\DocumentItemTypeRule).
+              documentContext={typeRemissionId === 2 ? "service_order" : "remission"}
             />
 
             {/* AJUSTES GLOBALES */}

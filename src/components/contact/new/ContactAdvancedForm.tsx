@@ -203,7 +203,7 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete, contactId }: 
                   <button
                     type="button"
                     onClick={() => toggleContactType("cliente")}
-                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium border transition-all flex items-center justify-between outline-none focus:outline-none focus:ring-0 ${contactTypes.includes("cliente")
+                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium border transition-all flex items-center justify-between outline-none focus:outline-none focus:ring-0 cursor-pointer ${contactTypes.includes("cliente")
                       ? "bg-primary/15 text-primary border-transparent hover:bg-primary/25"
                       : "bg-white text-slate-800 border-gray-300 hover:border-primary/40 hover:bg-primary/5"
                       }`}
@@ -214,7 +214,7 @@ export function ContactAdvancedForm({ catalogData, onAutocomplete, contactId }: 
                   <button
                     type="button"
                     onClick={() => toggleContactType("proveedor")}
-                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium border transition-all flex items-center justify-between outline-none focus:outline-none focus:ring-0 ${contactTypes.includes("proveedor")
+                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium border transition-all flex items-center justify-between outline-none focus:outline-none focus:ring-0 cursor-pointer ${contactTypes.includes("proveedor")
                       ? "bg-primary/15 text-primary border-transparent hover:bg-primary/25"
                       : "bg-white text-slate-800 border-gray-300 hover:border-primary/40 hover:bg-primary/5"
                       }`}

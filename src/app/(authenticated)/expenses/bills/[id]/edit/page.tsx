@@ -84,6 +84,7 @@ export default function EditBillPage() {
                         return {
                             id: String(line.id || `line-${index}`),
                             item_id: line.product_id || null,
+                            account_id: line.account_id || null,
                             item: line.item_snapshot?.name || line.description || "",
                             description: line.description || "",
                             referencia: line.item_code || "",
@@ -129,6 +130,7 @@ export default function EditBillPage() {
 
             return {
                 item_id: item.item_id ? Number(item.item_id) : undefined,
+                account_id: item.account_id ? Number(item.account_id) : undefined,
                 description: item.description || item.item || undefined,
                 quantity: Number(item.cantidad) || 1,
                 price: Number(item.precio) || 0,

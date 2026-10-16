@@ -36,6 +36,7 @@ export const QUERY_KEYS = {
         countries: () => ["catalogs", "countries"] as const,
 
         currencies: () => ["catalogs", "currencies"] as const,
+        typeCurrencies: () => ["catalogs", "type-currencies"] as const,
 
         warehouses: () =>
             [
@@ -189,6 +190,8 @@ export const QUERY_KEYS = {
             ] as const,
 
         withholdingRates: () => ["catalogs", "withholding-rates"] as const,
+
+        withholdings: () => ["catalogs", "withholdings"] as const,
     },
 
     /* ====================================================================== */

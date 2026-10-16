@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { DatePickerSimple } from "@/components/ui/DatePickerSimple";
+import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
 import { showToast } from "@/components/sonner/CustomToaster";
 import { ContactsService } from "@/lib/contacts";
 import { useCatalogs } from "@/hooks/useCatalogs";
@@ -56,6 +57,7 @@ function NewExpensePaymentContent() {
         initialDocumentId && initialDocType ? `${initialDocType}-${initialDocumentId}` : null
     );
     const [amount, setAmount] = useState("");
+    const [amountFocused, setAmountFocused] = useState(false);
     const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
     const [accountId, setAccountId] = useState<string | null>(null);
     const [paymentMethodId, setPaymentMethodId] = useState<string | null>(null);
@@ -68,7 +70,9 @@ function NewExpensePaymentContent() {
     // single generic "Proveedores" line instead (see JournalEntryService::postSupplierPayment()).
     const [showAccountingLines, setShowAccountingLines] = useState(false);
     const [accountingLines, setAccountingLines] = useState<AccountingLineDraft[]>([]);
-    const { data: postableAccounts } = useAccountsList({ postable_only: true });
+    // Solo cuentas de Gastos (class 5 del PUC) — este pago se contabiliza contra un
+    // gasto del proveedor, no contra cualquier cuenta postable del catálogo.
+    const { data: postableAccounts } = useAccountsList({ postable_only: true, account_type_code: "EXPENSE" });
     const accountOptions = (postableAccounts || []).map((a: any) => ({ value: String(a.id), label: `${a.code} — ${a.name}` }));
 
     const accountingLinesTotal = accountingLines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
@@ -92,7 +96,10 @@ function NewExpensePaymentContent() {
         ? ((activeResolution.current_number ?? ((activeResolution.from_number || 1) - 1)) + 1)
         : null;
 
-    const bankAccountOptions = (catalogs.bankAccounts || []).map((ba: any) => ({ value: String(ba.id), label: ba.name }));
+    const bankAccountOptions = (catalogs.bankAccounts || []).map((ba: any) => ({
+        value: String(ba.id),
+        label: ba.account_number ? `${ba.name} - ${ba.account_number}` : ba.name,
+    }));
     const paymentMethodOptions = (catalogs.paymentMethods || []).map((pm: any) => ({ value: String(pm.id), label: pm.name }));
 
     // Proveedor search — same pattern as Documento Soporte/Factura de Compra's own contact picker.
@@ -166,6 +173,9 @@ function NewExpensePaymentContent() {
         [documentOptions, documentKey]
     );
 
+    // balance ya es total facturado - pagos ya registrados (Bill/SupportDocument exponen
+    // ese cálculo listo vía su accessor `balance`) — si el documento no tiene pagos aún,
+    // esto es simplemente el total facturado.
     const balance = selectedDocument?.balance ?? 0;
     const loadingDocuments = loadingSdList || loadingBillList;
 
@@ -177,8 +187,25 @@ function NewExpensePaymentContent() {
 
     const handleDocumentChange = (key: string) => {
         setDocumentKey(key);
-        const doc = documentOptions.find((d) => d.key === key);
-        if (doc) setAmount(String(doc.balance));
+        // El monto no se sugiere solo — igual que "pagos recibidos", se sugiere al hacer
+        // foco en el campo Monto (ver el Popover más abajo), no al elegir el documento.
+        setAmount("");
+    };
+
+    // Nunca permite digitar un monto mayor al saldo pendiente del documento seleccionado —
+    // mismo clamp que pagos recibidos aplica sobre "Monto recibido".
+    const handleAmountChange = (raw: string) => {
+        if (!selectedDocument) {
+            setAmount(raw);
+            return;
+        }
+        const numValue = Number(raw);
+        if (raw !== "" && !isNaN(numValue) && numValue > balance) {
+            showToast("El monto no puede superar el saldo pendiente del documento.", "warning");
+            setAmount(String(balance));
+            return;
+        }
+        setAmount(raw);
     };
 
     const handleSubmit = async () => {
@@ -365,7 +392,38 @@ function NewExpensePaymentContent() {
 
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Monto <span className="text-primary">*</span></label>
-                        <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-9" />
+                        <Popover open={amountFocused && !!selectedDocument}>
+                            <PopoverAnchor className="block">
+                                <Input
+                                    type="number"
+                                    value={amount}
+                                    onChange={(e) => handleAmountChange(e.target.value)}
+                                    onFocus={() => {
+                                        if (!selectedDocument) return;
+                                        setAmountFocused(true);
+                                        setAmount(String(balance));
+                                    }}
+                                    onBlur={() => setAmountFocused(false)}
+                                    max={selectedDocument ? balance : undefined}
+                                    className="h-9"
+                                />
+                            </PopoverAnchor>
+                            <PopoverContent
+                                side="bottom"
+                                sideOffset={4}
+                                className="w-[180px] p-2 bg-white border border-border rounded-md shadow-lg text-center cursor-pointer hover:bg-slate-50 transition-colors z-50"
+                                onOpenAutoFocus={(e) => e.preventDefault()}
+                                onCloseAutoFocus={(e) => e.preventDefault()}
+                                onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setAmount(String(balance));
+                                    setAmountFocused(false);
+                                }}
+                            >
+                                <div className="font-bold text-slate-800 text-[15px]">$ {balance.toLocaleString("es-CO")}</div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">Máximo a pagar</div>
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <div className="space-y-1.5 sm:col-span-2">

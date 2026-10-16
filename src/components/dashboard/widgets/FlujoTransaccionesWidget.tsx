@@ -2,6 +2,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from 'lucide-react';
+import { formatAmount } from "@/utils/format-currency";
 
 interface FlujoTransaccionesData {
   fecha: string;
@@ -47,14 +48,14 @@ export function FlujoTransaccionesWidget({
           <div className="text-right">
             <div className="text-xs text-gray-500 mb-0.5">Total ingresos</div>
             <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg font-bold text-gray-700">${totalIngresos.toFixed(2)}</span>
+              <span className="text-base sm:text-lg font-bold text-gray-700">${formatAmount(totalIngresos)}</span>
               <span className="text-xs text-gray-500">{porcentajeIngresos}%</span>
             </div>
           </div>
           <div className="text-right">
             <div className="text-xs text-gray-500 mb-0.5">Total egresos</div>
             <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg font-bold text-gray-700">${totalEgresos.toFixed(2)}</span>
+              <span className="text-base sm:text-lg font-bold text-gray-700">${formatAmount(totalEgresos)}</span>
               <span className="text-xs text-gray-500">{porcentajeEgresos}%</span>
             </div>
           </div>

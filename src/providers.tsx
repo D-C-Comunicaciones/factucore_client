@@ -41,6 +41,10 @@ export function Providers({ children }: { children: ReactNode }) {
             client={queryClient}
             persistOptions={{
                 persister: localStoragePersister,
+                // Subir este valor descarta el caché de catálogos persistido en localStorage de
+                // todos los usuarios — hacerlo cada vez que cambie la forma de los datos de un
+                // catálogo (como el account_number agregado a bank-accounts), no solo aquí.
+                buster: "2026-09-03-bank-account-number",
                 dehydrateOptions: {
                     // Solo guardamos datos de catálogos en localstorage
                     shouldDehydrateQuery: (query) => {

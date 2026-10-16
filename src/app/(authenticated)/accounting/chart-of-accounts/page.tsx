@@ -52,6 +52,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { showToast } from "@/components/sonner/CustomToaster";
+import { AutomaticBehaviorsModal } from "@/components/catalogs/AutomaticBehaviorsModal";
 import {
     useAccountsList,
     useAccountTypes,
@@ -177,6 +178,7 @@ export default function ChartOfAccountsPage() {
     const [showChoiceConfirm, setShowChoiceConfirm] = useState(false);
     const [pendingSortMode, setPendingSortMode] = useState<"manual" | "code">("code");
     const [showSortConfirm, setShowSortConfirm] = useState(false);
+    const [showAutomaticBehaviors, setShowAutomaticBehaviors] = useState(false);
 
     const handleConfirmSortMode = async () => {
         try {
@@ -423,7 +425,7 @@ export default function ChartOfAccountsPage() {
                                     </div>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                    onClick={() => showToast("Parametrización contable estará disponible próximamente", "info")}
+                                    onClick={() => setShowAutomaticBehaviors(true)}
                                     className="hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary transition-colors cursor-pointer py-2"
                                 >
                                     <FileSpreadsheet className="w-4 h-4 mr-2 text-primary" />
@@ -1048,6 +1050,8 @@ export default function ChartOfAccountsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <AutomaticBehaviorsModal open={showAutomaticBehaviors} onOpenChange={setShowAutomaticBehaviors} />
         </div>
     );
 }

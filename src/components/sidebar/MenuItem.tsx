@@ -29,7 +29,7 @@ export function MenuItem({
   const showPlus = item.label === "Contactos";
 
   return (
-    <div className={`${isCollapsed && !showLabel ? 'mx-0' : 'mx-1.5 mr-[1.125rem]'}`}>
+    <div className={`${isCollapsed && !showLabel ? 'mx-0' : 'mx-1.5'}`}>
 
       <div
         onClick={(e) => {
