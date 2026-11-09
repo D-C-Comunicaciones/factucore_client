@@ -116,7 +116,11 @@ function useItemRowLogic({
       const ri = selectedOption.rawItem;
       const { is_inventoriable: isInventoriable, allow_negative_stock: allowNegativeStock, stock_quantity: stockQuantity } = resolveStockFields(ri);
 
-      invoiceBuilder.updateItem(item.id, "item_id", ri.id);
+      // /items flattens variants (entity_type: "variant") into the same list, each with its OWN
+      // id plus parent_id pointing at the real Item — item_id must resolve to parent_id or
+      // exists:items,id rejects it (a variant id isn't a valid item id).
+      const resolvedItemId = ri.entity_type === "variant" ? (ri.parent_id ?? ri.id) : ri.id;
+      invoiceBuilder.updateItem(item.id, "item_id", resolvedItemId);
       invoiceBuilder.updateItem(item.id, "standard_code", ri.standard_code || "");
       invoiceBuilder.updateItem(item.id, "item", ri.name);
       invoiceBuilder.updateItem(item.id, "referencia", ri.reference || "");

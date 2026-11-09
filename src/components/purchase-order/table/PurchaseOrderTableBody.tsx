@@ -22,7 +22,7 @@ interface PurchaseOrderTableBodyProps {
   basePath?: string;
 }
 
-export function PurchaseOrderTableBody({ table, columns, loading, showNoDataMessage = false, isError = false, basePath = "/purchase-orders" }: PurchaseOrderTableBodyProps) {
+export function PurchaseOrderTableBody({ table, columns, loading, showNoDataMessage = false, isError = false, basePath = "/sales/purchase-orders" }: PurchaseOrderTableBodyProps) {
   const router = useRouter();
 
   return (

@@ -185,7 +185,7 @@ export function ActionsCell({ quote }: { quote: QuoteSummary }) {
   };
 
   const handleEdit = () => {
-    router.push(`/quotes/${quote.id}/edit`);
+    router.push(`/sales/quotes/${quote.id}/edit`);
   };
 
   const handleDelete = async () => {

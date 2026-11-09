@@ -193,7 +193,7 @@ export function ActionsCell({ remission }: { remission: RemissionSummary }) {
   };
 
   const handleEdit = () => {
-    router.push(`/remissions/${remission.id}/edit`);
+    router.push(`/sales/remissions/${remission.id}/edit`);
   };
 
   const handleDelete = async () => {

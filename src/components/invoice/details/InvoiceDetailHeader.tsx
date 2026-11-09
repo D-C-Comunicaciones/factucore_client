@@ -66,7 +66,7 @@ export function InvoiceDetailHeader({
             await InvoicesService.cancel(bill.id);
             showToast("Factura anulada correctamente", "success", "Éxito");
             // Redirect to invoices list
-            router.push("/invoices");
+            router.push("/sales/invoices");
         } catch (error: any) {
             console.error("Error al anular la factura:", error);
             const errorData = error.response?.data || error.data || error;
@@ -85,7 +85,7 @@ export function InvoiceDetailHeader({
             <div className="flex flex-wrap items-center gap-2">
                 {canEdit && (
                     <Button variant="outline" size="sm" asChild className={defaultBtnClass}>
-                        <Link href={`/invoices/${bill.id}/edit`}>
+                        <Link href={`/sales/invoices/${bill.id}/edit`}>
                             <Pencil className="w-4 h-4 mr-2" /> Editar
                         </Link>
                     </Button>
@@ -129,7 +129,7 @@ export function InvoiceDetailHeader({
                     variant="outline" 
                     size="sm" 
                     className={defaultBtnClass}
-                    onClick={() => router.push(`/payments/new?customer_id=${bill?.customer_id || bill?.contact_id || ''}&invoice_id=${bill?.id || ''}`)}
+                    onClick={() => router.push(`/sales/payments/new?customer_id=${bill?.customer_id || bill?.contact_id || ''}&invoice_id=${bill?.id || ''}`)}
                 >
                     <Plus className="w-4 h-4 mr-2" /> Agregar pago
                 </Button>
@@ -147,13 +147,13 @@ export function InvoiceDetailHeader({
                         <DropdownMenuItem className="cursor-pointer hover:bg-slate-50">Aplicar anticipo</DropdownMenuItem>
                         <DropdownMenuItem 
                             className="cursor-pointer hover:bg-slate-50"
-                            onClick={() => router.push(`/returns/new?clientId=${bill?.customer_id || bill?.contact_id || ''}&invoiceId=${bill?.id || ''}`)}
+                            onClick={() => router.push(`/sales/returns/new?clientId=${bill?.customer_id || bill?.contact_id || ''}&invoiceId=${bill?.id || ''}`)}
                         >
                             Aplicar nota de crédito
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             className="cursor-pointer hover:bg-slate-50"
-                            onClick={() => router.push(`/debit-notes/new?clientId=${bill?.customer_id || bill?.contact_id || ''}&invoiceId=${bill?.id || ''}`)}
+                            onClick={() => router.push(`/expenses/debit-notes/new?clientId=${bill?.customer_id || bill?.contact_id || ''}&invoiceId=${bill?.id || ''}`)}
                         >
                             Aplicar nota de débito
                         </DropdownMenuItem>

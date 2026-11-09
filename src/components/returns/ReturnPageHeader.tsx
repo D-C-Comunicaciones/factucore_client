@@ -70,7 +70,7 @@ export function ReturnPageHeader({ onNavigate }: ReturnPageHeaderProps) {
           <Button
             size="sm"
             className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium cursor-pointer"
-            onClick={() => router.push("/returns/new")}
+            onClick={() => router.push("/sales/returns/new")}
           >
             <Plus className="w-4 h-4 mr-1.5" />
             Nueva devolución

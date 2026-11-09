@@ -95,7 +95,7 @@ export function ItemHeader({
                 <Button
                     variant="outline"
                     className="h-auto px-3 py-1 rounded-lg border border-slate-300 bg-white text-foreground hover:bg-slate-50 transition-colors shadow-none"
-                    onClick={() => router.push(`/invoices/new?item=${item.id}`)}
+                    onClick={() => router.push(`/sales/invoices/new?item=${item.id}`)}
                 >
                     <Plus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                     <span className="font-medium text-xs text-slate-800">Facturar este ítem</span>

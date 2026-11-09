@@ -232,7 +232,7 @@ export function PaymentInvoicesList({ contactId, formState, setFormState, formEr
                 <TableRow key={inv.id} className="hover:bg-slate-50/50">
                   <TableCell className="font-medium">
                     <Link 
-                      href={`/invoices/${inv.id}`} 
+                      href={`/sales/invoices/${inv.id}`} 
                       target="_blank" 
                       className="text-slate-900 hover:bg-slate-100 hover:text-slate-900 px-2 py-1 rounded -ml-2 transition-colors cursor-pointer inline-block"
                     >

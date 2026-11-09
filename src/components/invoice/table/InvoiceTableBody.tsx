@@ -78,7 +78,7 @@ export function InvoiceTableBody({
           <button
             type="button"
             className="cursor-pointer inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-6 text-sm font-medium text-[#003B73] hover:bg-gray-50 transition-colors shadow-sm"
-            onClick={() => router.push("/invoices/new")}
+            onClick={() => router.push("/sales/invoices/new")}
           >
             Crear primera factura
           </button>
@@ -173,7 +173,7 @@ export function InvoiceTableBody({
                           className={isClickable ? "cursor-pointer" : ""}
                           onClick={() => {
                             if (isClickable) {
-                              router.push(`/invoices/${row.original.id}`);
+                              router.push(`/sales/invoices/${row.original.id}`);
                             }
                           }}
                         >

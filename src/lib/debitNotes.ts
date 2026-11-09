@@ -62,6 +62,15 @@ export class DebitNotesService {
     }
 
     /**
+     * PATCH /debit-notes/{id}
+     * Edición mínima (cliente, nota, observación) — solo mientras no esté aprobada por la DIAN.
+     */
+    static async update(id: number | string, data: any): Promise<any> {
+        const res = await apiClient.patch<any>(`/debit-notes/${id}`, data);
+        return res?.data || res;
+    }
+
+    /**
      * GET /debit-notes/{id}
      * Muestra los detalles de una nota de débito.
      */

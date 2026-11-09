@@ -25,7 +25,7 @@ export function PurchaseOrderDetailHeader({
 
     return (
         <div>
-            <Link href="/purchase-orders" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
+            <Link href="/sales/purchase-orders" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-2">
                 <ArrowLeft className="w-4 h-4" /> Volver a órdenes de compra recibidas
             </Link>
             <div className="flex flex-wrap items-center justify-between gap-3">

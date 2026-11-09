@@ -1,0 +1,38 @@
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { usePurchaseOrder } from "@/hooks/purchaseOrders/usePurchaseOrders";
+import { NewPurchaseOrderForm } from "@/components/purchase-order/new/NewPurchaseOrderForm";
+
+export default function EditPurchaseOrderPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params?.id as string;
+
+  const { data: purchaseOrder, isLoading, isError } = usePurchaseOrder(id);
+
+  if (isLoading) {
+    return (
+      <div className="w-full min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError || !purchaseOrder) {
+    return (
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-3">
+        <p className="text-lg font-semibold text-gray-700">No se encontró la orden de compra</p>
+        <button
+          onClick={() => router.push("/sales/purchase-orders")}
+          className="text-primary text-sm font-medium hover:underline"
+        >
+          Volver al listado
+        </button>
+      </div>
+    );
+  }
+
+  return <NewPurchaseOrderForm mode="edit" purchaseOrderId={id} initialData={purchaseOrder} />;
+}

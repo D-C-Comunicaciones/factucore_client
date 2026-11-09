@@ -185,7 +185,8 @@ export function NewInternalPurchaseOrderMain({
                 value={formState.contact_id || ""}
                 onValueChange={(val) => setFormState((prev: any) => ({ ...prev, contact_id: val }))}
                 options={providerOptions}
-                placeholder={loadingProviders ? "Cargando proveedores..." : "Seleccionar proveedor"}
+                loading={loadingProviders}
+                placeholder="Seleccionar proveedor"
                 searchPlaceholder="Buscar proveedor..."
                 className={`flex-1 h-9 ${errors?.contact_id ? "border-destructive" : ""}`}
               />

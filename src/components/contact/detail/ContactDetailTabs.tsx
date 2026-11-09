@@ -216,7 +216,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
                                     <tr
                                         key={p.id || idx}
                                         className={rowClass}
-                                        onClick={() => p.id && router.push(`/payments/${p.id}`)}
+                                        onClick={() => p.id && router.push(`/sales/payments/${p.id}`)}
                                     >
                                         <td className="py-3.5 px-4 text-slate-800 font-medium">{formatDate(p.payment_date)}</td>
                                         <td className="py-3.5 px-4 text-center text-slate-700 font-medium">{p.number || p.id}</td>
@@ -254,7 +254,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
                                     <tr
                                         key={inv.id || idx}
                                         className={rowClass}
-                                        onClick={() => inv.id && router.push(`/invoices/${inv.id}`)}
+                                        onClick={() => inv.id && router.push(`/sales/invoices/${inv.id}`)}
                                     >
                                         <td className="py-3.5 px-4 text-slate-800 font-medium">{formatDate(inv.issue_date)}</td>
                                         <td className="py-3.5 px-4 text-center text-slate-800 font-semibold">{inv.number}</td>
@@ -304,7 +304,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
                                     <tr
                                         key={cn.id || idx}
                                         className={rowClass}
-                                        onClick={() => cn.id && router.push(`/returns/${cn.id}`)}
+                                        onClick={() => cn.id && router.push(`/sales/returns/${cn.id}`)}
                                     >
                                         <td className="py-3.5 px-4 text-slate-800 font-medium">{formatDate(cn.issue_date)}</td>
                                         <td className="py-3.5 px-4 text-center text-slate-800 font-semibold">{cn.number}</td>
@@ -353,7 +353,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
                                     <tr
                                         key={q.id || idx}
                                         className={rowClass}
-                                        onClick={() => q.id && router.push(`/quotes/${q.id}`)}
+                                        onClick={() => q.id && router.push(`/sales/quotes/${q.id}`)}
                                     >
                                         <td className="py-3.5 px-4 text-slate-800 font-medium">{formatDate(q.issue_date)}</td>
                                         <td className="py-3.5 px-4 text-center text-slate-800 font-semibold">{q.number}</td>
@@ -388,7 +388,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
                                     <tr
                                         key={r.id || idx}
                                         className={rowClass}
-                                        onClick={() => r.id && router.push(`/remissions/${r.id}`)}
+                                        onClick={() => r.id && router.push(`/sales/remissions/${r.id}`)}
                                     >
                                         <td className="py-3.5 px-4 text-slate-800 font-medium">{formatDate(r.issue_date)}</td>
                                         <td className="py-3.5 px-4 text-center text-slate-800 font-semibold">{r.number}</td>
@@ -423,7 +423,7 @@ export function ContactDetailTabs({ documents = emptyDocuments }: ContactDetailT
                                     <tr
                                         key={po.id || idx}
                                         className={rowClass}
-                                        onClick={() => po.id && router.push(`/purchase-orders/${po.id}`)}
+                                        onClick={() => po.id && router.push(`/sales/purchase-orders/${po.id}`)}
                                     >
                                         <td className="py-3.5 px-4 text-slate-800 font-medium">{formatDate(po.issue_date)}</td>
                                         <td className="py-3.5 px-4 text-center text-slate-800 font-semibold">{po.number}</td>

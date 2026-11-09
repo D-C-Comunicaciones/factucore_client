@@ -48,7 +48,7 @@ export function PaymentDetailAccountingAccounts({ invoice }: PaymentDetailAccoun
           <tbody className="divide-y divide-slate-200">
             <tr className="hover:bg-slate-50 transition-colors">
               <td className="py-3 px-4 font-medium text-primary">
-                <Link href={`/invoices/${invoice.id}`} className="hover:underline cursor-pointer">
+                <Link href={`/sales/invoices/${invoice.id}`} className="hover:underline cursor-pointer">
                   {invoice.number}
                 </Link>
               </td>

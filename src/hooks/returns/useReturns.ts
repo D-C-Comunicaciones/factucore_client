@@ -70,3 +70,16 @@ export function useSendCreditNote() {
         },
     });
 }
+
+export function useUpdateCreditNote() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }: { id: number | string; data: any }) => {
+            const res: any = await CreditNotesService.update(id, data);
+            return res;
+        },
+        onSuccess: (_data, { id }) => {
+            queryClient.invalidateQueries({ queryKey: CREDIT_NOTE_KEY(id) });
+        },
+    });
+}
