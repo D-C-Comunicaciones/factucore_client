@@ -70,12 +70,57 @@ export interface TaxRate {
     code: string;
 }
 
+// Referencia liviana a una cuenta del catálogo contable, tal como la devuelven las relaciones
+// payableAccount/discountableAccount/receivableAccount (ver app/Models/Account.php en el backend).
+export interface CatalogAccountRef {
+    id: number;
+    code: string;
+    name: string;
+    nature: "debito" | "credito";
+}
+
 export interface Tax {
     id: number;
     code: string;
     name: string;
-    description: string;
-    tax_rates: TaxRate[];
+    description: string | null;
+    tax_rates?: TaxRate[];
+    // Cuenta pasiva — impuesto generado en ventas (ej. IVA/ICA/INC por pagar).
+    payable_account_id: number | null;
+    payable_account: CatalogAccountRef | null;
+    // Cuenta activa — impuesto descontable en compras (típicamente solo IVA).
+    discountable_account_id: number | null;
+    discountable_account: CatalogAccountRef | null;
+}
+
+export interface WithholdingRateItem {
+    id: number;
+    name: string;
+    rate: number;
+    type: string;
+}
+
+export interface Withholding {
+    id: number;
+    code: string;
+    name: string;
+    rates: WithholdingRateItem[];
+    // Cuenta pasiva — retención practicada a un proveedor (Bill/Documento Soporte).
+    payable_account_id: number | null;
+    payable_account: CatalogAccountRef | null;
+    // Cuenta activa — retención sufrida por un cliente (Factura de venta).
+    receivable_account_id: number | null;
+    receivable_account: CatalogAccountRef | null;
+}
+
+export interface UpdateTaxAccountsPayload {
+    payable_account_id?: number | null;
+    discountable_account_id?: number | null;
+}
+
+export interface UpdateWithholdingAccountsPayload {
+    payable_account_id?: number | null;
+    receivable_account_id?: number | null;
 }
 
 export interface UnitMeasure {

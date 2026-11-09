@@ -109,6 +109,7 @@ export default function EditSupportDocumentPage() {
                     return {
                         id: String(l.id || `line-${idx}`),
                         item_id: l.product_id || null,
+                        account_id: l.account_id || null,
                         standard_code: l.item_snapshot?.type_item_identification?.code || '',
                         item: l.item_snapshot?.name || l.description || '',
                         description: l.description || '',
@@ -217,6 +218,7 @@ export default function EditSupportDocumentPage() {
 
                 return {
                     item_id: line.item_id ?? undefined,
+                    account_id: line.account_id ? Number(line.account_id) : undefined,
                     description: line.description || line.item || undefined,
                     quantity: Number(line.cantidad) || 1,
                     price: Number(line.precio) || 0,
@@ -246,6 +248,7 @@ export default function EditSupportDocumentPage() {
                 resolution_id: selectedResolutionId ?? undefined,
                 issue_date: formState.operation_date,
                 note: formState.notes || undefined,
+                warehouse_id: warehouseId ? Number(warehouseId) : undefined,
                 lines,
                 allowance_charges: allowanceCharges.length > 0 ? allowanceCharges : undefined,
                 withholding_taxes: withholdingTaxes.length > 0 ? withholdingTaxes : undefined,

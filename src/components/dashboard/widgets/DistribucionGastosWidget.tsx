@@ -4,6 +4,7 @@ import { Label, Pie, PieChart } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from 'lucide-react';
+import { formatAmount } from "@/utils/format-currency";
 
 interface GastoItem {
   concepto: string;
@@ -83,7 +84,7 @@ export function DistribucionGastosWidget({ gastos, total }: DistribucionGastosWi
                             Total
                           </tspan>
                           <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 18} className="fill-foreground text-xl font-bold">
-                            ${totalGastos.toFixed(2)}
+                            ${formatAmount(totalGastos)}
                           </tspan>
                         </text>
                       );
@@ -114,7 +115,7 @@ export function DistribucionGastosWidget({ gastos, total }: DistribucionGastosWi
                       <span className="text-gray-600">{gasto.concepto}</span>
                     </div>
                   </td>
-                  <td className="text-right py-3 text-gray-600 px-2">${gasto.valor.toFixed(2)}</td>
+                  <td className="text-right py-3 text-gray-600 px-2">${formatAmount(gasto.valor)}</td>
                   <td className="text-right py-3 text-gray-500 px-2">{gasto.porcentaje}%</td>
                 </tr>
               ))}

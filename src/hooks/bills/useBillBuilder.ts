@@ -14,6 +14,9 @@ export interface BillLineFormState {
     discountValue?: number | string;
     discountType?: "percentage" | "fixed";
     taxObj?: { id?: number | string; tax_id?: number | string; tax_rate_id?: number | string; name?: string; rate?: number | string; percentage?: number | string; type?: string } | null;
+    // Override opcional de cuenta contable — si no se indica, el backend la resuelve
+    // automáticamente desde el ítem o la cuenta de gastos/inventario por defecto del catálogo.
+    account_id?: number | string | null;
 }
 
 export interface BillWithholdingFormState {
@@ -55,22 +58,12 @@ export function useBillBuilder(initialData?: any) {
                 discountValue: it.discount ?? it.discountValue ?? 0,
                 discountType: it.discount_type || it.discountType || "percentage",
                 taxObj: it.tax || it.taxObj || null,
+                account_id: it.account_id ?? null,
             }));
         }
-        return [
-            {
-                id: `line-0-${Date.now()}`,
-                item_id: null,
-                item: "",
-                description: "",
-                referencia: "",
-                cantidad: 1,
-                precio: 0,
-                discountValue: 0,
-                discountType: "percentage",
-                taxObj: null,
-            },
-        ];
+        // Igual que factura de venta/orden de compra: arranca vacío y muestra el
+        // estado "No hay ítems agregados" hasta que el usuario agrega una línea.
+        return [];
     });
 
     const [withholdings, setWithholdings] = useState<BillWithholdingFormState[]>(() => {
@@ -120,6 +113,7 @@ export function useBillBuilder(initialData?: any) {
             discountValue: 0,
             discountType: "percentage",
             taxObj: null,
+            account_id: null,
         };
         setItems((prev) => [...prev, newLine]);
     };
@@ -136,7 +130,6 @@ export function useBillBuilder(initialData?: any) {
     };
 
     const removeItem = (id: string) => {
-        if (items.length <= 1) return;
         setItems((prev) => prev.filter((item) => item.id !== id));
     };
 
@@ -208,6 +201,10 @@ export function useBillBuilder(initialData?: any) {
         let subtotal = 0;
         let discountsAmount = 0;
         let taxesAmount = 0;
+        // Key: tax_id (o el rate si no hay tax_id), Value: { name, amount } — igual que
+        // en factura de venta, agrupa los impuestos de todas las líneas por tipo para
+        // mostrar "IVA 19% $X" una sola vez aunque varias líneas usen la misma tarifa.
+        const taxBreakdown: Record<string, { name: string; amount: number }> = {};
 
         items.forEach((item) => {
             const qty = Number(item.cantidad) || 0;
@@ -224,9 +221,20 @@ export function useBillBuilder(initialData?: any) {
             discountsAmount += lineDiscount;
 
             const baseTaxable = Math.max(0, lineSubtotal - lineDiscount);
-            if (item.taxObj) {
-                const rate = Number(item.taxObj.rate ?? item.taxObj.percentage ?? 0);
-                taxesAmount += (baseTaxable * rate) / 100;
+            const taxObj: any = item.taxObj;
+            if (taxObj) {
+                const rate = Number(taxObj.rate ?? taxObj.percentage ?? 0);
+                const lineTax = (baseTaxable * rate) / 100;
+                taxesAmount += lineTax;
+
+                if (rate > 0 && lineTax > 0) {
+                    const taxKey = String(taxObj.tax_id ?? taxObj.tax_rate_id ?? taxObj.id ?? rate);
+                    const taxName = taxObj.name || `IVA (${rate.toFixed(2)}%)`;
+                    if (!taxBreakdown[taxKey]) {
+                        taxBreakdown[taxKey] = { name: taxName, amount: 0 };
+                    }
+                    taxBreakdown[taxKey].amount += lineTax;
+                }
             }
         });
 
@@ -246,6 +254,7 @@ export function useBillBuilder(initialData?: any) {
             discountsAmount,
             subtotalAfterDiscount,
             taxesAmount,
+            taxBreakdown,
             withholdingsAmount,
             payableAmount,
         };

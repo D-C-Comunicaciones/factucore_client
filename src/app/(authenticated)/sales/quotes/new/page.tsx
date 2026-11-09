@@ -204,7 +204,7 @@ function NewQuotePageContent() {
 
   const bankAccounts = catalogData.bankAccounts?.map((ba: any) => ({
     value: ba.id.toString(),
-    label: ba.name
+    label: ba.account_number ? `${ba.name} - ${ba.account_number}` : ba.name
   })) || [];
 
   // Data para el main

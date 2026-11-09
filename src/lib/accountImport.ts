@@ -10,6 +10,7 @@ export interface ImportRow {
     uso_cuenta: string;
     tipo_cuenta: "movimiento" | "mayor";
     ver_saldos_por_terceros: boolean;
+    descripcion: string;
 }
 
 export interface ImportWarning {

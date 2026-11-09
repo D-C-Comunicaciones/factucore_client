@@ -100,7 +100,7 @@ function SidebarMenuItems({
               {isExpanded && (
                 <div
                   className={`
-                    ml-6 pl-3 pr-0 mr-[1.125rem] border-l border-sidebar-border mt-1 space-y-1 overflow-hidden
+                    ml-6 pl-3 mr-1.5 border-l border-sidebar-border mt-1 space-y-1 overflow-hidden
                     transition-all duration-150 ease-in-out
                     ${isMenuOpen
                       ? 'max-h-[500px] opacity-100'
@@ -182,6 +182,28 @@ function SidebarMenuItems({
                               <Plus className="w-4 h-4 text-primary" />
                             </Link>
                           )}
+
+                        {/* BOTÓN + de Bancos/Conciliaciones: no existe ruta "/new" dedicada, así
+                            que navega a la vista principal y le pide (vía query param) que abra
+                            de una vez el modal de creación. */}
+                        {!sub.isDisabled && (sub.label === "Bancos y cajas" || sub.label === "Conciliaciones bancarias") && (
+                          <Link
+                            href={sub.path + '?new=1'}
+                            className="
+                              flex items-center justify-center w-10 h-full
+                              opacity-0 group-hover:opacity-100
+                              transition-all
+                              hover:bg-primary/20
+                              cursor-pointer
+                            "
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (sub.path) onNavigate(sub.path + '?new=1');
+                            }}
+                          >
+                            <Plus className="w-4 h-4 text-primary" />
+                          </Link>
+                        )}
                       </div>
                     );
                   })}
@@ -307,7 +329,7 @@ export function Sidebar({
         {/* MENU */}
         <nav className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
-            <div className={`flex flex-col ${!isSidebarExpanded ? 'items-center px-0' : 'pl-2 pr-0'} py-0`}>
+            <div className={`flex flex-col ${!isSidebarExpanded ? 'items-center px-0' : 'pl-2 pr-2'} py-0`}>
               {/* INICIO y BANDEJA DE ENTRADA */}
               <div className={isSidebarExpanded ? 'space-y-0.5 mt-2' : 'space-y-0 mt-2'}>
                 <SidebarMenuItems

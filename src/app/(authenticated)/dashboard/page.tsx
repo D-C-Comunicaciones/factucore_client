@@ -27,19 +27,8 @@ import { DistribucionGastosWidget } from '@/components/dashboard/widgets/Distrib
 import { ProductosMasVendidosWidget } from '@/components/dashboard/widgets/ProductosMasVendidosWidget';
 import { MejoresClientesWidget } from '@/components/dashboard/widgets/MejoresClientesWidget';
 import { DeleteWidgetDialog } from '@/components/dashboard/DeleteWidgetDialog';
-import {
-  flujoTransaccionesMock,
-  totalVentasMock,
-  distribucionGastosMock,
-  productosMasVendidosMock,
-  mejoresClientesMock,
-  cuentasPorCobrarMock,
-  cuentasPorPagarMock,
-  impuestosMock,
-  productosVendidosMock,
-  devolucionesMock,
-  clientesConVentasMock,
-} from '@/data/dashboardMockData';
+import { useDashboardStats, MappedDashboardData } from '@/hooks/dashboard/useDashboardStats';
+import type { DashboardRange } from '@/lib/dashboard';
 import { TotalVentasWidget } from '@/components/dashboard/widgets/TotalVentasWidget';
 import { CuentasPorCobrarWidget } from '@/components/dashboard/widgets/CuentasPorCobrarWidget';
 import { CuentasPorPagarWidget } from '@/components/dashboard/widgets/CuentasPorPagarWidget';
@@ -62,9 +51,10 @@ interface Widget {
 interface SortableWidgetProps {
   widget: Widget;
   onRemove: (id: string) => void;
+  data: MappedDashboardData;
 }
 
-function SortableWidget({ widget, onRemove }: SortableWidgetProps) {
+function SortableWidget({ widget, onRemove, data }: SortableWidgetProps) {
   const {
     attributes,
     listeners,
@@ -83,37 +73,37 @@ function SortableWidget({ widget, onRemove }: SortableWidgetProps) {
   const renderWidgetContent = () => {
     switch (widget.type) {
       case 'cuentas-cobrar':
-        return <CuentasPorCobrarWidget {...cuentasPorCobrarMock} />;
+        return <CuentasPorCobrarWidget {...data.cuentasPorCobrar} />;
 
       case 'cuentas-pagar':
-        return <CuentasPorPagarWidget {...cuentasPorPagarMock} />;
+        return <CuentasPorPagarWidget {...data.cuentasPorPagar} />;
 
       case 'impuestos':
-        return <ImpuestosWidget {...impuestosMock} />;
+        return <ImpuestosWidget {...data.impuestos} />;
 
       case 'productos':
-        return <ProductosVendidosSimpleWidget {...productosVendidosMock} />;
+        return <ProductosVendidosSimpleWidget {...data.productosVendidos} />;
 
       case 'devoluciones':
-        return <DevolucionesWidget {...devolucionesMock} />;
+        return <DevolucionesWidget {...data.devoluciones} />;
 
       case 'clientes':
-        return <ClientesConVentasWidget {...clientesConVentasMock} />;
+        return <ClientesConVentasWidget {...data.clientesConVentas} />;
 
       case 'ventas':
-        return <TotalVentasWidget {...totalVentasMock} />;
+        return <TotalVentasWidget {...data.totalVentas} />;
 
       case 'flujo-transacciones':
-        return <FlujoTransaccionesWidget {...flujoTransaccionesMock} />;
+        return <FlujoTransaccionesWidget {...data.flujoTransacciones} />;
 
       case 'distribucion-gastos':
-        return <DistribucionGastosWidget {...distribucionGastosMock} />;
+        return <DistribucionGastosWidget {...data.distribucionGastos} />;
 
       case 'productos-vendidos':
-        return <ProductosMasVendidosWidget {...productosMasVendidosMock} />;
+        return <ProductosMasVendidosWidget {...data.productosMasVendidos} />;
 
       case 'mejores-clientes':
-        return <MejoresClientesWidget {...mejoresClientesMock} />;
+        return <MejoresClientesWidget {...data.mejoresClientes} />;
 
       default:
         return null;
@@ -163,12 +153,20 @@ function SortableWidget({ widget, onRemove }: SortableWidgetProps) {
   );
 }
 
+const RANGE_BY_SELECTOR: Record<string, DashboardRange> = {
+  current: 'current_month',
+  last3: 'last_3_months',
+  last6: 'last_6_months',
+};
+
 export default function DashboardPage() {
-  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [selectedMonth, setSelectedMonth] = useState<string>('current');
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [widgetToDelete, setWidgetToDelete] = useState<{ id: string; title: string } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  const range = RANGE_BY_SELECTOR[selectedMonth] ?? 'current_month';
+  const { mapped, isLoading: isLoadingData, isError, refetch } = useDashboardStats(range);
 
   // Cargar widgets desde localStorage al montar el componente
   useEffect(() => {
@@ -185,18 +183,6 @@ export default function DashboardPage() {
     }
     setIsLoaded(true);
   }, []);
-
-  // Simular carga de datos cuando cambia el mes
-  useEffect(() => {
-    if (isLoaded) {
-      setIsLoadingData(true);
-      // Simular una petición a la API
-      const timer = setTimeout(() => {
-        setIsLoadingData(false);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedMonth, isLoaded]);
 
   // Guardar widgets en localStorage cada vez que cambien
   useEffect(() => {
@@ -370,6 +356,22 @@ export default function DashboardPage() {
         {/* CONTENT */}
         {widgets.length === 0 ? (
           <EmptyDashboardState onAddPredefinedWidgets={handleAddPredefinedWidgets} />
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+            <p className="text-sm text-muted-foreground">No se pudieron cargar las estadísticas del negocio.</p>
+            <button
+              onClick={() => refetch()}
+              className="text-sm font-medium text-primary hover:underline cursor-pointer"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : isLoadingData || !mapped ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-[minmax(90px,auto)]">
+            {widgets.map((widget) => (
+              <WidgetSkeleton key={widget.id} size={widget.size} />
+            ))}
+          </div>
         ) : (
           <DndContext
             sensors={sensors}
@@ -386,6 +388,7 @@ export default function DashboardPage() {
                     key={widget.id}
                     widget={widget}
                     onRemove={handleRemoveWidget}
+                    data={mapped}
                   />
                 ))}
               </div>

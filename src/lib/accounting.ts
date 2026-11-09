@@ -18,6 +18,18 @@ export interface ChartAccount {
     has_movements: boolean;
 }
 
+// "Comportamiento automático": qué cuenta usa JournalEntryService::defaultAccountForUsageCode()
+// por defecto para este uso (SALES, BANK, EXPENSE, etc.) cuando ninguna cuenta/línea explícita lo
+// indica. default_account_id puede fijarse aquí o durante el wizard de importación.
+export interface AccountUsage {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    default_account_id: number | null;
+    default_account?: { id: number; code: string; name: string } | null;
+}
+
 export interface CreateAccountPayload {
     account_type_id: number;
     account_usage_id?: number | null;
@@ -31,10 +43,11 @@ export interface CreateAccountPayload {
 }
 
 export const accountsApi = {
-    list: async (params?: { search?: string; postable_only?: boolean }): Promise<ApiResponse<{ accounts: ChartAccount[] }>> => {
+    list: async (params?: { search?: string; postable_only?: boolean; account_type_code?: string }): Promise<ApiResponse<{ accounts: ChartAccount[] }>> => {
         const query = new URLSearchParams();
         if (params?.search) query.append("search", params.search);
         if (params?.postable_only) query.append("postable_only", "1");
+        if (params?.account_type_code) query.append("account_type_code", params.account_type_code);
         const qs = query.toString();
         return apiClient.get<{ accounts: ChartAccount[] }>(`/catalogs/accounts${qs ? `?${qs}` : ""}`);
     },
@@ -50,8 +63,11 @@ export const accountsApi = {
     accountTypes: async (): Promise<ApiResponse<{ account_types: any[] }>> => {
         return apiClient.get<{ account_types: any[] }>("/catalogs/account-types");
     },
-    accountUsages: async (): Promise<ApiResponse<{ account_usages: any[] }>> => {
-        return apiClient.get<{ account_usages: any[] }>("/catalogs/account-usages");
+    accountUsages: async (): Promise<ApiResponse<{ account_usages: AccountUsage[] }>> => {
+        return apiClient.get<{ account_usages: AccountUsage[] }>("/catalogs/account-usages");
+    },
+    updateAccountUsage: async (id: number, payload: { default_account_id: number | null }): Promise<ApiResponse<{ account_usage: AccountUsage }>> => {
+        return apiClient.patch<{ account_usage: AccountUsage }>(`/catalogs/account-usages/${id}`, payload);
     },
     chooseCatalog: async (catalog: "niif" | "puc"): Promise<ApiResponse<{ accounts: number }>> => {
         return apiClient.post<{ accounts: number }>("/catalogs/accounts/choose-catalog", { catalog });

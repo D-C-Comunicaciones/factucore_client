@@ -18,6 +18,9 @@ export interface SupportDocumentLineFormState {
     taxObj?: any | null;
     taxes?: { tax_id: number; rate: number; name?: string }[];
     allowance_charges?: any[];
+    // Override opcional de cuenta contable — si no se indica, el backend la resuelve
+    // automáticamente desde el ítem o la cuenta de gastos/inventario por defecto del catálogo.
+    account_id?: number | string | null;
 }
 
 export interface SupportDocumentWithholdingFormState {

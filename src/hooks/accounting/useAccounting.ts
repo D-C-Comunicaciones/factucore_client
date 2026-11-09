@@ -4,7 +4,7 @@ import { accountsApi, journalEntriesApi, CreateAccountPayload, CreateJournalEntr
 const ACCOUNTS_KEY = ["accounts"];
 const JOURNAL_ENTRIES_KEY = ["journal-entries"];
 
-export function useAccountsList(params?: { search?: string; postable_only?: boolean }) {
+export function useAccountsList(params?: { search?: string; postable_only?: boolean; account_type_code?: string }) {
     return useQuery({
         queryKey: [...ACCOUNTS_KEY, params],
         queryFn: async () => {
@@ -92,6 +92,22 @@ export function useAccountUsages() {
         queryFn: async () => {
             const res: any = await accountsApi.accountUsages();
             return res?.data?.account_usages ?? [];
+        },
+    });
+}
+
+export function useUpdateAccountUsage() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, defaultAccountId }: { id: number; defaultAccountId: number | null }) => {
+            const res: any = await accountsApi.updateAccountUsage(id, { default_account_id: defaultAccountId });
+            if (!res || res.status !== "success") {
+                throw new Error(res?.message || "Error al actualizar el comportamiento automático");
+            }
+            return res.data?.account_usage;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["account-usages"] });
         },
     });
 }

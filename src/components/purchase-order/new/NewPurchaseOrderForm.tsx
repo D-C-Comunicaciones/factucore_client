@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { ChevronRight, HelpCircle, Inbox, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -18,6 +19,7 @@ import { useCatalogs } from "@/hooks/useCatalogs";
 import { PurchaseOrderLineItemsTable } from "@/components/purchase-order/PurchaseOrderLineItemsTable";
 import { PurchaseOrderGlobalAdjustments } from "@/components/purchase-order/PurchaseOrderGlobalAdjustments";
 import { QuickCreateItemModal } from "@/components/invoice/new/QuickCreateItemModal";
+import { NewTaxRateModal } from "@/components/taxes/NewTaxRateModal";
 import type { PurchaseOrder } from "@/types/purchaseOrder";
 
 function toDateInput(dateStr?: string): Date {
@@ -40,6 +42,7 @@ export function NewPurchaseOrderForm({
   initialData?: PurchaseOrder;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const catalogData = useCatalogs();
   const builder = usePurchaseOrderBuilder();
   const createPurchaseOrder = useCreatePurchaseOrder();
@@ -55,6 +58,7 @@ export function NewPurchaseOrderForm({
   const [loadingSave, setLoadingSave] = useState(false);
   const [isQuickCreateItemModalOpen, setIsQuickCreateItemModalOpen] = useState(false);
   const [quickCreateItemTargetRow, setQuickCreateItemTargetRow] = useState<string | null>(null);
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchContacts = async () => {
@@ -459,8 +463,36 @@ export function NewPurchaseOrderForm({
             const price = parseFloat(createdItem.base_price) || parseFloat(createdItem.total_price) || parseFloat(createdItem.price) || 0;
             builder.updateItem(quickCreateItemTargetRow, "precio", price);
             builder.updateItem(quickCreateItemTargetRow, "cantidad", 1);
+
+            const itemTaxes = createdItem.tax_rates || createdItem.pricing?.tax_rates;
+            if (itemTaxes && itemTaxes.length > 0) {
+              const defaultTax = itemTaxes[0];
+              builder.updateItemTax(quickCreateItemTargetRow, {
+                tax_rate_id: defaultTax.tax_rate_id || defaultTax.id,
+                tax_id: defaultTax.tax_id,
+                code: defaultTax.tax_code || defaultTax.code,
+                name: defaultTax.name,
+                rate: parseFloat(defaultTax.rate || defaultTax.percentage || "0"),
+                type: defaultTax.type || "percentage",
+              });
+            } else {
+              builder.updateItemTax(quickCreateItemTargetRow, null);
+            }
+
+            queryClient.invalidateQueries({ queryKey: ["items"] });
           }
           setIsQuickCreateItemModalOpen(false);
+        }}
+      />
+
+      <button id="open-new-tax-modal" className="hidden" onClick={() => setIsTaxModalOpen(true)} />
+
+      <NewTaxRateModal
+        open={isTaxModalOpen}
+        onOpenChange={setIsTaxModalOpen}
+        taxTypes={catalogData?.taxTypes || []}
+        onSave={async () => {
+          // El componente NewTaxRateModal ya actualiza el cache de impuestos.
         }}
       />
     </div>

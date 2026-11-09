@@ -46,7 +46,6 @@ function NewPaymentPageContent() {
     let errors: Record<string, boolean> = {};
 
     if (!formState.contact_id) errors.contact_id = true;
-    if (!formState.bank_account_id) errors.bank_account_id = true;
     if (!formState.payment_form_id) errors.payment_form_id = true;
     if (!formState.payment_date) errors.payment_date = true;
 
@@ -74,7 +73,7 @@ function NewPaymentPageContent() {
     setFormErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      if (errors.contact_id || errors.bank_account_id || errors.payment_form_id || errors.payment_date) {
+      if (errors.contact_id || errors.payment_form_id || errors.payment_date) {
         showToast("Asegúrate de completar todos los campos marcados con *.", "error", "Revisa los campos obligatorios");
       } else if (errors.amounts) {
         showToast("Debes ingresar un valor a pagar mayor a cero.", "error");
@@ -90,10 +89,12 @@ function NewPaymentPageContent() {
 
     const basePayment: any = {
       contact_id: parseInt(formState.contact_id),
-      account_id: parseInt(formState.bank_account_id),
       payment_method_id: parseInt(formState.payment_form_id),
       payment_date: formattedDate,
     };
+    // Cuenta bancaria opcional: si no se indica, el backend resuelve la cuenta de
+    // bancos por defecto del catálogo (AccountUsage 'BANK').
+    if (formState.bank_account_id) basePayment.account_id = parseInt(formState.bank_account_id);
     if (formState.resolution_id) basePayment.resolution_id = parseInt(formState.resolution_id);
     if (formState.notes) basePayment.notes = formState.notes;
     if (formState.cost_center_id) basePayment.cost_center_id = parseInt(formState.cost_center_id);

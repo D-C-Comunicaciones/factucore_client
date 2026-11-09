@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Settings, HelpCircle, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import { CompanyHeaderPdfStyle } from "@/components/shared/CompanyHeaderPdfStyle
 import { ContactsService } from "@/lib/contacts";
 import { useItems } from "@/hooks/items/useItems";
 import { useCatalogs } from "@/hooks/useCatalogs";
+import { useAccountsList } from "@/hooks/accounting/useAccounting";
 import { usePurchaseOrdersList } from "@/hooks/purchaseOrders/usePurchaseOrders";
 import { showToast } from "@/components/sonner/CustomToaster";
 import type { Resolution } from "@/lib/resolutions";
@@ -100,6 +102,7 @@ export function NewSupportDocumentMain({
     setGlobalAdjustments: setGlobalAdjustmentsProp,
 }: NewSupportDocumentMainProps) {
     const catalogs = useCatalogs();
+    const queryClient = useQueryClient();
 
     const [isEditResolutionOpen, setIsEditResolutionOpen] = useState(false);
     const [isAddContactOpen, setIsAddContactOpen] = useState(false);
@@ -248,11 +251,33 @@ export function NewSupportDocumentMain({
     const handleQuickItemCreated = (newItem: any) => {
         if (!newItem) return;
         if (itemModalRowId) {
-            const defaultPrice = Number(newItem.price_amount ?? newItem.price ?? newItem.cost ?? 0);
+            const defaultPrice = Number(newItem.price_amount ?? newItem.price ?? newItem.cost ?? newItem.base_price ?? newItem.total_price ?? 0);
             builder.updateItem(itemModalRowId, "item_id", newItem.id);
             builder.updateItem(itemModalRowId, "item", newItem.name);
             builder.updateItem(itemModalRowId, "description", newItem.description || newItem.name);
+            builder.updateItem(itemModalRowId, "referencia", newItem.reference || newItem.reference_code || newItem.code || "");
             builder.updateItem(itemModalRowId, "precio", defaultPrice);
+
+            // El ítem recién creado no siempre trae tax_rates aplanado (según venga de
+            // creación básica o avanzada) — se revisan ambas formas, igual que en factura
+            // de venta, para que el impuesto quede preseleccionado sin que el usuario
+            // tenga que volver a elegirlo.
+            const itemTaxes = newItem.tax_rates || newItem.pricing?.tax_rates;
+            if (itemTaxes && itemTaxes.length > 0) {
+                const defaultTax = itemTaxes[0];
+                builder.updateItem(itemModalRowId, "taxObj", {
+                    tax_rate_id: defaultTax.tax_rate_id || defaultTax.id,
+                    tax_id: defaultTax.tax_id,
+                    code: defaultTax.tax_code || defaultTax.code,
+                    name: defaultTax.name,
+                    rate: parseFloat(defaultTax.rate || defaultTax.percentage || "0"),
+                    type: defaultTax.type || "percentage",
+                });
+            } else {
+                builder.updateItem(itemModalRowId, "taxObj", null);
+            }
+
+            queryClient.invalidateQueries({ queryKey: ["items"] });
         }
         setIsQuickCreateItemOpen(false);
         setItemModalRowId(null);
@@ -310,6 +335,14 @@ export function NewSupportDocumentMain({
         rate: Number(t.rate ?? t.percentage ?? 0),
         type: t.type || "percentage",
     }));
+
+    // Override opcional de cuenta contable por línea — si no se elige, el backend resuelve la
+    // cuenta de Inventario/Gastos automáticamente desde el ítem o el catálogo por defecto.
+    const { data: accountsData } = useAccountsList({ postable_only: true });
+    const accountOptions = [
+        { value: "", label: "Automática" },
+        ...(accountsData || []).map((a: any) => ({ value: String(a.id), label: `${a.code} — ${a.name}` })),
+    ];
 
     const retentionTypes = (catalogs.withholdingRates && catalogs.withholdingRates.length > 0)
         ? catalogs.withholdingRates.map((r: any) => ({
@@ -616,13 +649,14 @@ export function NewSupportDocumentMain({
                             <table className="w-full text-xs text-left min-w-[720px]">
                                 <thead>
                                     <tr className="border-b border-border bg-muted/40 text-muted-foreground font-medium">
-                                        <th className="px-3 py-2.5 font-medium w-[24%]">Concepto</th>
-                                        <th className="px-3 py-2.5 font-medium w-[15%]">Precio</th>
-                                        <th className="px-3 py-2.5 font-medium w-[15%]">Desc %</th>
-                                        <th className="px-3 py-2.5 font-medium w-[16%]">Impuesto</th>
-                                        <th className="px-3 py-2.5 font-medium w-[10%]">Cantidad</th>
-                                        <th className="px-3 py-2.5 font-medium w-[12%]">Descripción</th>
-                                        <th className="px-3 py-2.5 font-medium w-[12%] text-right">Total</th>
+                                        <th className="px-3 py-2.5 font-medium w-[20%]">Concepto</th>
+                                        <th className="px-3 py-2.5 font-medium w-[12%]">Precio</th>
+                                        <th className="px-3 py-2.5 font-medium w-[12%]">Desc %</th>
+                                        <th className="px-3 py-2.5 font-medium w-[13%]">Impuesto</th>
+                                        <th className="px-3 py-2.5 font-medium w-[8%]">Cantidad</th>
+                                        <th className="px-3 py-2.5 font-medium w-[10%]">Descripción</th>
+                                        <th className="px-3 py-2.5 font-medium w-[14%]">Cuenta contable</th>
+                                        <th className="px-3 py-2.5 font-medium w-[11%] text-right">Total</th>
                                         <th className="px-3 py-2.5 font-medium w-[6%] text-center"></th>
                                     </tr>
                                 </thead>
@@ -749,6 +783,18 @@ export function NewSupportDocumentMain({
                                                     />
                                                 </td>
 
+                                                {/* Cuenta contable */}
+                                                <td className="px-2 py-2 align-middle">
+                                                    <SearchableSelect
+                                                        value={line.account_id ? String(line.account_id) : ""}
+                                                        onValueChange={(val) => builder.updateItem(line.id, "account_id", val || null)}
+                                                        options={accountOptions}
+                                                        placeholder="Automática"
+                                                        searchPlaceholder="Buscar cuenta..."
+                                                        className="h-8 text-xs bg-white shadow-none hover:border-primary focus:border-primary transition-colors border-foreground/20"
+                                                    />
+                                                </td>
+
                                                 {/* Total */}
                                                 <td className="px-2 py-2 text-right text-xs font-medium text-foreground whitespace-nowrap align-middle">
                                                     ${new Intl.NumberFormat('es-CO').format(lineTotal)}
@@ -806,7 +852,7 @@ export function NewSupportDocumentMain({
                                                 <HelpCircle className="w-4 h-4 text-primary cursor-help hover:text-primary/70 transition-colors" />
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-slate-900 text-white px-3 py-2 text-xs rounded-lg font-medium shadow-xl max-w-[280px] text-center leading-relaxed">
-                                                Si no existe la retención, puedes crearla. Descubre cómo <a href="#" className="underline text-teal-400 hover:text-teal-300 font-medium">aquí</a>
+                                                Si no existe la retención, puedes crearla. Descubre cómo <a href="#" className="underline text-primary hover:text-primary/80 font-medium">aquí</a>
                                             </TooltipContent>
                                         </Tooltip>
                                     </div>
@@ -1057,8 +1103,8 @@ export function NewSupportDocumentMain({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="discount" className="text-sm cursor-pointer">Descuento</SelectItem>
-                                            <SelectItem value="charge" className="text-sm cursor-pointer">Cargo</SelectItem>
+                                            <SelectItem value="discount" className="text-sm cursor-pointer hover:bg-muted focus:bg-muted">Descuento</SelectItem>
+                                            <SelectItem value="charge" className="text-sm cursor-pointer hover:bg-muted focus:bg-muted">Cargo</SelectItem>
                                         </SelectContent>
                                     </Select>
 
@@ -1067,8 +1113,8 @@ export function NewSupportDocumentMain({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="percentage" className="text-sm cursor-pointer">%</SelectItem>
-                                            <SelectItem value="fixed" className="text-sm cursor-pointer">$</SelectItem>
+                                            <SelectItem value="percentage" className="text-sm cursor-pointer hover:bg-muted focus:bg-muted">%</SelectItem>
+                                            <SelectItem value="fixed" className="text-sm cursor-pointer hover:bg-muted focus:bg-muted">$</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1334,6 +1380,7 @@ export function NewSupportDocumentMain({
                 isOpen={isAddContactOpen}
                 onClose={() => setIsAddContactOpen(false)}
                 catalogData={catalogs}
+                prefilledData={{ contactTypes: ["proveedor"] } as any}
                 onCustomerCreated={(c: any) => {
                     if (c) {
                         setContactOptions((prev) => [

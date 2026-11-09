@@ -317,7 +317,7 @@ export function Header({
                   { parent: "Inventario", title: "Atributos", path: "/inventario/atributos", keywords: ["inventario", "atributos", "variantes", "tallas", "colores"] },
 
                   // Bancos
-                  { parent: "Bancos", title: "Gestión de bancos", path: "/bancos", keywords: ["bancos", "cuentas", "conciliacion", "banks", "dinero", "caja"] },
+                  { parent: "Bancos", title: "Gestión de bancos", path: "/banks", keywords: ["bancos", "cuentas", "conciliacion", "banks", "dinero", "caja"] },
 
                   // Contabilidad
                   { parent: "Contabilidad", title: "Asientos contables", path: "/contabilidad", keywords: ["contabilidad", "asientos", "libro diario", "accounting", "puc"] },

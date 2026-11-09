@@ -3,6 +3,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from 'lucide-react';
+import { formatAmount } from "@/utils/format-currency";
 
 interface VentasData {
   fecha: string;
@@ -36,7 +37,7 @@ export function TotalVentasWidget({ data, total, porcentaje }: TotalVentasWidget
           </Tooltip>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-xl font-bold text-gray-700">${total.toFixed(2)}</div>
+          <div className="text-xl font-bold text-gray-700">${formatAmount(total)}</div>
           <div className="text-xs text-gray-500">{porcentaje}%</div>
         </div>
       </div>

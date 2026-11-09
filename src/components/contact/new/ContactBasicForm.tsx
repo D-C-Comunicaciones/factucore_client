@@ -97,7 +97,7 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
         <button
           type="button"
           onClick={() => toggleContactType("cliente")}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-center gap-2 ${contactTypes.includes("cliente")
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-center gap-2 cursor-pointer ${contactTypes.includes("cliente")
             ? "bg-primary/10 text-primary border-primary/20"
             : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
             }`}
@@ -108,7 +108,7 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
         <button
           type="button"
           onClick={() => toggleContactType("proveedor")}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-center gap-2 ${contactTypes.includes("proveedor")
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-center gap-2 cursor-pointer ${contactTypes.includes("proveedor")
             ? "bg-primary/10 text-primary border-primary/20"
             : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
             }`}
@@ -179,7 +179,7 @@ export function ContactBasicForm({ catalogData, onAutocomplete }: ContactBasicFo
               type="button"
               onClick={onAutocomplete}
               disabled={autocompleting}
-              className="bg-[#2a59d9]/90 text-white hover:bg-[#2a59d9] h-9 text-xs font-bold px-4 rounded-lg flex items-center justify-center gap-1 transition-colors border-none disabled:opacity-50"
+              className="bg-[#2a59d9]/90 text-white hover:bg-[#2a59d9] h-9 text-xs font-bold px-4 rounded-lg flex items-center justify-center gap-1 transition-colors border-none disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               {autocompleting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

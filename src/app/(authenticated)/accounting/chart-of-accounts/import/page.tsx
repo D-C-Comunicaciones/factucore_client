@@ -266,7 +266,7 @@ export default function ImportChartOfAccountsPage() {
         pushHistory();
         setRows((prev) => [
             ...prev,
-            { key: makeRowKey(), nivel: null, codigo: "", nombre: "", elemento: "Activos", naturaleza: "debito", uso_cuenta: "", tipo_cuenta: "movimiento", ver_saldos_por_terceros: false },
+            { key: makeRowKey(), nivel: null, codigo: "", nombre: "", elemento: "Activos", naturaleza: "debito", uso_cuenta: "", tipo_cuenta: "movimiento", ver_saldos_por_terceros: false, descripcion: "" },
         ]);
     };
 
@@ -306,7 +306,7 @@ export default function ImportChartOfAccountsPage() {
     };
 
     const handleDownloadGrid = () => {
-        const header = ["Nivel", "Código", "Nombre", "Elemento", "Naturaleza", "Uso de cuenta", "Tipo de cuenta"];
+        const header = ["Nivel", "Código", "Nombre", "Elemento", "Naturaleza", "Uso de cuenta", "Tipo de cuenta", "Descripción"];
         const csvEscape = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
         const lines = [header.map(csvEscape).join(",")];
         rows.forEach((r) => {
@@ -319,6 +319,7 @@ export default function ImportChartOfAccountsPage() {
                     r.naturaleza === "credito" ? "Crédito" : "Débito",
                     r.uso_cuenta,
                     r.tipo_cuenta === "mayor" ? "Cuenta mayor" : "Cuenta de movimiento",
+                    r.descripcion ?? "",
                 ]
                     .map(csvEscape)
                     .join(",")
@@ -673,10 +674,10 @@ export default function ImportChartOfAccountsPage() {
                                 <thead>
                                     <tr className="text-muted-foreground">
                                         <th className="h-[26px] border border-gray-200 bg-gray-100 w-9 sticky top-0 left-0 z-30"></th>
-                                        {["A", "B", "C", "D", "E", "F", "G"].map((letter, i) => (
+                                        {["A", "B", "C", "D", "E", "F", "G", "H"].map((letter, i) => (
                                             <th
                                                 key={letter}
-                                                className={`h-[26px] border border-gray-200 bg-gray-100 font-normal text-center sticky top-0 z-20 ${["w-[9%]", "w-[9%]", "w-[18%]", "w-[13%]", "w-[10%]", "w-[16%]", "w-[15%]"][i]}`}
+                                                className={`h-[26px] border border-gray-200 bg-gray-100 font-normal text-center sticky top-0 z-20 ${["w-[8%]", "w-[8%]", "w-[15%]", "w-[11%]", "w-[9%]", "w-[14%]", "w-[12%]", "w-[12%]"][i]}`}
                                             >
                                                 {letter}
                                             </th>
@@ -692,6 +693,7 @@ export default function ImportChartOfAccountsPage() {
                                         <th className="h-[34px] border border-gray-200 px-2 font-medium sticky top-[26px] z-20 bg-gray-50">Naturaleza *</th>
                                         <th className="h-[34px] border border-gray-200 px-2 font-medium sticky top-[26px] z-20 bg-gray-50">Uso de cuenta</th>
                                         <th className="h-[34px] border border-gray-200 px-2 font-medium sticky top-[26px] z-20 bg-gray-50">Tipo de cuenta</th>
+                                        <th className="h-[34px] border border-gray-200 px-2 font-medium sticky top-[26px] z-20 bg-gray-50">Descripción</th>
                                         <th className="h-[34px] border border-gray-200 sticky top-[26px] z-20 bg-gray-50"></th>
                                     </tr>
                                 </thead>
@@ -754,6 +756,13 @@ export default function ImportChartOfAccountsPage() {
                                                     onValueChange={(v) => updateRow(row.key, "tipo_cuenta", v)}
                                                     options={TIPO_OPTIONS}
                                                     className="h-7 text-xs bg-white border-0 rounded-none shadow-none"
+                                                />
+                                            </td>
+                                            <td className="border border-gray-200 p-0">
+                                                <Input
+                                                    value={row.descripcion ?? ""}
+                                                    onChange={(e) => updateRow(row.key, "descripcion", e.target.value)}
+                                                    className="h-7 text-xs border-0 rounded-none shadow-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary"
                                                 />
                                             </td>
                                             <td className="border border-gray-200 text-center">

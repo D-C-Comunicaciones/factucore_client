@@ -4,6 +4,7 @@ import { Label, Pie, PieChart } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from 'lucide-react';
+import { formatAmount } from "@/utils/format-currency";
 
 interface ClienteItem {
   nombre: string;
@@ -83,7 +84,7 @@ export function MejoresClientesWidget({ clientes, total }: MejoresClientesWidget
                             Total
                           </tspan>
                           <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 14} className="fill-foreground text-sm font-bold">
-                            ${totalVentas.toFixed(2)}
+                            ${formatAmount(totalVentas)}
                           </tspan>
                         </text>
                       );
@@ -113,7 +114,7 @@ export function MejoresClientesWidget({ clientes, total }: MejoresClientesWidget
                     <span className="truncate">{cliente.nombre}</span>
                   </td>
                   <td className="text-right py-2 text-gray-600 px-2">{cliente.documentos}</td>
-                  <td className="text-right py-2 text-gray-600 px-2">${cliente.ventas.toFixed(2)}</td>
+                  <td className="text-right py-2 text-gray-600 px-2">${formatAmount(cliente.ventas)}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { NewBillHeader } from "@/components/bills/new/NewBillHeader";
 import { NewBillOptions } from "@/components/bills/new/NewBillOptions";
@@ -38,13 +38,23 @@ export default function NewBillPage() {
         issue_date: new Date().toISOString().split("T")[0],
         due_date: new Date().toISOString().split("T")[0],
         payment_form_id: 1,
-        currency: "COP",
+        currency_id: null as number | null,
         warehouse_id: "1",
         cost_center_id: "",
         physical_document_number: "",
         terms_conditions: "",
         notes: "",
     });
+
+    // COP por defecto una vez carga el catálogo de monedas — el id no es fijo en todos
+    // los tenants, así que se busca por código en vez de asumir un valor.
+    useEffect(() => {
+        if (formState.currency_id || !catalogs.typeCurrencies?.length) return;
+        const cop = catalogs.typeCurrencies.find((c: any) => c.code === "COP");
+        if (cop) {
+            setFormState((prev: any) => ({ ...prev, currency_id: cop.id }));
+        }
+    }, [catalogs.typeCurrencies]);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const builder = useBillBuilder();
@@ -55,6 +65,10 @@ export default function NewBillPage() {
         if (!formState.contact_id) {
             errs.contact_id = "Debes seleccionar un proveedor";
             showToast("Debes seleccionar un proveedor", "warning");
+        }
+        if (!formState.bill_number || !String(formState.bill_number).trim()) {
+            errs.bill_number = "Debes digitar el número de la factura de compra";
+            showToast("Debes digitar el número de la factura de compra", "warning");
         }
         if (!formState.issue_date) {
             errs.issue_date = "Debes seleccionar una fecha de creación";
@@ -84,6 +98,7 @@ export default function NewBillPage() {
 
             return {
                 item_id: item.item_id ? Number(item.item_id) : undefined,
+                account_id: item.account_id ? Number(item.account_id) : undefined,
                 description: item.description || item.item || undefined,
                 quantity: Number(item.cantidad) || 1,
                 price: Number(item.precio) || 0,
@@ -114,6 +129,7 @@ export default function NewBillPage() {
             issue_date: formState.issue_date,
             due_date: formState.due_date || undefined,
             payment_form_id: formState.payment_form_id || undefined,
+            currency_id: formState.currency_id ? Number(formState.currency_id) : undefined,
             warehouse_id: formState.warehouse_id ? Number(formState.warehouse_id) : undefined,
             cost_center_id: formState.cost_center_id ? Number(formState.cost_center_id) : undefined,
             physical_document_number: formState.physical_document_number || undefined,
@@ -142,7 +158,7 @@ export default function NewBillPage() {
                         issue_date: new Date().toISOString().split("T")[0],
                         due_date: new Date().toISOString().split("T")[0],
                         payment_form_id: 1,
-                        currency: "COP",
+                        currency_id: formState.currency_id,
                         warehouse_id: "1",
                         cost_center_id: "",
                         physical_document_number: "",
@@ -166,7 +182,11 @@ export default function NewBillPage() {
                     builder.setWithholdings([]);
                     builder.setPurchaseOrders([]);
                 } else if (action === "save_and_pay") {
-                    router.push(bill?.id ? `/expenses/payments/new?type=bill&document_id=${bill.id}` : "/expenses/bills");
+                    router.push(
+                        bill?.id
+                            ? `/expenses/payments/new?type=bill&document_id=${bill.id}&contact_id=${formState.contact_id}`
+                            : "/expenses/bills"
+                    );
                 } else {
                     router.push(bill?.id ? `/expenses/bills/${bill.id}` : "/expenses/bills");
                 }
@@ -189,6 +209,9 @@ export default function NewBillPage() {
                     setWarehouseId={(val) => setFormState((prev: any) => ({ ...prev, warehouse_id: val }))}
                     showWarehouse={showWarehouse}
                     warehousesList={catalogs.warehouses || []}
+                    currencyId={formState.currency_id ? String(formState.currency_id) : ""}
+                    setCurrencyId={(val) => setFormState((prev: any) => ({ ...prev, currency_id: val ? Number(val) : null }))}
+                    currenciesList={catalogs.typeCurrencies || []}
                 />
 
                 {/* Main Document Form */}
